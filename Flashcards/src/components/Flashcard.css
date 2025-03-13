@@ -1,6 +1,8 @@
 .flashcard {
-  width: 250px;
-  height: 150px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3/5;
+  max-width: 300px;
   margin: 10px;
   position: relative;
   perspective: 1000px;
@@ -235,9 +237,9 @@
 /* Responsive design */
 @media (max-width: 768px) {
   .flashcard {
-    width: 100%;
-    max-width: 300px;
-    margin: 10px auto;
+    max-width: 100%;
+    aspect-ratio: 3/5;
+    margin: 10px 0;
   }
 }
 

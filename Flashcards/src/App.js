@@ -1064,29 +1064,24 @@ function App() {
             />
           )}
           
-          {/* Card Creation Modal */}
-          {cardCreationModalOpen && (
-            <div className="modal-overlay" onClick={() => setCardCreationModalOpen(false)}>
-              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <button className="modal-close-btn" onClick={() => setCardCreationModalOpen(false)}>×</button>
-                <h2>Create Flashcards</h2>
-                <div className="modal-options">
+          {/* AI creation prompt section */}
+          {allCards.length === 0 && (
+            <div className="empty-card-bank">
+              <h3>Your flashcard bank is empty</h3>
+              <p>Create your first flashcards to get started with your learning journey.</p>
+              <div className="creation-options">
+                <div className="creation-option">
                   <button 
-                    className="primary-button"
-                    onClick={() => {
-                      setCardCreationModalOpen(false);
-                      setView("aiGenerator");
-                    }}
+                    className="ai-button"
+                    onClick={() => setView("aiGenerator")}
                   >
                     <span className="button-icon">🤖</span> Generate Cards with AI
                   </button>
-                  <div className="option-divider">or</div>
+                </div>
+                <div className="creation-option">
                   <button 
-                    className="secondary-button"
-                    onClick={() => {
-                      setCardCreationModalOpen(false);
-                      setView("manualCreate");
-                    }}
+                    className="manual-button"
+                    onClick={() => setView("manualCreate")}
                   >
                     <span className="button-icon">✍️</span> Create Cards Manually
                   </button>
@@ -1095,49 +1090,25 @@ function App() {
             </div>
           )}
           
-          <div className="bank-controls">
-            <button
-              className="primary-button"
-              onClick={() => setCardCreationModalOpen(true)}
-            >
-              <span className="button-icon">✏️</span> Create New Card
-            </button>
-            <button
-              className="secondary-button"
-              onClick={() => setView("spacedRepetition")}
-            >
-              <span className="button-icon">🧠</span> Start Spaced Repetition
-            </button>
-            <button
-              className="secondary-button print-all-btn"
-              onClick={handlePrintAllCards}
-            >
-              <span className="button-icon">🖨️</span> Print All Cards
-            </button>
-          </div>
-
-          <div className="bank-container">
-            <div className="bank-sidebar">
-              <SubjectsList
-                subjects={getSubjects()}
-                selectedSubject={selectedSubject}
-                onSelectSubject={setSelectedSubject}
-                getColorForSubject={(subject) =>
-                  getColorForSubjectTopic(subject)
-                }
-                updateColorMapping={updateColorMapping}
-                refreshSubjectAndTopicColors={refreshSubjectAndTopicColors}
-              />
-            </div>
-
-            <div className="bank-content">
-              <FlashcardList
-                cards={getFilteredCards()}
-                onDeleteCard={deleteCard}
-                onUpdateCard={updateCard}
-              />
-            </div>
-          </div>
+          {/* Card bank display */}
+          {allCards.length > 0 && (
+            <FlashcardList
+              cards={allCards}
+              onDeleteCard={deleteCard}
+              onUpdateCard={updateCard}
+            />
+          )}
+          
+          {cardCreationModalOpen && (
+            <CardCreator
+              onAddCard={addCard}
+              onCancel={() => setView("cardBank")}
+              existingSubjects={getSubjects()}
+              existingTopics={getTopicsForSubject(selectedSubject)}
+              subjectColors={subjectColorMapping}
+              userInfo={getUserInfo()}
+            />
+          )}
         </div>
       )}
 

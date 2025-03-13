@@ -18,6 +18,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving }) => {
           className={`nav-button ${currentView === "cardBank" ? "active" : ""}`}
           onClick={() => onViewChange("cardBank")}
         >
+          <i className="fas fa-layer-group"></i>
           Card Bank
         </button>
         <button
@@ -26,6 +27,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving }) => {
           }`}
           onClick={() => onViewChange("createCard")}
         >
+          <i className="fas fa-plus-circle"></i>
           Create Card
         </button>
         <button
@@ -34,17 +36,29 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving }) => {
           }`}
           onClick={() => onViewChange("spacedRepetition")}
         >
+          <i className="fas fa-brain"></i>
           Spaced Repetition
+        </button>
+        <button
+          className={`nav-button ${
+            currentView === "aiGenerator" ? "active" : ""
+          }`}
+          onClick={() => onViewChange("aiGenerator")}
+        >
+          <i className="fas fa-robot"></i>
+          AI Generator
         </button>
       </div>
 
       <div className="header-actions">
         <button className="save-button" onClick={onSave} disabled={isSaving}>
+          {isSaving ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-save"></i>}
           {isSaving ? "Saving..." : "Save Cards"}
         </button>
 
         {userInfo.email && (
           <div className="user-info">
+            <i className="fas fa-user-circle"></i>
             <span className="user-email">{userInfo.email}</span>
           </div>
         )}
