@@ -803,13 +803,30 @@ function App() {
     return cardsForBox;
   }, [currentBox, spacedRepetitionData, allCards]);
 
-  // Extract unique subjects from all cards
+  // Extract unique subjects from all cards with count and color info
   const getSubjects = useCallback(() => {
-    const subjects = [
+    // Get unique subject names
+    const subjectNames = [
       ...new Set(allCards.map((card) => card.subject || "General")),
-    ];
-    return subjects.sort();
-  }, [allCards]);
+    ].sort();
+    
+    // Create subject objects with name, count, and color info
+    const subjectObjects = subjectNames.map(name => {
+      // Count cards for this subject
+      const count = allCards.filter(card => (card.subject || "General") === name).length;
+      
+      // Get the color for this subject
+      const color = getColorForSubjectTopic(name);
+      
+      return {
+        name: name,
+        count: count,
+        color: color
+      };
+    });
+    
+    return subjectObjects;
+  }, [allCards, getColorForSubjectTopic]);
 
   // Filter cards by subject and topic
   const getFilteredCards = useCallback(() => {
@@ -1101,13 +1118,11 @@ function App() {
             <div className="bank-sidebar">
               <SubjectsList
                 subjects={getSubjects()}
-                selectedSubject={selectedSubject}
+                activeSubject={selectedSubject}
                 onSelectSubject={setSelectedSubject}
-                getColorForSubject={(subject) =>
-                  getColorForSubjectTopic(subject)
-                }
-                updateColorMapping={updateColorMapping}
-                refreshSubjectAndTopicColors={refreshSubjectAndTopicColors}
+                onChangeSubjectColor={(subject, color) => {
+                  updateColorMapping(subject, null, color);
+                }}
               />
             </div>
 

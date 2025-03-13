@@ -3,19 +3,6 @@ import "./Header.css";
 
 const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrintAll, onCreateCard }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  
-  // Listen for window resize events
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
   
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -23,25 +10,13 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
 
   return (
     <header className="header">
-      <div className="header-content">
-        <div className="app-title">
-          <img
-            src="https://www.vespa.academy/assets/images/full-trimmed-transparent-customcolor-1-832x947.png"
-            alt="Vespa Academy Logo"
-            className="logo"
-          />
-          <h1>Flashcard App</h1>
-        </div>
-        
-        {windowWidth <= 768 && (
-          <button 
-            className="mobile-menu-toggle" 
-            onClick={toggleMobileMenu}
-            aria-label="Toggle menu"
-          >
-            ☰
-          </button>
-        )}
+      <div className="app-title">
+        <img
+          src="https://www.vespa.academy/assets/images/full-trimmed-transparent-customcolor-1-832x947.png"
+          alt="Vespa Academy Logo"
+          className="logo"
+        />
+        <h1>Flashcard App</h1>
       </div>
 
       <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
@@ -83,6 +58,16 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
           <div className="user-info">
             <span className="user-email">{userInfo.email}</span>
           </div>
+        )}
+        
+        {window.innerWidth <= 768 && (
+          <button 
+            className="mobile-menu-toggle" 
+            onClick={toggleMobileMenu}
+            aria-label="Toggle menu"
+          >
+            ☰
+          </button>
         )}
       </div>
     </header>
