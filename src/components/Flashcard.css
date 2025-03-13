@@ -89,6 +89,10 @@
 .options-container {
   height: 60%;
   overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .options-container ol {
@@ -100,6 +104,42 @@
 .options-container li {
   margin-bottom: 5px;
   line-height: 1.2;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.options-container li:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Multiple choice options in spaced repetition mode */
+.multiple-choice-options li {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.multiple-choice-options li:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.multiple-choice-options li.selected-option {
+  background-color: rgba(21, 58, 163, 0.2);
+  border-color: #153aa3;
+}
+
+.multiple-choice-options li.correct-option {
+  background-color: rgba(76, 175, 80, 0.2);
+  border-color: #4CAF50;
 }
 
 /* Box indicator */
