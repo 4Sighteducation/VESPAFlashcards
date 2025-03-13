@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import './Flashcard.css';
 
 // Helper function to determine text color based on background color brightness
@@ -218,7 +219,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   };
   
   // Close info modal
-  const closeInfoModal = () => {
+  const closeInfoModal = (e) => {
+    if (e) e.stopPropagation();
     setShowInfoModal(false);
   };
   
@@ -363,8 +365,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
         </div>
       </div>
       
-      {/* Information Modal */}
-      {showInfoModal && (
+      {/* Information Modal - Moved outside of flashcard div for better positioning */}
+      {showInfoModal && ReactDOM.createPortal(
         <div className="info-modal-overlay" onClick={closeInfoModal}>
           <div className="info-modal" onClick={(e) => e.stopPropagation()}>
             <div className="info-modal-header">
@@ -375,7 +377,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
               <div dangerouslySetInnerHTML={{ __html: card.additionalInfo || card.detailedAnswer || "No additional information available." }} />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

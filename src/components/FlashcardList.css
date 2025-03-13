@@ -151,11 +151,25 @@
   flex-wrap: wrap;
   padding: 15px;
   gap: 15px;
-  justify-content: center;
+  justify-content: flex-start;
   background-color: #fafafa;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
   max-height: none;
   overflow-y: visible;
+  width: 100%;
+}
+
+.topic-cards .flashcard {
+  flex: 1 1 450px;
+  min-width: 280px;
+  max-width: 100%;
+  margin: 10px;
+}
+
+/* When a single subject is selected, make the cards wider */
+.flashcard-list-single-subject .topic-cards .flashcard {
+  flex: 1 1 100%;
+  max-width: 100%;
 }
 
 .empty-card-bank {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import "./SpacedRepetition.css";
 import Flashcard from "./Flashcard";
 
@@ -756,7 +757,7 @@ const SpacedRepetition = ({
       )}
       
       {/* Info modal */}
-      {showInfoModal && currentCards.length > 0 && (
+      {showInfoModal && currentCards.length > 0 && ReactDOM.createPortal(
         <div className="info-modal-overlay" onClick={() => setShowInfoModal(false)}>
           <div className="info-modal" onClick={(e) => e.stopPropagation()}>
             <div className="info-modal-header">
@@ -767,7 +768,8 @@ const SpacedRepetition = ({
               <div dangerouslySetInnerHTML={{ __html: currentCards[currentIndex].additionalInfo || currentCards[currentIndex].detailedAnswer || "No additional information available." }} />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

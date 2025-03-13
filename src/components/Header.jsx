@@ -1,7 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import "./Header.css";
 
 const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrintAll, onCreateCard }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
   return (
     <header className="app-header">
       <div className="header-logo">
@@ -11,9 +17,17 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
           className="logo"
         />
         <h1>Flashcard App</h1>
+        <button 
+          className="mobile-menu-toggle" 
+          onClick={toggleMobileMenu}
+          style={{ display: window.innerWidth <= 768 ? 'block' : 'none' }}
+          aria-label="Toggle menu"
+        >
+          ☰
+        </button>
       </div>
 
-      <div className="header-nav">
+      <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
         <button
           className={`nav-button ${currentView === "cardBank" ? "active" : ""}`}
           onClick={() => onViewChange("cardBank")}

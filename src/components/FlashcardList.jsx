@@ -249,7 +249,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   }
 
   return (
-    <div className="flashcard-list">
+    <div className={`flashcard-list ${Object.keys(groupedCards).length === 1 ? 'flashcard-list-single-subject' : ''}`}>
       {printModalOpen && (
         <PrintModal 
           cards={cardsToPrint} 
