@@ -241,17 +241,27 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       
       if (examTypeSubjects[formData.examType]) {
         // If using subjects from props, combine with predefined list
+        // First, convert subjects array to string names if needed
+        const subjectNames = Array.isArray(subjects) ? subjects.map(s => 
+          typeof s === 'object' && s.name ? s.name : s
+        ) : [];
+        
         const combinedSubjects = [...new Set([
-          ...(subjects || []),
+          ...subjectNames,
           ...examTypeSubjects[formData.examType]
         ])].sort();
         
+        // Store as string values only, not objects
         setAvailableSubjects(combinedSubjects);
       }
     } else {
-      setAvailableSubjects(subjects || []);
+      // When no exam type is selected, handle subjects properly by converting objects to their name property
+      const processedSubjects = Array.isArray(subjects) 
+        ? subjects.map(s => typeof s === 'object' && s.name ? s.name : s) 
+        : [];
+      setAvailableSubjects(processedSubjects);
     }
-  }, [formData.examType, subjects]);
+  }, [formData.subject, formData.examBoard, formData.examType, subjects]);
 
   // Effect to generate topics when subject changes
   useEffect(() => {
@@ -279,10 +289,13 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         throw new Error("Missing required parameters");
       }
       
-      console.log("Generating topics for:", examBoard, examType, subject);
+      // Make sure subject is a string, not an object
+      const subjectName = typeof subject === 'object' && subject.name ? subject.name : subject;
+      
+      console.log("Generating topics for:", examBoard, examType, subjectName);
       
       // Get the prompt from our new prompt file
-      const prompt = generateTopicPrompt(examBoard, examType, subject);
+      const prompt = generateTopicPrompt(examBoard, examType, subjectName);
       
       // Make API call to OpenAI
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -688,7 +701,36 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   // Handle form field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Special handling for subject field
+    if (name === 'subject') {
+      // Clear new subject when selecting from dropdown
+      setFormData(prev => ({ 
+        ...prev, 
+        [name]: value,
+        newSubject: '' // Clear new subject when selecting from dropdown
+      }));
+      
+      // If it's a subject selection and we have the original subject object
+      // Find the subject object to get its color
+      const selectedSubject = subjects.find(s => {
+        if (typeof s === 'object' && s.name) {
+          return s.name === value;
+        }
+        return s === value;
+      });
+      
+      // If we found a subject with a color, update the color too
+      if (selectedSubject && typeof selectedSubject === 'object' && selectedSubject.color) {
+        setFormData(prev => ({
+          ...prev,
+          subjectColor: selectedSubject.color
+        }));
+      }
+    } else {
+      // Regular field update
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   // Handle color selection
@@ -743,13 +785,19 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
 
   // Generate cards using OpenAI API
   const generateCards = async () => {
+    // Get subject value, ensuring it's a string not an object
+    const subjectValue = formData.subject || formData.newSubject;
+    const subjectName = typeof subjectValue === 'object' && subjectValue.name 
+      ? subjectValue.name 
+      : subjectValue;
+    
     console.log("Generate cards function called with state:", { 
       isGenerating, 
       currentStep,
       formData: { 
         examType: formData.examType,
         examBoard: formData.examBoard,
-        subject: formData.subject || formData.newSubject,
+        subject: subjectName,
         topic: formData.topic || formData.newTopic,
         questionType: formData.questionType
       }
@@ -760,7 +808,7 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
     
     try {
       // Determine final subject and topic (use new values if provided)
-      const finalSubject = formData.newSubject || formData.subject;
+      const finalSubject = formData.newSubject || subjectName;
       const finalTopic = formData.newTopic || formData.topic;
       const finalExamType = formData.examType;
       const finalExamBoard = formData.examBoard;
@@ -784,9 +832,10 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         .map(sub => sub.subjectColor.toLowerCase()); // Normalize color format
       
       // If this is a new subject that matches an existing one, use that color
-      const matchingSubject = existingSubjects.find(sub => 
-        sub.subject && (sub.subject.toLowerCase() === finalSubject.toLowerCase())
-      );
+      const matchingSubject = existingSubjects.find(sub => {
+        const subName = typeof sub === 'object' && sub.subject ? sub.subject : sub;
+        return subName && (subName.toLowerCase() === finalSubject.toLowerCase());
+      });
       
       if (matchingSubject && matchingSubject.subjectColor) {
         // Use the existing subject color
@@ -1167,10 +1216,16 @@ Use this format for different question types:
       // Show the modal immediately with the loading indicator
       setShowTopicModal(true);
       
+      // Get the subject value, ensuring it's a string not an object
+      const subjectValue = formData.subject || formData.newSubject;
+      const subjectName = typeof subjectValue === 'object' && subjectValue.name 
+        ? subjectValue.name 
+        : subjectValue;
+      
       const topics = await generateTopics(
         formData.examBoard,
         formData.examType,
-        formData.subject || formData.newSubject
+        subjectName
       );
       setAvailableTopics(topics);
       setHierarchicalTopics(topics.map(topic => ({ topic })));
@@ -1241,25 +1296,29 @@ Use this format for different question types:
                 onChange={handleChange}
               >
                 <option value="">-- Select Subject --</option>
-                {availableSubjects.map(subject => (
-                  <option key={subject} value={subject}>
-                    {subject}
-                  </option>
-                ))}
+                {availableSubjects.map((subject, index) => {
+                  // Ensure we're working with subject names, not objects
+                  const subjectName = typeof subject === 'object' && subject.name ? subject.name : subject;
+                  return (
+                    <option key={index} value={subjectName}>
+                      {subjectName}
+                    </option>
+                  );
+                })}
               </select>
-              
-              <div className="form-divider">
-                <span>OR</span>
+            
+              <div className="form-group mt-3">
+                <p className="divider">Or</p>
+                <label htmlFor="newSubject">Enter a new subject:</label>
+                <input
+                  type="text"
+                  id="newSubject"
+                  name="newSubject"
+                  value={formData.newSubject}
+                  onChange={handleChange}
+                  placeholder="Type a new subject name"
+                />
               </div>
-              
-              <label>Enter New Subject</label>
-              <input 
-                type="text" 
-                name="newSubject" 
-                value={formData.newSubject} 
-                onChange={handleChange}
-                placeholder="Enter custom subject name" 
-              />
             </div>
           </div>
         );
@@ -1491,6 +1550,12 @@ Use this format for different question types:
 
   // Step 7: Confirmation Step and Generated Cards
   const renderConfirmation = () => {
+    // Ensure subject is displayed as a string
+    const subjectValue = formData.newSubject || formData.subject;
+    const subjectDisplay = typeof subjectValue === 'object' && subjectValue.name 
+      ? subjectValue.name 
+      : subjectValue;
+    
     return (
       <div className="generator-step review-step">
         <h2>Review and Generate Cards</h2>
@@ -1508,7 +1573,7 @@ Use this format for different question types:
           
           <div className="confirmation-item">
             <span className="label">Subject:</span>
-            <span className="value">{formData.newSubject || formData.subject}</span>
+            <span className="value">{subjectDisplay}</span>
           </div>
           
           <div className="confirmation-item">
@@ -1538,7 +1603,7 @@ Use this format for different question types:
         {isGenerating ? (
           <div className="loading-indicator">
             <div className="spinner"></div>
-            <p>Creating {formData.numCards} flashcards for {formData.examBoard} {formData.examType} {formData.newSubject || formData.subject}...</p>
+            <p>Creating {formData.numCards} flashcards for {formData.examBoard} {formData.examType} {subjectDisplay}...</p>
             <p className="loading-subtext">Our AI is analyzing the curriculum and crafting high-quality questions tailored to your specifications.</p>
           </div>
         ) : generatedCards.length > 0 ? (

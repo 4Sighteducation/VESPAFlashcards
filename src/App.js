@@ -136,6 +136,22 @@ function App() {
     setSpacedRepetitionData(newSpacedRepetitionData);
   }, []);
 
+  // Extract unique topics for a selected subject
+  const getTopicsForSubject = useCallback(
+    (subject) => {
+      if (!subject) return [];
+      const topics = [
+        ...new Set(
+          allCards
+            .filter((card) => (card.subject || "General") === subject)
+            .map((card) => card.topic || "General")
+        ),
+      ];
+      return topics.sort();
+    },
+    [allCards]
+  );
+
   // Generate a shade of a base color
   const generateShade = useCallback((baseColor, shadeIndex, totalShades) => {
     // Convert hex to RGB
@@ -161,41 +177,43 @@ function App() {
     return adjustedHex;
   }, []);
 
-  // Extract unique topics for a selected subject
-  const getTopicsForSubject = useCallback(
-    (subject) => {
-      if (!subject) return [];
-      const topics = [
-        ...new Set(
-          allCards
-            .filter((card) => (card.subject || "General") === subject)
-            .map((card) => card.topic || "General")
-        ),
-      ];
-      return topics.sort();
-    },
-    [allCards]
-  );
+  // Generate a random vibrant color
+  const getRandomColor = useCallback(() => {
+    // Default bright colors palette
+    const brightColors = [
+      "#e6194b", "#3cb44b", "#ffe119", "#0082c8", "#f58231", 
+      "#911eb4", "#46f0f0", "#f032e6", "#d2f53c", "#fabebe", 
+      "#008080", "#e6beff", "#aa6e28", "#fffac8", "#800000", 
+      "#aaffc3", "#808000", "#ffd8b1", "#000080", "#808080",
+      "#FF69B4", "#8B4513", "#00CED1", "#ADFF2F", "#DC143C",
+    ];
+    
+    // Return a random color from the palette
+    return brightColors[Math.floor(Math.random() * brightColors.length)];
+  }, []);
 
   // Update color mappings - independent of other functions
   const updateColorMapping = useCallback(
     (subject, topic, color, updateTopics = false) => {
+      // If color is null, use a default color or generate one
+      const colorToUse = color || getRandomColor();
+      
       setSubjectColorMapping((prevMapping) => {
         const newMapping = { ...prevMapping };
 
         // Create subject entry if it doesn't exist
         if (!newMapping[subject]) {
-          newMapping[subject] = { base: color, topics: {} };
+          newMapping[subject] = { base: colorToUse, topics: {} };
         }
 
         // If it's a subject-level color update
         if (!topic || updateTopics) {
           // Update the base subject color
-          newMapping[subject].base = color;
+          newMapping[subject].base = colorToUse;
           
           // If we should update topic colors automatically
           if (updateTopics) {
-            console.log(`Updating all topic colors for subject ${subject} based on ${color}`);
+            console.log(`Updating all topic colors for subject ${subject} based on ${colorToUse}`);
             
             // Get all topics for this subject from current cards
             const topicsForSubject = allCards
@@ -214,7 +232,7 @@ function App() {
                 if (topicName === "General") return;
                 
                 // Generate a shade of the base color for this topic
-                const topicColor = generateShade(color, index, uniqueTopics.length);
+                const topicColor = generateShade(colorToUse, index, uniqueTopics.length);
                 console.log(`Generated color for ${topicName}: ${topicColor}`);
                 
                 // Ensure the topics object exists
@@ -235,13 +253,51 @@ function App() {
             newMapping[subject].topics = {};
           }
           // Update the specified topic color
-          newMapping[subject].topics[topic] = color;
+          newMapping[subject].topics[topic] = colorToUse;
         }
         
         return newMapping;
       });
+      
+      // Also update the cards that use this subject/topic to reflect the new color
+      setAllCards(prevCards => {
+        return prevCards.map(card => {
+          if ((card.subject || "General") === subject) {
+            // If this is a topic-specific update and this card doesn't match, skip it
+            if (topic && (card.topic || "General") !== topic && !updateTopics) {
+              return card;
+            }
+            
+            // Get the appropriate color based on the card's topic
+            let newColor = colorToUse;
+            if (topic && (card.topic || "General") === topic) {
+              newColor = colorToUse;
+            } else if (!topic && card.topic && card.topic !== "General" && updateTopics) {
+              // For topic cards, get a shade of the subject color
+              const topicsForSubject = [...new Set(
+                allCards
+                  .filter(c => (c.subject || "General") === subject)
+                  .map(c => c.topic || "General")
+              )].sort();
+              
+              const topicIndex = topicsForSubject.indexOf(card.topic);
+              if (topicIndex !== -1) {
+                newColor = generateShade(colorToUse, topicIndex, topicsForSubject.length);
+              }
+            }
+            
+            // Return updated card with new color
+            return {
+              ...card,
+              cardColor: newColor,
+              baseColor: subject === (card.subject || "General") ? colorToUse : card.baseColor
+            };
+          }
+          return card;
+        });
+      });
     },
-    [allCards, generateShade]
+    [allCards, generateShade, getRandomColor]
   );
 
   // Function to refresh subject and topic colors
@@ -816,15 +872,17 @@ function App() {
       const count = allCards.filter(card => (card.subject || "General") === name).length;
       
       // Get the color for this subject
-      const color = getColorForSubjectTopic(name);
+      const color = getColorForSubjectTopic(name, null);
       
+      // Return the properly formatted subject object
       return {
         name: name,
         count: count,
-        color: color
+        color: color || "#06206e" // Fallback color if none is found
       };
     });
     
+    console.log("getSubjects returning:", subjectObjects);
     return subjectObjects;
   }, [allCards, getColorForSubjectTopic]);
 
@@ -1120,8 +1178,8 @@ function App() {
                 subjects={getSubjects()}
                 activeSubject={selectedSubject}
                 onSelectSubject={setSelectedSubject}
-                onChangeSubjectColor={(subject, color) => {
-                  updateColorMapping(subject, null, color);
+                onChangeSubjectColor={(subject, color, updateTopics = false) => {
+                  updateColorMapping(subject, null, color, updateTopics);
                 }}
               />
             </div>

@@ -1,85 +1,93 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
 import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
 
 const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
-  // State to track expanded topics
-  const [expandedTopics, setExpandedTopics] = useState({});
-  // State for print modal
+  const [selectedTopicIndex, setSelectedTopicIndex] = useState(0);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [cardsToPrint, setCardsToPrint] = useState([]);
   const [printTitle, setPrintTitle] = useState("");
-  // State for card viewing modal
-  const [showCardModal, setShowCardModal] = useState(false);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [currentCards, setCurrentCards] = useState([]);
+  const [showModalAndSelectedCard, setShowModalAndSelectedCard] = useState(false);
+  const [selectedCard, setSelectedCard] = useState(null);
   
-  // Group cards by subject and topic
-  const groupedCards = cards.reduce((acc, card) => {
-    const subject = card.subject || "General";
-    const topic = card.topic || "General";
-
-    if (!acc[subject]) {
-      acc[subject] = {};
-    }
-
-    if (!acc[subject][topic]) {
-      acc[subject][topic] = [];
-    }
-
-    acc[subject][topic].push(card);
-    return acc;
-  }, {});
-  
-  // Initialize expanded state when cards change
-  useEffect(() => {
-    const initialExpandedState = {};
-    Object.keys(groupedCards).forEach(subject => {
-      initialExpandedState[subject] = false;
-      Object.keys(groupedCards[subject]).forEach(topic => {
-        initialExpandedState[`${subject}-${topic}`] = false;
-      });
+  // Group cards by topic
+  const groupedCards = useMemo(() => {
+    const groups = {};
+    
+    cards.forEach(card => {
+      const topic = card.topic || "General";
+      if (!groups[topic]) {
+        groups[topic] = [];
+      }
+      groups[topic].push(card);
     });
-    setExpandedTopics(initialExpandedState);
+
+    // Convert to an array of topics and sort them
+    const topics = Object.keys(groups).sort();
+
+    return { topics, cardsByTopic: groups };
   }, [cards]);
   
-  // Toggle expansion of a subject or topic
-  const toggleExpand = (key) => {
-    setExpandedTopics(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-  
-  // Open the card modal for a specific topic's cards
-  const openCardModal = (subject, topic) => {
-    const topicCards = groupedCards[subject][topic];
-    setCurrentCards(topicCards);
-    setCurrentCardIndex(0);
+  // Reset topic selection when cards change
+  useEffect(() => {
+    setSelectedTopicIndex(0);
+  }, [cards]);
+
+  // Handle case where there are no cards
+  if (!cards || cards.length === 0) {
+    return (
+      <div className="no-cards-message">
+        <h3>No Cards Found</h3>
+        <p>Select a different subject or create new cards.</p>
+      </div>
+    );
+  }
+
+  // Get selected topic and its cards
+  const selectedTopic = groupedCards.topics[selectedTopicIndex] || "General";
+  const selectedTopicCards = groupedCards.cardsByTopic[selectedTopic] || [];
+
+  // Function to open the card modal at a specific index
+  const openCardModal = (index) => {
+    setCurrentCardIndex(index);
     setShowCardModal(true);
   };
-  
-  // Navigate to next card in modal
-  const nextCard = () => {
-    if (currentCardIndex < currentCards.length - 1) {
-      setCurrentCardIndex(prevIndex => prevIndex + 1);
-    }
+
+  // Navigation functions for modal
+  const goToPrevCard = () => {
+    setCurrentCardIndex((prevIndex) => 
+      prevIndex > 0 ? prevIndex - 1 : selectedTopicCards.length - 1
+    );
   };
-  
-  // Navigate to previous card in modal
-  const prevCard = () => {
-    if (currentCardIndex > 0) {
-      setCurrentCardIndex(prevIndex => prevIndex - 1);
-    }
+
+  const goToNextCard = () => {
+    setCurrentCardIndex((prevIndex) => 
+      prevIndex < selectedTopicCards.length - 1 ? prevIndex + 1 : 0
+    );
   };
-  
-  // Close the card modal
+
+  // Helper to close the modal
   const closeCardModal = () => {
     setShowCardModal(false);
   };
-  
+
+  // Determine if this is a single subject view based on the groupedCards
+  const isSingleSubjectView = groupedCards.topics.length === 1;
+
+  // Debug output
+  console.log("FlashcardList render:", {
+    cardsCount: cards.length,
+    topicsCount: groupedCards.topics.length,
+    selectedTopic,
+    cardsInSelectedTopic: selectedTopicCards.length,
+    isSingleSubjectView
+  });
+
   // Helper function to get contrast color
   const getContrastColor = (hexColor) => {
     if (!hexColor) return "#000000";
@@ -151,7 +159,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
       
       // If we couldn't extract from the subject name, try to get it from the first card
       if (!examBoard || !examType) {
-        const cards = Object.values(groupedCards[subject]).flat();
+        const cards = Object.values(groupedCards.cardsByTopic[subject]).flat();
         if (cards.length > 0) {
           const firstCard = cards[0];
           
@@ -260,31 +268,111 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   // Print subject cards
   const handlePrintSubject = (subject, e) => {
     e.stopPropagation(); // Prevent toggling the subject expansion
-    const subjectCards = Object.values(groupedCards[subject]).flat();
+    const subjectCards = Object.values(groupedCards.cardsByTopic[subject]).flat();
     openPrintModal(subjectCards, subject);
   };
 
   // Print topic cards
   const handlePrintTopic = (subject, topic, e) => {
     e.stopPropagation(); // Prevent toggling the topic expansion
-    openPrintModal(groupedCards[subject][topic], `${subject} - ${topic}`);
+    openPrintModal(groupedCards.cardsByTopic[subject][topic], `${subject} - ${topic}`);
   };
 
-  // If no cards, show empty state
-  if (cards.length === 0) {
+  const handleCardClick = (card) => {
+    setSelectedCard(card);
+    setShowModalAndSelectedCard(true);
+  };
+
+  const renderCards = (cards, topicKey = null, isVisibleTopic = true) => {
+    if (showModalAndSelectedCard) return null; // Don't render cards normally if modal is shown
+
     return (
-      <div className="empty-card-bank">
-        <h3>No Flashcards Found</h3>
-        <p>Create new cards or adjust your filters to see cards here.</p>
+      <div className="topic-cards" style={{ display: isVisibleTopic ? 'flex' : 'none' }}>
+        {cards && cards.length > 0 ? (
+          cards.map((card) => (
+            <Flashcard
+              key={card.id}
+              card={card}
+              onDelete={() => onDeleteCard(card.id)}
+              onFlip={(card, isFlipped) => console.log(`Card flipped: ${isFlipped}`)}
+              onUpdateCard={onUpdateCard}
+              onClick={(e) => handleCardClick(card)}
+            />
+          ))
+        ) : (
+          <div className="no-cards-message">No cards in this topic</div>
+        )}
       </div>
     );
-  }
+  };
 
-  // Check if there's only one subject selected - for special styling
-  const isSingleSubject = Object.keys(groupedCards).length === 1;
+  // Modal view for slideshow
+  const renderModal = () => {
+    if (!showModalAndSelectedCard || !selectedCard) return null;
+
+    const currentCards = cards.filter(card => 
+      card.topic === selectedCard.topic
+    );
+
+    const currentIndex = currentCards.findIndex(card => card.id === selectedCard.id);
+    const totalCards = currentCards.length;
+
+    const handlePrevCard = (e) => {
+      e.stopPropagation();
+      if (currentIndex > 0) {
+        setSelectedCard(currentCards[currentIndex - 1]);
+      }
+    };
+
+    const handleNextCard = (e) => {
+      e.stopPropagation();
+      if (currentIndex < totalCards - 1) {
+        setSelectedCard(currentCards[currentIndex + 1]);
+      }
+    };
+
+    return (
+      <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
+        <div className="card-modal" onClick={(e) => e.stopPropagation()}>
+          <button className="close-modal-btn" onClick={() => setShowModalAndSelectedCard(false)}>✕</button>
+          
+          <div className="modal-card-container">
+            <Flashcard 
+              card={selectedCard} 
+              onDelete={() => onDeleteCard(selectedCard.id)}
+              onFlip={(card, isFlipped) => console.log(`Card flipped: ${isFlipped}`)}
+              onUpdateCard={onUpdateCard}
+              isInModal={true}
+              showButtons={true}
+            />
+          </div>
+          
+          <div className="modal-navigation">
+            <button 
+              onClick={handlePrevCard} 
+              disabled={currentIndex === 0}
+              className="nav-button prev"
+            >
+              Previous
+            </button>
+            <div className="card-counter">
+              {currentIndex + 1} of {totalCards}
+            </div>
+            <button 
+              onClick={handleNextCard} 
+              disabled={currentIndex === totalCards - 1}
+              className="nav-button next"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className={`flashcard-list ${isSingleSubject ? 'flashcard-list-single-subject' : ''}`}>
+    <div className={`flashcard-list ${isSingleSubjectView ? 'flashcard-list-single-subject' : ''}`}>
       {printModalOpen && (
         <PrintModal 
           cards={cardsToPrint} 
@@ -293,164 +381,22 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         />
       )}
       
-      {/* Card Viewing Modal */}
-      {showCardModal && currentCards.length > 0 && ReactDOM.createPortal(
-        <div className="card-modal-overlay" onClick={closeCardModal}>
-          <div className="card-modal" onClick={(e) => e.stopPropagation()}>
-            <button 
-              className="close-modal-btn" 
-              onClick={closeCardModal}
-              aria-label="Close card modal"
-            >
-              ✕
-            </button>
-            
-            <div className="card-navigation">
-              <button
-                className="prev-button"
-                onClick={prevCard}
-                disabled={currentCardIndex === 0}
-              >
-                Previous
-              </button>
-              <div className="card-counter">
-                <span className="card-index">
-                  {currentCardIndex + 1} / {currentCards.length}
-                </span>
-              </div>
-              <button
-                className="next-button"
-                onClick={nextCard}
-                disabled={currentCardIndex === currentCards.length - 1}
-              >
-                Next
-              </button>
-            </div>
-            
-            <div className="modal-card-container">
-              <Flashcard
-                key={currentCards[currentCardIndex].id}
-                card={currentCards[currentCardIndex]}
-                onDelete={() => {
-                  onDeleteCard(currentCards[currentCardIndex].id);
-                  if (currentCards.length <= 1) {
-                    closeCardModal();
-                  }
-                }}
-                onUpdateCard={(updatedCard) => {
-                  onUpdateCard(updatedCard);
-                }}
-              />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      
-      {Object.keys(groupedCards).map((subject) => {
-        // Get subject color for styling
-        const subjectCards = Object.values(groupedCards[subject]).flat();
-        const subjectColor = subjectCards[0]?.baseColor || subjectCards[0]?.cardColor || '#e0e0e0';
-        const { examType, examBoard } = getExamInfo(subject);
-        const textColor = getContrastColor(subjectColor);
-        
-        return (
-          <div key={subject} className="subject-container">
-            <div 
-              className="subject-header"
-              style={{ 
-                boxShadow: `0 0 8px ${subjectColor}`,
-                borderBottom: `1px solid ${subjectColor}`,
-                color: textColor,
-                backgroundColor: subjectColor,
-                position: 'relative'
-              }}
-            >
-              <div className="subject-content" onClick={() => toggleExpand(subject)}>
-                <div className="subject-info">
-                  <h2>{subject}</h2>
-                  <div className="subject-meta">
-                    {examType && <span className="meta-tag exam-type">{examType}</span>}
-                    {examBoard && <span className="meta-tag exam-board">{examBoard}</span>}
-                  </div>
-                </div>
-                <span className="card-count">
-                  ({Object.values(groupedCards[subject]).flat().length} cards)
-                </span>
-              </div>
-              <button 
-                className="print-btn" 
-                onClick={(e) => handlePrintSubject(subject, e)}
-                style={{ color: textColor }}
-              >
-                <span className="print-icon">🖨️</span>
-              </button>
-            </div>
+      {/* Topic tabs */}
+      <div className="topics-tabs">
+        {groupedCards.topics.map((topic, index) => (
+          <button
+            key={topic}
+            className={`topic-tab ${index === selectedTopicIndex ? "active" : ""}`}
+            onClick={() => setSelectedTopicIndex(index)}
+          >
+            {topic} ({groupedCards.cardsByTopic[topic].length})
+          </button>
+        ))}
+      </div>
 
-            {expandedTopics[subject] && Object.keys(groupedCards[subject]).map((topic) => {
-              // Get the first card's color for the topic
-              const topicColor = groupedCards[subject][topic][0]?.cardColor || '#e0e0e0';
-              const textColor = getContrastColor(topicColor);
-              const topicDate = getTopicDate(groupedCards[subject][topic]);
-              
-              return (
-                <div key={`${subject}-${topic}`} className="topic-group">
-                  <div 
-                    className="topic-header"
-                    style={{ 
-                      backgroundColor: topicColor,
-                      color: textColor 
-                    }}
-                  >
-                    <div className="topic-content" onClick={() => toggleExpand(`${subject}-${topic}`)}>
-                      <div className="topic-info">
-                        <h3>{topic}</h3>
-                        {topicDate && <span className="topic-date">Created: {topicDate}</span>}
-                      </div>
-                      <span className="card-count">
-                        ({groupedCards[subject][topic].length} cards)
-                      </span>
-                    </div>
-                    <div className="topic-actions">
-                      <button 
-                        className="view-cards-btn" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openCardModal(subject, topic);
-                        }}
-                        style={{ color: textColor }}
-                        title="View cards in modal"
-                      >
-                        <span className="view-icon">👁️</span>
-                      </button>
-                      <button 
-                        className="print-btn" 
-                        onClick={(e) => handlePrintTopic(subject, topic, e)}
-                        style={{ color: textColor }}
-                      >
-                        <span className="print-icon">🖨️</span>
-                      </button>
-                    </div>
-                  </div>
+      {renderCards(selectedTopicCards, selectedTopic)}
 
-                  {expandedTopics[`${subject}-${topic}`] && (
-                    <div className="topic-cards expanded-topic">
-                      {groupedCards[subject][topic].map((card) => (
-                        <Flashcard
-                          key={card.id}
-                          card={card}
-                          onDelete={() => onDeleteCard(card.id)}
-                          onUpdateCard={(updatedCard) => onUpdateCard(updatedCard)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
+      {showModalAndSelectedCard && renderModal()}
     </div>
   );
 };

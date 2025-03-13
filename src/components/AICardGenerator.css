@@ -1,12 +1,15 @@
 .ai-card-generator {
-  max-width: 900px;
+  max-width: 800px;
   margin: 0 auto;
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
   padding: 20px;
   font-family: 'Lato', sans-serif;
-  width: 85%; /* Make it wider on desktop */
+  width: 80%;
+  height: auto;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .helper-text {
@@ -439,8 +442,9 @@
 /* Responsive design */
 @media (max-width: 768px) {
   .ai-card-generator {
-    width: 95%;
+    width: 92%;
     padding: 15px;
+    max-height: 85vh;
   }
   
   .color-grid {
@@ -485,6 +489,14 @@
   .next-button,
   .finish-button {
     width: 100%;
+  }
+  
+  .generator-header {
+    padding: 0 0 15px 0;
+  }
+  
+  .generator-header h1 {
+    font-size: 1.5rem;
   }
 }
 
@@ -1057,10 +1069,10 @@
 }
 
 .success-modal {
-  width: 300px;
+  width: 280px;
   background-color: white;
   border-radius: 8px;
-  padding: 20px;
+  padding: 15px;
   text-align: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: scaleIn 0.3s ease;
@@ -1069,19 +1081,20 @@
 .success-icon {
   background-color: #4CAF50;
   color: white;
-  width: 50px;
-  height: 50px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 30px;
-  margin: 0 auto 15px;
+  font-size: 26px;
+  margin: 0 auto 12px;
 }
 
 .success-modal h3 {
-  margin-bottom: 15px;
+  margin-bottom: 12px;
   color: #333;
+  font-size: 1.1rem;
 }
 
 .success-cards {
@@ -1193,7 +1206,7 @@
 .topic-modal-content {
   width: 90%;
   max-width: 600px;
-  max-height: 90vh;
+  max-height: 80vh;
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
@@ -1237,7 +1250,7 @@
 .topic-modal-body {
   padding: 20px;
   overflow-y: auto;
-  max-height: 50vh;
+  max-height: 40vh;
   flex-grow: 1;
 }
 
@@ -1412,6 +1425,20 @@
   .topic-modal-actions {
     flex-direction: column;
   }
+  
+  .topic-modal-content {
+    width: 95%;
+    max-height: 85vh;
+  }
+  
+  .topic-modal-header {
+    padding: 10px 15px;
+  }
+  
+  .topic-modal-body {
+    padding: 15px;
+    max-height: 50vh;
+  }
 }
 
 /* Save Confirmation Dialog */
@@ -1429,12 +1456,12 @@
 }
 
 .save-confirmation-dialog {
-  width: 90%;
-  max-width: 400px;
+  width: 85%;
+  max-width: 360px; /* Smaller max-width for a more compact look */
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-  padding: 25px;
+  padding: 20px; /* Reduced padding */
   text-align: center;
   animation: fadeInScale 0.2s ease;
 }
@@ -1453,14 +1480,14 @@
 .save-confirmation-dialog h4 {
   margin-top: 0;
   color: #06206e;
-  font-size: 1.3rem;
-  margin-bottom: 15px;
+  font-size: 1.2rem; /* Slightly smaller font */
+  margin-bottom: 12px;
 }
 
 .save-confirmation-dialog p {
-  margin-bottom: 20px;
+  margin-bottom: 15px; /* Reduced margin */
   color: #444;
-  font-size: 1rem;
+  font-size: 0.95rem; /* Slightly smaller font */
 }
 
 .confirmation-actions {
@@ -1516,12 +1543,12 @@
 }
 
 .topic-confirmation-dialog {
-  width: 90%;
-  max-width: 400px;
+  width: 85%;
+  max-width: 360px; /* Smaller max-width for a more compact look */
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-  padding: 25px;
+  padding: 20px; /* Reduced padding */
   text-align: center;
   animation: fadeInScale 0.2s ease;
 }
@@ -1529,8 +1556,8 @@
 .topic-confirmation-dialog h4 {
   margin-top: 0;
   color: #06206e;
-  font-size: 1.3rem;
-  margin-bottom: 15px;
+  font-size: 1.2rem; /* Slightly smaller font */
+  margin-bottom: 12px;
 }
 
 .selected-topic-preview {
@@ -1631,4 +1658,44 @@
 .regenerate-topics-button:disabled {
   background-color: #a0a0a0;
   cursor: not-allowed;
+}
+
+/* Responsive adjustments for confirmation dialogs */
+@media (max-width: 768px) {
+  .save-confirmation-dialog, .topic-confirmation-dialog {
+    width: 90%;
+    padding: 15px;
+  }
+  
+  .confirmation-actions {
+    flex-direction: column;
+  }
+  
+  .confirmation-actions button {
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .success-modal {
+    width: 250px;
+    padding: 12px;
+  }
+  
+  .success-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+  
+  .success-modal h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+  
+  .success-card-item {
+    padding: 6px;
+    font-size: 11px;
+  }
 }

@@ -153,7 +153,7 @@ const MultipleChoiceOptions = ({ options, preview = false }) => {
   );
 };
 
-const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, preview = false, style = {} }) => {
+const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, preview = false, style = {}, isInModal = false, onClick }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -186,6 +186,24 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
     
     setIsFlipped(!isFlipped);
     if (onFlip) onFlip(card, !isFlipped);
+  };
+  
+  // Handle clicking on the card - for opening modal view
+  const handleClick = (e) => {
+    if (onClick && !isInModal) {
+      // Only trigger onClick if it's not a button click and we're not already in modal
+      if (
+        !e.target.closest('.delete-btn') && 
+        !e.target.closest('.color-btn') && 
+        !e.target.closest('.info-btn') && 
+        !e.target.closest('.delete-confirm') && 
+        !e.target.closest('.color-picker-container')
+      ) {
+        onClick(e);
+      }
+    } else {
+      handleFlip(e);
+    }
   };
   
   // Handle delete confirmation
@@ -249,12 +267,15 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   // Check if card has additional information
   const hasAdditionalInfo = card.additionalInfo || card.detailedAnswer;
   
+  // Special class for modal view
+  const cardClass = `flashcard ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''} ${preview ? 'preview-card' : ''} ${isInModal ? 'modal-card' : ''}`;
+  
   return (
     <>
       <div 
         ref={cardRef}
-        className={`flashcard ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''} ${preview ? 'preview-card' : ''}`}
-        onClick={handleFlip}
+        className={cardClass}
+        onClick={handleClick}
         style={cardStyle}
       >
         {showButtons && !preview && (
@@ -317,13 +338,13 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             {isMultipleChoice ? (
               <>
                 <ScaledText className="question-title" maxFontSize={16}>
-                  {card.front || card.question}
+                  {card.front || card.question || "No question available"}
                 </ScaledText>
-                <MultipleChoiceOptions options={card.options} preview={preview} />
+                <MultipleChoiceOptions options={card.options || []} preview={preview} />
               </>
             ) : (
               <ScaledText maxFontSize={16}>
-                <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question" }} />
+                <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question available" }} />
               </ScaledText>
             )}
           </div>
@@ -337,12 +358,12 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 <div>
                   Correct Answer: {(() => {
                     // Clean the correct answer of any existing prefix
-                    const cleanAnswer = card.correctAnswer.replace(/^[a-d]\)\s*/i, '');
+                    const cleanAnswer = card.correctAnswer ? card.correctAnswer.replace(/^[a-d]\)\s*/i, '') : "Not specified";
                     
                     // Find the index of this answer in the options array
-                    const answerIndex = card.options.findIndex(option => 
+                    const answerIndex = card.options ? card.options.findIndex(option => 
                       option.replace(/^[a-d]\)\s*/i, '').trim() === cleanAnswer.trim()
-                    );
+                    ) : -1;
                     
                     // Get the letter for this index (a, b, c, d)
                     const letter = answerIndex >= 0 ? String.fromCharCode(97 + answerIndex) : '';
@@ -352,7 +373,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                   })()}
                 </div>
               ) : (
-                <div dangerouslySetInnerHTML={{ __html: card.back || "No answer" }} />
+                <div dangerouslySetInnerHTML={{ __html: card.back || "No answer available" }} />
               )}
             </ScaledText>
             

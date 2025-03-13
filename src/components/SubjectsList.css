@@ -55,6 +55,9 @@
   align-items: center;
   gap: 5px;
   width: 100%;
+  border-radius: 4px;
+  margin-bottom: 3px;
+  transition: background-color 0.2s;
 }
 
 .subject-button {
@@ -64,7 +67,7 @@
   border-radius: 4px;
   text-align: left;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
   background-color: #f5f5f5;
   color: #333;
   font-size: 0.9rem;
@@ -72,17 +75,20 @@
   justify-content: space-between;
   align-items: center;
   width: calc(100% - 65px);
+  position: relative;
+  overflow: hidden;
 }
 
 .subject-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  filter: brightness(0.95);
 }
 
 .subject-button.active {
   font-weight: bold;
-  border-left: 4px solid #06206e;
-  background-color: #e8f0ff;
+  /* Keep the border-left but let inline styling handle background */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .subject-button span:first-child {
@@ -300,29 +306,23 @@
 
 .edit-color-button,
 .refresh-color-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: #555;
-  opacity: 0.7;
-  transition: opacity 0.2s, transform 0.2s;
-  padding: 4px;
   width: 28px;
   height: 28px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 
 .edit-color-button:hover,
 .refresh-color-button:hover {
-  opacity: 1;
+  background-color: rgba(255, 255, 255, 1);
   transform: scale(1.1);
-}
-
-.refresh-color-button {
-  font-size: 1rem;
 }
 
 .color-info {
@@ -402,4 +402,85 @@
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
+}
+
+.subject-header-buttons {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.subject-header button {
+  background-color: rgba(255, 255, 255, 0.5);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.subject-header button:hover {
+  background-color: rgba(255, 255, 255, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure proper contrast for dark backgrounds */
+.subject-header[data-dark-bg="true"] button {
+  background-color: rgba(255, 255, 255, 0.5);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.subject-header[data-dark-bg="true"] button:hover {
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+/* Ensure proper contrast for light backgrounds */
+.subject-header[data-dark-bg="false"] button {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: #000;
+  border-color: rgba(0, 0, 0, 0.4);
+  text-shadow: none;
+}
+
+.subject-header[data-dark-bg="false"] button:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Increase visual clarity for buttons */
+.btn-icon {
+  font-size: 16px;
+  margin-right: 4px;
+}
+
+.btn-text {
+  display: inline-block;
+}
+
+/* For mobile, keep buttons visible and easy to tap */
+@media (max-width: 768px) {
+  .subject-header button {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px;
+  }
+  
+  .btn-text {
+    display: none;
+  }
+  
+  .btn-icon {
+    margin-right: 0;
+    font-size: 18px;
+  }
 }
