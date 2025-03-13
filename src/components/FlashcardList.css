@@ -6,6 +6,9 @@
   margin: 10px auto;
   padding: 0 10px;
   max-width: 1200px;
+  padding-top: 10px;
+  overflow: auto;
+  max-height: calc(100vh - 160px); /* Account for fixed header */
 }
 
 .subject-container {
@@ -153,6 +156,8 @@
   gap: 10px;
   padding: 10px;
   width: 100%;
+  background-color: #f9f9f9;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .topic-cards .flashcard {
@@ -160,6 +165,7 @@
   min-width: 280px;
   max-width: 100%;
   margin: 5px;
+  background-color: white;
 }
 
 /* When a single subject is selected, make the cards wider */
@@ -167,6 +173,8 @@
   flex: 1 1 100%;
   max-width: 100%;
   width: 100%;
+  background-color: white;
+  border: 1px solid rgba(0,0,0,0.1);
 }
 
 /* Make sure text is visible in cards */
@@ -175,6 +183,7 @@
   display: flex;
   flex-direction: column;
   overflow: visible; /* Fix content visibility */
+  background-color: white;
 }
 
 .empty-card-bank {
@@ -250,6 +259,148 @@
   transform: translateY(-2px);
 }
 
+/* Topic actions */
+.topic-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.view-cards-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  transition: transform 0.2s;
+}
+
+.view-cards-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Ensure the print button and view button are visually clear */
+.print-btn, .view-cards-btn {
+  min-width: 32px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Reduce empty space in expanded topic */
+.expanded-topic {
+  padding: 8px 5px;
+  background-color: #f9f9f9;
+}
+
+/* Ensure topic cards have even spacing in single subject view */
+.flashcard-list-single-subject .topic-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* When there's only a single subject, optimize the view */
+.flashcard-list-single-subject .subject-header,
+.flashcard-list-single-subject .topic-header {
+  margin-bottom: 5px;
+}
+
+/* Ensure the overall subject list doesn't have excess margin */
+.flashcard-list > .subject-container:first-child {
+  margin-top: 0;
+}
+
+/* Card modal styling */
+.card-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.card-modal {
+  background-color: white;
+  border-radius: 8px;
+  width: 95%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.modal-card-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 10px 0;
+  overflow: auto;
+}
+
+.modal-card-container .flashcard {
+  width: 100%;
+  height: auto;
+  min-height: 300px;
+  margin: 0;
+}
+
+.card-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.prev-button,
+.next-button {
+  padding: 8px 16px;
+  background-color: #153aa3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.prev-button:disabled,
+.next-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.card-counter {
+  font-size: 16px;
+  font-weight: 600;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 820px) {
   .flashcard-list {
@@ -257,6 +408,7 @@
     padding: 0 15px;
     margin: 15px auto;
     gap: 20px;
+    max-height: calc(100vh - 220px);
   }
 
   .subject-container {
@@ -355,6 +507,18 @@
     font-size: 1rem;
     padding: 3px;
   }
+  
+  .card-modal {
+    width: 100%;
+    height: 90vh;
+    padding: 10px;
+  }
+  
+  .prev-button,
+  .next-button {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
 }
 
 /* Extra small devices (phones) */
@@ -380,203 +544,4 @@
   .topic-cards {
     padding: 10px;
   }
-}
-
-@media (max-width: 768px) {
-  .flashcard-list {
-    justify-content: center;
-    gap: 10px;
-  }
-}
-
-/* Card modal styling */
-.card-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.card-modal {
-  background-color: white;
-  border-radius: 8px;
-  width: 95%;
-  max-width: 800px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-  padding: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.close-modal-btn {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: transparent;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
-  z-index: 10;
-}
-
-.modal-card-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  padding: 10px 0;
-  overflow: auto;
-}
-
-.modal-card-container .flashcard {
-  width: 100%;
-  height: auto;
-  min-height: 300px;
-  margin: 0;
-}
-
-.card-navigation {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  margin-bottom: 15px;
-  border-bottom: 1px solid #eee;
-}
-
-.prev-button,
-.next-button {
-  padding: 8px 16px;
-  background-color: #153aa3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.prev-button:disabled,
-.next-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-.card-counter {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-/* Topic actions */
-.topic-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.view-cards-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  padding: 4px 8px;
-  transition: transform 0.2s;
-}
-
-.view-cards-btn:hover {
-  transform: scale(1.1);
-}
-
-/* Additional responsive styles */
-@media (max-width: 768px) {
-  .card-modal {
-    width: 100%;
-    height: 90vh;
-    padding: 10px;
-  }
-  
-  .prev-button,
-  .next-button {
-    padding: 6px 12px;
-    font-size: 14px;
-  }
-}
-
-/* Reduce spacing between subject groups and headers */
-.subject-container {
-  margin-bottom: 15px;
-}
-
-.topic-group {
-  margin-bottom: 8px;
-}
-
-.topic-header {
-  padding: 8px 12px;
-}
-
-.subject-header {
-  padding: 8px 12px;
-}
-
-/* Reduce empty space in expanded topic */
-.expanded-topic {
-  padding: 8px 5px;
-}
-
-/* Ensure topic cards have even spacing in single subject view */
-.flashcard-list-single-subject .topic-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* Ensure the print button and view button are visually clear */
-.print-btn, .view-cards-btn {
-  min-width: 32px;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Make sure flashcards are properly sized in different contexts */
-.topic-cards .flashcard {
-  flex: 1 1 300px;
-  min-width: 280px;
-  max-width: 100%;
-  margin: 5px;
-}
-
-.flashcard-list-single-subject .topic-cards .flashcard {
-  flex: 1 1 100%;
-  max-width: 100%;
-  width: 100%;
-}
-
-/* When there's only a single subject, optimize the view */
-.flashcard-list-single-subject .subject-header,
-.flashcard-list-single-subject .topic-header {
-  margin-bottom: 5px;
-}
-
-/* Ensure no excessive vertical spacing in the list */
-.flashcard-list {
-  padding-top: 10px;
-}
-
-/* Ensure the overall subject list doesn't have excess margin */
-.flashcard-list > .subject-container:first-child {
-  margin-top: 0;
 }
