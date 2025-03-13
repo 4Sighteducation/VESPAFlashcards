@@ -1,7 +1,7 @@
 import React from "react";
 import "./Header.css";
 
-const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving }) => {
+const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrintAll, onCreateCard }) => {
   return (
     <header className="app-header">
       <div className="header-logo">
@@ -20,21 +20,26 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving }) => {
         >
           Card Bank
         </button>
+        
         <button
-          className={`nav-button ${
-            currentView === "createCard" ? "active" : ""
-          }`}
-          onClick={() => onViewChange("createCard")}
+          className="nav-button create-card-btn"
+          onClick={onCreateCard}
         >
-          Create Card
+          <span className="button-icon">✏️</span> Create Card
         </button>
+        
         <button
-          className={`nav-button ${
-            currentView === "spacedRepetition" ? "active" : ""
-          }`}
+          className="nav-button spaced-rep-btn"
           onClick={() => onViewChange("spacedRepetition")}
         >
-          Spaced Repetition
+          <span className="button-icon">🧠</span> Spaced Repetition
+        </button>
+        
+        <button
+          className="nav-button print-btn"
+          onClick={onPrintAll}
+        >
+          <span className="button-icon">🖨️</span> Print All
         </button>
       </div>
 

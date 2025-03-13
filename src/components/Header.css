@@ -36,17 +36,53 @@
   padding: 0.5rem 1rem;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-button .button-icon {
+  font-size: 1.2rem;
 }
 
 .nav-button:hover,
 .nav-button.active {
   background-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
 }
 
 .nav-button.active {
   font-weight: bold;
   border-bottom: 2px solid #00e5db;
+}
+
+/* Button-specific styling */
+.nav-button.create-card-btn {
+  background-color: #0f3187;
+  color: white;
+}
+
+.nav-button.create-card-btn:hover {
+  background-color: #1946b4;
+}
+
+.nav-button.spaced-rep-btn {
+  background-color: #00c1b4;
+  color: #06206e;
+}
+
+.nav-button.spaced-rep-btn:hover {
+  background-color: #00d9cb;
+}
+
+.nav-button.print-btn {
+  background-color: #1664a5;
+  color: white;
+}
+
+.nav-button.print-btn:hover {
+  background-color: #2980d3;
 }
 
 .header-actions {

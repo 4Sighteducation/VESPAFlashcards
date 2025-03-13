@@ -23,8 +23,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 300px;
-  overflow-y: auto;
+  height: auto;
 }
 
 /* Subject button container with edit button */
@@ -54,25 +53,6 @@
 .subject-button.active {
   font-weight: bold;
   border-left: 4px solid #06206e;
-}
-
-/* Scrollbar styling */
-.subjects-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.subjects-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.subjects-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 10px;
-}
-
-.subjects-container::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
 }
 
 /* Color editor styles */

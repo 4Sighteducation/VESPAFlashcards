@@ -1050,6 +1050,8 @@ function App() {
         onViewChange={setView}
         onSave={saveData}
         isSaving={isSaving}
+        onPrintAll={handlePrintAllCards}
+        onCreateCard={() => setCardCreationModalOpen(true)}
       />
 
       {statusMessage && <div className="status-message">{statusMessage}</div>}
@@ -1095,27 +1097,6 @@ function App() {
             </div>
           )}
           
-          <div className="bank-controls">
-            <button
-              className="primary-button"
-              onClick={() => setCardCreationModalOpen(true)}
-            >
-              <span className="button-icon">✏️</span> Create New Card
-            </button>
-            <button
-              className="secondary-button"
-              onClick={() => setView("spacedRepetition")}
-            >
-              <span className="button-icon">🧠</span> Start Spaced Repetition
-            </button>
-            <button
-              className="secondary-button print-all-btn"
-              onClick={handlePrintAllCards}
-            >
-              <span className="button-icon">🖨️</span> Print All Cards
-            </button>
-          </div>
-
           <div className="bank-container">
             <div className="bank-sidebar">
               <SubjectsList

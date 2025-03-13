@@ -1,6 +1,6 @@
 .flashcard {
-  width: 250px;
-  height: 150px;
+  width: 350px;
+  height: 210px;
   margin: 10px;
   position: relative;
   perspective: 1000px;
@@ -236,7 +236,8 @@
 @media (max-width: 768px) {
   .flashcard {
     width: 100%;
-    max-width: 300px;
+    max-width: 350px;
+    height: 210px;
     margin: 10px auto;
   }
 }
