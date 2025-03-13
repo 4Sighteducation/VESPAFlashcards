@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
+import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
 
 const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
@@ -10,6 +11,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [cardsToPrint, setCardsToPrint] = useState([]);
   const [printTitle, setPrintTitle] = useState("");
+  // State for card viewing modal
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [currentCards, setCurrentCards] = useState([]);
   
   // Group cards by subject and topic
   const groupedCards = cards.reduce((acc, card) => {
@@ -46,6 +51,33 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
       ...prev,
       [key]: !prev[key]
     }));
+  };
+  
+  // Open the card modal for a specific topic's cards
+  const openCardModal = (subject, topic) => {
+    const topicCards = groupedCards[subject][topic];
+    setCurrentCards(topicCards);
+    setCurrentCardIndex(0);
+    setShowCardModal(true);
+  };
+  
+  // Navigate to next card in modal
+  const nextCard = () => {
+    if (currentCardIndex < currentCards.length - 1) {
+      setCurrentCardIndex(prevIndex => prevIndex + 1);
+    }
+  };
+  
+  // Navigate to previous card in modal
+  const prevCard = () => {
+    if (currentCardIndex > 0) {
+      setCurrentCardIndex(prevIndex => prevIndex - 1);
+    }
+  };
+  
+  // Close the card modal
+  const closeCardModal = () => {
+    setShowCardModal(false);
   };
   
   // Helper function to get contrast color
@@ -248,8 +280,11 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     );
   }
 
+  // Check if there's only one subject selected - for special styling
+  const isSingleSubject = Object.keys(groupedCards).length === 1;
+
   return (
-    <div className={`flashcard-list ${Object.keys(groupedCards).length === 1 ? 'flashcard-list-single-subject' : ''}`}>
+    <div className={`flashcard-list ${isSingleSubject ? 'flashcard-list-single-subject' : ''}`}>
       {printModalOpen && (
         <PrintModal 
           cards={cardsToPrint} 
@@ -258,15 +293,66 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         />
       )}
       
+      {/* Card Viewing Modal */}
+      {showCardModal && currentCards.length > 0 && ReactDOM.createPortal(
+        <div className="card-modal-overlay" onClick={closeCardModal}>
+          <div className="card-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="close-modal-btn" 
+              onClick={closeCardModal}
+              aria-label="Close card modal"
+            >
+              ✕
+            </button>
+            
+            <div className="card-navigation">
+              <button
+                className="prev-button"
+                onClick={prevCard}
+                disabled={currentCardIndex === 0}
+              >
+                Previous
+              </button>
+              <div className="card-counter">
+                <span className="card-index">
+                  {currentCardIndex + 1} / {currentCards.length}
+                </span>
+              </div>
+              <button
+                className="next-button"
+                onClick={nextCard}
+                disabled={currentCardIndex === currentCards.length - 1}
+              >
+                Next
+              </button>
+            </div>
+            
+            <div className="modal-card-container">
+              <Flashcard
+                key={currentCards[currentCardIndex].id}
+                card={currentCards[currentCardIndex]}
+                onDelete={() => {
+                  onDeleteCard(currentCards[currentCardIndex].id);
+                  if (currentCards.length <= 1) {
+                    closeCardModal();
+                  }
+                }}
+                onUpdateCard={(updatedCard) => {
+                  onUpdateCard(updatedCard);
+                }}
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      
       {Object.keys(groupedCards).map((subject) => {
         // Get subject color for styling
         const subjectCards = Object.values(groupedCards[subject]).flat();
         const subjectColor = subjectCards[0]?.baseColor || subjectCards[0]?.cardColor || '#e0e0e0';
         const { examType, examBoard } = getExamInfo(subject);
         const textColor = getContrastColor(subjectColor);
-        
-        // Debug logging
-        console.log(`Rendering ${subject} with type=${examType}, board=${examBoard}`);
         
         return (
           <div key={subject} className="subject-container">
@@ -325,13 +411,26 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                         ({groupedCards[subject][topic].length} cards)
                       </span>
                     </div>
-                    <button 
-                      className="print-btn" 
-                      onClick={(e) => handlePrintTopic(subject, topic, e)}
-                      style={{ color: textColor }}
-                    >
-                      <span className="print-icon">🖨️</span>
-                    </button>
+                    <div className="topic-actions">
+                      <button 
+                        className="view-cards-btn" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCardModal(subject, topic);
+                        }}
+                        style={{ color: textColor }}
+                        title="View cards in modal"
+                      >
+                        <span className="view-icon">👁️</span>
+                      </button>
+                      <button 
+                        className="print-btn" 
+                        onClick={(e) => handlePrintTopic(subject, topic, e)}
+                        style={{ color: textColor }}
+                      >
+                        <span className="print-icon">🖨️</span>
+                      </button>
+                    </div>
                   </div>
 
                   {expandedTopics[`${subject}-${topic}`] && (

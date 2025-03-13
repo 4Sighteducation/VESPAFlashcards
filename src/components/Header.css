@@ -1,173 +1,181 @@
-.app-header {
-  background-color: #06206e;
-  color: white;
-  padding: 1rem;
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 15px;
+  width: 100%;
+  background-color: white;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+}
+
+.header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  margin-bottom: 10px;
 }
 
-.header-logo {
+.app-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #153aa3;
+  margin: 0;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 10px;
 }
 
-.header-logo img.logo {
-  height: 3rem;
+.logo {
+  height: 35px;
   width: auto;
-}
-
-.header-logo h1 {
-  font-size: 1.5rem;
-  margin: 0;
 }
 
 .header-nav {
   display: flex;
-  gap: 1.5rem;
-  flex-grow: 1;
   justify-content: center;
-  margin: 0 2rem;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 1.5rem; 
 }
 
 .nav-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 15px;
   background-color: #153aa3;
   color: white;
-  border: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  min-width: 140px;
-  justify-content: center;
-  border-bottom: 2px solid #00e5db;
+  border-bottom: 3px solid #00e5db;
 }
 
-.nav-button .button-icon {
-  font-size: 1.2rem;
-}
-
-.nav-button:hover,
-.nav-button.active {
-  background-color: #0a2c8d;
+.nav-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.nav-button.active {
-  font-weight: bold;
-  border-bottom: 2px solid #00e5db;
-}
-
-/* Remove button-specific styling except for the Card Bank button */
 .nav-button.active {
   background-color: #153aa3;
+  color: white;
 }
 
-/* Fix print button to match other buttons */
-.nav-button.print-btn {
-  min-width: 140px;
-  padding: 0.75rem 1.25rem;
+/* Print button style - make it consistent with other nav buttons */
+.print-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 15px;
+  background-color: #153aa3;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-bottom: 3px solid #00e5db;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 4px;
+  gap: 5px;
 }
 
-/* Header actions section */
+.print-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.print-icon {
+  font-size: 16px;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
-/* Save button styling (keep as is) */
 .save-button {
-  background-color: #00e5db;
-  color: #06206e;
+  background-color: #4caf50;
+  color: white;
+  padding: 8px 16px;
   border: none;
-  padding: 0.75rem 1.25rem;
   border-radius: 4px;
-  font-weight: bold;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .save-button:hover {
-  background-color: #00cec9;
+  background-color: #45a049;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .save-button:disabled {
-  opacity: 0.6;
-  cursor: wait;
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  font-size: 0.9rem;
+/* Mobile menu toggle styling */
+.mobile-menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #153aa3;
 }
 
-.user-email {
-  max-width: 200px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Responsive design with hamburger menu for mobile */
+/* Mobile styling */
 @media (max-width: 768px) {
-  .app-header {
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem 0.5rem;
+  .header-content {
+    margin-bottom: 8px;
   }
-
-  .header-logo {
-    width: 100%;
-    justify-content: space-between;
+  
+  .app-title {
+    font-size: 1.5rem;
+  }
+  
+  .logo {
+    height: 30px;
   }
   
   .mobile-menu-toggle {
     display: block;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
   }
   
   .header-nav {
-    width: 100%;
     flex-direction: column;
-    gap: 0.5rem;
-    margin: 0;
-    overflow: hidden;
+    width: 100%;
     max-height: 0;
-    transition: max-height 0.3s ease-in-out;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    gap: 10px;
   }
   
   .header-nav.open {
-    max-height: 300px;
+    max-height: 500px;
+    margin-top: 10px;
   }
-
+  
   .nav-button {
     width: 100%;
-    justify-content: flex-start;
-    min-width: 0;
+    text-align: center;
+    margin: 0;
+    padding: 10px;
   }
-
-  .header-actions {
+  
+  .print-button {
     width: 100%;
-    justify-content: space-between;
+    justify-content: center;
+    padding: 10px;
   }
 }

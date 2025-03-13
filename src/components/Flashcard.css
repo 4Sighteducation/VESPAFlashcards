@@ -339,18 +339,19 @@
 }
 
 .info-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background-color: white;
+  padding: 20px;
   border-radius: 8px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-  animation: slideIn 0.3s ease-out;
-  position: relative; /* Ensure positioning context */
-  margin: 20px; /* Add margin for mobile */
-  overflow: hidden; /* Prevent content overflow */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  max-width: 90%;
+  width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .info-modal-header {
@@ -525,4 +526,89 @@
   left: -9999px;
   opacity: 0;
   pointer-events: none;
+}
+
+/* Multiple choice enhancements */
+.multiple-choice-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.option-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.option-item:hover {
+  border-color: #153aa3;
+  background-color: #f0f5ff;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.option-item.selected {
+  border-color: #153aa3;
+  background-color: #e6eeff;
+}
+
+.option-item.correct {
+  border-color: #4caf50;
+  background-color: #eaffea;
+}
+
+.option-item.incorrect {
+  border-color: #f44336;
+  background-color: #ffebee;
+}
+
+.option-radio {
+  margin-right: 10px;
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.option-text {
+  flex: 1;
+  font-size: 15px;
+}
+
+/* Ensure mobile formatting for modals is good */
+@media (max-width: 768px) {
+  .info-modal {
+    width: 95%;
+    padding: 15px;
+    margin: 0 auto;
+  }
+  
+  .multiple-choice-options {
+    gap: 6px;
+  }
+  
+  .option-item {
+    padding: 8px;
+  }
+}
+
+/* Modal overlay style */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

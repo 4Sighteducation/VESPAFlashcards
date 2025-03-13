@@ -1,30 +1,47 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Header.css";
 
 const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrintAll, onCreateCard }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  // Listen for window resize events
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
   
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
   return (
-    <header className="app-header">
-      <div className="header-logo">
-        <img
-          src="https://www.vespa.academy/assets/images/full-trimmed-transparent-customcolor-1-832x947.png"
-          alt="Vespa Academy Logo"
-          className="logo"
-        />
-        <h1>Flashcard App</h1>
-        <button 
-          className="mobile-menu-toggle" 
-          onClick={toggleMobileMenu}
-          style={{ display: window.innerWidth <= 768 ? 'block' : 'none' }}
-          aria-label="Toggle menu"
-        >
-          ☰
-        </button>
+    <header className="header">
+      <div className="header-content">
+        <div className="app-title">
+          <img
+            src="https://www.vespa.academy/assets/images/full-trimmed-transparent-customcolor-1-832x947.png"
+            alt="Vespa Academy Logo"
+            className="logo"
+          />
+          <h1>Flashcard App</h1>
+        </div>
+        
+        {windowWidth <= 768 && (
+          <button 
+            className="mobile-menu-toggle" 
+            onClick={toggleMobileMenu}
+            aria-label="Toggle menu"
+          >
+            ☰
+          </button>
+        )}
       </div>
 
       <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
@@ -39,21 +56,21 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
           className="nav-button create-card-btn"
           onClick={onCreateCard}
         >
-          <span className="button-icon">✏️</span> Create Card
+          Create Card
         </button>
         
         <button
           className="nav-button spaced-rep-btn"
           onClick={() => onViewChange("spacedRepetition")}
         >
-          <span className="button-icon">🧠</span> Spaced Repetition
+          Spaced Repetition
         </button>
         
         <button
-          className="nav-button print-btn"
+          className="print-button"
           onClick={onPrintAll}
         >
-          <span className="button-icon">🖨️</span> Print All
+          <span className="print-icon">🖨️</span> Print All
         </button>
       </div>
 
