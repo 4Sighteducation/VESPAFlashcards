@@ -16,7 +16,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
           alt="Vespa Academy Logo"
           className="logo"
         />
-        <h1>Flashcard App</h1>
+        <h1>VESPA Flashcards</h1>
       </div>
 
       <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
