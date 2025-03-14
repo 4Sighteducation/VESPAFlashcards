@@ -34,41 +34,17 @@ const boardsForType = (examType) => {
 
 // Color palette for cards
 const BRIGHT_COLORS = [
-  // Softer, less garish color palette (36 colors)
-  // Blues
-  "#5b9bd5", "#2e75b6", "#4472c4", "#4a86e8", "#6fa8dc", "#a4c2f4",
-  // Greens
-  "#70ad47", "#548235", "#a9d18e", "#a9d08e", "#c6e0b4", "#d9ead3",
-  // Reds/Pinks
-  "#c00000", "#e74c3c", "#ff9999", "#ea9999", "#f4cccc", "#f9cb9c",
-  // Purples
-  "#8e7cc3", "#674ea7", "#b4a7d6", "#d5a6bd", "#d9d2e9", "#ead1dc",
-  // Yellows/Oranges
-  "#f1c232", "#bf9000", "#ffd966", "#f6b26b", "#ffe599", "#fff2cc",
-  // Browns/Neutrals
-  "#a0522d", "#783f04", "#b45f06", "#8d6e63", "#a67c52", "#c9c9c9"
+  "#e6194b", "#3cb44b", "#ffe119", "#0082c8", "#f58231",
+  "#911eb4", "#46f0f0", "#f032e6", "#d2f53c", "#fabebe",
+  "#008080", "#e6beff", "#aa6e28", "#fffac8", "#800000",
+  "#aaffc3", "#808000", "#ffd8b1", "#000080", "#808080",
+  "#FF69B4", "#8B4513", "#00CED1", "#ADFF2F", "#DC143C"
 ];
 
 // API keys - in production, these should be in server environment variables
 const API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_ID || "64fc50bc3cd0ac00254bb62b";
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
-
-// Helper function to clean OpenAI response
-const cleanOpenAIResponse = (response) => {
-  // Remove any markdown code blocks and formatting
-  let cleaned = response.replace(/```json|```/g, '').trim();
-  
-  // Remove any extra text before or after the JSON array
-  const startIndex = cleaned.indexOf('[');
-  const endIndex = cleaned.lastIndexOf(']') + 1;
-  
-  if (startIndex !== -1 && endIndex !== -1) {
-    cleaned = cleaned.substring(startIndex, endIndex);
-  }
-  
-  return cleaned;
-};
 
 const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) => {
   // Step management state
@@ -226,7 +202,7 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
     "Mathematics", "Further Mathematics", "Statistics", "Physics", "Chemistry", "Biology", "Combined Science",
     "Combined Science - Double Award", "Combined Science - Triple Award", "Environmental Science", "Computer Science",
     "Electronics", "English Language", "English Literature", "History", "Geography", "Religious Studies / Theology",
-    "Philosophy", "Classics", "Classics - Latin", "Classics - Ancient Greek", "Classics - Classical Civilisation",
+    "Philosophy", "Classics", "Classics - Latin", "Classesics - Ancient Greek", "Classesics - Classical Civilisation",
     "Economics", "Business Studies", "Accounting", "Government and Politics / Politics", "Law", "Psychology",
     "Sociology", "Media Studies", "French", "Spanish", "German", "Italian", "Mandarin Chinese", "Arabic",
     "Japanese", "Russian", "Welsh", "Art and Design", "Design and Technology",
@@ -938,359 +914,808 @@ Use this format for different question types:
         } else if (formData.questionType === "short_answer" || formData.questionType === "essay") {
           // Create key points as bullet points if they exist
           const keyPointsHtml = card.keyPoints && card.keyPoints.length > 0
-            ? card.keyPoints.map(point => `• ${point}`).join('\n')
+            ? card.keyPoints.map(point => `• ${point}`).join("<br/>")
             : "";
-          
+            
           return {
             ...baseCard,
-            keyPoints: card.keyPoints,
             question: card.question,
+            keyPoints: card.keyPoints || [],
             detailedAnswer: card.detailedAnswer,
+            additionalInfo: card.detailedAnswer, // Add to additionalInfo field for info modal
             front: card.question,
-            back: card.detailedAnswer
+            back: keyPointsHtml // Only show key points, not detailed answer
+          };
+        } else {
+          return {
+            ...baseCard,
+            front: card.front || card.question,
+            back: card.back || card.answer
           };
         }
       });
       
+      // Add debug log of the full processed cards before setting state
+      console.log("FINAL PROCESSED CARDS:", processedCards.map(card => ({
+        id: card.id,
+        subject: card.subject,
+        topic: card.topic,
+        examType: card.examType,
+        examBoard: card.examBoard,
+        questionType: card.questionType,
+      })));
+
       setGeneratedCards(processedCards);
+      
     } catch (error) {
       console.error("Error generating cards:", error);
-      setError("Failed to generate cards. Please try again later.");
+      setError(`Error: ${error.message}`);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  return (
-    <div className="AICardGenerator">
-      <div className="ai-card-generator">
-        <div className="generator-header">
-          <h1>AI Flashcard Generator</h1>
-          <button className="close-button" onClick={onClose}>&times;</button>
+  // Call to generate cards when arriving at the final step
+  // This useEffect is now a backup in case the direct call fails
+  useEffect(() => {
+    // Only trigger card generation if we're at step 7, we don't have cards yet,
+    // and we're not already generating (to avoid duplicate calls)
+    if (currentStep === 7 && generatedCards.length === 0 && !isGenerating) {
+      console.log("Backup useEffect triggering card generation");
+      generateCards();
+    }
+  }, [currentStep, generatedCards.length, isGenerating]);
+
+  // Helper function to clean AI response
+  const cleanOpenAIResponse = (text) => {
+    return text.replace(/```json\s*/g, "").replace(/```/g, "").trim();
+  };
+
+  // Add a single card to the bank
+  const handleAddCard = (card) => {
+    onAddCard(card);
+    // Mark card as added in UI
+    setGeneratedCards(prev => 
+      prev.map(c => c.id === card.id ? {...c, added: true} : c)
+    );
+    
+    // Show success modal with this card
+    setSuccessModal({
+      show: true,
+      addedCards: [card]
+    });
+    
+    // Auto-hide after 2 seconds
+    setTimeout(() => {
+      setSuccessModal(prev => ({...prev, show: false}));
+    }, 2000);
+  };
+
+  // Add all cards to the bank
+  const handleAddAllCards = () => {
+    const unadded = generatedCards.filter(card => !card.added);
+    
+    if (unadded.length === 0) {
+      return; // No cards to add
+    }
+    
+    // Add all unadded cards
+    unadded.forEach(card => {
+      onAddCard(card);
+    });
+    
+    // Mark all cards as added
+    setGeneratedCards(prev => prev.map(c => ({...c, added: true})));
+    
+    // Show success modal with all added cards
+    setSuccessModal({
+      show: true,
+      addedCards: unadded
+    });
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      setSuccessModal(prev => ({...prev, show: false}));
+    }, 3000);
+  };
+  
+  // Modal to show successfully added cards
+  const renderSuccessModal = () => {
+    if (!successModal.show) return null;
+    
+    return (
+      <div className="success-modal-overlay">
+        <div className="success-modal">
+          <div className="success-icon">✓</div>
+          <h3>{successModal.addedCards.length} {successModal.addedCards.length === 1 ? 'Card' : 'Cards'} Added!</h3>
+          <div className="success-cards">
+            {successModal.addedCards.slice(0, 5).map(card => (
+              <div key={card.id} className="success-card-item" style={{backgroundColor: card.cardColor}}>
+                <span style={{color: getContrastColor(card.cardColor)}}>{card.front.substring(0, 40)}...</span>
+              </div>
+            ))}
+            {successModal.addedCards.length > 5 && (
+              <div className="success-more">+{successModal.addedCards.length - 5} more</div>
+            )}
+          </div>
         </div>
-        
-        {/* Progress bar */}
-        <div className="progress-bar">
-          {Array.from({ length: totalSteps }).map((_, index) => (
-            <div 
-              key={index} 
-              className={`progress-step ${currentStep > index + 1 ? 'completed' : ''} ${currentStep === index + 1 ? 'active' : ''}`}
-            >
-              {index + 1}
-            </div>
-          ))}
-        </div>
-        
-        {/* Step content */}
-        <div className="step-content">
-          {/* Step 1: Exam Type */}
-          {currentStep === 1 && (
-            <div>
-              <h2>Select Exam Type</h2>
-              <div className="form-group">
-                <label>Exam Type</label>
-                <select 
-                  name="examType" 
-                  value={formData.examType} 
-                  onChange={handleChange}
-                >
-                  <option value="">Select Exam Type</option>
-                  {EXAM_TYPES.map(type => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
-                <div className="helper-text">This will help generate questions at the appropriate difficulty level.</div>
-              </div>
-            </div>
-          )}
-          
-          {/* Step 2: Exam Board */}
-          {currentStep === 2 && (
-            <div>
-              <h2>Select Exam Board</h2>
-              <div className="form-group">
-                <label>Exam Board</label>
-                <select 
-                  name="examBoard" 
-                  value={formData.examBoard} 
-                  onChange={handleChange}
-                >
-                  <option value="">Select Exam Board</option>
-                  {EXAM_BOARDS.filter(board => 
-                    !formData.examType || boardsForType(formData.examType).includes(board.value)
-                  ).map(board => (
-                    <option key={board.value} value={board.value}>{board.label}</option>
-                  ))}
-                </select>
-                <div className="helper-text">Questions will follow this exam board's specifications.</div>
-              </div>
-            </div>
-          )}
-          
-          {/* Step 3: Subject */}
-          {currentStep === 3 && (
-            <div>
-              <h2>Select Subject</h2>
-              <div className="form-group">
-                <label>Subject</label>
-                <select 
-                  name="subject" 
-                  value={formData.subject} 
-                  onChange={handleChange}
-                >
-                  <option value="">Select Subject</option>
-                  {availableSubjects.map((subject, index) => (
-                    <option key={index} value={subject}>{subject}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="form-divider">
-                <span>OR</span>
-              </div>
-              
-              <div className="form-group">
-                <label>Enter a New Subject</label>
-                <input 
-                  type="text" 
-                  name="newSubject" 
-                  value={formData.newSubject} 
-                  onChange={handleChange}
-                  placeholder="e.g., Computer Science"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Subject Color</label>
-                <div className="color-grid">
-                  {BRIGHT_COLORS.map((color, index) => (
-                    <div 
-                      key={index} 
-                      className={`color-swatch ${formData.subjectColor === color ? 'selected' : ''}`} 
-                      style={{ backgroundColor: color }}
-                      onClick={() => handleColorSelect(color)}
-                    />
-                  ))}
-                </div>
-                <div className="selected-color-preview">
-                  <div 
-                    className="color-preview" 
-                    style={{ backgroundColor: formData.subjectColor }}
-                  >
-                    {formData.subject || formData.newSubject || "Subject Color"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Step 4: Topic */}
-          {currentStep === 4 && (
-            <div>
-              <h2>Enter Topic</h2>
-              <div className="form-group">
-                <label>Topic</label>
-                <select 
-                  name="topic" 
-                  value={formData.topic} 
-                  onChange={handleChange}
-                >
-                  <option value="">Select Topic</option>
-                  {availableTopics.map((topic, index) => (
-                    <option key={index} value={topic}>{topic}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="form-divider">
-                <span>OR</span>
-              </div>
-              
-              <div className="form-group">
-                <label>Enter a Specific Topic</label>
-                <input 
-                  type="text" 
-                  name="newTopic" 
-                  value={formData.newTopic} 
-                  onChange={handleChange}
-                  placeholder="e.g., Photosynthesis"
-                />
-                <div className="helper-text">Be specific for better results. For example, "Cell structure" instead of just "Biology".</div>
-              </div>
-              
-              {/* Display any saved topic lists */}
-              {savedTopicLists.length > 0 && renderSavedTopicLists()}
-              
-              {/* Display hierarchical topics if any */}
-              {hierarchicalTopics.length > 0 && renderHierarchicalTopics()}
-            </div>
-          )}
-          
-          {/* Step 5: Number of Cards */}
-          {currentStep === 5 && (
-            <div>
-              <h2>How Many Cards?</h2>
-              <div className="form-group">
-                <label>Number of Cards (1-20)</label>
-                <input 
-                  type="number" 
-                  name="numCards" 
-                  value={formData.numCards} 
-                  onChange={handleChange}
-                  min="1"
-                  max="20"
-                />
-                <div className="helper-text">More cards may take longer to generate.</div>
-              </div>
-            </div>
-          )}
-          
-          {/* Step 6: Question Type */}
-          {currentStep === 6 && (
-            <div>
-              <h2>Question Type</h2>
-              <div className="question-type-selector">
-                {QUESTION_TYPES.map(type => (
-                  <div key={type.value} className="question-type-option">
-                    <input 
-                      type="radio" 
-                      id={type.value} 
-                      name="questionType" 
-                      value={type.value}
-                      checked={formData.questionType === type.value}
-                      onChange={handleChange}
-                    />
-                    <label htmlFor={type.value}>{type.label}</label>
-                  </div>
+      </div>
+    );
+  };
+
+  // Generate new batch of cards
+  const handleRegenerateCards = () => {
+    setGeneratedCards([]);
+    setIsGenerating(true);
+    
+    // Keep the existing color when regenerating
+    const currentColor = formData.subjectColor;
+    
+    // We want to keep all the existing parameters the same,
+    // including the color, but generate new cards
+    generateCards();
+  };
+
+  // Helper to get contrast color for text
+  const getContrastColor = (hexColor) => {
+    // Remove # if present
+    if (hexColor.startsWith('#')) {
+      hexColor = hexColor.slice(1);
+    }
+    
+    // Convert to RGB
+    const r = parseInt(hexColor.substr(0, 2), 16);
+    const g = parseInt(hexColor.substr(2, 2), 16);
+    const b = parseInt(hexColor.substr(4, 2), 16);
+    
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return white for dark colors, black for light colors
+    return luminance > 0.5 ? '#000000' : '#ffffff';
+  };
+
+  // Function to handle generating topics from the main screen
+  const handleGenerateTopics = async () => {
+    try {
+      setIsGenerating(true);
+      setError(null);
+      // Show the modal immediately with the loading indicator
+      setShowTopicModal(true);
+      
+      // Get the subject value, ensuring it's a string not an object
+      const subjectValue = formData.subject || formData.newSubject;
+      const subjectName = typeof subjectValue === 'object' && subjectValue.name 
+        ? subjectValue.name 
+        : subjectValue;
+      
+      const topics = await generateTopics(
+        formData.examBoard,
+        formData.examType,
+        subjectName
+      );
+      setAvailableTopics(topics);
+      setHierarchicalTopics(topics.map(topic => ({ topic })));
+      setTopicListSaved(false);
+    } catch (err) {
+      setError(err.message);
+      // Don't close the modal on error, just show the error inside it
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Render step content based on current step
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1: // Exam Type
+        return (
+          <div className="step-content">
+            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select Exam Type</h2>
+            <div className="form-group">
+              <select 
+                name="examType" 
+                value={formData.examType} 
+                onChange={handleChange}
+                required
+                style={examSelectorStyle}
+              >
+                <option value="">Select Exam Type</option>
+                {EXAM_TYPES.map(type => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
                 ))}
+              </select>
+            </div>
+          </div>
+        );
+        
+      case 2: // Exam Board
+        return (
+          <div className="step-content">
+            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select Exam Board</h2>
+            <div className="form-group">
+              <select 
+                name="examBoard" 
+                value={formData.examBoard} 
+                onChange={handleChange}
+                required
+                style={examSelectorStyle}
+              >
+                <option value="">Select Exam Board</option>
+                {EXAM_BOARDS.filter(board => boardsForType(formData.examType).includes(board.value)).map(board => (
+                  <option key={board.value} value={board.value}>
+                    {board.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        );
+        
+      case 3: // Subject
+        return (
+          <div className="step-content">
+            <h2>Select Subject</h2>
+            <div className="form-group">
+              <select 
+                name="subject" 
+                value={formData.subject} 
+                onChange={handleChange}
+              >
+                <option value="">-- Select Subject --</option>
+                {availableSubjects.map((subject, index) => {
+                  // Ensure we're working with subject names, not objects
+                  const subjectName = typeof subject === 'object' && subject.name ? subject.name : subject;
+                  return (
+                    <option key={index} value={subjectName}>
+                      {subjectName}
+                    </option>
+                  );
+                })}
+              </select>
+            
+              <div className="form-group mt-3">
+                <p className="divider">Or</p>
+                <label htmlFor="newSubject">Enter a new subject:</label>
+                <input
+                  type="text"
+                  id="newSubject"
+                  name="newSubject"
+                  value={formData.newSubject}
+                  onChange={handleChange}
+                  placeholder="Type a new subject name"
+                />
               </div>
-              
-              {formData.questionType === "multiple_choice" && (
-                <div className="question-type-description">
-                  <p>Multiple choice questions with 4 options. Great for testing recall and understanding.</p>
+            </div>
+          </div>
+        );
+        
+      case 4: // Topic
+        return (
+          <div className="step-content">
+            <h2>Select a Topic</h2>
+            
+            <div className="form-group">
+              <label>Topic</label>
+              {renderTopicSelectionUI()}
+            </div>
+            
+            {/* Saved topic lists shown below */}
+            {renderSavedTopicLists()}
+          </div>
+        );
+        
+      case 5: // Number of Cards
+        return (
+          <div className="step-content">
+            <h2>Number of Cards</h2>
+            <div className="form-group">
+              <input 
+                type="number" 
+                name="numCards" 
+                value={formData.numCards} 
+                onChange={handleChange}
+                min="1" 
+                max="20" 
+                required 
+              />
+              <p className="helper-text">Select between 1 and 20 cards</p>
+            </div>
+          </div>
+        );
+        
+      case 6: // Question Type
+        return (
+          <div className="step-content">
+            <h2>Select Question Type</h2>
+            <div className="question-type-selector">
+              {QUESTION_TYPES.map(type => (
+                <div key={type.value} className="question-type-option">
+                  <input
+                    type="radio"
+                    id={`question-type-${type.value}`}
+                    name="questionType"
+                    value={type.value}
+                    checked={formData.questionType === type.value}
+                    onChange={handleChange}
+                  />
+                  <label htmlFor={`question-type-${type.value}`}>
+                    {type.label}
+                  </label>
                 </div>
-              )}
-              
+              ))}
+            </div>
+            
+            <div className="question-type-description">
               {formData.questionType === "short_answer" && (
-                <div className="question-type-description">
-                  <p>Short answer questions that test recall and application of knowledge.</p>
-                </div>
+                <p>Short answer questions test recall of key facts and concepts.</p>
               )}
-              
+              {formData.questionType === "multiple_choice" && (
+                <p>Multiple choice questions provide options to choose from, testing recognition.</p>
+              )}
               {formData.questionType === "essay" && (
-                <div className="question-type-description">
-                  <p>Essay-style questions with key points to include. Excellent for developing extended writing skills.</p>
-                </div>
+                <p>Essay style questions test deeper understanding and application of knowledge.</p>
               )}
-              
               {formData.questionType === "acronym" && (
-                <div className="question-type-description">
-                  <p>Generate helpful acronyms to remember key concepts or sequences.</p>
-                </div>
+                <p>Acronym questions help memorize lists or sequences using memorable letter patterns.</p>
               )}
             </div>
-          )}
+          </div>
+        );
+        
+      case 7: // Confirmation and Generated Cards
+        return renderConfirmation();
+        
+      default:
+        return <div>Unknown step</div>;
+    }
+  };
+
+  // Function to regenerate topics
+  const handleRegenerateTopics = async () => {
+    try {
+      setIsGenerating(true);
+      setError(null);
+      
+      // Clear existing topics
+      setAvailableTopics([]);
+      
+      const topics = await generateTopics(
+        formData.examBoard,
+        formData.examType,
+        formData.subject || formData.newSubject
+      );
+      
+      setAvailableTopics(topics);
+      setHierarchicalTopics(topics.map(topic => ({ topic })));
+      setTopicListSaved(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // New function to render topic selection modal
+  const renderTopicModal = () => {
+    if (!showTopicModal) return null;
+    
+    return (
+      <div className="topic-modal-overlay">
+        <div className="topic-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="topic-modal-header">
+            <h3>Select a Topic</h3>
+            <button className="close-modal-button" onClick={() => setShowTopicModal(false)}>×</button>
+          </div>
           
-          {/* Step 7: Confirmation and Generation */}
-          {currentStep === 7 && (
-            <div>
-              <h2>Generate Cards</h2>
-              
-              {isGenerating ? (
-                <div className="loading-container">
-                  <div className="loading-spinner"></div>
-                  <h3>Generating your flashcards...</h3>
-                  <p>This may take a minute or two.</p>
-                </div>
-              ) : error ? (
-                <div className="error-message">
-                  {error}
-                </div>
-              ) : generatedCards.length > 0 ? (
-                <div>
-                  <div className="generated-cards-actions top-actions">
-                    <button className="secondary-button" onClick={handlePrevStep}>
-                      Generate New Cards
-                    </button>
-                  </div>
-                  
-                  <div className="generated-cards-container">
-                    {generatedCards.map((card, index) => (
-                      <Flashcard 
-                        key={card.id || index}
-                        card={card}
-                        isPreview={true}
-                        showDetails={false}
-                      />
-                    ))}
-                  </div>
-                  
-                  <div className="generated-cards-actions bottom-actions">
-                    <button 
-                      className="primary-button add-all-button"
-                      onClick={() => {
-                        generatedCards.forEach(card => onAddCard(card));
-                        setSuccessModal({
-                          show: true,
-                          addedCards: generatedCards
-                        });
-                      }}
-                    >
-                      Add All Cards
-                    </button>
-                    <div className="status-text">
-                      {generatedCards.length} cards generated
+          <div className="topic-modal-body">
+            {isGenerating ? (
+              <div className="loading-indicator">
+                <div className="spinner"></div>
+                <p>Generating topics for {formData.subject || formData.newSubject}...</p>
+                <p className="loading-subtext">This may take a moment as we analyze the curriculum and create relevant topics.</p>
+              </div>
+            ) : (
+              <>
+                {availableTopics.length > 0 ? (
+                  <>
+                    <div className="topics-header-actions">
+                      <h4>Available Topics</h4>
+                      <button 
+                        className="regenerate-topics-button"
+                        onClick={handleRegenerateTopics}
+                        disabled={isGenerating}
+                      >
+                        Regenerate Topics
+                      </button>
                     </div>
+                    <div className="topic-list-container">
+                      {availableTopics.map((topic) => (
+                        <div 
+                          key={topic} 
+                          className={`topic-item ${selectedTopicForConfirmation === topic ? 'selected' : ''}`}
+                          onClick={() => handleTopicClick(topic)}
+                        >
+                          {topic}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="no-topics-message">
+                    <p>No topics generated yet. Click the "Generate Topics" button to create topics for this subject.</p>
                   </div>
-                </div>
-              ) : null}
-            </div>
-          )}
+                )}
+              </>
+            )}
+          </div>
+          
+          <div className="topic-modal-actions">
+            <button 
+              className="save-button"
+              disabled={isGenerating || topicListSaved || availableTopics.length === 0}
+              onClick={() => setShowSaveTopicDialog(true)}
+            >
+              {topicListSaved ? "Topic List Saved" : "Save Topic List"}
+            </button>
+            
+            <button 
+              className="close-button"
+              onClick={() => setShowTopicModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Updated function to render topic selection UI
+  const renderTopicSelectionUI = () => {
+    return (
+      <div className="topic-selection-container">
+        <button
+          className="generate-topics-button"
+          onClick={handleGenerateTopics}
+          disabled={isGenerating || !(formData.subject || formData.newSubject)}
+        >
+          {isGenerating ? "Generating..." : "Generate Topics"}
+        </button>
+        
+        <div className="topic-input-section">
+          <label>Or Enter a New Topic:</label>
+          <input
+            type="text"
+            name="newTopic"
+            value={formData.newTopic}
+            onChange={handleChange}
+            placeholder="Enter a specific topic"
+          />
         </div>
         
-        {/* Navigation buttons */}
-        {currentStep < 7 && (
-          <div className="generator-controls">
-            <button 
-              className="back-button" 
-              onClick={handlePrevStep}
-              disabled={currentStep === 1}
-            >
-              Back
-            </button>
-            <button 
-              className="next-button" 
-              onClick={handleNextStep}
-              disabled={!canProceed()}
-            >
-              {currentStep === 6 ? "Generate Cards" : "Next"}
-            </button>
+        {error && <div className="error-message">{error}</div>}
+      </div>
+    );
+  };
+
+  // Effect to update the progress based on steps completed
+  useEffect(() => {
+    // Update progress steps completion status
+    const newCompletedSteps = {};
+    
+    // Mark previous steps as completed
+    for (let i = 1; i < currentStep; i++) {
+      newCompletedSteps[i] = true;
+    }
+    
+    // Check if current step is complete
+    newCompletedSteps[currentStep] = canProceed();
+    
+    setCompletedSteps(newCompletedSteps);
+  }, [currentStep, formData]);
+
+  // Step 7: Confirmation Step and Generated Cards
+  const renderConfirmation = () => {
+    // Ensure subject is displayed as a string
+    const subjectValue = formData.newSubject || formData.subject;
+    const subjectDisplay = typeof subjectValue === 'object' && subjectValue.name 
+      ? subjectValue.name 
+      : subjectValue;
+    
+    return (
+      <div className="generator-step review-step">
+        <h2>Review and Generate Cards</h2>
+        
+        <div className="confirmation-details">
+          <div className="confirmation-item">
+            <span className="label">Exam Type:</span>
+            <span className="value">{formData.examType}</span>
+          </div>
+          
+          <div className="confirmation-item">
+            <span className="label">Exam Board:</span>
+            <span className="value">{formData.examBoard}</span>
+          </div>
+          
+          <div className="confirmation-item">
+            <span className="label">Subject:</span>
+            <span className="value">{subjectDisplay}</span>
+          </div>
+          
+          <div className="confirmation-item">
+            <span className="label">Topic:</span>
+            <span className="value">{formData.newTopic || formData.topic}</span>
+          </div>
+          
+          <div className="confirmation-item">
+            <span className="label">Number of Cards:</span>
+            <span className="value">{formData.numCards}</span>
+          </div>
+          
+          <div className="confirmation-item">
+            <span className="label">Question Type:</span>
+            <span className="value">
+              {QUESTION_TYPES.find(t => t.value === formData.questionType)?.label || formData.questionType}
+            </span>
+          </div>
+        </div>
+        
+        {error && (
+          <div className="error-message">
+            {error}
           </div>
         )}
         
-        {/* Modal for saving topic lists */}
-        {renderSaveTopicDialog()}
-        
-        {/* Success modal */}
-        {successModal.show && (
-          <div className="success-modal-overlay" onClick={() => setSuccessModal({ show: false, addedCards: [] })}>
-            <div className="success-modal" onClick={e => e.stopPropagation()}>
-              <div className="success-icon">✓</div>
-              <h3>Cards Added Successfully!</h3>
-              <p>{successModal.addedCards.length} cards have been added to your collection.</p>
-              <button 
-                className="primary-button"
-                onClick={() => {
-                  setSuccessModal({ show: false, addedCards: [] });
-                  onClose();
-                }}
-              >
-                Close
+        {isGenerating ? (
+          <div className="loading-indicator">
+            <div className="spinner"></div>
+            <p>Creating {formData.numCards} flashcards for {formData.examBoard} {formData.examType} {subjectDisplay}...</p>
+            <p className="loading-subtext">Our AI is analyzing the curriculum and crafting high-quality questions tailored to your specifications.</p>
+          </div>
+        ) : generatedCards.length > 0 ? (
+          <>
+            <div className="generated-cards-actions top-actions">
+              <button className="secondary-button" onClick={handleRegenerateCards}>
+                <span className="button-icon">🔄</span> Regenerate Cards
               </button>
             </div>
+            
+            <div className="generated-cards-container">
+              {generatedCards.map(card => (
+                <div 
+                  key={card.id} 
+                  className="generated-card" 
+                  style={{ 
+                    backgroundColor: card.cardColor,
+                    color: getContrastColor(card.cardColor)
+                  }}
+                >
+                  <div className="card-header">
+                    {card.questionType === "multiple_choice" ? "Multiple Choice" : 
+                     card.questionType === "short_answer" ? "Short Answer" : 
+                     card.questionType === "essay" ? "Essay" : "Acronym"}
+                    
+                    <button 
+                      className="add-card-btn" 
+                      onClick={() => handleAddCard(card)}
+                      disabled={card.added}
+                    >
+                      {card.added ? "Added ✓" : "Add to Bank"}
+                    </button>
+                  </div>
+                  
+                  <Flashcard 
+                    card={card}
+                    preview={true}
+                    style={{
+                      height: '200px',
+                      width: '100%',
+                      margin: '0',
+                      boxShadow: 'none'
+                    }}
+                    showButtons={false}
+                  />
+                </div>
+              ))}
+            </div>
+            
+            <div className="generated-cards-actions bottom-actions">
+              <button 
+                className="primary-button add-all-button" 
+                onClick={handleAddAllCards}
+                disabled={generatedCards.every(card => card.added)}
+              >
+                <span className="button-icon">💾</span> Add All Cards to Bank
+              </button>
+              <p className="status-text">
+                {generatedCards.filter(card => card.added).length} of {generatedCards.length} cards added
+              </p>
+            </div>
+          </>
+        ) : (
+          <div className="confirmation-actions">
+            <button 
+              className="generate-button"
+              onClick={generateCards}
+              disabled={isGenerating}
+            >
+              {isGenerating ? "Generating..." : "Generate Cards"}
+            </button>
           </div>
         )}
       </div>
+    );
+  };
+
+  // Function to handle topic click in the modal
+  const handleTopicClick = (topic) => {
+    setSelectedTopicForConfirmation(topic);
+    setShowTopicConfirmation(true);
+  };
+  
+  // Function to confirm topic selection
+  const confirmTopicSelection = () => {
+    setFormData(prev => ({ ...prev, topic: selectedTopicForConfirmation }));
+    setShowTopicConfirmation(false);
+    setShowTopicModal(false);
+    handleNextStep();
+  };
+
+  // Render topic confirmation dialog
+  const renderTopicConfirmation = () => {
+    if (!showTopicConfirmation) return null;
+    
+    return (
+      <div className="topic-confirmation-overlay">
+        <div className="topic-confirmation-dialog">
+          <h4>Confirm Topic Selection</h4>
+          <div className="selected-topic-preview">
+            {selectedTopicForConfirmation}
+          </div>
+          <p>Would you like to select this topic?</p>
+          
+          <div className="confirmation-actions">
+            <button 
+              className="secondary-button" 
+              onClick={() => setShowTopicConfirmation(false)}
+            >
+              Close and choose again
+            </button>
+            <button 
+              className="primary-button" 
+              onClick={confirmTopicSelection}
+            >
+              Select this topic
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render save confirmation dialog
+  const renderSaveConfirmation = () => {
+    if (!showSaveConfirmation) return null;
+    
+    return (
+      <div className="save-confirmation-overlay">
+        <div className="save-confirmation-dialog">
+          <h4>Save Topic List?</h4>
+          <p>Would you like to save this topic list for future use?</p>
+          
+          <div className="confirmation-actions">
+            <button 
+              className="secondary-button" 
+              onClick={() => {
+                setShowSaveConfirmation(false);
+                setShowTopicModal(false);
+                handleNextStep();
+              }}
+            >
+              No, Skip
+            </button>
+            <button 
+              className="primary-button" 
+              onClick={() => {
+                setShowSaveConfirmation(false);
+                setShowSaveTopicDialog(true);
+              }}
+            >
+              Yes, Save It
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Add consistent sizing to the exam selection part of the modal
+  const examSelectorStyle = {
+    fontSize: '14px',
+    padding: '8px 12px',
+    width: '100%',
+    maxWidth: '300px',
+    margin: '0 auto 20px',
+    display: 'block'
+  };
+
+  const formLabelStyle = {
+    fontSize: '14px',
+    marginBottom: '5px',
+    fontWeight: 'normal',
+    display: 'block'
+  };
+
+  return (
+    <div className="ai-card-generator">
+      <div className="generator-header">
+        <h1>AI Flashcard Generator</h1>
+        <button className="close-button" onClick={onClose}>&times;</button>
+      </div>
+      
+      {/* Render the topic modal */}
+      {renderTopicModal()}
+      
+      {/* Render the save topic dialog */}
+      {renderSaveTopicDialog()}
+      
+      <div className="progress-bar">
+        {Array.from({ length: totalSteps }).map((_, idx) => (
+          <div 
+            key={idx} 
+            className={`progress-step ${idx + 1 === currentStep ? 'active' : ''} ${idx + 1 < currentStep ? 'completed' : ''}`}
+          >
+            {idx + 1}
+          </div>
+        ))}
+      </div>
+      
+      <div className="generator-content">
+        {/* Render saved topic lists before the step content if on step 1 */}
+        {currentStep === 1 && renderSavedTopicLists()}
+        
+        {renderStepContent()}
+      </div>
+      
+      <div className="generator-controls">
+        {currentStep > 1 && (
+          <button 
+            onClick={handlePrevStep} 
+            className="back-button"
+            disabled={isGenerating}
+          >
+            Back
+          </button>
+        )}
+        
+        {currentStep < totalSteps ? (
+          <button 
+            onClick={handleNextStep} 
+            className="next-button"
+            disabled={!canProceed() || isGenerating}
+          >
+            Next
+          </button>
+        ) : (
+          <button 
+            onClick={onClose} 
+            className="finish-button"
+          >
+            Finish
+          </button>
+        )}
+      </div>
+      
+      {renderSuccessModal()}
+      
+      {/* Render save confirmation dialog */}
+      {renderSaveConfirmation()}
+      
+      {/* Render topic selection confirmation dialog */}
+      {renderTopicConfirmation()}
     </div>
   );
 };
