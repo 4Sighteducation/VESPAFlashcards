@@ -605,15 +605,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                               <span role="img" aria-label="Print">🖨️</span>
                             </button>
                             <span className="card-count" style={{ color: topicTextColor }}>{topicCards.length} cards</span>
-                            <span 
-                              className="expand-icon" 
-                              style={{ 
-                                transform: isTopicExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                                color: topicTextColor
-                              }}
-                            >
-                              ▼
-                            </span>
                           </div>
                         </div>
                         {renderCards(topicCards, subject, topic, subjectColor)}

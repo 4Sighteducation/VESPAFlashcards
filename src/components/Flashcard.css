@@ -1284,11 +1284,25 @@
   .card-modal-card-container .flashcard {
     height: 350px;
   }
+  
+  .card-modal-card-container .options-container li {
+    padding: 5px 8px;
+    font-size: 14px;
+  }
 }
 
 @media (max-width: 480px) {
   .card-modal-card-container .flashcard {
     height: 300px;
+  }
+  
+  .card-modal-card-container .options-container li {
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+  
+  .modal-card .question-title .scaled-text {
+    font-size: 14px !important;
   }
 }
 
@@ -1307,6 +1321,9 @@
   .card-modal-card-container .flashcard {
     height: 280px;
     max-height: 55vh;
+    width: 100%;
+    max-width: 90%;
+    margin: 0 auto;
   }
   
   .card-modal-actions {
@@ -1319,5 +1336,100 @@
   .card-modal-card-container .flashcard {
     height: 220px;
     max-height: 50vh;
+  }
+}
+
+/* Wide screens - improved text and content scaling */
+@media (min-width: 1025px) and (max-width: 1600px) {
+  .card-modal-content {
+    max-width: 900px;
+    width: 85%;
+  }
+  
+  .card-modal-card-container .flashcard {
+    max-width: 600px;
+    height: 450px;
+  }
+  
+  .card-modal-card-container .flashcard .scaled-text {
+    font-size: 20px !important;
+  }
+  
+  .card-modal-card-container .options-container li {
+    padding: 10px 14px;
+    margin: 6px 0;
+    font-size: 16px;
+  }
+  
+  .card-modal-content .card-counter {
+    font-size: 18px;
+  }
+  
+  .card-modal-content .topic-info {
+    font-size: 16px;
+    max-width: 100%;
+  }
+}
+
+/* Very wide screens */
+@media (min-width: 1601px) {
+  .card-modal-content {
+    max-width: 1200px;
+    width: 75%;
+  }
+  
+  .card-modal-card-container .flashcard {
+    max-width: 700px;
+    height: 500px;
+  }
+  
+  .card-modal-card-container .flashcard .scaled-text {
+    font-size: 22px !important;
+  }
+  
+  .card-modal-card-container .options-container li {
+    padding: 12px 16px;
+    margin: 8px 0;
+    font-size: 18px;
+  }
+  
+  .card-modal-content .nav-button {
+    font-size: 1.2rem;
+    padding: 8px 16px;
+  }
+  
+  .card-modal-content .card-counter {
+    font-size: 20px;
+  }
+  
+  .card-modal-content .topic-info {
+    font-size: 18px;
+  }
+}
+
+/* Portrait mode for mobile - improve multiple choice options */
+@media (max-width: 480px) and (orientation: portrait) {
+  .options-container li,
+  .card-modal-card-container .options-container li,
+  .modal-card .options-container li {
+    padding: 3px 5px;
+    margin-bottom: 3px;
+    font-size: 11px !important;
+    line-height: 1.2;
+  }
+  
+  .option-letter {
+    font-size: 11px;
+    min-width: 12px;
+    margin-right: 3px;
+  }
+  
+  .modal-card .question-title {
+    min-height: 50px;
+    padding: 5px;
+  }
+  
+  .modal-card .question-title .scaled-text {
+    font-size: 13px !important;
   }
 }
