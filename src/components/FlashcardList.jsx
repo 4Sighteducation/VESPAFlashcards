@@ -260,22 +260,56 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     }
   };
 
-  const renderCards = (cards, subject, topic) => {
+  const renderCards = (cards, subject, topic, subjectColor) => {
     const topicKey = `${subject}-${topic}`;
     const isVisible = expandedTopics[topicKey];
+
+    // Function to create a slightly lighter version of the subject color for cards
+    const getCardColor = (baseColor) => {
+      if (!baseColor) return '#3cb44b'; // Default card color
+      
+      // Create a slightly lighter version (30% lighter)
+      const lightenColor = (color, percent) => {
+        // Remove the # if present
+        let hex = color.replace('#', '');
+        
+        // Convert to RGB
+        let r = parseInt(hex.substring(0, 2), 16);
+        let g = parseInt(hex.substring(2, 4), 16);
+        let b = parseInt(hex.substring(4, 6), 16);
+        
+        // Lighten
+        r = Math.min(255, Math.floor(r + (255 - r) * percent));
+        g = Math.min(255, Math.floor(g + (255 - g) * percent));
+        b = Math.min(255, Math.floor(b + (255 - b) * percent));
+        
+        // Convert back to hex
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+      };
+      
+      return lightenColor(baseColor, 0.3); // 30% lighter version
+    };
 
     return (
       <div className="topic-cards" style={{ display: isVisible ? 'flex' : 'none' }}>
         {cards && cards.length > 0 ? (
-          cards.map((card) => (
-            <Flashcard
-              key={card.id}
-              card={card}
-              onDelete={() => onDeleteCard(card.id)}
-              onFlip={(card, isFlipped) => console.log(`Card flipped: ${isFlipped}`)}
-              onUpdateCard={onUpdateCard}
-            />
-          ))
+          cards.map((card) => {
+            // Apply the topic's color to cards without a specific color
+            const cardWithColor = {
+              ...card,
+              cardColor: card.cardColor || card.baseColor || getCardColor(subjectColor)
+            };
+            
+            return (
+              <Flashcard
+                key={card.id}
+                card={cardWithColor}
+                onDelete={() => onDeleteCard(card.id)}
+                onFlip={(card, isFlipped) => console.log(`Card flipped: ${isFlipped}`)}
+                onUpdateCard={onUpdateCard}
+              />
+            );
+          })
         ) : (
           <div className="no-cards-message">No cards in this topic</div>
         )}
@@ -520,7 +554,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                             </span>
                           </div>
                         </div>
-                        {renderCards(topicCards, subject, topic)}
+                        {renderCards(topicCards, subject, topic, subjectColor)}
                       </div>
                     );
                   })}

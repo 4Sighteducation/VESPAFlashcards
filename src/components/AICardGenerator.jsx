@@ -1104,15 +1104,16 @@ Use this format for different question types:
       case 1: // Exam Type
         return (
           <div className="step-content">
-            <h2>Select Exam Type</h2>
+            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select Exam Type</h2>
             <div className="form-group">
               <select 
                 name="examType" 
                 value={formData.examType} 
                 onChange={handleChange}
                 required
+                style={examSelectorStyle}
               >
-                <option value="">-- Select Exam Type --</option>
+                <option value="">Select Exam Type</option>
                 {EXAM_TYPES.map(type => (
                   <option key={type.value} value={type.value}>
                     {type.label}
@@ -1126,16 +1127,17 @@ Use this format for different question types:
       case 2: // Exam Board
         return (
           <div className="step-content">
-            <h2>Select Exam Board</h2>
+            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select Exam Board</h2>
             <div className="form-group">
               <select 
                 name="examBoard" 
                 value={formData.examBoard} 
                 onChange={handleChange}
                 required
+                style={examSelectorStyle}
               >
-                <option value="">-- Select Exam Board --</option>
-                {EXAM_BOARDS.map(board => (
+                <option value="">Select Exam Board</option>
+                {EXAM_BOARDS.filter(board => boardsForType(formData.examType).includes(board.value)).map(board => (
                   <option key={board.value} value={board.value}>
                     {board.label}
                   </option>
@@ -1621,6 +1623,23 @@ Use this format for different question types:
         </div>
       </div>
     );
+  };
+
+  // Add consistent sizing to the exam selection part of the modal
+  const examSelectorStyle = {
+    fontSize: '14px',
+    padding: '8px 12px',
+    width: '100%',
+    maxWidth: '300px',
+    margin: '0 auto 20px',
+    display: 'block'
+  };
+
+  const formLabelStyle = {
+    fontSize: '14px',
+    marginBottom: '5px',
+    fontWeight: 'normal',
+    display: 'block'
   };
 
   return (
