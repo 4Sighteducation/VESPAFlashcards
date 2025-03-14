@@ -2,12 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import './Flashcard.css';
 
-// Helper function to determine text color based on background color brightness
+// Enhanced helper function to determine text color based on background color brightness
 const getContrastColor = (hexColor) => {
   if (!hexColor) return '#000000';
   
   // Remove # if present
   hexColor = hexColor.replace('#', '');
+  
+  // Ensure we have a valid 6-character hex
+  if (hexColor.length === 3) {
+    // Convert 3-char hex to 6-char
+    hexColor = hexColor.split('').map(c => c+c).join('');
+  }
+  
+  // Handle invalid hex values
+  if (!/^[0-9A-Fa-f]{6}$/.test(hexColor)) {
+    console.warn(`Invalid color format: ${hexColor}, defaulting to black text`);
+    return '#000000';
+  }
   
   // Convert to RGB
   const r = parseInt(hexColor.substring(0, 2), 16);
@@ -17,8 +29,10 @@ const getContrastColor = (hexColor) => {
   // Calculate brightness using YIQ formula - adjusted for better contrast
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   
-  // Lower threshold to 110 (from 115) to ensure more text is white on medium backgrounds
-  const textColor = brightness > 110 ? '#000000' : '#ffffff';
+  // Use a more conservative threshold to ensure better contrast
+  // Lower threshold means more white text, better for readability
+  const threshold = 125; // Adjusted from 110 to 125 for better readability
+  const textColor = brightness > threshold ? '#000000' : '#ffffff';
   
   // Output contrast calculation for debugging
   console.log(`Color: #${hexColor}, Brightness: ${brightness}, Text: ${textColor}`);
@@ -110,7 +124,7 @@ const ScaledText = ({ children, className = '', maxFontSize = 18, minFontSize = 
   );
 };
 
-// Improved component for multiple choice options with more adaptive scaling
+// Improved component for multiple choice options with more responsive scaling
 const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) => {
   const containerRef = useRef(null);
   
@@ -133,54 +147,81 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
     const avgLength = totalLength / options.length;
     const maxLength = Math.max(...options.map(option => option.length));
     
-    // Set starting font size based on content length and number of options
+    // Set starting font size based on content length, number of options, and container width
+    const containerWidth = container.clientWidth;
+    const isMobile = containerWidth < 400; // Detect mobile or narrow screens
+    
+    // Adjust starting font size based on screen size and content
     let fontSize = isInModal ? 14 : 12; // Default
+
+    // Smaller starting size for mobile
+    if (isMobile) {
+      fontSize = isInModal ? 12 : 10;
+    }
     
     // Adjust based on number of options
     if (options.length >= 5) {
-      fontSize = isInModal ? 12 : 10;
+      fontSize = Math.min(fontSize, isInModal ? 12 : 10);
+      if (isMobile) fontSize = Math.min(fontSize, 9);
     } else if (options.length >= 4) {
-      fontSize = isInModal ? 13 : 11;
+      fontSize = Math.min(fontSize, isInModal ? 13 : 11);
+      if (isMobile) fontSize = Math.min(fontSize, 10);
     }
     
     // Further adjust based on content length
     if (maxLength > 100) {
       fontSize = Math.min(fontSize, isInModal ? 10 : 8);
+      if (isMobile) fontSize = Math.min(fontSize, 7);
     } else if (avgLength > 50) {
       fontSize = Math.min(fontSize, isInModal ? 12 : 9);
+      if (isMobile) fontSize = Math.min(fontSize, 8);
     }
     
     // Debug output
-    console.log(`MultipleChoice options: ${options.length}, max length: ${maxLength}, avg length: ${avgLength.toFixed(1)}, starting fontSize: ${fontSize}`);
+    console.log(`MultipleChoice options: ${options.length}, max length: ${maxLength}, avg length: ${avgLength.toFixed(1)}, container width: ${containerWidth}, starting fontSize: ${fontSize}`);
     
     // Reset all items to the starting fontSize
     items.forEach(item => {
       item.style.fontSize = `${fontSize}px`;
     });
     
-    // Check if container is overflowing
+    // Check if container is overflowing - be more aggressive on smaller screens
     const isOverflowing = container.scrollHeight > container.clientHeight;
     
     // If overflowing, reduce font size until it fits
     if (isOverflowing) {
       let attempts = 0;
-      while (fontSize > 4 && container.scrollHeight > container.clientHeight && attempts < 20) {
-        fontSize -= 0.5;
+      const minFontSize = isMobile ? 3 : 4; // More aggressive for mobile
+      const step = isMobile ? 0.75 : 0.5; // Larger steps for mobile
+      
+      while (fontSize > minFontSize && container.scrollHeight > container.clientHeight && attempts < 25) {
+        fontSize -= step;
         items.forEach(item => {
           item.style.fontSize = `${fontSize}px`;
         });
         attempts++;
+      }
+      
+      // If we hit minimum font size and still overflowing, reduce line height
+      if (fontSize <= minFontSize && container.scrollHeight > container.clientHeight) {
+        items.forEach(item => {
+          item.style.lineHeight = "1";
+          item.style.padding = "1px 0";
+          item.style.margin = "1px 0";
+        });
       }
     }
     
     console.log(`MultipleChoice options final fontSize: ${fontSize}`);
     
     // Add classes to adjust styles based on font size
-    container.classList.remove('small-font-options', 'very-small-font-options');
+    container.classList.remove('small-font-options', 'very-small-font-options', 'tiny-font-options');
     
-    if (fontSize <= 8) {
+    if (fontSize <= 5) {
+      container.classList.add('tiny-font-options');
+    } else if (fontSize <= 7) {
       container.classList.add('very-small-font-options');
-    } else if (fontSize <= 10) {
+    } else if (fontSize <= 9) {
       container.classList.add('small-font-options');
     }
   };
@@ -217,7 +258,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   };
   
   // Get contrast color for text based on background
-  const textColor = getContrastColor(card.cardColor || '#3cb44b');
+  const textColor = card.textColor || getContrastColor(card.cardColor || '#3cb44b');
   
   // Handle card flipping
   const handleFlip = (e) => {
@@ -293,10 +334,16 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   // Handle color change
   const handleColorChange = (color) => {
     if (onUpdateCard) {
+      // When updating the card, calculate the appropriate text color
+      // based on the new background color
+      const newTextColor = getContrastColor(color);
+      console.log(`Color changed to ${color}, calculated text: ${newTextColor}`);
+      
       onUpdateCard({
         ...card,
         cardColor: color,
-        baseColor: color
+        baseColor: color,
+        textColor: newTextColor // Store the calculated text color
       });
     }
     setShowColorPicker(false);
@@ -340,6 +387,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                   className="delete-btn" 
                   onClick={handleDeleteClick}
                   title="Delete card"
+                  style={{ color: textColor }}
                 >
                   ✕
                 </button>
@@ -348,6 +396,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                   className="color-btn" 
                   onClick={toggleColorPicker}
                   title="Change color"
+                  style={{ color: textColor }}
                 >
                   🎨
                 </button>
@@ -357,6 +406,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                     className="info-btn" 
                     onClick={toggleInfoModal}
                     title="View additional information"
+                    style={{ color: textColor }}
                   >
                     ℹ️
                   </button>
@@ -371,7 +421,10 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                     <div 
                       key={color}
                       className="color-option"
-                      style={{ backgroundColor: color }}
+                      style={{ 
+                        backgroundColor: color,
+                        border: color === card.cardColor ? '2px solid white' : '2px solid transparent'
+                      }}
                       onClick={() => handleColorChange(color)}
                     />
                   ))}
