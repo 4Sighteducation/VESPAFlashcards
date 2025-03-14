@@ -177,6 +177,60 @@ function App() {
     return adjustedHex;
   }, []);
 
+  // Save data to localStorage fallback - dependent on state only
+  const saveToLocalStorage = useCallback(() => {
+    try {
+      localStorage.setItem('flashcards', JSON.stringify(allCards));
+      localStorage.setItem('colorMapping', JSON.stringify(subjectColorMapping));
+      localStorage.setItem('spacedRepetition', JSON.stringify(spacedRepetitionData));
+      localStorage.setItem('userTopics', JSON.stringify(userTopics));
+      console.log("Saved data to localStorage");
+    } catch (error) {
+      console.error("Error saving to localStorage:", error);
+    }
+  }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics]);
+
+  // Save data to Knack - depends on saveToLocalStorage and showStatus
+  const saveData = useCallback(() => {
+    if (!auth) return;
+
+    setIsSaving(true);
+
+    try {
+      // Send data to parent window for saving to Knack
+      if (window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: "SAVE_DATA",
+            data: {
+              recordId: recordId,
+              cards: allCards,
+              colorMapping: subjectColorMapping,
+              spacedRepetition: spacedRepetitionData,
+              userTopics: userTopics,
+            },
+          },
+          "*"
+        );
+
+        showStatus("Saving your flashcards...");
+      }
+      
+      // Always save to localStorage as fallback
+      saveToLocalStorage();
+      
+      // If we're in standalone mode, mark as saved
+      if (window.parent === window) {
+        setIsSaving(false);
+        showStatus("Saved successfully!");
+      }
+    } catch (error) {
+      console.error("Error saving data:", error);
+      setIsSaving(false);
+      showStatus("Error saving data");
+    }
+  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, showStatus, saveToLocalStorage, recordId]);
+
   // Generate a random vibrant color
   const getRandomColor = useCallback(() => {
     // Default bright colors palette
@@ -195,8 +249,11 @@ function App() {
   // Update color mappings - independent of other functions
   const updateColorMapping = useCallback(
     (subject, topic, color, updateTopics = false) => {
+      if (!subject) return;
+      
       // If color is null, use a default color or generate one
       const colorToUse = color || getRandomColor();
+      console.log(`Updating color for subject: ${subject}, topic: ${topic || "none"}, color: ${colorToUse}, updateTopics: ${updateTopics}`);
       
       setSubjectColorMapping((prevMapping) => {
         const newMapping = { ...prevMapping };
@@ -261,7 +318,7 @@ function App() {
       
       // Also update the cards that use this subject/topic to reflect the new color
       setAllCards(prevCards => {
-        return prevCards.map(card => {
+        const updatedCards = prevCards.map(card => {
           if ((card.subject || "General") === subject) {
             // If this is a topic-specific update and this card doesn't match, skip it
             if (topic && (card.topic || "General") !== topic && !updateTopics) {
@@ -290,14 +347,25 @@ function App() {
             return {
               ...card,
               cardColor: newColor,
+              subjectColor: colorToUse,
               baseColor: subject === (card.subject || "General") ? colorToUse : card.baseColor
             };
           }
           return card;
         });
+        
+        // Log the first few cards for debugging
+        if (updatedCards.length > 0) {
+          console.log("Sample cards after color update:", updatedCards.slice(0, 3));
+        }
+        
+        return updatedCards;
       });
+      
+      // Save changes
+      setTimeout(() => saveToLocalStorage(), 100);
     },
-    [allCards, generateShade, getRandomColor]
+    [allCards, generateShade, getRandomColor, saveToLocalStorage]
   );
 
   // Function to refresh subject and topic colors
@@ -441,60 +509,6 @@ function App() {
     },
     [subjectColorMapping, currentSubjectColor, generateShade, allCards]
   );
-
-  // Save data to localStorage fallback - dependent on state only
-  const saveToLocalStorage = useCallback(() => {
-    try {
-      localStorage.setItem('flashcards', JSON.stringify(allCards));
-      localStorage.setItem('colorMapping', JSON.stringify(subjectColorMapping));
-      localStorage.setItem('spacedRepetition', JSON.stringify(spacedRepetitionData));
-      localStorage.setItem('userTopics', JSON.stringify(userTopics));
-      console.log("Saved data to localStorage");
-    } catch (error) {
-      console.error("Error saving to localStorage:", error);
-    }
-  }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics]);
-
-  // Save data to Knack - depends on saveToLocalStorage and showStatus
-  const saveData = useCallback(() => {
-    if (!auth) return;
-
-    setIsSaving(true);
-
-    try {
-      // Send data to parent window for saving to Knack
-      if (window.parent !== window) {
-        window.parent.postMessage(
-          {
-            type: "SAVE_DATA",
-            data: {
-              recordId: recordId,
-              cards: allCards,
-              colorMapping: subjectColorMapping,
-              spacedRepetition: spacedRepetitionData,
-              userTopics: userTopics,
-            },
-          },
-          "*"
-        );
-
-        showStatus("Saving your flashcards...");
-      }
-      
-      // Always save to localStorage as fallback
-      saveToLocalStorage();
-      
-      // If we're in standalone mode, mark as saved
-      if (window.parent === window) {
-        setIsSaving(false);
-        showStatus("Saved successfully!");
-      }
-    } catch (error) {
-      console.error("Error saving data:", error);
-      setIsSaving(false);
-      showStatus("Error saving data");
-    }
-  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, showStatus, saveToLocalStorage, recordId]);
 
   // Cards and data operations - these depend on the above functions
   // Load data from localStorage fallback

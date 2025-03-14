@@ -75,7 +75,7 @@
   gap: 10px;
 }
 
-.print-button, .print-topic-button {
+.print-button, .print-topic-button, .slideshow-button {
   background: none;
   border: none;
   font-size: 1.1rem;
@@ -90,7 +90,7 @@
   transition: background-color 0.2s;
 }
 
-.print-button:hover, .print-topic-button:hover {
+.print-button:hover, .print-topic-button:hover, .slideshow-button:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }
 

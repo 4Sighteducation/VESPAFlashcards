@@ -344,7 +344,11 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
               </>
             ) : (
               <ScaledText maxFontSize={16}>
-                <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question available" }} />
+                {typeof card.front === 'string' || typeof card.question === 'string' ? (
+                  <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question available" }} />
+                ) : (
+                  <div>No question available</div>
+                )}
               </ScaledText>
             )}
           </div>
@@ -373,7 +377,11 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                   })()}
                 </div>
               ) : (
-                <div dangerouslySetInnerHTML={{ __html: card.back || "No answer available" }} />
+                typeof card.back === 'string' ? (
+                  <div dangerouslySetInnerHTML={{ __html: card.back || "No answer available" }} />
+                ) : (
+                  <div>No answer available</div>
+                )
               )}
             </ScaledText>
             

@@ -129,18 +129,6 @@ const SubjectsList = ({ subjects, activeSubject, onSelectSubject, onChangeSubjec
                 >
                   <span role="img" aria-label="Edit color">🎨</span>
                 </button>
-                
-                <button
-                  className="refresh-color-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Pass true as the second parameter to refresh colors for all topics
-                    onChangeSubjectColor(subjectName, null, true);
-                  }}
-                  title="Reset to default color"
-                >
-                  <span role="img" aria-label="Reset color">↺</span>
-                </button>
               </div>
             );
           })}

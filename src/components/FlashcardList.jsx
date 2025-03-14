@@ -255,8 +255,19 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   };
 
   const handleCardClick = (card) => {
-    setSelectedCard(card);
-    setShowModalAndSelectedCard(true);
+    // No longer automatically show slideshow on click
+    // We'll use a dedicated button for this instead
+  };
+
+  // New function to start slideshow for a topic
+  const startSlideshow = (subject, topic, e) => {
+    e.stopPropagation(); // Prevent toggling the topic expansion
+    // Find the first card in the topic to start with
+    const topicCards = groupedCards[subject][topic];
+    if (topicCards && topicCards.length > 0) {
+      setSelectedCard(topicCards[0]);
+      setShowModalAndSelectedCard(true);
+    }
   };
 
   const renderCards = (cards, subject, topic) => {
@@ -273,7 +284,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
               onDelete={() => onDeleteCard(card.id)}
               onFlip={(card, isFlipped) => console.log(`Card flipped: ${isFlipped}`)}
               onUpdateCard={onUpdateCard}
-              onClick={(e) => handleCardClick(card)}
             />
           ))
         ) : (
@@ -371,7 +381,14 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
           // Get subject color from first card or use default
           const firstTopic = topics[0];
           const firstCard = groupedCards[subject][firstTopic]?.[0];
-          const subjectColor = firstCard?.color || firstCard?.subjectColor || "#06206e";
+          const subjectColor = firstCard?.subjectColor || firstCard?.baseColor || firstCard?.cardColor || "#06206e";
+          console.log(`Subject color for ${subject}:`, {
+            subjectColor,
+            firstCardSubjectColor: firstCard?.subjectColor,
+            firstCardBaseColor: firstCard?.baseColor,
+            firstCardCardColor: firstCard?.cardColor,
+            firstCard
+          });
           const textColor = getContrastColor(subjectColor);
           
           return (
@@ -434,6 +451,13 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                             {topicDate && <span className="topic-date">Added: {topicDate}</span>}
                           </div>
                           <div className="topic-actions">
+                            <button 
+                              className="slideshow-button"
+                              onClick={(e) => startSlideshow(subject, topic, e)}
+                              title="Start slideshow"
+                            >
+                              <span role="img" aria-label="Slideshow">▶️</span>
+                            </button>
                             <button 
                               className="print-topic-button"
                               onClick={(e) => handlePrintTopic(subject, topic, e)}

@@ -3,7 +3,7 @@ import "./SubjectsList.css"; // We'll use the styles already defined in Subjects
 
 const ColorEditor = ({ subject, subjectColor, onClose, onSelectColor }) => {
   const [selectedColor, setSelectedColor] = useState(subjectColor || "#e0e0e0");
-  const [applyToAllTopics, setApplyToAllTopics] = useState(false);
+  const [applyToAllTopics, setApplyToAllTopics] = useState(true);  // Default to true
 
   // Define a palette of bright, distinguishable colors
   const brightColors = [
@@ -41,6 +41,13 @@ const ColorEditor = ({ subject, subjectColor, onClose, onSelectColor }) => {
     <div className="color-editor-overlay" onClick={onClose}>
       <div className="color-editor-panel" onClick={(e) => e.stopPropagation()}>
         <h4>Edit Color for "{subject}"</h4>
+        
+        <div className="color-preview" style={{ 
+          backgroundColor: selectedColor,
+          color: getContrastColor(selectedColor)
+        }}>
+          {subject}
+        </div>
         
         <div className="color-grid">
           {brightColors.map((color) => (

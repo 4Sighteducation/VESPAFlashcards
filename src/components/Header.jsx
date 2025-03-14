@@ -45,7 +45,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
           className="print-button"
           onClick={onPrintAll}
         >
-          <span className="print-icon">🖨️</span> Print All
+          Print All
         </button>
       </div>
 
