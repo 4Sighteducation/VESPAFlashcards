@@ -378,10 +378,13 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     const topicInfo = isSubjectSlideshow 
       ? `${currentSubject} (All Topics)` 
       : `${currentSubject} | ${currentTopic}`;
+      
+    // Detect if we're on mobile
+    const isMobile = window.innerWidth <= 768;
 
     return (
       <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
-        <div className="card-modal" onClick={(e) => e.stopPropagation()}>
+        <div className={`card-modal ${isMobile ? 'mobile-modal' : ''}`} onClick={(e) => e.stopPropagation()}>
           <button className="close-modal-btn" onClick={() => setShowModalAndSelectedCard(false)}>✕</button>
           
           <div className="modal-card-container">
@@ -511,8 +514,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
             <div 
               key={subject} 
               className="subject-container"
+              data-color={subjectColor}
               style={{ 
-                borderLeft: `5px solid ${subjectColor}` 
+                '--subject-color': subjectColor 
               }}
             >
               {renderSubjectHeader({ 

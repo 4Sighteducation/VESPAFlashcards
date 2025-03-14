@@ -67,26 +67,49 @@ const ScaledText = ({ children, className = '', maxFontSize = 18, minFontSize = 
       const textElement = textRef.current;
       const contentLength = children ? children.toString().length : 0;
       
+      // Check if we're on a mobile device
+      const isMobile = window.innerWidth <= 768;
+      const isVerySmallScreen = window.innerWidth <= 480;
+      
       // Further reduce starting font size for longer content
       let startFontSize = maxFontSize;
       
       if (isInModal) {
-        // For modal view, start with larger font sizes
-        startFontSize = maxFontSize;
-        if (contentLength > 500) startFontSize = Math.min(startFontSize, 16);
-        if (contentLength > 300) startFontSize = Math.min(startFontSize, 14);
-        if (contentLength > 200) startFontSize = Math.min(startFontSize, 12);
-        if (contentLength > 100) startFontSize = Math.min(startFontSize, 10);
+        // More aggressive scaling for modal view on mobile
+        if (isMobile) {
+          startFontSize = isVerySmallScreen ? 16 : 18;
+          if (contentLength > 300) startFontSize = Math.min(startFontSize, 12);
+          if (contentLength > 200) startFontSize = Math.min(startFontSize, 10);
+          if (contentLength > 100) startFontSize = Math.min(startFontSize, 8);
+          if (contentLength > 50) startFontSize = Math.min(startFontSize, 12);
+        } else {
+          // Desktop modal sizing
+          startFontSize = maxFontSize;
+          if (contentLength > 500) startFontSize = Math.min(startFontSize, 16);
+          if (contentLength > 300) startFontSize = Math.min(startFontSize, 14);
+          if (contentLength > 200) startFontSize = Math.min(startFontSize, 12);
+          if (contentLength > 100) startFontSize = Math.min(startFontSize, 10);
+        }
       } else {
-        // For regular view, be more aggressive
-        if (contentLength > 500) startFontSize = Math.min(startFontSize, 14);
-        if (contentLength > 300) startFontSize = Math.min(startFontSize, 12);
-        if (contentLength > 200) startFontSize = Math.min(startFontSize, 10);
-        if (contentLength > 100) startFontSize = Math.min(startFontSize, 8);
+        // Regular view - more aggressive for mobile
+        if (isMobile) {
+          startFontSize = isVerySmallScreen ? 14 : 16;
+          if (contentLength > 300) startFontSize = Math.min(startFontSize, 10);
+          if (contentLength > 200) startFontSize = Math.min(startFontSize, 9);
+          if (contentLength > 100) startFontSize = Math.min(startFontSize, 8);
+          if (contentLength > 50) startFontSize = Math.min(startFontSize, 10);
+        } else {
+          // Desktop regular sizing
+          if (contentLength > 500) startFontSize = Math.min(startFontSize, 14);
+          if (contentLength > 300) startFontSize = Math.min(startFontSize, 13);
+          if (contentLength > 200) startFontSize = Math.min(startFontSize, 12);
+          if (contentLength > 100) startFontSize = Math.min(startFontSize, 11);
+          if (contentLength > 50) startFontSize = Math.min(startFontSize, 14);
+        }
       }
       
       // Debug output for initial sizing
-      console.log(`ScaledText length: ${contentLength}, starting fontSize: ${startFontSize}, modal: ${isInModal}`);
+      console.log(`ScaledText length: ${contentLength}, starting fontSize: ${startFontSize}, modal: ${isInModal}, mobile: ${isMobile}`);
       
       // Binary search for optimal font size
       let low = minFontSize;
@@ -112,6 +135,18 @@ const ScaledText = ({ children, className = '', maxFontSize = 18, minFontSize = 
         }
       }
       
+      // For mobile modal view, be even more aggressive to ensure no scrollbars
+      if (isInModal && isMobile && bestFontSize > 6) {
+        bestFontSize = Math.min(bestFontSize, isVerySmallScreen ? 14 : 16);
+      }
+      
+      // Ensure minimum readable size for questions
+      if (className.includes('question-title') && bestFontSize < 11 && !isMobile) {
+        bestFontSize = Math.max(bestFontSize, 11);
+      } else if (className.includes('question-title') && bestFontSize < 8 && isMobile) {
+        bestFontSize = Math.max(bestFontSize, 8); // Lower minimum for mobile
+      }
+      
       // Set final font size
       textElement.style.fontSize = `${bestFontSize}px`;
       console.log(`ScaledText final fontSize: ${bestFontSize} after ${iterations} iterations`);
@@ -129,7 +164,7 @@ const ScaledText = ({ children, className = '', maxFontSize = 18, minFontSize = 
     window.addEventListener('resize', adjustFontSize);
     
     return () => window.removeEventListener('resize', adjustFontSize);
-  }, [children, maxFontSize, minFontSize, isInModal]);
+  }, [children, maxFontSize, minFontSize, isInModal, className]);
   
   return (
     <div className={`scaled-text ${className}`} ref={containerRef}>
@@ -163,36 +198,37 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
     
     // Set starting font size based on content length, number of options, and container width
     const containerWidth = container.clientWidth;
-    const isMobile = containerWidth < 400; // Detect mobile or narrow screens
+    const isMobile = window.innerWidth <= 768;
+    const isVerySmallScreen = window.innerWidth <= 480;
     
     // Adjust starting font size based on screen size and content
     let fontSize = isInModal ? 14 : 12; // Default
 
-    // Smaller starting size for mobile
-    if (isMobile) {
-      fontSize = isInModal ? 12 : 10;
+    // More aggressive font size reduction for mobile modal view
+    if (isInModal && isMobile) {
+      fontSize = isVerySmallScreen ? 11 : 13;
+    }
+    // Smaller starting size for regular mobile view
+    else if (isMobile) {
+      fontSize = isVerySmallScreen ? 9 : 10;
     }
     
     // Adjust based on number of options
     if (options.length >= 5) {
-      fontSize = Math.min(fontSize, isInModal ? 12 : 10);
-      if (isMobile) fontSize = Math.min(fontSize, 9);
+      fontSize = Math.min(fontSize, isMobile ? 8 : (isInModal ? 12 : 10));
     } else if (options.length >= 4) {
-      fontSize = Math.min(fontSize, isInModal ? 13 : 11);
-      if (isMobile) fontSize = Math.min(fontSize, 10);
+      fontSize = Math.min(fontSize, isMobile ? 9 : (isInModal ? 13 : 11));
     }
     
     // Further adjust based on content length
     if (maxLength > 100) {
-      fontSize = Math.min(fontSize, isInModal ? 10 : 8);
-      if (isMobile) fontSize = Math.min(fontSize, 7);
+      fontSize = Math.min(fontSize, isMobile ? 7 : (isInModal ? 10 : 8));
     } else if (avgLength > 50) {
-      fontSize = Math.min(fontSize, isInModal ? 12 : 9);
-      if (isMobile) fontSize = Math.min(fontSize, 8);
+      fontSize = Math.min(fontSize, isMobile ? 8 : (isInModal ? 11 : 9));
     }
     
     // Debug output
-    console.log(`MultipleChoice options: ${options.length}, max length: ${maxLength}, avg length: ${avgLength.toFixed(1)}, container width: ${containerWidth}, starting fontSize: ${fontSize}`);
+    console.log(`MultipleChoice options: ${options.length}, max length: ${maxLength}, avg length: ${avgLength.toFixed(1)}, container width: ${containerWidth}, starting fontSize: ${fontSize}, mobile: ${isMobile}`);
     
     // Reset all items to the starting fontSize
     items.forEach(item => {
@@ -200,7 +236,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
     });
     
     // Check if container is overflowing - be more aggressive on smaller screens
-    const isOverflowing = container.scrollHeight > container.clientHeight;
+    let isOverflowing = container.scrollHeight > container.clientHeight || container.scrollWidth > container.clientWidth;
     
     // If overflowing, reduce font size until it fits
     if (isOverflowing) {
@@ -208,16 +244,26 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
       const minFontSize = isMobile ? 3 : 4; // More aggressive for mobile
       const step = isMobile ? 0.75 : 0.5; // Larger steps for mobile
       
-      while (fontSize > minFontSize && container.scrollHeight > container.clientHeight && attempts < 25) {
+      while (fontSize > minFontSize && isOverflowing && attempts < 25) {
         fontSize -= step;
         items.forEach(item => {
           item.style.fontSize = `${fontSize}px`;
         });
         attempts++;
+        isOverflowing = container.scrollHeight > container.clientHeight || container.scrollWidth > container.clientWidth;
       }
       
+      // If we're in a modal and still struggling, try other adjustments
+      if (isInModal && isMobile && isOverflowing) {
+        container.style.overflow = 'visible';
+        items.forEach(item => {
+          item.style.lineHeight = "1";
+          item.style.padding = "1px 4px";
+          item.style.margin = "1px 0";
+        });
+      }
       // If we hit minimum font size and still overflowing, reduce line height
-      if (fontSize <= minFontSize && container.scrollHeight > container.clientHeight) {
+      else if (fontSize <= minFontSize && isOverflowing) {
         items.forEach(item => {
           item.style.lineHeight = "1";
           item.style.padding = "1px 0";
@@ -246,7 +292,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
   });
   
   return (
-    <div className="options-container" ref={containerRef}>
+    <div className={`options-container ${isInModal ? 'modal-options' : ''}`} ref={containerRef}>
       <ol type="a">
         {cleanedOptions.map((option, index) => (
           <li key={index}>

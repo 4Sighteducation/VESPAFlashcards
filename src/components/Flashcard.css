@@ -127,14 +127,41 @@
   margin-bottom: 5px;
   overflow: hidden;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 5px;
+  padding: 5px 8px;
+  min-height: 70px;
 }
 
 .question-title .scaled-text {
   font-weight: bold;
-  min-height: 0; /* Allow scaling to work properly */
+  min-height: 0;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* For modal view, ensure larger text in questions */
+.modal-card .question-title {
+  min-height: 100px;
+  padding: 10px 15px;
+  height: 35%;
+  margin-bottom: 10px;
+}
+
+.modal-card .question-title .scaled-text {
+  font-size: 16px !important; /* Force larger font in modal */
+}
+
+.modal-card .options-container li {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 16px; /* More consistent font size */
+  background-color: rgba(255, 255, 255, 0.9); /* Even higher contrast in modal view */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* Options container for multiple choice */
@@ -197,19 +224,6 @@
 .modal-card .options-container {
   height: 65%;
   overflow: hidden;
-}
-
-.modal-card .question-title {
-  height: 35%;
-  margin-bottom: 10px;
-}
-
-.modal-card .options-container li {
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  font-size: 16px; /* More consistent font size */
-  background-color: rgba(255, 255, 255, 0.9); /* Even higher contrast in modal view */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .modal-card-container .flashcard {
@@ -802,6 +816,7 @@
   height: 100%;
   padding: 20px 0;
   overflow: visible;
+  width: 100%;
 }
 
 .modal-card-container .flashcard {
@@ -1098,5 +1113,171 @@
   .modal-card-container .flashcard {
     min-height: 300px;
     max-height: 85vh;
+  }
+}
+
+/* Modal card container styling */
+.modal-card-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px 0;
+  overflow: visible;
+  width: 100%;
+}
+
+.modal-card-container .flashcard {
+  width: 100%;
+  max-width: 500px;
+  height: 400px;
+  margin: 0 auto;
+  background-color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  perspective: 1000px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Ensure modal content is always visible without scrollbars on mobile */
+@media (max-width: 768px) {
+  .modal-card-container .flashcard {
+    height: auto;
+    min-height: 350px;
+    max-height: 70vh;
+  }
+  
+  .modal-card-container .flashcard .flashcard-front,
+  .modal-card-container .flashcard .flashcard-back {
+    position: relative; /* Change from absolute for better mobile layout */
+    overflow: visible; /* Prevent scrollbars */
+    padding: 15px;
+  }
+  
+  .modal-card .question-title {
+    min-height: auto; /* Allow more flexible height */
+    padding: 5px;
+    margin-bottom: 5px;
+    height: auto;
+    max-height: 40%;
+  }
+  
+  .modal-card .options-container {
+    padding: 5px;
+    height: auto;
+    max-height: 60%;
+  }
+  
+  .modal-card .options-container ol {
+    overflow: visible;
+    height: auto;
+  }
+  
+  .modal-card .question-title .scaled-text {
+    font-size: 14px !important; /* Smaller default font for mobile */
+  }
+  
+  .card-modal {
+    padding: 15px;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-card-container .flashcard {
+    min-height: 280px;
+    border-radius: 6px;
+  }
+  
+  .modal-card-container .flashcard .flashcard-front,
+  .modal-card-container .flashcard .flashcard-back {
+    padding: 10px;
+  }
+  
+  .modal-card .question-title {
+    padding: 3px;
+    margin-bottom: 3px;
+  }
+  
+  .modal-card .question-title .scaled-text {
+    font-size: 12px !important;
+  }
+}
+
+/* Mobile modal specific adjustments */
+.modal-options.options-container {
+  margin-top: 5px;
+  overflow: visible !important;
+}
+
+.modal-options.options-container ol {
+  overflow: visible !important;
+}
+
+.modal-options.options-container li {
+  margin: 3px 0;
+  padding: 3px 8px;
+  white-space: normal;
+  line-height: 1.2;
+  overflow: visible;
+  -webkit-line-clamp: initial;
+  -webkit-box-orient: initial;
+  display: flex;
+  align-items: flex-start;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .modal-options.options-container li {
+    font-size: 12px !important; /* Force consistent font size */
+    padding: 2px 5px;
+    margin: 2px 0;
+  }
+  
+  .card-modal {
+    width: 95%;
+    padding: 10px;
+  }
+  
+  .card-modal-overlay {
+    padding: 10px;
+    align-items: center;
+  }
+  
+  .modal-card-container .flashcard {
+    transform-style: flat; /* Help with mobile rendering */
+  }
+  
+  .modal-card-container .flashcard .flashcard-inner {
+    transform-style: flat; /* Help with mobile rendering */
+    overflow: visible;
+  }
+  
+  .card-modal .modal-navigation {
+    margin-top: 5px;
+    padding: 5px 0;
+  }
+  
+  .modal-navigation .nav-button {
+    min-width: 80px;
+    padding: 5px 10px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-options.options-container li {
+    font-size: 11px !important;
+    padding: 1px 4px;
+    margin: 1px 0;
+  }
+  
+  .card-modal {
+    padding: 5px;
+    margin: 0;
+  }
+  
+  .modal-card-container {
+    padding: 5px 0;
   }
 }
