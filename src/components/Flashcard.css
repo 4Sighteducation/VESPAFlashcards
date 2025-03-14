@@ -222,8 +222,20 @@
 
 /* Special handling for slideshow/modal mode */
 .modal-card .options-container {
-  height: 65%;
-  overflow: hidden;
+  height: auto;
+  max-height: 65%;
+  overflow-y: auto;
+  width: 100%;
+  padding-bottom: 10px;
+  box-sizing: border-box;
+}
+
+/* Make sure content is always visible in the modal */
+.modal-card .question-title,
+.modal-card .options-container {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .modal-card-container .flashcard {
@@ -1280,59 +1292,45 @@
 /* Landscape mode adjustments - ENHANCED */
 @media (max-height: 600px) and (orientation: landscape) {
   .card-modal-content {
-    max-height: 95vh;
+    max-height: 98vh;
     display: flex;
     flex-direction: column;
+    padding: 5px;
   }
   
   .card-modal-card-container {
-    padding: 10px;
+    padding: 5px;
+    max-height: 75vh;
+    overflow-y: auto;
   }
   
   .card-modal-card-container .flashcard {
-    height: 280px;
-    max-height: 55vh;
+    height: auto;
+    min-height: 230px;
+    max-height: 70vh;
     width: 100%;
-    max-width: 90%;
+    max-width: 95%;
     margin: 0 auto;
   }
   
-  .card-modal-actions {
+  .card-modal-card-container .flashcard .flashcard-front,
+  .card-modal-card-container .flashcard .flashcard-back {
+    position: relative;
     padding: 8px;
+    height: auto;
+    min-height: 230px;
+  }
+  
+  .card-modal-actions {
+    padding: 5px;
   }
   
   /* Make options container shorter in landscape to fit screen */
   .modal-card .options-container {
-    max-height: 50%;
-  }
-  
-  .modal-card .options-container li {
-    padding: 3px 5px;
-    margin-bottom: 3px;
-    font-size: 11px;
-    line-height: 1.2;
-  }
-  
-  .modal-card .question-title {
-    min-height: 40px;
-    margin-bottom: 8px;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 13px !important;
-    padding: 5px;
-  }
-}
-
-/* Extra small screens in landscape */
-@media (max-height: 450px) and (orientation: landscape) {
-  .card-modal-card-container .flashcard {
-    height: 220px;
-    max-height: 50vh;
-  }
-  
-  .modal-card .options-container {
-    max-height: 45%;
+    max-height: none;
+    overflow-y: visible;
+    margin-top: 5px;
+    padding-bottom: 5px;
   }
   
   .modal-card .options-container li {
@@ -1342,9 +1340,120 @@
     line-height: 1.1;
   }
   
-  .modal-card .question-title .scaled-text {
-    font-size: 12px !important;
+  .modal-card .question-title {
+    min-height: 0;
+    margin-bottom: 5px;
     padding: 3px;
+  }
+  
+  .modal-card .question-title .scaled-text {
+    font-size: 11px !important;
+    padding: 3px;
+    min-height: 0;
+  }
+}
+
+/* Extra small screens in landscape - even more aggressive */
+@media (max-height: 450px) and (orientation: landscape) {
+  .card-modal-card-container .flashcard {
+    min-height: 200px;
+    max-height: 65vh;
+  }
+  
+  .card-modal-card-container .flashcard .flashcard-front,
+  .card-modal-card-container .flashcard .flashcard-back {
+    min-height: 200px;
+    padding: 5px;
+  }
+  
+  .modal-card .options-container li {
+    padding: 1px 3px;
+    margin-bottom: 1px;
+    font-size: 9px;
+    line-height: 1;
+  }
+  
+  .modal-card .question-title .scaled-text {
+    font-size: 10px !important;
+    padding: 2px;
+  }
+  
+  .option-letter {
+    font-size: 9px;
+    min-width: 8px;
+    margin-right: 1px;
+  }
+}
+
+/* iPhone X/XR specific fix for landscape mode */
+@media (max-width: 896px) and (max-height: 414px) and (orientation: landscape) {
+  .card-modal-content {
+    width: 98%;
+    max-height: 98vh;
+    padding: 3px;
+  }
+  
+  .card-modal-card-container {
+    padding: 3px;
+    max-height: 75vh;
+  }
+  
+  .card-modal-card-container .flashcard {
+    min-height: 180px;
+    height: auto;
+    max-height: 60vh;
+  }
+  
+  .card-modal-card-container .flashcard .flashcard-front,
+  .card-modal-card-container .flashcard .flashcard-back {
+    min-height: 180px;
+    height: auto;
+    padding: 5px;
+  }
+  
+  .modal-card .question-title {
+    margin-bottom: 3px;
+    padding: 2px;
+  }
+  
+  .modal-card .question-title .scaled-text {
+    font-size: 10px !important;
+    padding: 2px;
+  }
+  
+  .modal-card .options-container {
+    margin-top: 3px;
+  }
+  
+  .modal-card .options-container li {
+    padding: 1px 2px;
+    margin-bottom: 1px;
+    font-size: 8px;
+    line-height: 1;
+    border-radius: 2px;
+  }
+  
+  .option-letter {
+    font-size: 8px;
+    min-width: 6px;
+    margin-right: 1px;
+  }
+  
+  .card-modal-actions {
+    padding: 3px;
+  }
+  
+  .nav-button {
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+  
+  .card-counter {
+    font-size: 10px;
+  }
+  
+  .topic-info {
+    font-size: 9px;
   }
 }
 
