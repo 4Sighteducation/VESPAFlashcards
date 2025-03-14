@@ -33,6 +33,7 @@
   padding: 10px 16px;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
+  overflow: visible;
 }
 
 .subject-header:hover {
@@ -43,12 +44,18 @@
   display: flex;
   flex-direction: column;
   z-index: 1;
+  min-width: 0;
+  flex: 1;
 }
 
 .subject-info h2 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .subject-metadata {

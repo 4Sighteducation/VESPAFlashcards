@@ -1229,6 +1229,8 @@ function App() {
           onAddCard={addCard}
           onClose={() => setView("cardBank")}
           subjects={getSubjects()}
+          auth={auth}
+          userId={auth?.id}
         />
       )}
 

@@ -6,6 +6,12 @@ import './Flashcard.css';
 const getContrastColor = (hexColor) => {
   if (!hexColor) return '#000000';
   
+  // If the color isn't a string (for some reason), convert or return default
+  if (typeof hexColor !== 'string') {
+    console.warn(`Invalid color type: ${typeof hexColor}, defaulting to black text`);
+    return '#000000';
+  }
+  
   // Remove # if present
   hexColor = hexColor.replace('#', '');
   
@@ -15,29 +21,37 @@ const getContrastColor = (hexColor) => {
     hexColor = hexColor.split('').map(c => c+c).join('');
   }
   
-  // Handle invalid hex values
+  // Handle invalid hex values with more thorough validation
   if (!/^[0-9A-Fa-f]{6}$/.test(hexColor)) {
     console.warn(`Invalid color format: ${hexColor}, defaulting to black text`);
     return '#000000';
   }
   
-  // Convert to RGB
-  const r = parseInt(hexColor.substring(0, 2), 16);
-  const g = parseInt(hexColor.substring(2, 4), 16);
-  const b = parseInt(hexColor.substring(4, 6), 16);
-  
-  // Calculate brightness using YIQ formula - adjusted for better contrast
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  
-  // Use a more conservative threshold to ensure better contrast
-  // Lower threshold means more white text, better for readability
-  const threshold = 125; // Adjusted from 110 to 125 for better readability
-  const textColor = brightness > threshold ? '#000000' : '#ffffff';
-  
-  // Output contrast calculation for debugging
-  console.log(`Color: #${hexColor}, Brightness: ${brightness}, Text: ${textColor}`);
-  
-  return textColor;
+  try {
+    // Convert to RGB with error handling
+    const r = parseInt(hexColor.substring(0, 2), 16);
+    const g = parseInt(hexColor.substring(2, 4), 16);
+    const b = parseInt(hexColor.substring(4, 6), 16);
+    
+    // Validate RGB values to catch NaN issues
+    if (isNaN(r) || isNaN(g) || isNaN(b)) {
+      console.warn(`Invalid RGB conversion for color: #${hexColor}, defaulting to black text`);
+      return '#000000';
+    }
+    
+    // Calculate brightness using YIQ formula - adjusted for better contrast
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    
+    // Use a more conservative threshold to ensure better contrast
+    // Lower threshold means more white text, better for readability
+    const threshold = 125; // Adjusted from 110 to 125 for better readability
+    const textColor = brightness > threshold ? '#000000' : '#ffffff';
+    
+    return textColor;
+  } catch (error) {
+    console.error("Error in getContrastColor:", error);
+    return '#000000'; // Default to black text on error
+  }
 };
 
 // Enhanced ScaledText component with more aggressive font scaling
@@ -235,7 +249,9 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
     <div className="options-container" ref={containerRef}>
       <ol type="a">
         {cleanedOptions.map((option, index) => (
-          <li key={index}>{option}</li>
+          <li key={index}>
+            <span className="option-letter">{String.fromCharCode(97 + index)})</span> {option}
+          </li>
         ))}
       </ol>
     </div>
