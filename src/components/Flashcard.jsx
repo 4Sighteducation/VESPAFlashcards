@@ -17,11 +17,16 @@ const getContrastColor = (hexColor) => {
   // Calculate brightness using YIQ formula - adjusted for better contrast
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   
-  // Lower threshold (115 instead of 120) to ensure more text is white on medium backgrounds
-  return brightness > 115 ? '#000000' : '#ffffff';
+  // Lower threshold to 110 (from 115) to ensure more text is white on medium backgrounds
+  const textColor = brightness > 110 ? '#000000' : '#ffffff';
+  
+  // Output contrast calculation for debugging
+  console.log(`Color: #${hexColor}, Brightness: ${brightness}, Text: ${textColor}`);
+  
+  return textColor;
 };
 
-const ScaledText = ({ children, minFontSize = 6, maxFontSize = 16, className = '' }) => {
+const ScaledText = ({ children, minFontSize = 8, maxFontSize = 16, className = '' }) => {
   const textRef = useRef(null);
   const containerRef = useRef(null);
   
@@ -68,12 +73,15 @@ const ScaledText = ({ children, minFontSize = 6, maxFontSize = 16, className = '
       
       // Final adjustment
       text.style.fontSize = `${max}px`;
+      console.log(`Text scaled to ${max}px (${minFontSize}-${maxFontSize}) for: ${text.textContent.substring(0, 30)}...`);
       
       // If still overflowing at minimum size, add ellipsis
       if (max <= minFontSize && (text.scrollHeight > container.clientHeight || text.scrollWidth > container.clientWidth)) {
         text.style.overflow = 'hidden';
         text.style.textOverflow = 'ellipsis';
       }
+    } else {
+      console.log(`Text using max size ${maxFontSize}px for: ${text.textContent.substring(0, 30)}...`);
     }
   };
   
@@ -102,15 +110,24 @@ const MultipleChoiceOptions = ({ options, preview = false }) => {
     const container = containerRef.current;
     const items = container.querySelectorAll('li');
     
+    if (items.length === 0) return;
+    
     // Start with a reasonable font size
-    let fontSize = 14;
+    let fontSize = preview ? 12 : 16;
+    
+    // Add debug output for option sizing
+    console.log(`MultipleChoice options: ${options.length}, starting fontSize: ${fontSize}`);
+    
+    // Reset all items to the starting fontSize
+    items.forEach(item => {
+      item.style.fontSize = `${fontSize}px`;
+    });
     
     // Reduce font size if any item overflows
     let overflow = false;
     do {
       overflow = false;
       items.forEach(item => {
-        item.style.fontSize = `${fontSize}px`;
         // Check both width and height overflow
         if (item.scrollWidth > item.clientWidth || 
             container.scrollHeight > container.clientHeight) {
@@ -118,22 +135,23 @@ const MultipleChoiceOptions = ({ options, preview = false }) => {
         }
       });
       
-      if (overflow && fontSize > 6) {
-        fontSize -= 1;
-      } else {
-        break;
-      }
-    } while (fontSize > 6);
-    
-    // Final check for container overflow
-    if (container.scrollHeight > container.clientHeight && fontSize > 6) {
-      // Further reduce font size if the entire list is too tall
-      do {
+      if (overflow && fontSize > 8) {
         fontSize -= 1;
         items.forEach(item => {
           item.style.fontSize = `${fontSize}px`;
         });
-      } while (container.scrollHeight > container.clientHeight && fontSize > 6);
+      } else {
+        break;
+      }
+    } while (fontSize > 8);
+    
+    console.log(`MultipleChoice options final fontSize: ${fontSize}`);
+    
+    // Add a class to indicate small font for styling adjustments
+    if (fontSize <= 10) {
+      container.classList.add('small-font-options');
+    } else {
+      container.classList.remove('small-font-options');
     }
   };
   
@@ -334,16 +352,27 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
         )}
         
         <div className="flashcard-inner">
-          <div className="flashcard-front" style={{ color: textColor }}>
+          <div className="flashcard-front" style={{ 
+            color: textColor,
+            backgroundColor: card.cardColor || '#3cb44b',
+            padding: '15px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+            height: '100%',
+            width: '100%',
+            position: 'absolute',
+            boxSizing: 'border-box'
+          }}>
             {isMultipleChoice ? (
               <>
-                <ScaledText className="question-title" maxFontSize={isInModal ? 24 : 16}>
+                <ScaledText className="question-title" maxFontSize={isInModal ? 28 : 18} minFontSize={10}>
                   {card.front || card.question || "No question available"}
                 </ScaledText>
                 <MultipleChoiceOptions options={card.options || []} preview={preview} />
               </>
             ) : (
-              <ScaledText maxFontSize={isInModal ? 24 : 16}>
+              <ScaledText maxFontSize={isInModal ? 28 : 18} minFontSize={10}>
                 {typeof card.front === 'string' || typeof card.question === 'string' ? (
                   <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question available" }} />
                 ) : (
@@ -355,9 +384,17 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
           
           <div className="flashcard-back" style={{ 
             color: '#000000', 
-            backgroundColor: '#ffffff' 
+            backgroundColor: '#ffffff',
+            padding: '15px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+            height: '100%',
+            width: '100%',
+            position: 'absolute',
+            boxSizing: 'border-box'
           }}>
-            <ScaledText maxFontSize={isInModal ? 20 : 14}>
+            <ScaledText maxFontSize={isInModal ? 24 : 16} minFontSize={10}>
               {card.questionType === 'multiple_choice' ? (
                 <div>
                   Correct Answer: {(() => {

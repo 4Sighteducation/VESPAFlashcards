@@ -97,39 +97,27 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
 
   // Load saved topic lists from both localStorage and Knack on mount
   useEffect(() => {
-    // Load from localStorage
-    const storedLists = localStorage.getItem('savedTopicLists');
-    const localLists = storedLists ? JSON.parse(storedLists) : [];
-    
-    // Only load from Knack if authenticated
+    // Only proceed if authenticated
     if (auth && userId) {
-      // First set the local lists
-      setSavedTopicLists(localLists);
-      
-      // Then load from Knack and merge with local lists
+      console.log("User authenticated, loading topic lists from Knack");
+      // Load from Knack
       loadTopicListsFromKnack()
         .then(knackLists => {
           if (knackLists && knackLists.length > 0) {
-            // Merge lists, avoiding duplicates by ID
-            const mergedLists = [...localLists];
-            knackLists.forEach(knackList => {
-              const existingIndex = mergedLists.findIndex(local => local.id === knackList.id);
-              if (existingIndex > -1) {
-                mergedLists[existingIndex] = knackList; // Replace with Knack version
-              } else {
-                mergedLists.push(knackList); // Add new list
-              }
-            });
-            
-            setSavedTopicLists(mergedLists);
+            setSavedTopicLists(knackLists);
+            console.log("Loaded topic lists from Knack:", knackLists);
+          } else {
+            setSavedTopicLists([]);
           }
         })
         .catch(error => {
           console.error("Error loading topic lists from Knack:", error);
+          setSavedTopicLists([]);
         });
     } else {
-      // Just use localStorage if not authenticated
-      setSavedTopicLists(localLists);
+      // If not authenticated, we can't use topic lists (user-specific feature)
+      console.log("User not authenticated, no topic lists will be available");
+      setSavedTopicLists([]);
     }
     
     // Initialize available subjects and topics
@@ -141,22 +129,15 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   const loadTopicListsFromKnack = async () => {
     try {
       // Check if we're authenticated or have a user ID
-      const authData = localStorage.getItem('authData');
-      if (!authData) {
-        console.log("No authentication data, skipping Knack load");
+      if (!auth || !userId) {
+        console.log("No authentication data or userId, skipping Knack load");
         return [];
       }
       
-      const auth = JSON.parse(authData);
-      if (!auth.id) {
-        console.log("No user ID found, skipping Knack load");
-        return [];
-      }
-      
-      console.log("Loading topic lists from Knack...");
+      console.log("Loading topic lists from Knack for user:", userId);
       
       // Get topic lists from Knack
-      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${auth.id}`;
+      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
       const getResponse = await fetch(getUrl, {
         method: "GET",
         headers: {
@@ -178,31 +159,18 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         try {
           const knackTopicLists = JSON.parse(userData.field_3011);
           if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
-            console.log("Loaded topic lists from Knack:", knackTopicLists);
-            
-            // Merge with local lists
-            const localLists = JSON.parse(localStorage.getItem('savedTopicLists') || "[]");
-            
-            // Create a map of existing IDs
-            const existingIds = new Map();
-            localLists.forEach(list => existingIds.set(list.id, true));
-            
-            // Only add Knack lists that don't exist locally
-            const newLists = knackTopicLists.filter(list => !existingIds.has(list.id));
-            
-            if (newLists.length > 0) {
-              const mergedLists = [...localLists, ...newLists];
-              setSavedTopicLists(mergedLists);
-              localStorage.setItem('savedTopicLists', JSON.stringify(mergedLists));
-              console.log("Merged topic lists from Knack with local lists");
-            }
+            console.log("Successfully loaded topic lists from Knack:", knackTopicLists);
+            return knackTopicLists;
           }
         } catch (e) {
           console.error("Error parsing Knack topic lists:", e);
         }
       }
+      
+      return [];
     } catch (error) {
       console.error("Error loading topic lists from Knack:", error);
+      return [];
     }
   };
 
@@ -360,6 +328,12 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       return;
     }
     
+    // Only allow saving if authenticated
+    if (!auth || !userId) {
+      setError("You must be logged in to save topic lists");
+      return;
+    }
+    
     try {
       const newSavedList = {
         id: generateId('topiclist'),
@@ -368,19 +342,15 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         examType: formData.examType,
         subject: formData.subject || formData.newSubject,
         topics: hierarchicalTopics,
-        created: new Date().toISOString()
+        created: new Date().toISOString(),
+        userId: userId // Add userId to the list object for future reference
       };
       
       const updatedLists = [...savedTopicLists, newSavedList];
       setSavedTopicLists(updatedLists);
       
-      // Save to localStorage
-      localStorage.setItem('savedTopicLists', JSON.stringify(updatedLists));
-      
-      // Also save to Knack if authenticated
-      if (auth && userId) {
-        saveTopicListToKnack(newSavedList);
-      }
+      // Save directly to Knack
+      saveTopicListToKnack(updatedLists);
       
       // Close save dialog but keep topic modal open
       setShowSaveTopicDialog(false);
@@ -402,61 +372,19 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
     return `${prefix}_${timestamp}_${randomStr}`;
   };
   
-  // Save topic list to Knack
-  const saveTopicListToKnack = async (topicList) => {
+  // Save topic list to Knack - updated to save the entire lists array
+  const saveTopicListToKnack = async (topicLists) => {
     try {
       // Check if we're authenticated or have a user ID
-      const authData = localStorage.getItem('authData');
-      if (!authData) {
-        console.log("No authentication data, skipping Knack save");
+      if (!auth || !userId) {
+        console.log("No authentication data or userId, skipping Knack save");
         return;
       }
       
-      const auth = JSON.parse(authData);
-      if (!auth.id) {
-        console.log("No user ID found, skipping Knack save");
-        return;
-      }
+      console.log("Saving topic lists to Knack for user:", userId);
       
-      console.log("Saving topic list to Knack...");
-      
-      // Get existing topic lists from Knack
-      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${auth.id}`;
-      const getResponse = await fetch(getUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY
-        }
-      });
-      
-      if (!getResponse.ok) {
-        console.error("Failed to get Knack record:", await getResponse.json());
-        return;
-      }
-      
-      const userData = await getResponse.json();
-      console.log("Retrieved user data from Knack:", userData);
-      
-      // Combine existing topic lists with the new one
-      let existingKnackTopicLists = [];
-      if (userData.field_3011) {
-        try {
-          existingKnackTopicLists = JSON.parse(userData.field_3011);
-          if (!Array.isArray(existingKnackTopicLists)) {
-            existingKnackTopicLists = [];
-          }
-        } catch (e) {
-          console.error("Error parsing existing Knack topic lists:", e);
-          existingKnackTopicLists = [];
-        }
-      }
-      
-      const combinedTopicLists = [...existingKnackTopicLists, topicList];
-      
-      // Update Knack record
-      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${auth.id}`;
+      // Update Knack record directly with the full lists array
+      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
       const updateResponse = await fetch(updateUrl, {
         method: "PUT",
         headers: {
@@ -465,17 +393,17 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
           "X-Knack-REST-API-Key": KNACK_API_KEY
         },
         body: JSON.stringify({
-          field_3011: JSON.stringify(combinedTopicLists)
+          field_3011: JSON.stringify(topicLists)
         })
       });
       
       if (updateResponse.ok) {
-        console.log("Topic list saved to Knack successfully");
+        console.log("Topic lists saved to Knack successfully:", topicLists.length, "lists");
       } else {
-        console.error("Failed to save topic list to Knack:", await updateResponse.json());
+        console.error("Failed to save topic lists to Knack:", await updateResponse.json());
       }
     } catch (error) {
-      console.error("Error saving topic list to Knack:", error);
+      console.error("Error saving topic lists to Knack:", error);
     }
   };
   
@@ -509,94 +437,22 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   
   // Delete a topic list
   const deleteTopicList = (listId) => {
-    // Remove from state
-    setSavedTopicLists(prev => prev.filter(list => list.id !== listId));
-    
-    // Remove from localStorage
-    const storedLists = JSON.parse(localStorage.getItem('savedTopicLists') || '[]');
-    const updatedLists = storedLists.filter(list => list.id !== listId);
-    localStorage.setItem('savedTopicLists', JSON.stringify(updatedLists));
-    
-    // Delete from Knack if authenticated
-    if (auth && userId) {
-      deleteTopicListFromKnack(listId);
+    // Check if authenticated
+    if (!auth || !userId) {
+      setError("You must be logged in to delete topic lists");
+      return;
     }
+    
+    // Remove from state
+    const updatedLists = savedTopicLists.filter(list => list.id !== listId);
+    setSavedTopicLists(updatedLists);
+    
+    // Save the updated lists to Knack
+    saveTopicListToKnack(updatedLists);
     
     console.log(`Deleted topic list with ID: ${listId}`);
   };
   
-  // Delete topic list from Knack
-  const deleteTopicListFromKnack = async (listId) => {
-    try {
-      // Check if we're authenticated or have a user ID
-      const authData = localStorage.getItem('authData');
-      if (!authData) {
-        console.log("No authentication data, skipping Knack delete");
-        return;
-      }
-      
-      const auth = JSON.parse(authData);
-      if (!auth.id) {
-        console.log("No user ID found, skipping Knack delete");
-        return;
-      }
-      
-      console.log("Deleting topic list from Knack...");
-      
-      // Get existing topic lists from Knack
-      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${auth.id}`;
-      const getResponse = await fetch(getUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY
-        }
-      });
-      
-      if (!getResponse.ok) {
-        console.error("Failed to get Knack record:", await getResponse.json());
-        return;
-      }
-      
-      const userData = await getResponse.json();
-      
-      // Filter out the deleted list
-      if (userData.field_3011) {
-        try {
-          let knackTopicLists = JSON.parse(userData.field_3011);
-          if (Array.isArray(knackTopicLists)) {
-            knackTopicLists = knackTopicLists.filter(list => list.id !== listId);
-            
-            // Update Knack record
-            const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${auth.id}`;
-            const updateResponse = await fetch(updateUrl, {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Knack-Application-ID": KNACK_APP_ID,
-                "X-Knack-REST-API-Key": KNACK_API_KEY
-              },
-              body: JSON.stringify({
-                field_3011: JSON.stringify(knackTopicLists)
-              })
-            });
-            
-            if (updateResponse.ok) {
-              console.log("Topic list deleted from Knack successfully");
-            } else {
-              console.error("Failed to delete topic list from Knack:", await updateResponse.json());
-            }
-          }
-        } catch (e) {
-          console.error("Error parsing Knack topic lists:", e);
-        }
-      }
-    } catch (error) {
-      console.error("Error deleting topic list from Knack:", error);
-    }
-  };
-
   // Render saved topic lists
   const renderSavedTopicLists = () => {
     if (savedTopicLists.length === 0) {
