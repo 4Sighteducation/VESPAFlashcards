@@ -5,13 +5,20 @@ const ColorEditor = ({ subject, subjectColor, onClose, onSelectColor }) => {
   const [selectedColor, setSelectedColor] = useState(subjectColor || "#e0e0e0");
   const [applyToAllTopics, setApplyToAllTopics] = useState(true);  // Default to true
 
-  // Define a palette of bright, distinguishable colors
+  // Define a palette of bright, distinguishable colors matching AICardGenerator.jsx
   const brightColors = [
-    "#e6194b", "#3cb44b", "#ffe119", "#0082c8", "#f58231", 
-    "#911eb4", "#46f0f0", "#f032e6", "#d2f53c", "#fabebe", 
-    "#008080", "#e6beff", "#aa6e28", "#fffac8", "#800000", 
-    "#aaffc3", "#808000", "#ffd8b1", "#000080", "#808080",
-    "#FF69B4", "#8B4513", "#00CED1", "#ADFF2F", "#DC143C",
+    // Blues
+    "#5b9bd5", "#2e75b6", "#4472c4", "#4a86e8", "#6fa8dc", "#a4c2f4",
+    // Greens
+    "#70ad47", "#548235", "#a9d18e", "#a9d08e", "#c6e0b4", "#d9ead3",
+    // Reds/Pinks
+    "#c00000", "#e74c3c", "#ff9999", "#ea9999", "#f4cccc", "#f9cb9c",
+    // Purples
+    "#8e7cc3", "#674ea7", "#b4a7d6", "#d5a6bd", "#d9d2e9", "#ead1dc",
+    // Yellows/Oranges
+    "#f1c232", "#bf9000", "#ffd966", "#f6b26b", "#ffe599", "#fff2cc",
+    // Browns/Neutrals
+    "#a0522d", "#783f04", "#b45f06", "#8d6e63", "#a67c52", "#c9c9c9"
   ];
 
   // Function to determine if text should be black or white based on background

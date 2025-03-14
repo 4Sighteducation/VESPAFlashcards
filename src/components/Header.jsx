@@ -58,15 +58,13 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
       </div>
 
       <div className="header-actions">
-        {window.innerWidth <= 768 && (
-          <button 
-            className="mobile-menu-toggle" 
-            onClick={toggleMobileMenu}
-            aria-label="Toggle menu"
-          >
-            ☰
-          </button>
-        )}
+        <button 
+          className="mobile-menu-toggle" 
+          onClick={toggleMobileMenu}
+          aria-label="Toggle menu"
+        >
+          ☰
+        </button>
       </div>
     </header>
   );

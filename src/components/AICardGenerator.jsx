@@ -51,7 +51,7 @@ const BRIGHT_COLORS = [
 
 // API keys - in production, these should be in server environment variables
 const API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
-const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_ID || "64fc50bc3cd0ac00254bb62b";
+const KNACK_APP_ID = "64fc50bc3cd0ac00254bb62b"; // Using a direct value to avoid malformed App ID errors
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 
 // Helper function to clean OpenAI response
