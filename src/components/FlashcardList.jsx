@@ -3,6 +3,7 @@ import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
 import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
+import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown } from 'react-icons/fa';
 
 const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   // State for expanded subjects and topics
@@ -348,6 +349,45 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     );
   };
 
+  const renderSubjectHeader = (subject) => {
+    const { id, title, cards, exam_board: examBoard, exam_type: examType } = subject;
+    
+    return (
+      <div className="subject-header" onClick={() => toggleSubject(id)}>
+        <div className="subject-info">
+          <h2>{title}</h2>
+          <div className="subject-metadata">
+            <span>
+              <FaLayerGroup /> {cards.length} Cards
+            </span>
+            {examBoard && examBoard !== 'default' && (
+              <span>
+                <FaUniversity /> {examBoard}
+              </span>
+            )}
+            {examType && examType !== 'default' && (
+              <span>
+                <FaGraduationCap /> {examType}
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <div className="subject-actions">
+          <button title="Print all cards" onClick={(e) => { e.stopPropagation(); handlePrintSubject(id, e); }}>
+            <FaPrint />
+          </button>
+          <button title="Slideshow" onClick={(e) => { e.stopPropagation(); startSlideshow(id); }}>
+            <FaPlay />
+          </button>
+          <span>
+            {expandedSubjects[id] ? <FaAngleUp /> : <FaAngleDown />}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   // Render the accordion structure with subjects and topics
   return (
     <div className="flashcard-list">
@@ -386,39 +426,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
               className="subject-container"
               style={{ backgroundColor: 'white', borderLeft: `5px solid ${subjectColor}` }}
             >
-              <div 
-                className="subject-header" 
-                onClick={() => toggleSubject(subject)}
-                style={{ 
-                  backgroundColor: subjectColor,
-                  color: textColor
-                }}
-              >
-                <div className="subject-info">
-                  <h2>{subject}</h2>
-                  <div className="subject-meta">
-                    <span className={`meta-tag exam-type ${examType === 'Course' ? 'exam-type-default' : ''}`}>
-                      {examType}
-                    </span>
-                    <span className={`meta-tag exam-board ${examBoard === 'General' ? 'exam-board-default' : ''}`}>
-                      {examBoard}
-                    </span>
-                  </div>
-                </div>
-                <div className="subject-actions">
-                  <button 
-                    className="print-button"
-                    onClick={(e) => handlePrintSubject(subject, e)}
-                    title="Print all cards in this subject"
-                  >
-                    <span role="img" aria-label="Print">🖨️</span>
-                  </button>
-                  <span className="card-count">{totalCardsInSubject} cards</span>
-                  <span className="expand-icon" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                    ▼
-                  </span>
-                </div>
-              </div>
+              {renderSubjectHeader({ id: subject, title: subject, cards: topics.map(topic => groupedCards[subject][topic]), exam_board: examBoard, exam_type: examType })}
               
               {isExpanded && (
                 <div className="topics-container">

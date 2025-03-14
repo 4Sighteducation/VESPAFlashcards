@@ -26,89 +26,92 @@ const getContrastColor = (hexColor) => {
   return textColor;
 };
 
-// Update the ScaledText component for better auto-scaling
-const ScaledText = ({ children, minFontSize = 6, maxFontSize = 16, className = '' }) => {
-  const textRef = useRef(null);
+// Enhanced ScaledText component with more aggressive font scaling
+const ScaledText = ({ children, className = '', maxFontSize = 18, minFontSize = 3, isInModal = false }) => {
   const containerRef = useRef(null);
+  const textRef = useRef(null);
   
   useEffect(() => {
-    // Initial render - wait for next frame for proper sizes
-    const timer = requestAnimationFrame(() => {
-      adjustTextSize();
-    });
-    
-    return () => cancelAnimationFrame(timer);
-  }, [children]);
-  
-  // Add resize listener
-  useEffect(() => {
-    window.addEventListener('resize', adjustTextSize);
-    return () => window.removeEventListener('resize', adjustTextSize);
-  }, []);
-  
-  const adjustTextSize = () => {
-    if (!textRef.current || !containerRef.current) return;
-    
-    const container = containerRef.current;
-    const text = textRef.current;
-    
-    // Reset font size to maximum to measure properly
-    text.style.fontSize = `${maxFontSize}px`;
-    
-    // Get content length
-    const contentLength = text.textContent ? text.textContent.length : 0;
-    
-    // For very long content, start with a smaller size
-    if (contentLength > 300) {
-      text.style.fontSize = `${Math.max(minFontSize + 4, maxFontSize - 6)}px`;
-    } else if (contentLength > 200) {
-      text.style.fontSize = `${Math.max(minFontSize + 6, maxFontSize - 4)}px`;
-    } else if (contentLength > 100) {
-      text.style.fontSize = `${Math.max(minFontSize + 8, maxFontSize - 2)}px`;
-    }
-    
-    // Check if overflowing (both width and height)
-    if (text.scrollHeight > container.clientHeight || text.scrollWidth > container.clientWidth) {
-      // Binary search to find the right size
-      let min = minFontSize;
-      let max = parseInt(text.style.fontSize);
+    const adjustFontSize = () => {
+      if (!containerRef.current || !textRef.current) return;
       
-      while (min <= max) {
-        const mid = Math.floor((min + max) / 2);
-        text.style.fontSize = `${mid}px`;
+      const container = containerRef.current;
+      const textElement = textRef.current;
+      const contentLength = children ? children.toString().length : 0;
+      
+      // Further reduce starting font size for longer content
+      let startFontSize = maxFontSize;
+      
+      if (isInModal) {
+        // For modal view, start with larger font sizes
+        startFontSize = maxFontSize;
+        if (contentLength > 500) startFontSize = Math.min(startFontSize, 16);
+        if (contentLength > 300) startFontSize = Math.min(startFontSize, 14);
+        if (contentLength > 200) startFontSize = Math.min(startFontSize, 12);
+        if (contentLength > 100) startFontSize = Math.min(startFontSize, 10);
+      } else {
+        // For regular view, be more aggressive
+        if (contentLength > 500) startFontSize = Math.min(startFontSize, 14);
+        if (contentLength > 300) startFontSize = Math.min(startFontSize, 12);
+        if (contentLength > 200) startFontSize = Math.min(startFontSize, 10);
+        if (contentLength > 100) startFontSize = Math.min(startFontSize, 8);
+      }
+      
+      // Debug output for initial sizing
+      console.log(`ScaledText length: ${contentLength}, starting fontSize: ${startFontSize}, modal: ${isInModal}`);
+      
+      // Binary search for optimal font size
+      let low = minFontSize;
+      let high = startFontSize;
+      let bestFontSize = minFontSize;
+      let iterations = 0;
+      
+      while (low <= high && iterations < 20) {
+        iterations++;
+        const mid = Math.floor((low + high) / 2);
+        textElement.style.fontSize = `${mid}px`;
         
-        if (text.scrollHeight <= container.clientHeight && text.scrollWidth <= container.clientWidth) {
-          min = mid + 1;
+        // Check if text overflows
+        const isOverflowing = 
+          textElement.scrollHeight > container.clientHeight || 
+          textElement.scrollWidth > container.clientWidth;
+        
+        if (isOverflowing) {
+          high = mid - 0.5;
         } else {
-          max = mid - 1;
+          bestFontSize = mid;
+          low = mid + 0.5;
         }
       }
       
-      // Final adjustment - subtract 1px to ensure we're not at the exact edge
-      text.style.fontSize = `${Math.max(minFontSize, max - 1)}px`;
-      console.log(`Text scaled to ${max-1}px (${minFontSize}-${maxFontSize}) for content length ${contentLength}`);
+      // Set final font size
+      textElement.style.fontSize = `${bestFontSize}px`;
+      console.log(`ScaledText final fontSize: ${bestFontSize} after ${iterations} iterations`);
       
-      // If still overflowing at minimum size, add ellipsis
-      if (max <= minFontSize && (text.scrollHeight > container.clientHeight || text.scrollWidth > container.clientWidth)) {
-        text.style.overflow = 'hidden';
-        text.style.textOverflow = 'ellipsis';
+      // Add class based on font size for additional styling
+      container.classList.remove('very-small-text', 'small-text');
+      if (bestFontSize <= 6) {
+        container.classList.add('very-small-text');
+      } else if (bestFontSize <= 9) {
+        container.classList.add('small-text');
       }
-    } else {
-      console.log(`Text using ${text.style.fontSize} for content length ${contentLength}`);
-    }
-  };
+    };
+    
+    adjustFontSize();
+    window.addEventListener('resize', adjustFontSize);
+    
+    return () => window.removeEventListener('resize', adjustFontSize);
+  }, [children, maxFontSize, minFontSize, isInModal]);
   
   return (
-    <div ref={containerRef} className={`text-container ${className}`}>
-      <div ref={textRef} className="scaled-text">
-        {children}
-      </div>
+    <div className={`scaled-text ${className}`} ref={containerRef}>
+      <div ref={textRef}>{children}</div>
     </div>
   );
 };
 
 // Improved component for multiple choice options with more adaptive scaling
-const MultipleChoiceOptions = ({ options, preview = false }) => {
+const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) => {
   const containerRef = useRef(null);
   
   useEffect(() => {
@@ -128,25 +131,27 @@ const MultipleChoiceOptions = ({ options, preview = false }) => {
     // Calculate average option length
     const totalLength = options.reduce((sum, option) => sum + option.length, 0);
     const avgLength = totalLength / options.length;
+    const maxLength = Math.max(...options.map(option => option.length));
     
     // Set starting font size based on content length and number of options
-    let fontSize = 16; // Default
+    let fontSize = isInModal ? 14 : 12; // Default
     
+    // Adjust based on number of options
     if (options.length >= 5) {
-      fontSize = 12;
+      fontSize = isInModal ? 12 : 10;
     } else if (options.length >= 4) {
-      fontSize = 13;
+      fontSize = isInModal ? 13 : 11;
     }
     
-    // Further adjust based on average option length
-    if (avgLength > 100) {
-      fontSize = Math.min(fontSize, 10);
+    // Further adjust based on content length
+    if (maxLength > 100) {
+      fontSize = Math.min(fontSize, isInModal ? 10 : 8);
     } else if (avgLength > 50) {
-      fontSize = Math.min(fontSize, 12);
+      fontSize = Math.min(fontSize, isInModal ? 12 : 9);
     }
     
-    // Add debug output for option sizing
-    console.log(`MultipleChoice options: ${options.length}, avg length: ${avgLength.toFixed(1)}, starting fontSize: ${fontSize}`);
+    // Debug output
+    console.log(`MultipleChoice options: ${options.length}, max length: ${maxLength}, avg length: ${avgLength.toFixed(1)}, starting fontSize: ${fontSize}`);
     
     // Reset all items to the starting fontSize
     items.forEach(item => {
@@ -158,21 +163,25 @@ const MultipleChoiceOptions = ({ options, preview = false }) => {
     
     // If overflowing, reduce font size until it fits
     if (isOverflowing) {
-      while (fontSize > 6 && container.scrollHeight > container.clientHeight) {
-        fontSize -= 1;
+      let attempts = 0;
+      while (fontSize > 4 && container.scrollHeight > container.clientHeight && attempts < 20) {
+        fontSize -= 0.5;
         items.forEach(item => {
           item.style.fontSize = `${fontSize}px`;
         });
+        attempts++;
       }
     }
     
     console.log(`MultipleChoice options final fontSize: ${fontSize}`);
     
-    // Add a class to indicate small font for styling adjustments
-    if (fontSize <= 10) {
+    // Add classes to adjust styles based on font size
+    container.classList.remove('small-font-options', 'very-small-font-options');
+    
+    if (fontSize <= 8) {
+      container.classList.add('very-small-font-options');
+    } else if (fontSize <= 10) {
       container.classList.add('small-font-options');
-    } else {
-      container.classList.remove('small-font-options');
     }
   };
   
@@ -391,15 +400,17 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                   className="question-title" 
                   maxFontSize={isInModal ? 28 : 18} 
                   minFontSize={isInModal ? 8 : 6}
+                  isInModal={isInModal}
                 >
                   {card.front || card.question || "No question available"}
                 </ScaledText>
-                <MultipleChoiceOptions options={card.options || []} preview={preview} />
+                <MultipleChoiceOptions options={card.options || []} preview={preview} isInModal={isInModal} />
               </>
             ) : (
               <ScaledText 
                 maxFontSize={isInModal ? 28 : 18} 
                 minFontSize={isInModal ? 8 : 6}
+                isInModal={isInModal}
               >
                 {typeof card.front === 'string' || typeof card.question === 'string' ? (
                   <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question available" }} />
@@ -425,6 +436,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             <ScaledText 
               maxFontSize={isInModal ? 24 : 16} 
               minFontSize={isInModal ? 8 : 6}
+              isInModal={isInModal}
             >
               {card.questionType === 'multiple_choice' ? (
                 <div>
