@@ -171,6 +171,16 @@ const SpacedRepetition = ({
       return !card.nextReviewDate || new Date(card.nextReviewDate) <= today;
     });
     
+    // If we have no reviewable cards but the study modal is open, we should close it
+    if (reviewableCards.length === 0 && showStudyModal) {
+      setShowStudyModal(false);
+      // Show a message to the user
+      alert("No cards available for review at this time. Please check back later.");
+      // Reset selection
+      setSelectedSubject(null);
+      setSelectedTopic(null);
+    }
+    
     setCurrentCards(reviewableCards);
     setCurrentIndex(0);
     setIsFlipped(false);
@@ -199,16 +209,48 @@ const SpacedRepetition = ({
   const reviewSubject = (subject) => {
     setSelectedSubject(subject);
     setSelectedTopic(null);
-    updateCurrentCards(groupedBoxCards);
-    setShowStudyModal(true); // Open the study modal
+    
+    // Get all cards for this subject
+    const subjectCards = Object.values(groupedBoxCards[subject] || {}).flat();
+    
+    // Check if there are any reviewable cards for this subject
+    const today = new Date();
+    const reviewableCards = subjectCards.filter(card => 
+      !card.nextReviewDate || new Date(card.nextReviewDate) <= today
+    );
+    
+    // Only open the modal if there are cards to review
+    if (reviewableCards.length > 0) {
+      updateCurrentCards(groupedBoxCards);
+      setShowStudyModal(true); // Open the study modal
+    } else {
+      // Show a message that no cards are available for review yet
+      alert(`No cards in "${subject}" are ready for review today. Check back tomorrow!`);
+    }
   };
   
   // Select cards in a specific topic for review
   const reviewTopic = (subject, topic) => {
     setSelectedSubject(subject);
     setSelectedTopic(topic);
-    updateCurrentCards(groupedBoxCards);
-    setShowStudyModal(true); // Open the study modal
+    
+    // Get all cards for this topic
+    const topicCards = groupedBoxCards[subject]?.[topic] || [];
+    
+    // Check if there are any reviewable cards for this topic
+    const today = new Date();
+    const reviewableCards = topicCards.filter(card => 
+      !card.nextReviewDate || new Date(card.nextReviewDate) <= today
+    );
+    
+    // Only open the modal if there are cards to review
+    if (reviewableCards.length > 0) {
+      updateCurrentCards(groupedBoxCards);
+      setShowStudyModal(true); // Open the study modal
+    } else {
+      // Show a message that no cards are available for review yet
+      alert(`No cards in "${topic}" are ready for review today. Check back tomorrow!`);
+    }
   };
   
   // Handle card flip action
@@ -337,7 +379,7 @@ const SpacedRepetition = ({
   // Add handler functions for correct/incorrect answers (these were missing)
   const handleCorrectAnswer = () => {
     // First check if we have a valid card
-    if (!isValidCard) {
+    if (!isValidCard || !currentCard) {
       console.error("Cannot move card: No valid card found at index", currentIndex);
       return;
     }
@@ -366,12 +408,12 @@ const SpacedRepetition = ({
       // Update card with next review date
       const updatedCard = {
         ...cardToMove,
-        nextReviewDate: nextReviewDate.toISOString(),
-        isReviewable: false, // Mark as not reviewable anymore
-        boxNum: nextBox // Make sure boxNum is updated
+        box: nextBox,
+        lastReviewDate: now.toISOString(),
+        nextReviewDate: nextReviewDate.toISOString()
       };
       
-      // Call the parent component's function to move the card
+      // Update card in the deck
       onMoveCard(cardToMove.id, nextBox);
       
       // Update the current cards array to mark this card as reviewed
@@ -394,14 +436,14 @@ const SpacedRepetition = ({
       }, 1500);
     } catch (error) {
       console.error("Error handling correct answer:", error);
-      // Attempt to recover from error by moving to next card
-      nextCard();
+      // Still try to move to next card to recover
+      setTimeout(nextCard, 1500);
     }
   };
 
   const handleIncorrectAnswer = () => {
     // First check if we have a valid card
-    if (!isValidCard) {
+    if (!isValidCard || !currentCard) {
       console.error("Cannot move card: No valid card found at index", currentIndex);
       return;
     }
@@ -414,20 +456,19 @@ const SpacedRepetition = ({
       // Move the card back to box 1
       const cardToMove = currentCard;
       
-      // Reset review date to tomorrow
+      // Calculate next review date (same day for box 1)
       const now = new Date();
       const nextReviewDate = new Date(now);
-      nextReviewDate.setDate(now.getDate() + 1);
       
       // Update card with next review date
       const updatedCard = {
         ...cardToMove,
-        nextReviewDate: nextReviewDate.toISOString(),
-        isReviewable: false, // Mark as not reviewable anymore
-        boxNum: 1 // Move back to box 1
+        box: 1,
+        lastReviewDate: now.toISOString(),
+        nextReviewDate: nextReviewDate.toISOString()
       };
       
-      // Call the parent component's function to move the card
+      // Update card in the deck
       onMoveCard(cardToMove.id, 1);
       
       // Update the current cards array to mark this card as reviewed
@@ -450,8 +491,8 @@ const SpacedRepetition = ({
       }, 1500);
     } catch (error) {
       console.error("Error handling incorrect answer:", error);
-      // Attempt to recover from error by moving to next card
-      nextCard();
+      // Still try to move to next card to recover
+      setTimeout(nextCard, 1500);
     }
   };
 
@@ -463,8 +504,19 @@ const SpacedRepetition = ({
 
   // Improved multiple choice rendering to ensure questions display better on mobile
   const renderMultipleChoice = (card) => {
+    // First validate the card and its options
+    if (!card || !isValidCard) {
+      console.warn("Cannot render multiple choice: Card is not valid");
+      return (
+        <div className="multiple-choice-options">
+          <h4>Multiple choice unavailable</h4>
+          <p className="error-message">The card data is not valid.</p>
+        </div>
+      );
+    }
+    
     // Add defensive checks
-    if (!card || !card.options || !Array.isArray(card.options)) {
+    if (!card.options || !Array.isArray(card.options) || card.options.length === 0) {
       console.warn("Cannot render multiple choice: Invalid card or missing options", card);
       return (
         <div className="multiple-choice-options">
@@ -756,6 +808,36 @@ const SpacedRepetition = ({
       );
     }
 
+    // Additional safety check - if we have cards but the current card is invalid or missing properties
+    if (!currentCard || !currentCard.front && !currentCard.question) {
+      return (
+        <div className="empty-box">
+          <h3>Invalid Card Detected</h3>
+          <p>
+            This card appears to be missing critical data and cannot be displayed properly.
+          </p>
+          <div className="card-navigation">
+            {currentIndex > 0 && (
+              <button className="prev-button" onClick={prevCard}>Previous</button>
+            )}
+            {currentIndex < currentCards.length - 1 && (
+              <button className="next-button" onClick={nextCard}>Next</button>
+            )}
+          </div>
+          <button 
+            className="return-button" 
+            onClick={() => {
+              setSelectedSubject(null);
+              setSelectedTopic(null);
+              setShowStudyModal(false);
+            }}
+          >
+            Return to Box View
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="card-study-area">
         <div className="study-context">
@@ -775,288 +857,3 @@ const SpacedRepetition = ({
         </div>
         
         <div
-          className={`study-card ${isFlipped ? "flipped" : ""} ${
-            !currentCard.isReviewable ? "not-reviewable" : ""
-          }`}
-          onClick={currentCard.questionType === 'multiple_choice' ? null : handleCardFlip}
-          style={{
-            '--card-color': currentCard.cardColor || '#ffffff'
-          }}
-        >
-          <div className="card-inner">
-            <div 
-              className={`card-front ${currentCard.questionType === 'multiple_choice' ? 'has-multiple-choice' : ''}`}
-              onClick={currentCard.questionType === 'multiple_choice' ? null : handleCardFlip}
-            >
-              <div className="card-subject-topic">
-                <span className="card-subject">{currentCard.subject || "General"}</span>
-                <span className="card-topic">{currentCard.topic || ""}</span>
-              </div>
-              {/* Check for either additionalInfo or detailedAnswer */}
-              {(currentCard.additionalInfo || currentCard.detailedAnswer) && (
-                <button 
-                  className="info-btn" 
-                  onClick={toggleInfoModal}
-                >
-                  ℹ️
-                </button>
-              )}
-              
-              {/* Next review date display */}
-              {currentCard.nextReviewDate && (
-                <div className="review-date-indicator">
-                  Next review: {new Date(currentCard.nextReviewDate).toLocaleDateString()}
-                </div>
-              )}
-              
-              {/* Enhanced question display for multiple choice */}
-              {currentCard.questionType === 'multiple_choice' ? (
-                <>
-                  <div className="multiple-choice-header-container">
-                    <h4 className="multiple-choice-header">Choose the correct answer:</h4>
-                  </div>
-                  
-                  <div
-                    className="card-content multiple-choice-question"
-                    dangerouslySetInnerHTML={{
-                      __html:
-                        currentCard.front ||
-                        currentCard.question ||
-                        "No question"
-                    }}
-                  />
-                  
-                  {!isFlipped && renderMultipleChoice(currentCard)}
-                </>
-              ) : (
-                <div
-                  className="card-content"
-                  dangerouslySetInnerHTML={{
-                    __html:
-                      currentCard.front ||
-                      currentCard.question ||
-                      "No question"
-                  }}
-                />
-              )}
-              
-              {!currentCard.isReviewable && (
-                <div className="review-date-overlay">
-                  <p>This card has been reviewed already</p>
-                  <p>The next review date is:</p>
-                  <p className="next-review-date">{new Date(currentCard.nextReviewDate).toLocaleDateString()}</p>
-                </div>
-              )}
-            </div>
-            <div className="card-back">
-              <div className="card-subject-topic">
-                <span className="card-subject">{currentCard.subject || "General"}</span>
-                <span className="card-topic">{currentCard.topic || ""}</span>
-              </div>
-              {/* Check for either additionalInfo or detailedAnswer */}
-              {(currentCard.additionalInfo || currentCard.detailedAnswer) && (
-                <button 
-                  className="info-btn" 
-                  onClick={toggleInfoModal}
-                >
-                  ℹ️
-                </button>
-              )}
-              
-              {/* For multiple choice, show simplified back */}
-              {currentCard.questionType === 'multiple_choice' ? (
-                renderMultipleChoiceBack(currentCard)
-              ) : (
-                <div
-                  className="card-content"
-                  dangerouslySetInnerHTML={{
-                    __html:
-                      currentCard.back ||
-                      (currentCard.detailedAnswer && !currentCard.additionalInfo ? 
-                        currentCard.detailedAnswer : 
-                        currentCard.correctAnswer || 
-                        "No answer")
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="card-navigation">
-          <button
-            className="prev-button"
-            onClick={prevCard}
-            disabled={currentIndex === 0}
-          >
-            Previous
-          </button>
-          <div className="card-counter">
-            <span className="card-index">
-              {currentIndex + 1} / {currentCards.length}
-            </span>
-          </div>
-          <button
-            className="next-button"
-            onClick={nextCard}
-            disabled={currentIndex === currentCards.length - 1}
-          >
-            Next
-          </button>
-        </div>
-        
-        {showFlipResponse && isValidCard && (
-          <>
-            <div className={`flip-response-overlay ${showFlipResponseOverlay ? 'active' : ''}`}></div>
-            <div className="flip-response">
-              {currentCard.questionType === 'multiple_choice' ? (
-                // For multiple choice questions, check if they got it right automatically
-                <div>
-                  <p>
-                    {selectedOption === currentCard.correctAnswer 
-                      ? "You selected the correct answer!" 
-                      : "Your answer was incorrect."}
-                  </p>
-                  <div className="response-buttons">
-                    {selectedOption === currentCard.correctAnswer ? (
-                      <button className="correct-button" onClick={handleCorrectAnswer}>
-                        Move to Box {Math.min(currentBox + 1, 5)}
-                      </button>
-                    ) : (
-                      <button className="incorrect-button" onClick={handleIncorrectAnswer}>
-                        Move to Box 1
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                // For regular cards, let them self-assess
-                <div>
-                  <p>How did you do? Mark your card as correct or incorrect:</p>
-                  <div className="response-buttons">
-                    <button className="incorrect-button" onClick={handleIncorrectAnswer}>
-                      Incorrect (Box 1)
-                    </button>
-                    <button className="correct-button" onClick={handleCorrectAnswer}>
-                      Correct (Box {Math.min(currentBox + 1, 5)})
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    );
-  };
-
-  // Render the study interface
-  return (
-    <div className="spaced-repetition">
-      <div className="box-info">
-        <h2>Spaced Repetition</h2>
-        <p>
-          You are viewing cards in Box {currentBox}. {" "}
-          {currentBox === 1 && "Review daily."}
-          {currentBox === 2 && "Review every 2 days."}
-          {currentBox === 3 && "Review every 3 days."}
-          {currentBox === 4 && "Review every 7 days."}
-          {currentBox === 5 && "These cards are mastered. Occasional review."}
-        </p>
-      </div>
-      
-      <div className="box-navigation">
-        <div className="box-buttons">
-          {[1, 2, 3, 4, 5].map((box) => (
-            <button
-              key={box}
-              className={`box-button ${currentBox === box ? "active" : ""} ${
-                (spacedRepetitionData[`box${box}`]?.some(card => 
-                  !card.nextReviewDate || new Date(card.nextReviewDate) <= new Date()
-                )) ? "has-reviewable" : ""
-              }`}
-              onClick={() => onSelectBox(box)}
-            >
-              Box {box}
-              <span className="card-count">
-                ({spacedRepetitionData[`box${box}`]?.length || 0})
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Always render subject containers */}
-      {renderSubjectContainers()}
-      
-      {/* Study modal */}
-      {showStudyModal && (
-        <div className="study-modal-overlay" onClick={() => setShowStudyModal(false)}>
-          <div className="study-modal" onClick={(e) => e.stopPropagation()}>
-            <button 
-              className="study-modal-close" 
-              onClick={() => setShowStudyModal(false)}
-              aria-label="Close study modal"
-            >
-              ✕
-            </button>
-            {renderCardReview()}
-          </div>
-        </div>
-      )}
-      
-      {/* Review date message */}
-      {showReviewDateMessage && (
-        <div className="review-date-message">
-          <h3>Card Locked Until Next Review Date</h3>
-          <p>
-            This card has already been reviewed and is currently locked. It will be available for review on{" "}
-            <strong>{nextReviewDate ? nextReviewDate.toLocaleDateString() : "a future date"}</strong>.
-          </p>
-          <p>
-            This spacing helps reinforce your memory according to proven spaced repetition techniques.
-          </p>
-          <div className="review-date-actions">
-            <button onClick={() => setShowReviewDateMessage(false)}>Got it</button>
-          </div>
-        </div>
-      )}
-      
-      {/* Info modal */}
-      {showInfoModal && isValidCard && ReactDOM.createPortal(
-        <div className="info-modal-overlay" onClick={() => setShowInfoModal(false)}>
-          <div className="info-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="info-modal-header">
-              <h3>Additional Information</h3>
-              <button className="close-modal-btn" onClick={() => setShowInfoModal(false)}>✕</button>
-            </div>
-            <div className="info-modal-content">
-              <div dangerouslySetInnerHTML={{ __html: currentCard.additionalInfo || currentCard.detailedAnswer || "No additional information available." }} />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Confirmation modal */}
-      {showConfirmationModal && (
-        <div className="modal-overlay">
-          <div className="confirmation-modal">
-            <h3>Confirm Your Answer</h3>
-            <p>Are you sure about your answer? This is your last chance to change your mind!</p>
-            <div className="confirmation-buttons">
-              <button className="confirm-no" onClick={() => handleConfirmationResponse(false)}>
-                No, let me select again
-              </button>
-              <button className="confirm-yes" onClick={() => handleConfirmationResponse(true)}>
-                Yes, I'm sure
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default SpacedRepetition;
