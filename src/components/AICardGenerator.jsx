@@ -682,7 +682,7 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   // Handle next step in wizard
   const handleNextStep = () => {
     if (currentStep < totalSteps) {
-      // If we're moving from step 6 (question type) to step 7 (confirmation),
+      // If we're moving from step 6 (question type) to step 7,
       // set isGenerating to true to show the loading screen immediately
       // AND trigger the card generation
       if (currentStep === 6) {
@@ -1023,7 +1023,335 @@ Use this format for different question types:
           <p>Please check your environment variables and make sure the KNACK_API_KEY is properly set.</p>
         </div>
       )}
-      {/* Render your component content here */}
+      
+      <div className="ai-card-generator">
+        <div className="generator-header">
+          <h1>AI Flashcard Generator</h1>
+          <button className="close-button" onClick={onClose}>&times;</button>
+        </div>
+        
+        {/* Progress bar */}
+        <div className="progress-bar">
+          {Array.from({ length: totalSteps }).map((_, index) => (
+            <div 
+              key={index} 
+              className={`progress-step ${currentStep > index + 1 ? 'completed' : ''} ${currentStep === index + 1 ? 'active' : ''}`}
+            >
+              {index + 1}
+            </div>
+          ))}
+        </div>
+        
+        {/* Step content */}
+        <div className="step-content">
+          {/* Step 1: Exam Type */}
+          {currentStep === 1 && (
+            <div>
+              <h2>Select Exam Type</h2>
+              <div className="form-group">
+                <label>Exam Type</label>
+                <select 
+                  name="examType" 
+                  value={formData.examType} 
+                  onChange={handleChange}
+                >
+                  <option value="">Select Exam Type</option>
+                  {EXAM_TYPES.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+                <div className="helper-text">This will help generate questions at the appropriate difficulty level.</div>
+              </div>
+            </div>
+          )}
+          
+          {/* Step 2: Exam Board */}
+          {currentStep === 2 && (
+            <div>
+              <h2>Select Exam Board</h2>
+              <div className="form-group">
+                <label>Exam Board</label>
+                <select 
+                  name="examBoard" 
+                  value={formData.examBoard} 
+                  onChange={handleChange}
+                >
+                  <option value="">Select Exam Board</option>
+                  {EXAM_BOARDS.filter(board => 
+                    !formData.examType || boardsForType(formData.examType).includes(board.value)
+                  ).map(board => (
+                    <option key={board.value} value={board.value}>{board.label}</option>
+                  ))}
+                </select>
+                <div className="helper-text">Questions will follow this exam board's specifications.</div>
+              </div>
+            </div>
+          )}
+          
+          {/* Step 3: Subject */}
+          {currentStep === 3 && (
+            <div>
+              <h2>Select Subject</h2>
+              <div className="form-group">
+                <label>Subject</label>
+                <select 
+                  name="subject" 
+                  value={formData.subject} 
+                  onChange={handleChange}
+                >
+                  <option value="">Select Subject</option>
+                  {availableSubjects.map((subject, index) => (
+                    <option key={index} value={subject}>{subject}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-divider">
+                <span>OR</span>
+              </div>
+              
+              <div className="form-group">
+                <label>Enter a New Subject</label>
+                <input 
+                  type="text" 
+                  name="newSubject" 
+                  value={formData.newSubject} 
+                  onChange={handleChange}
+                  placeholder="e.g., Computer Science"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Subject Color</label>
+                <div className="color-grid">
+                  {BRIGHT_COLORS.map((color, index) => (
+                    <div 
+                      key={index} 
+                      className={`color-swatch ${formData.subjectColor === color ? 'selected' : ''}`} 
+                      style={{ backgroundColor: color }}
+                      onClick={() => handleColorSelect(color)}
+                    />
+                  ))}
+                </div>
+                <div className="selected-color-preview">
+                  <div 
+                    className="color-preview" 
+                    style={{ backgroundColor: formData.subjectColor }}
+                  >
+                    {formData.subject || formData.newSubject || "Subject Color"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Step 4: Topic */}
+          {currentStep === 4 && (
+            <div>
+              <h2>Enter Topic</h2>
+              <div className="form-group">
+                <label>Topic</label>
+                <select 
+                  name="topic" 
+                  value={formData.topic} 
+                  onChange={handleChange}
+                >
+                  <option value="">Select Topic</option>
+                  {availableTopics.map((topic, index) => (
+                    <option key={index} value={topic}>{topic}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-divider">
+                <span>OR</span>
+              </div>
+              
+              <div className="form-group">
+                <label>Enter a Specific Topic</label>
+                <input 
+                  type="text" 
+                  name="newTopic" 
+                  value={formData.newTopic} 
+                  onChange={handleChange}
+                  placeholder="e.g., Photosynthesis"
+                />
+                <div className="helper-text">Be specific for better results. For example, "Cell structure" instead of just "Biology".</div>
+              </div>
+              
+              {/* Display any saved topic lists */}
+              {savedTopicLists.length > 0 && renderSavedTopicLists()}
+              
+              {/* Display hierarchical topics if any */}
+              {hierarchicalTopics.length > 0 && renderHierarchicalTopics()}
+            </div>
+          )}
+          
+          {/* Step 5: Number of Cards */}
+          {currentStep === 5 && (
+            <div>
+              <h2>How Many Cards?</h2>
+              <div className="form-group">
+                <label>Number of Cards (1-20)</label>
+                <input 
+                  type="number" 
+                  name="numCards" 
+                  value={formData.numCards} 
+                  onChange={handleChange}
+                  min="1"
+                  max="20"
+                />
+                <div className="helper-text">More cards may take longer to generate.</div>
+              </div>
+            </div>
+          )}
+          
+          {/* Step 6: Question Type */}
+          {currentStep === 6 && (
+            <div>
+              <h2>Question Type</h2>
+              <div className="question-type-selector">
+                {QUESTION_TYPES.map(type => (
+                  <div key={type.value} className="question-type-option">
+                    <input 
+                      type="radio" 
+                      id={type.value} 
+                      name="questionType" 
+                      value={type.value}
+                      checked={formData.questionType === type.value}
+                      onChange={handleChange}
+                    />
+                    <label htmlFor={type.value}>{type.label}</label>
+                  </div>
+                ))}
+              </div>
+              
+              {formData.questionType === "multiple_choice" && (
+                <div className="question-type-description">
+                  <p>Multiple choice questions with 4 options. Great for testing recall and understanding.</p>
+                </div>
+              )}
+              
+              {formData.questionType === "short_answer" && (
+                <div className="question-type-description">
+                  <p>Short answer questions that test recall and application of knowledge.</p>
+                </div>
+              )}
+              
+              {formData.questionType === "essay" && (
+                <div className="question-type-description">
+                  <p>Essay-style questions with key points to include. Excellent for developing extended writing skills.</p>
+                </div>
+              )}
+              
+              {formData.questionType === "acronym" && (
+                <div className="question-type-description">
+                  <p>Generate helpful acronyms to remember key concepts or sequences.</p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Step 7: Confirmation and Generation */}
+          {currentStep === 7 && (
+            <div>
+              <h2>Generate Cards</h2>
+              
+              {isGenerating ? (
+                <div className="loading-container">
+                  <div className="loading-spinner"></div>
+                  <h3>Generating your flashcards...</h3>
+                  <p>This may take a minute or two.</p>
+                </div>
+              ) : error ? (
+                <div className="error-message">
+                  {error}
+                </div>
+              ) : generatedCards.length > 0 ? (
+                <div>
+                  <div className="generated-cards-actions top-actions">
+                    <button className="secondary-button" onClick={handlePrevStep}>
+                      Generate New Cards
+                    </button>
+                  </div>
+                  
+                  <div className="generated-cards-container">
+                    {generatedCards.map((card, index) => (
+                      <Flashcard 
+                        key={card.id || index}
+                        card={card}
+                        isPreview={true}
+                        showDetails={false}
+                      />
+                    ))}
+                  </div>
+                  
+                  <div className="generated-cards-actions bottom-actions">
+                    <button 
+                      className="primary-button add-all-button"
+                      onClick={() => {
+                        generatedCards.forEach(card => onAddCard(card));
+                        setSuccessModal({
+                          show: true,
+                          addedCards: generatedCards
+                        });
+                      }}
+                    >
+                      Add All Cards
+                    </button>
+                    <div className="status-text">
+                      {generatedCards.length} cards generated
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
+        
+        {/* Navigation buttons */}
+        {currentStep < 7 && (
+          <div className="generator-controls">
+            <button 
+              className="back-button" 
+              onClick={handlePrevStep}
+              disabled={currentStep === 1}
+            >
+              Back
+            </button>
+            <button 
+              className="next-button" 
+              onClick={handleNextStep}
+              disabled={!canProceed()}
+            >
+              {currentStep === 6 ? "Generate Cards" : "Next"}
+            </button>
+          </div>
+        )}
+        
+        {/* Modal for saving topic lists */}
+        {renderSaveTopicDialog()}
+        
+        {/* Success modal */}
+        {successModal.show && (
+          <div className="success-modal-overlay" onClick={() => setSuccessModal({ show: false, addedCards: [] })}>
+            <div className="success-modal" onClick={e => e.stopPropagation()}>
+              <div className="success-icon">✓</div>
+              <h3>Cards Added Successfully!</h3>
+              <p>{successModal.addedCards.length} cards have been added to your collection.</p>
+              <button 
+                className="primary-button"
+                onClick={() => {
+                  setSuccessModal({ show: false, addedCards: [] });
+                  onClose();
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
