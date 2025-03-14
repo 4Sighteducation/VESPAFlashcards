@@ -108,13 +108,13 @@ const SubjectsList = ({ subjects, activeSubject, onSelectSubject, onChangeSubjec
                   className={`subject-button ${activeSubject === subjectName ? "active" : ""}`}
                   onClick={() => onSelectSubject(subjectName)}
                   style={{
-                    borderLeft: `4px solid ${subjectColor}`,
-                    backgroundColor: activeSubject === subjectName ? subjectColor : getBackgroundWithOpacity(subjectColor),
-                    color: activeSubject === subjectName ? textColor : '#333',
+                    backgroundColor: subjectColor, /* Always use the full subject color */
+                    color: textColor, /* Use contrasting text color */
+                    boxShadow: activeSubject === subjectName ? '0 2px 8px rgba(0, 0, 0, 0.2)' : 'none'
                   }}
                 >
                   <span>{subjectName}</span>
-                  <span style={{ color: activeSubject === subjectName ? textColor : '#666' }}>
+                  <span style={{ color: textColor, opacity: 0.8 }}>
                     ({subjectCount} cards)
                   </span>
                 </button>

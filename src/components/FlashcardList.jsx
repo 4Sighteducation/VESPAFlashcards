@@ -5,37 +5,55 @@ import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
 
 const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
-  const [selectedTopicIndex, setSelectedTopicIndex] = useState(0);
+  // State for expanded subjects and topics
+  const [expandedSubjects, setExpandedSubjects] = useState({});
+  const [expandedTopics, setExpandedTopics] = useState({});
   const [showCardModal, setShowCardModal] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [cardsToPrint, setCardsToPrint] = useState([]);
   const [printTitle, setPrintTitle] = useState("");
-  const [currentCards, setCurrentCards] = useState([]);
   const [showModalAndSelectedCard, setShowModalAndSelectedCard] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   
-  // Group cards by topic
+  // Group cards by subject and topic
   const groupedCards = useMemo(() => {
-    const groups = {};
+    const bySubjectAndTopic = {};
     
     cards.forEach(card => {
+      const subject = card.subject || "General";
       const topic = card.topic || "General";
-      if (!groups[topic]) {
-        groups[topic] = [];
+      
+      if (!bySubjectAndTopic[subject]) {
+        bySubjectAndTopic[subject] = {};
       }
-      groups[topic].push(card);
+      
+      if (!bySubjectAndTopic[subject][topic]) {
+        bySubjectAndTopic[subject][topic] = [];
+      }
+      
+      bySubjectAndTopic[subject][topic].push(card);
     });
 
-    // Convert to an array of topics and sort them
-    const topics = Object.keys(groups).sort();
-
-    return { topics, cardsByTopic: groups };
+    return bySubjectAndTopic;
   }, [cards]);
   
-  // Reset topic selection when cards change
+  // Effect to reset expanded sections when cards change
   useEffect(() => {
-    setSelectedTopicIndex(0);
+    // Initialize all subjects as collapsed except the first one
+    const subjects = Object.keys(groupedCards);
+    if (subjects.length > 0) {
+      const initialExpandedSubjects = { [subjects[0]]: true };
+      setExpandedSubjects(initialExpandedSubjects);
+      
+      // Initialize first topic of first subject as expanded
+      const firstSubject = subjects[0];
+      const topics = Object.keys(groupedCards[firstSubject] || {});
+      if (topics.length > 0) {
+        const initialExpandedTopics = { [`${firstSubject}-${topics[0]}`]: true };
+        setExpandedTopics(initialExpandedTopics);
+      }
+    }
   }, [cards]);
 
   // Handle case where there are no cards
@@ -48,45 +66,22 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     );
   }
 
-  // Get selected topic and its cards
-  const selectedTopic = groupedCards.topics[selectedTopicIndex] || "General";
-  const selectedTopicCards = groupedCards.cardsByTopic[selectedTopic] || [];
-
-  // Function to open the card modal at a specific index
-  const openCardModal = (index) => {
-    setCurrentCardIndex(index);
-    setShowCardModal(true);
+  // Function to toggle subject expansion
+  const toggleSubject = (subject) => {
+    setExpandedSubjects(prev => ({
+      ...prev,
+      [subject]: !prev[subject]
+    }));
   };
-
-  // Navigation functions for modal
-  const goToPrevCard = () => {
-    setCurrentCardIndex((prevIndex) => 
-      prevIndex > 0 ? prevIndex - 1 : selectedTopicCards.length - 1
-    );
+  
+  // Function to toggle topic expansion
+  const toggleTopic = (subject, topic) => {
+    const topicKey = `${subject}-${topic}`;
+    setExpandedTopics(prev => ({
+      ...prev,
+      [topicKey]: !prev[topicKey]
+    }));
   };
-
-  const goToNextCard = () => {
-    setCurrentCardIndex((prevIndex) => 
-      prevIndex < selectedTopicCards.length - 1 ? prevIndex + 1 : 0
-    );
-  };
-
-  // Helper to close the modal
-  const closeCardModal = () => {
-    setShowCardModal(false);
-  };
-
-  // Determine if this is a single subject view based on the groupedCards
-  const isSingleSubjectView = groupedCards.topics.length === 1;
-
-  // Debug output
-  console.log("FlashcardList render:", {
-    cardsCount: cards.length,
-    topicsCount: groupedCards.topics.length,
-    selectedTopic,
-    cardsInSelectedTopic: selectedTopicCards.length,
-    isSingleSubjectView
-  });
 
   // Helper function to get contrast color
   const getContrastColor = (hexColor) => {
@@ -104,7 +99,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
     
     // Return white for dark backgrounds, black for light backgrounds
-    // Using a lower threshold to ensure more text is white on dark backgrounds
     return brightness > 120 ? '#000000' : '#ffffff';
   };
 
@@ -159,58 +153,32 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
       
       // If we couldn't extract from the subject name, try to get it from the first card
       if (!examBoard || !examType) {
-        const cards = Object.values(groupedCards.cardsByTopic[subject]).flat();
-        if (cards.length > 0) {
-          const firstCard = cards[0];
+        const subjectTopics = groupedCards[subject];
+        if (subjectTopics) {
+          const firstTopic = Object.keys(subjectTopics)[0];
+          const cards = subjectTopics[firstTopic];
           
-          // Enhanced debugging: Log complete card structure for analysis
-          console.log(`DETAILED CARD DATA FOR "${subject}":`, JSON.stringify(firstCard, null, 2));
-          
-          // Try to get values directly from the card properties
-          console.log(`Checking fields directly on card:`, {
-            examType: firstCard.examType,
-            courseType: firstCard.courseType,
-            type: firstCard.type,
-            examBoard: firstCard.examBoard,
-            board: firstCard.board
-          });
-          
-          if (!examType && firstCard.examType) {
-            examType = firstCard.examType;
-            console.log(`Found examType directly on card: ${examType}`);
-          } else if (!examType && firstCard.courseType) {
-            examType = firstCard.courseType;
-            console.log(`Found courseType directly on card: ${examType}`);
-          } else if (!examType && firstCard.type) {
-            examType = firstCard.type;
-            console.log(`Found type directly on card: ${examType}`);
-          }
-          
-          if (!examBoard && firstCard.examBoard) {
-            examBoard = firstCard.examBoard;
-            console.log(`Found examBoard directly on card: ${examBoard}`);
-          } else if (!examBoard && firstCard.board) {
-            examBoard = firstCard.board;
-            console.log(`Found board directly on card: ${examBoard}`);
-          }
-          
-          // If we still don't have values, check meta properties if they exist
-          if ((!examType || !examBoard) && firstCard.meta) {
-            console.log(`Checking meta data for ${subject}:`, firstCard.meta);
-            if (!examType && firstCard.meta.examType) {
-              examType = firstCard.meta.examType;
-              console.log(`Found examType in meta: ${examType}`);
-            } else if (!examType && firstCard.meta.courseType) {
-              examType = firstCard.meta.courseType;
-              console.log(`Found courseType in meta: ${examType}`);
+          if (cards && cards.length > 0) {
+            const firstCard = cards[0];
+            
+            // Try to get values directly from the card properties
+            if (!examType) {
+              examType = firstCard.examType || firstCard.courseType || firstCard.type;
             }
             
-            if (!examBoard && firstCard.meta.examBoard) {
-              examBoard = firstCard.meta.examBoard;
-              console.log(`Found examBoard in meta: ${examBoard}`);
-            } else if (!examBoard && firstCard.meta.board) {
-              examBoard = firstCard.meta.board;
-              console.log(`Found board in meta: ${examBoard}`);
+            if (!examBoard) {
+              examBoard = firstCard.examBoard || firstCard.board;
+            }
+            
+            // If we still don't have values, check meta properties if they exist
+            if ((!examType || !examBoard) && firstCard.meta) {
+              if (!examType) {
+                examType = firstCard.meta.examType || firstCard.meta.courseType;
+              }
+              
+              if (!examBoard) {
+                examBoard = firstCard.meta.examBoard || firstCard.meta.board;
+              }
             }
           }
         }
@@ -220,7 +188,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
       if (!examType) examType = "Course";
       if (!examBoard) examBoard = "General";
       
-      console.log(`FINAL EXTRACTED FOR "${subject}": Type=${examType}, Board=${examBoard}`);
       return { examType, examBoard };
     } catch (error) {
       console.error("Error in getExamInfo:", error);
@@ -262,20 +229,29 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   // Print all cards
   const handlePrintAllCards = (e) => {
     e.stopPropagation(); // Prevent toggling the subject expansion
-    openPrintModal(cards, "All Flashcards");
+    const allCards = [];
+    Object.values(groupedCards).forEach(topicGroups => {
+      Object.values(topicGroups).forEach(topicCards => {
+        allCards.push(...topicCards);
+      });
+    });
+    openPrintModal(allCards, "All Flashcards");
   };
 
   // Print subject cards
   const handlePrintSubject = (subject, e) => {
     e.stopPropagation(); // Prevent toggling the subject expansion
-    const subjectCards = Object.values(groupedCards.cardsByTopic[subject]).flat();
+    const subjectCards = [];
+    Object.values(groupedCards[subject] || {}).forEach(topicCards => {
+      subjectCards.push(...topicCards);
+    });
     openPrintModal(subjectCards, subject);
   };
 
   // Print topic cards
   const handlePrintTopic = (subject, topic, e) => {
     e.stopPropagation(); // Prevent toggling the topic expansion
-    openPrintModal(groupedCards.cardsByTopic[subject][topic], `${subject} - ${topic}`);
+    openPrintModal(groupedCards[subject][topic], `${subject} - ${topic}`);
   };
 
   const handleCardClick = (card) => {
@@ -283,11 +259,12 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     setShowModalAndSelectedCard(true);
   };
 
-  const renderCards = (cards, topicKey = null, isVisibleTopic = true) => {
-    if (showModalAndSelectedCard) return null; // Don't render cards normally if modal is shown
+  const renderCards = (cards, subject, topic) => {
+    const topicKey = `${subject}-${topic}`;
+    const isVisible = expandedTopics[topicKey];
 
     return (
-      <div className="topic-cards" style={{ display: isVisibleTopic ? 'flex' : 'none' }}>
+      <div className="topic-cards" style={{ display: isVisible ? 'flex' : 'none' }}>
         {cards && cards.length > 0 ? (
           cards.map((card) => (
             <Flashcard
@@ -310,9 +287,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   const renderModal = () => {
     if (!showModalAndSelectedCard || !selectedCard) return null;
 
-    const currentCards = cards.filter(card => 
-      card.topic === selectedCard.topic
-    );
+    // Get all cards in the same topic as the selected card
+    const currentSubject = selectedCard.subject || "General";
+    const currentTopic = selectedCard.topic || "General";
+    const currentCards = groupedCards[currentSubject]?.[currentTopic] || [];
 
     const currentIndex = currentCards.findIndex(card => card.id === selectedCard.id);
     const totalCards = currentCards.length;
@@ -371,8 +349,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     );
   };
 
+  // Render the accordion structure with subjects and topics
   return (
-    <div className={`flashcard-list ${isSingleSubjectView ? 'flashcard-list-single-subject' : ''}`}>
+    <div className="flashcard-list">
       {printModalOpen && (
         <PrintModal 
           cards={cardsToPrint} 
@@ -381,20 +360,106 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         />
       )}
       
-      {/* Topic tabs */}
-      <div className="topics-tabs">
-        {groupedCards.topics.map((topic, index) => (
-          <button
-            key={topic}
-            className={`topic-tab ${index === selectedTopicIndex ? "active" : ""}`}
-            onClick={() => setSelectedTopicIndex(index)}
-          >
-            {topic} ({groupedCards.cardsByTopic[topic].length})
-          </button>
-        ))}
+      <div className="subjects-accordion">
+        {Object.keys(groupedCards).map((subject) => {
+          const topics = Object.keys(groupedCards[subject]);
+          const totalCardsInSubject = topics.reduce((count, topic) => 
+            count + groupedCards[subject][topic].length, 0);
+          const { examType, examBoard } = getExamInfo(subject);
+          const isExpanded = expandedSubjects[subject];
+          
+          // Get subject color from first card or use default
+          const firstTopic = topics[0];
+          const firstCard = groupedCards[subject][firstTopic]?.[0];
+          const subjectColor = firstCard?.color || firstCard?.subjectColor || "#06206e";
+          const textColor = getContrastColor(subjectColor);
+          
+          return (
+            <div 
+              key={subject} 
+              className="subject-container"
+              style={{ backgroundColor: 'white', borderLeft: `5px solid ${subjectColor}` }}
+            >
+              <div 
+                className="subject-header" 
+                onClick={() => toggleSubject(subject)}
+                style={{ 
+                  backgroundColor: subjectColor,
+                  color: textColor
+                }}
+              >
+                <div className="subject-info">
+                  <h2>{subject}</h2>
+                  <div className="subject-meta">
+                    <span className={`meta-tag exam-type ${examType === 'Course' ? 'exam-type-default' : ''}`}>
+                      {examType}
+                    </span>
+                    <span className={`meta-tag exam-board ${examBoard === 'General' ? 'exam-board-default' : ''}`}>
+                      {examBoard}
+                    </span>
+                  </div>
+                </div>
+                <div className="subject-actions">
+                  <button 
+                    className="print-button"
+                    onClick={(e) => handlePrintSubject(subject, e)}
+                    title="Print all cards in this subject"
+                  >
+                    <span role="img" aria-label="Print">🖨️</span>
+                  </button>
+                  <span className="card-count">{totalCardsInSubject} cards</span>
+                  <span className="expand-icon" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                    ▼
+                  </span>
+                </div>
+              </div>
+              
+              {isExpanded && (
+                <div className="topics-container">
+                  {topics.map((topic) => {
+                    const topicCards = groupedCards[subject][topic];
+                    const topicKey = `${subject}-${topic}`;
+                    const isTopicExpanded = expandedTopics[topicKey];
+                    const topicDate = getTopicDate(topicCards);
+                    
+                    return (
+                      <div key={topic} className="topic-group">
+                        <div 
+                          className="topic-header" 
+                          onClick={() => toggleTopic(subject, topic)}
+                          style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}
+                        >
+                          <div className="topic-info">
+                            <h3>{topic}</h3>
+                            {topicDate && <span className="topic-date">Added: {topicDate}</span>}
+                          </div>
+                          <div className="topic-actions">
+                            <button 
+                              className="print-topic-button"
+                              onClick={(e) => handlePrintTopic(subject, topic, e)}
+                              title="Print cards in this topic"
+                            >
+                              <span role="img" aria-label="Print">🖨️</span>
+                            </button>
+                            <span className="card-count">{topicCards.length} cards</span>
+                            <span 
+                              className="expand-icon" 
+                              style={{ transform: isTopicExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                            >
+                              ▼
+                            </span>
+                          </div>
+                        </div>
+                        {renderCards(topicCards, subject, topic)}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-
-      {renderCards(selectedTopicCards, selectedTopic)}
 
       {showModalAndSelectedCard && renderModal()}
     </div>
