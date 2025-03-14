@@ -250,13 +250,14 @@
 
 .modal-card-container .flashcard .flashcard-front,
 .modal-card-container .flashcard .flashcard-back {
+  position: relative !important;
   display: flex;
   flex-direction: column;
-  overflow: hidden !important; /* Force no scrolling */
-  position: absolute;
+  overflow-y: auto !important;
   width: 100%;
-  height: 100%;
-  padding: 25px;
+  height: auto;
+  min-height: 200px;
+  padding: 15px;
   box-sizing: border-box;
 }
 
@@ -1543,5 +1544,102 @@
     min-width: 10px;
     margin-right: 2px;
   }
+}
+
+/* Fix for iPad Mini and similar tablets in landscape mode */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  .card-modal-content {
+    width: 95%;
+    max-width: 900px;
+    max-height: 90vh;
+  }
+  
+  .card-modal-card-container {
+    padding: 10px;
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+  
+  .card-modal-card-container .flashcard {
+    height: auto;
+    min-height: 250px;
+    max-height: 65vh;
+  }
+  
+  .card-modal-card-container .flashcard .flashcard-front,
+  .card-modal-card-container .flashcard .flashcard-back {
+    position: relative;
+    height: auto;
+    min-height: 250px;
+    padding: 15px;
+  }
+  
+  .modal-card .question-title {
+    min-height: 40px;
+    margin-bottom: 10px;
+  }
+  
+  .modal-card .options-container {
+    height: auto;
+    max-height: none;
+    overflow-y: visible;
+  }
+  
+  .modal-card .options-container li {
+    padding: 5px 8px;
+    margin-bottom: 4px;
+    font-size: 13px;
+    line-height: 1.2;
+    display: block;
+    overflow: visible;
+    white-space: normal;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: unset;
+  }
+}
+
+/* Fix for transition around 635px - ensure content is visible from 635px-768px */
+@media (min-width: 635px) and (max-width: 767px) {
+  .card-modal-card-container .flashcard {
+    height: auto;
+    min-height: 300px;
+  }
+  
+  .card-modal-card-container .flashcard .flashcard-front,
+  .card-modal-card-container .flashcard .flashcard-back {
+    position: relative;
+    height: auto;
+    min-height: 300px;
+    padding: 12px;
+  }
+  
+  .modal-card .options-container {
+    height: auto;
+    overflow-y: visible;
+  }
+  
+  .modal-card .options-container li {
+    display: block;
+    overflow: visible;
+    white-space: normal;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: unset;
+    font-size: 12px;
+    padding: 4px 6px;
+  }
+}
+
+/* Ensure modal-card-container position is always relative for all screen sizes */
+.modal-card-container {
+  position: relative;
+}
+
+/* Override the absolute positioning for all screen sizes */
+.modal-card-container .flashcard .flashcard-front,
+.modal-card-container .flashcard .flashcard-back {
+  position: relative;
+  height: auto;
+  min-height: 200px;
+  overflow-y: auto !important;
 }
 
