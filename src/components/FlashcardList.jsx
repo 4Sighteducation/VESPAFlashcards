@@ -586,28 +586,31 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                           }}
                         >
                           <div className="topic-info">
-                            <h3>{topic}</h3>
-                            {topicDate && <span className="topic-date">Added: {topicDate}</span>}
+                            <h3 style={{ color: topicTextColor }}>{topic}</h3>
+                            {topicDate && <span className="topic-date" style={{ color: topicTextColor }}>Added: {topicDate}</span>}
                           </div>
                           <div className="topic-actions">
-                            <button 
+                            <button
                               className="slideshow-button"
                               onClick={(e) => startSlideshow(subject, topic, e)}
                               title="Start slideshow"
                             >
                               <span role="img" aria-label="Slideshow">▶️</span>
                             </button>
-                            <button 
+                            <button
                               className="print-topic-button"
                               onClick={(e) => handlePrintTopic(subject, topic, e)}
                               title="Print cards in this topic"
                             >
                               <span role="img" aria-label="Print">🖨️</span>
                             </button>
-                            <span className="card-count">{topicCards.length} cards</span>
+                            <span className="card-count" style={{ color: topicTextColor }}>{topicCards.length} cards</span>
                             <span 
                               className="expand-icon" 
-                              style={{ transform: isTopicExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                              style={{ 
+                                transform: isTopicExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                color: topicTextColor
+                              }}
                             >
                               ▼
                             </span>
@@ -630,3 +633,5 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
 };
 
 export default FlashcardList;
+
+

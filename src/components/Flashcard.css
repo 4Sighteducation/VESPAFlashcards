@@ -1262,3 +1262,62 @@
     font-size: 12px;
   }
 }
+
+/* Responsive adjustments for modal flashcards */
+@media (max-width: 1024px) {
+  .card-modal-content {
+    width: 95%;
+    max-width: 800px;
+  }
+  
+  .card-modal-card-container .flashcard {
+    height: 380px;
+  }
+}
+
+@media (max-width: 768px) {
+  .card-modal-content {
+    width: 98%;
+    max-height: 90vh;
+  }
+  
+  .card-modal-card-container .flashcard {
+    height: 350px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-modal-card-container .flashcard {
+    height: 300px;
+  }
+}
+
+/* Landscape mode adjustments */
+@media (max-height: 600px) and (orientation: landscape) {
+  .card-modal-content {
+    max-height: 95vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .card-modal-card-container {
+    padding: 10px;
+  }
+  
+  .card-modal-card-container .flashcard {
+    height: 280px;
+    max-height: 55vh;
+  }
+  
+  .card-modal-actions {
+    padding: 8px;
+  }
+}
+
+/* Extra small screens in landscape */
+@media (max-height: 450px) and (orientation: landscape) {
+  .card-modal-card-container .flashcard {
+    height: 220px;
+    max-height: 50vh;
+  }
+}
