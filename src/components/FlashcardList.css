@@ -19,12 +19,12 @@
   overflow: hidden;
   margin-bottom: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-left: 5px solid #06206e;
+  border-left: none;
 }
 
 /* Add this new class to apply the custom border color */
 .subject-container[data-color] {
-  border-left: 8px solid var(--subject-color, #06206e);
+  border-left: none;
 }
 
 .subject-container:hover {
@@ -35,10 +35,21 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 16px;
+  padding: 15px 16px 15px 24px;
   cursor: pointer;
   transition: background-color 0.2s;
   color: white;
+  position: relative;
+}
+
+.subject-header::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background-color: var(--subject-color, #06206e);
 }
 
 .subject-header:hover {
@@ -151,6 +162,7 @@
   padding: 10px 16px;
   cursor: pointer;
   transition: background-color 0.2s;
+  width: 100%;
 }
 
 .topic-header:hover {
@@ -162,6 +174,7 @@
   flex-direction: column;
   flex: 1;
   min-width: 0;
+  max-width: calc(100% - 120px); /* Reserve space for buttons and count */
 }
 
 .topic-header h3 {
@@ -171,12 +184,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  width: 100%;
 }
 
 .topic-date {
   font-size: 0.75rem;
   color: #666;
   margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topic-actions {
@@ -184,6 +201,9 @@
   align-items: center;
   gap: 10px;
   margin-left: 15px;
+  min-width: 100px;
+  justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .topic-cards {
@@ -293,7 +313,40 @@
   z-index: 5;
 }
 
-/* Mobile optimization for card modal */
+.card-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.topic-info {
+  font-size: 0.8rem;
+  color: #666;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-counter {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Responsive media queries for modal */
+@media (max-width: 1024px) {
+  .card-modal-content {
+    width: 95%;
+    max-width: 700px;
+  }
+  
+  .card-info {
+    max-width: 180px;
+  }
+}
+
+/* Tablet-sized devices */
 @media (max-width: 768px) {
   .card-modal-content {
     width: 95%;
@@ -305,9 +358,8 @@
   }
   
   .card-modal-card-container .flashcard {
-    min-height: 0;
+    min-height: 400px;
     height: auto;
-    aspect-ratio: 3/4;
   }
   
   .card-modal-actions {
@@ -317,11 +369,67 @@
   .nav-button, .close-modal-button {
     font-size: 1rem;
   }
+  
+  .card-info {
+    max-width: 150px;
+  }
+  
+  .topic-info {
+    font-size: 0.75rem;
+  }
 }
 
-.card-counter {
-  font-size: 0.9rem;
-  color: #666;
+/* Small tablet and large phone screens */
+@media (max-width: 640px) {
+  .card-modal-card-container .flashcard {
+    min-height: 350px;
+  }
+  
+  .nav-button {
+    padding: 4px 8px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 480px) {
+  .card-modal-content {
+    width: 98%;
+    max-height: 90vh;
+  }
+  
+  .card-modal-card-container {
+    padding: 8px;
+  }
+  
+  .card-modal-card-container .flashcard {
+    min-height: 0;
+    height: auto;
+    aspect-ratio: 3/4;
+  }
+  
+  .card-info {
+    max-width: 120px;
+  }
+  
+  .nav-buttons {
+    gap: 5px;
+  }
+  
+  .nav-button {
+    min-width: 60px;
+    padding: 3px 6px;
+    font-size: 0.85rem;
+  }
+  
+  .topic-info {
+    font-size: 0.7rem;
+    max-width: 120px;
+  }
+  
+  .card-counter {
+    font-size: 0.8rem;
+  }
 }
 
 /* No-cards message styling */
@@ -406,22 +514,6 @@
     width: 26px;
     height: 26px;
   }
-}
-
-.card-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-
-.topic-info {
-  font-size: 0.8rem;
-  color: #666;
-  max-width: 200px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Mobile modal specific styles */

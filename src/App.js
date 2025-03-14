@@ -873,32 +873,57 @@ function App() {
     return cardsForBox;
   }, [currentBox, spacedRepetitionData, allCards]);
 
-  // Extract unique subjects from all cards with count and color info
+  // Extract the subjects from cards for the sidebar
   const getSubjects = useCallback(() => {
-    // Get unique subject names
-    const subjectNames = [
-      ...new Set(allCards.map((card) => card.subject || "General")),
-    ].sort();
+    if (!allCards || allCards.length === 0) return [];
+
+    const subjectsMap = new Map();
+
+    // First pass - collect all subjects and their cards
+    allCards.forEach(card => {
+      const subject = card.subject || "General";
+      if (!subjectsMap.has(subject)) {
+        subjectsMap.set(subject, {
+          name: subject,
+          count: 0,
+          color: null,
+          timestamp: null
+        });
+      }
+      
+      const subjectData = subjectsMap.get(subject);
+      subjectData.count += 1;
+      
+      // Track the earliest timestamp for sorting
+      if (card.timestamp) {
+        const cardTime = new Date(card.timestamp).getTime();
+        if (!subjectData.timestamp || cardTime < subjectData.timestamp) {
+          subjectData.timestamp = cardTime;
+        }
+      }
+      
+      // Get color from color mapping
+      if (!subjectData.color && subjectColorMapping[subject]?.base) {
+        subjectData.color = subjectColorMapping[subject].base;
+      }
+    });
+
+    // Convert to array and sort by timestamp (earliest first)
+    let subjectsArray = Array.from(subjectsMap.values());
     
-    // Create subject objects with name, count, and color info
-    const subjectObjects = subjectNames.map(name => {
-      // Count cards for this subject
-      const count = allCards.filter(card => (card.subject || "General") === name).length;
+    // Sort by timestamp (earliest first)
+    subjectsArray.sort((a, b) => {
+      // Handle missing timestamps
+      if (!a.timestamp && !b.timestamp) return 0;
+      if (!a.timestamp) return 1;
+      if (!b.timestamp) return -1;
       
-      // Get the color for this subject
-      const color = getColorForSubjectTopic(name, null);
-      
-      // Return the properly formatted subject object
-      return {
-        name: name,
-        count: count,
-        color: color || "#06206e" // Fallback color if none is found
-      };
+      // Sort by timestamp (ascending)
+      return a.timestamp - b.timestamp;
     });
     
-    console.log("getSubjects returning:", subjectObjects);
-    return subjectObjects;
-  }, [allCards, getColorForSubjectTopic]);
+    return subjectsArray;
+  }, [allCards, subjectColorMapping]);
 
   // Filter cards by subject and topic
   const getFilteredCards = useCallback(() => {

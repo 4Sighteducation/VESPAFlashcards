@@ -2,55 +2,50 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import './Flashcard.css';
 
-// Enhanced helper function to determine text color based on background color brightness
-const getContrastColor = (hexColor) => {
-  if (!hexColor) return '#000000';
-  
-  // If the color isn't a string (for some reason), convert or return default
-  if (typeof hexColor !== 'string') {
-    console.warn(`Invalid color type: ${typeof hexColor}, defaulting to black text`);
-    return '#000000';
-  }
-  
-  // Remove # if present
-  hexColor = hexColor.replace('#', '');
-  
-  // Ensure we have a valid 6-character hex
-  if (hexColor.length === 3) {
-    // Convert 3-char hex to 6-char
-    hexColor = hexColor.split('').map(c => c+c).join('');
-  }
-  
-  // Handle invalid hex values with more thorough validation
-  if (!/^[0-9A-Fa-f]{6}$/.test(hexColor)) {
-    console.warn(`Invalid color format: ${hexColor}, defaulting to black text`);
+// Helper function for determining text color based on background color
+export const getContrastColor = (hexColor) => {
+  // Default to black if no color provided
+  if (!hexColor || typeof hexColor !== 'string') {
+    console.warn('Invalid color provided to getContrastColor:', hexColor);
     return '#000000';
   }
   
   try {
-    // Convert to RGB with error handling
+    // Remove # if present
+    hexColor = hexColor.replace('#', '');
+    
+    // Handle 3-character hex
+    if (hexColor.length === 3) {
+      hexColor = hexColor[0] + hexColor[0] + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2];
+    }
+    
+    // Validate hex format
+    if (!/^[0-9A-F]{6}$/i.test(hexColor)) {
+      console.warn('Invalid hex color format:', hexColor);
+      return '#000000';
+    }
+    
+    // Convert to RGB
     const r = parseInt(hexColor.substring(0, 2), 16);
     const g = parseInt(hexColor.substring(2, 4), 16);
     const b = parseInt(hexColor.substring(4, 6), 16);
     
-    // Validate RGB values to catch NaN issues
+    // Handle NaN values that might occur with invalid hex colors
     if (isNaN(r) || isNaN(g) || isNaN(b)) {
-      console.warn(`Invalid RGB conversion for color: #${hexColor}, defaulting to black text`);
+      console.warn('Invalid RGB conversion in getContrastColor:', { r, g, b, hexColor });
       return '#000000';
     }
     
-    // Calculate brightness using YIQ formula - adjusted for better contrast
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    // Use WCAG luminance formula for better contrast perception
+    // L = 0.2126 * R + 0.7152 * G + 0.0722 * B
+    const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
     
-    // Use a more conservative threshold to ensure better contrast
-    // Lower threshold means more white text, better for readability
-    const threshold = 125; // Adjusted from 110 to 125 for better readability
-    const textColor = brightness > threshold ? '#000000' : '#ffffff';
-    
-    return textColor;
+    // Return white for dark backgrounds, black for light backgrounds
+    // Using a lower threshold (0.5) to ensure more text is white on medium-dark colors
+    return luminance > 0.5 ? '#000000' : '#ffffff';
   } catch (error) {
-    console.error("Error in getContrastColor:", error);
-    return '#000000'; // Default to black text on error
+    console.error('Error in getContrastColor:', error, { inputColor: hexColor });
+    return '#000000'; // Default to black on error
   }
 };
 
