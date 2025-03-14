@@ -83,6 +83,8 @@
   align-items: center;
   gap: 5px;
   justify-content: center;
+  width: auto;
+  min-width: 120px;
 }
 
 .print-button:hover {

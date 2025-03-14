@@ -40,20 +40,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   
   // Effect to reset expanded sections when cards change
   useEffect(() => {
-    // Initialize all subjects as collapsed except the first one
-    const subjects = Object.keys(groupedCards);
-    if (subjects.length > 0) {
-      const initialExpandedSubjects = { [subjects[0]]: true };
-      setExpandedSubjects(initialExpandedSubjects);
-      
-      // Initialize first topic of first subject as expanded
-      const firstSubject = subjects[0];
-      const topics = Object.keys(groupedCards[firstSubject] || {});
-      if (topics.length > 0) {
-        const initialExpandedTopics = { [`${firstSubject}-${topics[0]}`]: true };
-        setExpandedTopics(initialExpandedTopics);
-      }
-    }
+    // Initialize all subjects as collapsed by default (changed from auto-expanding the first one)
+    setExpandedSubjects({});
+    setExpandedTopics({});
   }, [cards]);
 
   // Handle case where there are no cards

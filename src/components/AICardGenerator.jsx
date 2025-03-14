@@ -828,12 +828,13 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       // Get existing subject colors from parent component's subjects if available
       const existingSubjects = subjects || [];
       const existingColors = existingSubjects
-        .filter(sub => sub.subjectColor) // Only consider subjects with colors
+        .filter(sub => sub.subjectColor && typeof sub.subjectColor === 'string') // Only consider subjects with colors that are strings
         .map(sub => sub.subjectColor.toLowerCase()); // Normalize color format
       
       // If this is a new subject that matches an existing one, use that color
       const matchingSubject = existingSubjects.find(sub => {
-        const subName = typeof sub === 'object' && sub.subject ? sub.subject : sub;
+        const subName = typeof sub === 'object' && sub.subject ? sub.subject : 
+                       typeof sub === 'object' && sub.name ? sub.name : sub;
         return subName && (subName.toLowerCase() === finalSubject.toLowerCase());
       });
       
