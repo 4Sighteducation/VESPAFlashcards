@@ -292,13 +292,14 @@
 .empty-box h3 {
   color: #06206e;
   margin: 0 0 15px 0;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
+  font-weight: 700;
 }
 
 .empty-message {
   font-size: 1.2rem;
   color: #4caf50;
-  padding: 15px;
+  padding: 20px;
   background-color: #f8f8f8;
   border-radius: 8px;
   margin: 20px auto;
@@ -307,6 +308,25 @@
   font-weight: 500;
   line-height: 1.5;
   border-left: 4px solid #4caf50;
+  animation: slideInRight 0.6s ease-out;
+  position: relative;
+}
+
+/* Add a little icon for the empty message */
+.empty-message::before {
+  content: "💡";
+  position: absolute;
+  left: -15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .pro-tip {
@@ -315,6 +335,69 @@
   font-size: 0.95rem;
   margin-top: 20px;
   margin-bottom: 25px;
+  background: #f0f0f0;
+  padding: 12px 15px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+/* Mobile optimizations for empty state */
+@media (max-width: 768px) {
+  .empty-box {
+    padding: 25px 15px;
+    margin-top: 10px;
+  }
+  
+  .empty-box h3 {
+    font-size: 1.5rem;
+  }
+  
+  .empty-message {
+    font-size: 1.1rem;
+    padding: 15px;
+    margin: 15px auto;
+    max-width: 95%;
+  }
+  
+  .pro-tip {
+    font-size: 0.9rem;
+    margin: 15px 5px 20px;
+    padding: 10px;
+    display: block;
+  }
+  
+  .empty-message::before {
+    left: -12px;
+    width: 24px;
+    height: 24px;
+  }
+  
+  .return-button {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+  }
+  
+  /* Completion message adjustments */
+  .completion-message {
+    padding: 25px 15px;
+  }
+  
+  .completion-message h3 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Animation for empty state appearance */
+@keyframes slideInRight {
+  from { 
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .completion-message {
@@ -1495,18 +1578,26 @@
   }
   
   .empty-box h3 {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
   }
   
   .empty-message {
     font-size: 1.1rem;
-    padding: 12px;
+    padding: 15px;
     margin: 15px auto;
   }
   
   .pro-tip {
     font-size: 0.9rem;
-    margin: 15px 0 20px;
+    margin: 15px 5px 20px;
+    padding: 10px;
+    display: block;
+  }
+  
+  .empty-message::before {
+    left: -12px;
+    width: 24px;
+    height: 24px;
   }
   
   .return-button {

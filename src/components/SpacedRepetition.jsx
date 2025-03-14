@@ -22,6 +22,9 @@ const SpacedRepetition = ({
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [filteredCards, setFilteredCards] = useState([]);
   
+  // Add a state variable to track the last shown empty message
+  const [lastEmptyMessageIndex, setLastEmptyMessageIndex] = useState(-1);
+  
   // State for card review
   const [selectedOption, setSelectedOption] = useState(null);
   const [showAnswerFeedback, setShowAnswerFeedback] = useState(false);
@@ -61,9 +64,17 @@ const SpacedRepetition = ({
     "Wonder briefly if this is a glitch (it's not, you're just that good)"
   ];
 
-  // Add a function to get a random message
+  // Enhanced function to get a random message that avoids repeating the last message
   const getRandomEmptyStateMessage = () => {
-    const randomIndex = Math.floor(Math.random() * emptyStateMessages.length);
+    if (emptyStateMessages.length <= 1) return emptyStateMessages[0];
+    
+    let randomIndex;
+    do {
+      randomIndex = Math.floor(Math.random() * emptyStateMessages.length);
+    } while (randomIndex === lastEmptyMessageIndex);
+    
+    // Store this index for next time
+    setLastEmptyMessageIndex(randomIndex);
     return emptyStateMessages[randomIndex];
   };
   
@@ -653,29 +664,7 @@ const SpacedRepetition = ({
 
   // Render the flashcard review interface when a subject/topic is selected
   const renderCardReview = () => {
-    // Early return if cards aren't available yet or currentIndex is invalid
-    if (!currentCards || currentCards.length === 0 || currentIndex < 0 || currentIndex >= currentCards.length) {
-      return (
-        <div className="empty-box">
-          <h3>No cards available</h3>
-          <p>
-            There are no cards to review right now.
-            Please select a different topic or box to study.
-          </p>
-          <button 
-            className="return-button" 
-            onClick={() => {
-              setSelectedSubject(null);
-              setSelectedTopic(null);
-              setShowStudyModal(false); // Close the modal
-            }}
-          >
-            Return to Box View
-          </button>
-        </div>
-      );
-    }
-
+    // If we have completed studying all available cards
     if (studyCompleted) {
       return (
         <div className="completion-message">
@@ -698,7 +687,11 @@ const SpacedRepetition = ({
       );
     }
 
-    if (currentCards.length === 0) {
+    // Show humorous empty state message when there are no cards to review
+    // This should trigger when either:
+    // 1. No cards in currentCards array
+    // 2. Cards exist but none are available for review (all reviewed already)
+    if (!currentCards || currentCards.length === 0) {
       return (
         <div className="empty-box">
           <h3>Wow! You're keen!!</h3>
@@ -726,7 +719,8 @@ const SpacedRepetition = ({
     }
 
     // If we don't have a valid card, don't try to render it
-    if (!isValidCard) {
+    // This handles edge cases where currentIndex is invalid
+    if (currentIndex < 0 || currentIndex >= currentCards.length || !currentCards[currentIndex]) {
       return (
         <div className="empty-box">
           <h3>Oops! Something went wrong</h3>
