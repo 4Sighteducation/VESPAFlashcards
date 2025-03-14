@@ -20,6 +20,7 @@
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
+  border: none;
 }
 
 .subject-container:hover {
@@ -33,6 +34,8 @@
   padding: 15px 20px;
   cursor: pointer;
   transition: background-color 0.3s;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
 
 .subject-info {
@@ -61,8 +64,10 @@
   border-radius: 4px;
   white-space: nowrap;
   font-weight: 500;
-  background-color: rgba(255, 255, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  color: rgba(0, 0, 0, 0.85);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .exam-type-default, .exam-board-default {

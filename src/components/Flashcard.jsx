@@ -17,8 +17,8 @@ const getContrastColor = (hexColor) => {
   // Calculate brightness using YIQ formula - adjusted for better contrast
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   
-  // Lower threshold (120 instead of 128) to ensure more text is white on darker backgrounds
-  return brightness > 120 ? '#000000' : '#ffffff';
+  // Lower threshold (115 instead of 120) to ensure more text is white on medium backgrounds
+  return brightness > 115 ? '#000000' : '#ffffff';
 };
 
 const ScaledText = ({ children, minFontSize = 6, maxFontSize = 16, className = '' }) => {
@@ -337,13 +337,13 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
           <div className="flashcard-front" style={{ color: textColor }}>
             {isMultipleChoice ? (
               <>
-                <ScaledText className="question-title" maxFontSize={16}>
+                <ScaledText className="question-title" maxFontSize={isInModal ? 24 : 16}>
                   {card.front || card.question || "No question available"}
                 </ScaledText>
                 <MultipleChoiceOptions options={card.options || []} preview={preview} />
               </>
             ) : (
-              <ScaledText maxFontSize={16}>
+              <ScaledText maxFontSize={isInModal ? 24 : 16}>
                 {typeof card.front === 'string' || typeof card.question === 'string' ? (
                   <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question available" }} />
                 ) : (
@@ -357,7 +357,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             color: '#000000', 
             backgroundColor: '#ffffff' 
           }}>
-            <ScaledText maxFontSize={14}>
+            <ScaledText maxFontSize={isInModal ? 20 : 14}>
               {card.questionType === 'multiple_choice' ? (
                 <div>
                   Correct Answer: {(() => {

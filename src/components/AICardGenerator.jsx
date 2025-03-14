@@ -980,6 +980,9 @@ Use this format for different question types:
           color: cardColor
         });
         
+        // Ensure card color is valid - use a default if no color is available
+        const ensuredCardColor = cardColor || "#3cb44b";
+        
         // Add standard fields
         const baseCard = {
           id,
@@ -988,8 +991,8 @@ Use this format for different question types:
           examType: finalExamType,
           examBoard: finalExamBoard,
           questionType: formData.questionType,
-          cardColor: cardColor,
-          baseColor: cardColor,
+          cardColor: ensuredCardColor,
+          baseColor: ensuredCardColor,
           timestamp: new Date().toISOString(),
           boxNum: 1, // Start in box 1
         };
