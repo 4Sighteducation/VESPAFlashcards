@@ -25,6 +25,13 @@ const EXAM_TYPES = [
   { value: "A-Level", label: "A-Level" }
 ];
 
+// Function to return compatible exam boards for each exam type
+const boardsForType = (examType) => {
+  // All boards are available for all exam types by default
+  // If specific restrictions are needed in the future, they can be added here
+  return EXAM_BOARDS.map(board => board.value);
+};
+
 // Color palette for cards
 const BRIGHT_COLORS = [
   "#e6194b", "#3cb44b", "#ffe119", "#0082c8", "#f58231",
