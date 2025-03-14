@@ -1,9 +1,79 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
 import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
 import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown } from 'react-icons/fa';
+
+// ScrollManager component to handle scrolling to elements
+const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRefs }) => {
+  // Track if the component is mounted
+  const isMounted = useRef(true);
+  
+  // Effect to handle scrolling when subjects or topics expand
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+  
+  // Function to scroll to an element
+  const scrollToElement = (element, offset = 0) => {
+    if (!element || !isMounted.current) return;
+    
+    const rect = element.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const targetY = rect.top + scrollTop - offset;
+    
+    // Smooth scroll to the target position
+    window.scrollTo({
+      top: targetY,
+      behavior: 'smooth'
+    });
+  };
+  
+  // Process any newly expanded subjects
+  useEffect(() => {
+    const handleNewlyExpandedSubjects = () => {
+      // Check if any newly expanded subjects need scrolling
+      Object.entries(expandedSubjects).forEach(([subject, isExpanded]) => {
+        if (isExpanded) {
+          const subjectEl = subjectRefs.current[subject];
+          if (subjectEl) {
+            // Add a delay to ensure DOM has updated
+            setTimeout(() => {
+              scrollToElement(subjectEl, 10);
+            }, 150);
+          }
+        }
+      });
+    };
+    
+    handleNewlyExpandedSubjects();
+  }, [expandedSubjects, subjectRefs]);
+  
+  // Process any newly expanded topics
+  useEffect(() => {
+    const handleNewlyExpandedTopics = () => {
+      // Check if any newly expanded topics need scrolling
+      Object.entries(expandedTopics).forEach(([topicKey, isExpanded]) => {
+        if (isExpanded) {
+          const topicEl = topicRefs.current[topicKey];
+          if (topicEl) {
+            // Add a delay to ensure DOM has updated
+            setTimeout(() => {
+              scrollToElement(topicEl, 20);
+            }, 150);
+          }
+        }
+      });
+    };
+    
+    handleNewlyExpandedTopics();
+  }, [expandedTopics, topicRefs]);
+  
+  return null; // This is a utility component with no UI
+};
 
 const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   // State for expanded subjects and topics
@@ -14,8 +84,17 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [cardsToPrint, setCardsToPrint] = useState([]);
   const [printTitle, setPrintTitle] = useState("");
-  const [showModalAndSelectedCard, setShowModalAndSelectedCard] = useState(false);
+  const [showModalAndSelectedCard, setShowModalAndSelectedCard] = useState(null);
   const [selectedCard, setSelectedCard] = useState(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(null);
+  
+  // Add refs for scrolling to subjects and topics
+  const subjectRefs = useRef({});
+  const topicRefs = useRef({});
+  
+  // Track last expanded subjects and topics for ScrollManager
+  const [lastExpandedSubject, setLastExpandedSubject] = useState(null);
+  const [lastExpandedTopic, setLastExpandedTopic] = useState(null);
   
   // Group cards by subject and topic
   const groupedCards = useMemo(() => {
@@ -56,21 +135,36 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     );
   }
 
-  // Function to toggle subject expansion
+  // Function to toggle subject expansion with automatic scrolling
   const toggleSubject = (subject) => {
+    // Check if subject is already expanded
+    const wasExpanded = expandedSubjects[subject];
+    
     setExpandedSubjects(prev => ({
       ...prev,
       [subject]: !prev[subject]
     }));
+    
+    // If we're expanding (not collapsing), track it for scrolling
+    if (!wasExpanded) {
+      setLastExpandedSubject(subject);
+    }
   };
   
-  // Function to toggle topic expansion
+  // Function to toggle topic expansion with automatic scrolling
   const toggleTopic = (subject, topic) => {
     const topicKey = `${subject}-${topic}`;
+    const wasExpanded = expandedTopics[topicKey];
+    
     setExpandedTopics(prev => ({
       ...prev,
       [topicKey]: !prev[topicKey]
     }));
+    
+    // If we're expanding (not collapsing), track it for scrolling
+    if (!wasExpanded) {
+      setLastExpandedTopic(topicKey);
+    }
   };
 
   // Helper function to get contrast color
@@ -266,6 +360,12 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     // We'll use a dedicated button for this instead
   };
 
+  // Add the missing function to handle showing modal and setting selected card
+  const handleSetShowModalAndSelectedCard = (card) => {
+    setSelectedCard(card);
+    setShowModalAndSelectedCard(true);
+  };
+
   // Modified function to start slideshow for a subject or topic
   const startSlideshow = (subject, topic, e) => {
     if (e) e.stopPropagation(); // Prevent toggling the expansion
@@ -285,8 +385,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     
     // Start slideshow if we have cards
     if (slideshowCards && slideshowCards.length > 0) {
-      setSelectedCard(slideshowCards[0]);
-      setShowModalAndSelectedCard(true);
+      handleSetShowModalAndSelectedCard(slideshowCards[0]);
     }
   };
 
@@ -441,52 +540,121 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     );
   };
 
-  const renderSubjectHeader = (subject) => {
-    const { id, title, cards, exam_board, exam_type, color } = subject;
-    const totalCards = cards.flat().length;
-    
+  // Function to delete all cards in a topic
+  const deleteTopicCards = (subject, topic) => {
+    const topicCards = groupedCards[subject][topic] || [];
+    // Confirm before deleting
+    setShowDeleteConfirmation({
+      type: 'topic',
+      subject,
+      topic,
+      count: topicCards.length,
+      onConfirm: () => {
+        // Delete all cards in this topic
+        topicCards.forEach(card => {
+          onDeleteCard(card.id);
+        });
+        setShowDeleteConfirmation(null);
+      }
+    });
+  };
+
+  // Function to delete all cards in a subject
+  const deleteSubjectCards = (subject) => {
+    let totalCards = 0;
+    const topics = Object.keys(groupedCards[subject] || {});
+    topics.forEach(topic => {
+      totalCards += groupedCards[subject][topic].length;
+    });
+
+    // Confirm before deleting
+    setShowDeleteConfirmation({
+      type: 'subject',
+      subject,
+      count: totalCards,
+      onConfirm: () => {
+        // Delete all cards in this subject
+        topics.forEach(topic => {
+          groupedCards[subject][topic].forEach(card => {
+            onDeleteCard(card.id);
+          });
+        });
+        setShowDeleteConfirmation(null);
+      }
+    });
+  };
+
+  // Render subject header with delete button
+  const renderSubjectHeader = ({ id: subject, title, cards, exam_board, exam_type, color }) => {
+    const isExpanded = expandedSubjects[subject];
+    const cardCount = cards.flat().length;
+    // Calculate appropriate text color based on background
+    const textColor = getContrastColor(color);
+
     return (
       <div 
         className="subject-header" 
-        onClick={() => toggleSubject(id)}
-        style={{ backgroundColor: color }}
+        style={{ 
+          backgroundColor: color,
+          color: textColor
+        }}
+        ref={el => subjectRefs.current[subject] = el}
       >
-        <div className="subject-info">
-          <h2>{title}</h2>
+        <div className="subject-info" onClick={() => toggleSubject(subject)}>
+          <h2>{title || subject}</h2>
           <div className="subject-meta">
-            <span>
-              <FaLayerGroup /> {totalCards} {totalCards === 1 ? 'card' : 'cards'}
-            </span>
-            {exam_board && exam_board !== 'default' && (
-              <span>
-                <FaUniversity /> {exam_board}
-              </span>
-            )}
-            {exam_type && exam_type !== 'default' && (
-              <span>
-                <FaGraduationCap /> {exam_type}
-              </span>
-            )}
+            {exam_type && <span className={`meta-tag ${exam_type === 'GCSE' ? 'gcse' : 'a-level'}`}>{exam_type}</span>}
+            {exam_board && <span className="meta-tag">{exam_board}</span>}
+            <span className="card-count">{cardCount} {cardCount === 1 ? 'card' : 'cards'}</span>
           </div>
         </div>
-        
         <div className="subject-actions">
-          <button 
-            title="Print all cards" 
-            onClick={(e) => { e.stopPropagation(); handlePrintSubject(id, e); }}
-            style={{ color: getContrastColor(color) }}
+          <button
+            className="slideshow-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Start slideshow with first card in subject
+              const firstCard = cards.flat()[0];
+              if (firstCard) {
+                handleSetShowModalAndSelectedCard(firstCard);
+              }
+            }}
+            title="Start slideshow"
           >
-            <FaPrint />
+            <span role="img" aria-label="Slideshow">▶️</span>
           </button>
-          <button 
-            title="Slideshow" 
-            onClick={(e) => { e.stopPropagation(); startSlideshow(id); }}
-            style={{ color: getContrastColor(color) }}
+          <button
+            className="print-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePrintSubject(subject);
+            }}
+            title="Print all cards in this subject"
           >
-            <FaPlay />
+            <span role="img" aria-label="Print">🖨️</span>
           </button>
-          <span style={{ color: getContrastColor(color) }}>
-            {expandedSubjects[id] ? <FaAngleUp /> : <FaAngleDown />}
+          <button
+            className="delete-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              deleteSubjectCards(subject);
+            }}
+            title="Delete all cards in this subject"
+            style={{ 
+              backgroundColor: `rgba(255, 0, 0, 0.2)`,
+              color: textColor
+            }}
+          >
+            <span role="img" aria-label="Delete">🗑️</span>
+          </button>
+          <span 
+            className="expand-icon" 
+            style={{ 
+              transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              color: textColor
+            }}
+          >
+            {isExpanded ? '▼' : '▲'}
           </span>
         </div>
       </div>
@@ -496,6 +664,14 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   // Render the accordion structure with subjects and topics
   return (
     <div className="flashcard-list">
+      {/* Scroll Manager component */}
+      <ScrollManager 
+        expandedSubjects={expandedSubjects}
+        expandedTopics={expandedTopics}
+        subjectRefs={subjectRefs}
+        topicRefs={topicRefs}
+      />
+      
       {printModalOpen && (
         <PrintModal 
           cards={cardsToPrint} 
@@ -584,6 +760,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                             color: topicTextColor,
                             borderLeft: 'none'
                           }}
+                          ref={el => topicRefs.current[`${subject}-${topic}`] = el}
                         >
                           <div className="topic-info">
                             <h3 style={{ color: topicTextColor }}>{topic}</h3>
@@ -592,17 +769,39 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                           <div className="topic-actions">
                             <button
                               className="slideshow-button"
-                              onClick={(e) => startSlideshow(subject, topic, e)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSetShowModalAndSelectedCard(topicCards[0]);
+                              }}
                               title="Start slideshow"
+                              style={{ color: topicTextColor, backgroundColor: `${topicTextColor}20` }}
                             >
                               <span role="img" aria-label="Slideshow">▶️</span>
                             </button>
                             <button
                               className="print-topic-button"
-                              onClick={(e) => handlePrintTopic(subject, topic, e)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePrintTopic(subject, topic, topicCards);
+                              }}
                               title="Print cards in this topic"
+                              style={{ color: topicTextColor, backgroundColor: `${topicTextColor}20` }}
                             >
                               <span role="img" aria-label="Print">🖨️</span>
+                            </button>
+                            <button
+                              className="delete-topic-button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteTopicCards(subject, topic);
+                              }}
+                              title="Delete all cards in this topic"
+                              style={{ 
+                                color: topicTextColor, 
+                                backgroundColor: 'rgba(255, 0, 0, 0.2)' 
+                              }}
+                            >
+                              <span role="img" aria-label="Delete">🗑️</span>
                             </button>
                             <span className="card-count" style={{ color: topicTextColor }}>{topicCards.length} cards</span>
                           </div>
@@ -619,6 +818,35 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
       </div>
 
       {showModalAndSelectedCard && renderModal()}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmation && (
+        <div className="delete-confirm-overlay">
+          <div className="delete-confirm-modal">
+            <h3>Confirm Deletion</h3>
+            <p>
+              {showDeleteConfirmation.type === 'subject' 
+                ? `Are you sure you want to delete all ${showDeleteConfirmation.count} cards in ${showDeleteConfirmation.subject}?` 
+                : `Are you sure you want to delete all ${showDeleteConfirmation.count} cards in ${showDeleteConfirmation.topic}?`}
+            </p>
+            <p>This action cannot be undone.</p>
+            <div className="delete-confirm-actions">
+              <button 
+                className="cancel-btn"
+                onClick={() => setShowDeleteConfirmation(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="confirm-btn"
+                onClick={showDeleteConfirmation.onConfirm}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

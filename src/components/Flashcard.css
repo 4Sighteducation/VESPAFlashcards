@@ -171,7 +171,7 @@
   height: 65%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
   padding: 5px;
   box-sizing: border-box;
 }
@@ -184,7 +184,7 @@
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .options-container li {
@@ -192,15 +192,15 @@
   padding: 6px 8px;
   text-align: left;
   border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.8); /* Increased opacity for better contrast */
+  background-color: rgba(255, 255, 255, 0.8);
   font-size: inherit;
   position: relative;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  text-overflow: ellipsis;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Subtle shadow for better separation */
+  overflow: visible;
+  white-space: normal;
+  display: block;
+  word-wrap: break-word;
+  hyphens: auto;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Style for option letters */
@@ -781,7 +781,9 @@
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  padding: 20px;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 
 .card-modal-content {
@@ -796,6 +798,7 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  overscroll-behavior: contain;
 }
 
 .close-modal-button {
@@ -828,9 +831,11 @@
   align-items: center;
   flex: 1;
   padding: 20px;
-  overflow: visible;
+  overflow-y: auto;
   width: 100%;
   box-sizing: border-box;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .card-modal-actions {
@@ -981,6 +986,48 @@
     font-size: 16px;
     top: 8px;
     right: 8px;
+  }
+}
+
+/* Portrait mode for mobile - enhanced option display */
+@media (max-width: 480px) and (orientation: portrait) {
+  .options-container li,
+  .card-modal-card-container .options-container li,
+  .modal-card .options-container li {
+    padding: 3px 5px;
+    margin-bottom: 3px;
+    font-size: 11px !important;
+    line-height: 1.2;
+    overflow: visible;
+    white-space: normal;
+    display: block;
+    word-wrap: break-word;
+    hyphens: auto;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: unset;
+  }
+  
+  .option-letter {
+    font-size: 11px;
+    min-width: 12px;
+    margin-right: 3px;
+    display: inline-block;
+    vertical-align: top;
+  }
+  
+  .modal-card .question-title {
+    min-height: 50px;
+    padding: 5px;
+    overflow: visible;
+  }
+  
+  .modal-card .question-title .scaled-text {
+    font-size: 13px !important;
+  }
+  
+  .card-modal-card-container .flashcard .flashcard-front,
+  .card-modal-card-container .flashcard .flashcard-back {
+    overflow-y: auto !important;
   }
 }
 
