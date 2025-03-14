@@ -249,13 +249,26 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     // We'll use a dedicated button for this instead
   };
 
-  // New function to start slideshow for a topic
+  // Modified function to start slideshow for a subject or topic
   const startSlideshow = (subject, topic, e) => {
-    e.stopPropagation(); // Prevent toggling the topic expansion
-    // Find the first card in the topic to start with
-    const topicCards = groupedCards[subject][topic];
-    if (topicCards && topicCards.length > 0) {
-      setSelectedCard(topicCards[0]);
+    if (e) e.stopPropagation(); // Prevent toggling the expansion
+
+    let slideshowCards = [];
+    
+    if (topic) {
+      // Topic-level slideshow: Use cards from this specific topic
+      slideshowCards = groupedCards[subject][topic];
+    } else {
+      // Subject-level slideshow: Flatten all cards from all topics in this subject
+      const allTopics = Object.keys(groupedCards[subject] || {});
+      slideshowCards = allTopics.reduce((allCards, currentTopic) => {
+        return allCards.concat(groupedCards[subject][currentTopic] || []);
+      }, []);
+    }
+    
+    // Start slideshow if we have cards
+    if (slideshowCards && slideshowCards.length > 0) {
+      setSelectedCard(slideshowCards[0]);
       setShowModalAndSelectedCard(true);
     }
   };
@@ -321,10 +334,28 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   const renderModal = () => {
     if (!showModalAndSelectedCard || !selectedCard) return null;
 
-    // Get all cards in the same topic as the selected card
+    // Get current subject and topic
     const currentSubject = selectedCard.subject || "General";
     const currentTopic = selectedCard.topic || "General";
-    const currentCards = groupedCards[currentSubject]?.[currentTopic] || [];
+    
+    // Get all cards for the current subject+topic or just all cards in the subject
+    let currentCards = [];
+    
+    // Check if we're viewing all cards from a subject (we determine this by checking if the
+    // next and previous cards have different topics when navigating in the slideshow)
+    const isSubjectSlideshow = groupedCards[currentSubject] && 
+      Object.keys(groupedCards[currentSubject]).length > 1;
+      
+    if (isSubjectSlideshow) {
+      // Flatten all topics in the subject into a single array
+      const allTopics = Object.keys(groupedCards[currentSubject] || {});
+      currentCards = allTopics.reduce((allCards, topic) => {
+        return allCards.concat(groupedCards[currentSubject][topic] || []);
+      }, []);
+    } else {
+      // Just use cards from the specific topic
+      currentCards = groupedCards[currentSubject]?.[currentTopic] || [];
+    }
 
     const currentIndex = currentCards.findIndex(card => card.id === selectedCard.id);
     const totalCards = currentCards.length;
@@ -342,6 +373,11 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         setSelectedCard(currentCards[currentIndex + 1]);
       }
     };
+
+    // Topic display in navigation
+    const topicInfo = isSubjectSlideshow 
+      ? `${currentSubject} (All Topics)` 
+      : `${currentSubject} | ${currentTopic}`;
 
     return (
       <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
@@ -367,8 +403,11 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
             >
               Previous
             </button>
-            <div className="card-counter">
-              {currentIndex + 1} of {totalCards}
+            <div className="card-info">
+              <div className="card-counter">
+                {currentIndex + 1} of {totalCards}
+              </div>
+              <div className="topic-info">{topicInfo}</div>
             </div>
             <button 
               onClick={handleNextCard} 
