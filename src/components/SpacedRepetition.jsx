@@ -50,6 +50,9 @@ const SpacedRepetition = ({
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [hasSelectedOnce, setHasSelectedOnce] = useState(false);
   
+  // Add a new state to manage flip response overlay
+  const [showFlipResponseOverlay, setShowFlipResponseOverlay] = useState(false);
+  
   // Add this array of humorous empty state messages
   const emptyStateMessages = [
     "Actually enjoy your free time (shocking concept, we know)",
@@ -172,6 +175,7 @@ const SpacedRepetition = ({
     setCurrentIndex(0);
     setIsFlipped(false);
     setShowFlipResponse(false);
+    setShowFlipResponseOverlay(false);
     setStudyCompleted(false);
   };
 
@@ -230,6 +234,7 @@ const SpacedRepetition = ({
       // For multiple choice, we'll show it automatically based on their answer
       if (currentCards[currentIndex]?.questionType !== 'multiple_choice') {
         setShowFlipResponse(true);
+        setShowFlipResponseOverlay(true);
       }
     }
   };
@@ -255,6 +260,7 @@ const SpacedRepetition = ({
       
       setTimeout(() => {
         setShowFlipResponse(true);
+        setShowFlipResponseOverlay(true);
       }, 500);
     }
   };
@@ -273,6 +279,7 @@ const SpacedRepetition = ({
       
       setTimeout(() => {
         setShowFlipResponse(true);
+        setShowFlipResponseOverlay(true);
       }, 500);
     } else {
       // They canceled, so allow them to select again
@@ -288,6 +295,7 @@ const SpacedRepetition = ({
     setShowConfirmationModal(false);
     setIsFlipped(false);
     setShowFlipResponse(false);
+    setShowFlipResponseOverlay(false);
   };
   
   // Update nextCard and prevCard to use resetSelectionState
@@ -335,6 +343,10 @@ const SpacedRepetition = ({
     }
 
     try {
+      // Hide response overlay
+      setShowFlipResponse(false);
+      setShowFlipResponseOverlay(false);
+      
       // Move the card to the next box (up to box 5)
       const nextBox = Math.min(currentBox + 1, 5);
       const cardToMove = currentCard;
@@ -395,6 +407,10 @@ const SpacedRepetition = ({
     }
 
     try {
+      // Hide response overlay
+      setShowFlipResponse(false);
+      setShowFlipResponseOverlay(false);
+      
       // Move the card back to box 1
       const cardToMove = currentCard;
       
@@ -460,7 +476,6 @@ const SpacedRepetition = ({
     
     return (
       <div className="multiple-choice-options">
-        <h4 className="multiple-choice-header">Choose the correct answer:</h4>
         <ul className="multiple-choice-list">
           {card.options.map((option, index) => (
             <li 
@@ -797,6 +812,10 @@ const SpacedRepetition = ({
               {/* Enhanced question display for multiple choice */}
               {currentCard.questionType === 'multiple_choice' ? (
                 <>
+                  <div className="multiple-choice-header-container">
+                    <h4 className="multiple-choice-header">Choose the correct answer:</h4>
+                  </div>
+                  
                   <div
                     className="card-content multiple-choice-question"
                     dangerouslySetInnerHTML={{
@@ -806,6 +825,7 @@ const SpacedRepetition = ({
                         "No question"
                     }}
                   />
+                  
                   {!isFlipped && renderMultipleChoice(currentCard)}
                 </>
               ) : (
@@ -886,42 +906,45 @@ const SpacedRepetition = ({
         </div>
         
         {showFlipResponse && isValidCard && (
-          <div className="flip-response">
-            {currentCard.questionType === 'multiple_choice' ? (
-              // For multiple choice questions, check if they got it right automatically
-              <div>
-                <p>
-                  {selectedOption === currentCard.correctAnswer 
-                    ? "You selected the correct answer!" 
-                    : "Your answer was incorrect."}
-                </p>
-                <div className="response-buttons">
-                  {selectedOption === currentCard.correctAnswer ? (
-                    <button className="correct-button" onClick={handleCorrectAnswer}>
-                      Move to Box {Math.min(currentBox + 1, 5)}
-                    </button>
-                  ) : (
+          <>
+            <div className={`flip-response-overlay ${showFlipResponseOverlay ? 'active' : ''}`}></div>
+            <div className="flip-response">
+              {currentCard.questionType === 'multiple_choice' ? (
+                // For multiple choice questions, check if they got it right automatically
+                <div>
+                  <p>
+                    {selectedOption === currentCard.correctAnswer 
+                      ? "You selected the correct answer!" 
+                      : "Your answer was incorrect."}
+                  </p>
+                  <div className="response-buttons">
+                    {selectedOption === currentCard.correctAnswer ? (
+                      <button className="correct-button" onClick={handleCorrectAnswer}>
+                        Move to Box {Math.min(currentBox + 1, 5)}
+                      </button>
+                    ) : (
+                      <button className="incorrect-button" onClick={handleIncorrectAnswer}>
+                        Move to Box 1
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                // For regular cards, let them self-assess
+                <div>
+                  <p>How did you do? Mark your card as correct or incorrect:</p>
+                  <div className="response-buttons">
                     <button className="incorrect-button" onClick={handleIncorrectAnswer}>
-                      Move to Box 1
+                      Incorrect (Box 1)
                     </button>
-                  )}
+                    <button className="correct-button" onClick={handleCorrectAnswer}>
+                      Correct (Box {Math.min(currentBox + 1, 5)})
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              // For regular cards, let them self-assess
-              <div>
-                <p>How did you do? Mark your card as correct or incorrect:</p>
-                <div className="response-buttons">
-                  <button className="incorrect-button" onClick={handleIncorrectAnswer}>
-                    Incorrect (Box 1)
-                  </button>
-                  <button className="correct-button" onClick={handleCorrectAnswer}>
-                    Correct (Box {Math.min(currentBox + 1, 5)})
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     );
