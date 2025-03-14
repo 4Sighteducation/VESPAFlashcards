@@ -922,4 +922,32 @@ Use this format for different question types:
         } else if (formData.questionType === "short_answer" || formData.questionType === "essay") {
           // Create key points as bullet points if they exist
           const keyPointsHtml = card.keyPoints && card.keyPoints.length > 0
-            ? card.keyPoints.map(point => `• ${point}`
+            ? card.keyPoints.map(point => `• ${point}`).join('\n')
+            : "";
+          
+          return {
+            ...baseCard,
+            keyPoints: keyPointsHtml,
+            front: card.question,
+            back: card.detailedAnswer
+          };
+        }
+      });
+      
+      setGeneratedCards(processedCards);
+    } catch (error) {
+      console.error("Error generating cards:", error);
+      setError("Failed to generate cards. Please try again later.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="AICardGenerator">
+      {/* Render your component content here */}
+    </div>
+  );
+};
+
+export default AICardGenerator;
