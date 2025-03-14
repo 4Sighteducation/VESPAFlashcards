@@ -208,6 +208,23 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     const earliestDate = new Date(Math.min(...dates));
     return formatDate(earliestDate);
   };
+  
+  // Function to get the earliest creation date for a subject (based on its first topic)
+  const getSubjectDate = (subject) => {
+    const topics = Object.keys(groupedCards[subject]);
+    if (topics.length === 0) return 0;
+    
+    const topicDates = topics.map(topic => {
+      const cardsInTopic = groupedCards[subject][topic];
+      const dates = cardsInTopic
+        .filter(card => card.timestamp)
+        .map(card => new Date(card.timestamp).getTime());
+      
+      return dates.length > 0 ? Math.min(...dates) : Number.MAX_SAFE_INTEGER;
+    });
+    
+    return Math.min(...topicDates);
+  };
 
   // Open print modal for a specific set of cards
   const openPrintModal = (cardsForPrinting, title) => {
@@ -384,10 +401,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
 
     return (
       <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
-        <div className={`card-modal ${isMobile ? 'mobile-modal' : ''}`} onClick={(e) => e.stopPropagation()}>
-          <button className="close-modal-btn" onClick={() => setShowModalAndSelectedCard(false)}>✕</button>
+        <div className="card-modal-content" onClick={(e) => e.stopPropagation()}>
+          <button className="close-modal-button" onClick={() => setShowModalAndSelectedCard(false)}>✕</button>
           
-          <div className="modal-card-container">
+          <div className="card-modal-card-container">
             <Flashcard 
               card={selectedCard} 
               onDelete={() => onDeleteCard(selectedCard.id)}
@@ -398,27 +415,29 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
             />
           </div>
           
-          <div className="modal-navigation">
-            <button 
-              onClick={handlePrevCard} 
-              disabled={currentIndex === 0}
-              className="nav-button prev"
-            >
-              Previous
-            </button>
+          <div className="card-modal-actions">
+            <div className="nav-buttons">
+              <button 
+                onClick={handlePrevCard} 
+                disabled={currentIndex === 0}
+                className="nav-button prev"
+              >
+                Previous
+              </button>
+              <button 
+                onClick={handleNextCard} 
+                disabled={currentIndex >= totalCards - 1}
+                className="nav-button next"
+              >
+                Next
+              </button>
+            </div>
             <div className="card-info">
               <div className="card-counter">
                 {currentIndex + 1} of {totalCards}
               </div>
               <div className="topic-info">{topicInfo}</div>
             </div>
-            <button 
-              onClick={handleNextCard} 
-              disabled={currentIndex === totalCards - 1}
-              className="nav-button next"
-            >
-              Next
-            </button>
           </div>
         </div>
       </div>
@@ -426,30 +445,29 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   };
 
   const renderSubjectHeader = (subject) => {
-    const { id, title, cards, exam_board: examBoard, exam_type: examType, color } = subject;
-    
-    // If we have a color, use it for the header background with appropriate contrast
-    const headerStyle = color ? {
-      backgroundColor: color,
-      color: getContrastColor(color)
-    } : {};
+    const { id, title, cards, exam_board, exam_type, color } = subject;
+    const totalCards = cards.flat().length;
     
     return (
-      <div className="subject-header" onClick={() => toggleSubject(id)} style={headerStyle}>
+      <div 
+        className="subject-header" 
+        onClick={() => toggleSubject(id)}
+        style={{ backgroundColor: color }}
+      >
         <div className="subject-info">
           <h2>{title}</h2>
-          <div className="subject-metadata">
+          <div className="subject-meta">
             <span>
-              <FaLayerGroup /> {cards.length} Cards
+              <FaLayerGroup /> {totalCards} {totalCards === 1 ? 'card' : 'cards'}
             </span>
-            {examBoard && examBoard !== 'default' && (
+            {exam_board && exam_board !== 'default' && (
               <span>
-                <FaUniversity /> {examBoard}
+                <FaUniversity /> {exam_board}
               </span>
             )}
-            {examType && examType !== 'default' && (
+            {exam_type && exam_type !== 'default' && (
               <span>
-                <FaGraduationCap /> {examType}
+                <FaGraduationCap /> {exam_type}
               </span>
             )}
           </div>
@@ -490,8 +508,26 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
       )}
       
       <div className="subjects-accordion">
-        {Object.keys(groupedCards).map((subject) => {
-          const topics = Object.keys(groupedCards[subject]);
+        {Object.keys(groupedCards)
+          // Sort subjects by the date of their earliest topic
+          .sort((a, b) => getSubjectDate(a) - getSubjectDate(b))
+          .map((subject) => {
+          const topics = Object.keys(groupedCards[subject])
+            // Sort topics by their earliest date
+            .sort((a, b) => {
+              const aCards = groupedCards[subject][a];
+              const bCards = groupedCards[subject][b];
+              
+              const aDate = aCards.filter(card => card.timestamp)
+                .map(card => new Date(card.timestamp).getTime());
+              const bDate = bCards.filter(card => card.timestamp)
+                .map(card => new Date(card.timestamp).getTime());
+              
+              const aMin = aDate.length > 0 ? Math.min(...aDate) : Number.MAX_SAFE_INTEGER;
+              const bMin = bDate.length > 0 ? Math.min(...bDate) : Number.MAX_SAFE_INTEGER;
+              
+              return aMin - bMin;
+            });
           const totalCardsInSubject = topics.reduce((count, topic) => 
             count + groupedCards[subject][topic].length, 0);
           const { examType, examBoard } = getExamInfo(subject);
@@ -536,28 +572,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                     const isTopicExpanded = expandedTopics[topicKey];
                     const topicDate = getTopicDate(topicCards);
                     
-                    // Create a lighter shade of the subject color for the topic header
-                    const lightenColor = (color, percent) => {
-                      if (!color || color === '#ffffff') return '#f0f0f0';
-                      
-                      // Remove the # if present
-                      let hex = color.replace('#', '');
-                      
-                      // Convert to RGB
-                      let r = parseInt(hex.substring(0, 2), 16);
-                      let g = parseInt(hex.substring(2, 4), 16);
-                      let b = parseInt(hex.substring(4, 6), 16);
-                      
-                      // Lighten
-                      r = Math.min(255, Math.floor(r + (255 - r) * percent));
-                      g = Math.min(255, Math.floor(g + (255 - g) * percent));
-                      b = Math.min(255, Math.floor(b + (255 - b) * percent));
-                      
-                      // Convert back to hex
-                      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-                    };
-                    
-                    const topicColor = lightenColor(subjectColor, 0.85); // 85% lighter version of subject color
+                    // Use the first card's color for the topic header
+                    const firstCardInTopic = topicCards[0];
+                    const topicColor = firstCardInTopic?.cardColor || firstCardInTopic?.baseColor || '#e0e0e0';
+                    const topicTextColor = getContrastColor(topicColor);
                     
                     return (
                       <div key={topic} className="topic-group">
@@ -566,7 +584,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                           onClick={() => toggleTopic(subject, topic)}
                           style={{ 
                             backgroundColor: topicColor,
-                            borderLeft: `3px solid ${subjectColor}`
+                            color: topicTextColor,
+                            borderLeft: 'none'
                           }}
                         >
                           <div className="topic-info">

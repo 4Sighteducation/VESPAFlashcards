@@ -35,79 +35,71 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
+  padding: 15px 16px;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
-  overflow: visible;
-  width: 100%;
+  transition: background-color 0.2s;
+  color: white;
 }
 
 .subject-header:hover {
   filter: brightness(0.95);
 }
 
-.subject-info {
-  display: flex;
-  flex-direction: column;
-  z-index: 1;
-  min-width: 0;
-  flex: 1 1 auto;
-  margin-right: 15px;
-  max-width: calc(100% - 120px); /* Reserve space for buttons */
-  width: 100%;
-}
-
-.subject-info h2 {
+.subject-container h2 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 1.4rem;
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 100%;
 }
 
-.subject-metadata {
+.subject-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.subject-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+  font-size: 0.85rem;
+}
+
+.subject-meta span {
   display: flex;
   align-items: center;
-  margin-top: 4px;
-  font-size: 12px;
-  opacity: 0.9;
-}
-
-.subject-metadata span {
-  margin-right: 12px;
-  display: flex;
-  align-items: center;
-}
-
-.subject-metadata span svg {
-  margin-right: 4px;
-  font-size: 14px;
+  gap: 5px;
 }
 
 .subject-actions {
   display: flex;
-  gap: 8px;
-  z-index: 1;
-  flex: 0 0 auto;
-  justify-content: flex-end;
-  min-width: 100px;
+  align-items: center;
+  gap: 10px;
+  margin-left: 15px;
 }
 
 .subject-actions button {
-  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
   border: none;
+  font-size: 1.1rem;
   cursor: pointer;
-  font-size: 14px;
-  padding: 4px 8px;
+  padding: 5px;
   border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
   transition: background-color 0.2s;
+  width: 32px;
+  height: 32px;
 }
 
 .subject-actions button:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 .exam-type-default, .exam-board-default {
@@ -159,7 +151,6 @@
   padding: 10px 16px;
   cursor: pointer;
   transition: background-color 0.2s;
-  border-left: 3px solid transparent;
 }
 
 .topic-header:hover {
@@ -169,12 +160,17 @@
 .topic-info {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 .topic-header h3 {
   margin: 0;
   font-size: 1rem;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topic-date {
@@ -187,6 +183,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-left: 15px;
 }
 
 .topic-cards {
@@ -222,64 +219,104 @@
   z-index: 1000;
 }
 
-.card-modal {
+.card-modal-content {
   background-color: white;
   border-radius: 8px;
-  padding: 20px;
-  width: 90%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  width: 92%;
   max-width: 800px;
   max-height: 90vh;
-  overflow: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-.close-modal-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #666;
-}
-
-.modal-card-container {
-  margin: 10px 0 30px;
+.card-modal-card-container {
   display: flex;
   justify-content: center;
+  align-items: center;
+  flex: 1;
+  padding: 15px;
+  overflow: hidden;
 }
 
-.modal-card-container .flashcard {
+.card-modal-card-container .flashcard {
+  box-shadow: none;
+  max-height: 100%;
   width: 100%;
+  margin: 0;
   max-width: 600px;
-  height: 400px;
 }
 
-.modal-navigation {
+.card-modal-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
+  padding: 10px 15px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
 }
 
-.nav-button {
-  padding: 8px 15px;
-  background-color: #f0f0f0;
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-button, .close-modal-button {
+  background: none;
   border: none;
-  border-radius: 4px;
+  font-size: 1.2rem;
   cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 4px;
   transition: background-color 0.2s;
 }
 
-.nav-button:hover:not(:disabled) {
-  background-color: #e0e0e0;
+.nav-button:hover, .close-modal-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
-.nav-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.close-modal-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  color: white;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1rem;
+  z-index: 5;
+}
+
+/* Mobile optimization for card modal */
+@media (max-width: 768px) {
+  .card-modal-content {
+    width: 95%;
+    max-height: 85vh;
+  }
+  
+  .card-modal-card-container {
+    padding: 10px;
+  }
+  
+  .card-modal-card-container .flashcard {
+    min-height: 0;
+    height: auto;
+    aspect-ratio: 3/4;
+  }
+  
+  .card-modal-actions {
+    padding: 8px 12px;
+  }
+  
+  .nav-button, .close-modal-button {
+    font-size: 1rem;
+  }
 }
 
 .card-counter {
@@ -304,12 +341,24 @@
     border-radius: 6px;
   }
   
-  .subject-header {
-    padding: 12px 15px;
+  .subject-container h2 {
+    font-size: 1.2rem;
   }
   
-  .subject-header h2 {
-    font-size: 1.1rem;
+  .subject-meta {
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.8rem;
+  }
+  
+  .subject-actions {
+    gap: 5px;
+  }
+  
+  .subject-actions button {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
   }
   
   .topic-header {
@@ -343,6 +392,19 @@
   
   .topic-cards .flashcard {
     min-width: 200px;
+  }
+  
+  .subject-header {
+    padding: 12px;
+  }
+  
+  .subject-container h2 {
+    font-size: 1.1rem;
+  }
+  
+  .subject-actions button {
+    width: 26px;
+    height: 26px;
   }
 }
 
