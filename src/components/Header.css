@@ -85,6 +85,7 @@
   justify-content: center;
   width: auto;
   min-width: 120px;
+  text-align: center;
 }
 
 .print-button:hover {
@@ -111,13 +112,21 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-bottom: 3px solid #153aa3;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
+  width: auto;
+  min-width: 120px;
 }
 
 .save-button:hover {
   background-color: #00cec9;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .save-button:disabled {

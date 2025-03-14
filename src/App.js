@@ -7,6 +7,7 @@ import CardCreator from "./components/CardCreator";
 import SpacedRepetition from "./components/SpacedRepetition";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Header from "./components/Header";
+import UserProfile from "./components/UserProfile";
 import AICardGenerator from './components/AICardGenerator';
 import PrintModal from './components/PrintModal';
 import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
@@ -57,6 +58,15 @@ const safeParseJSON = (jsonString) => {
   }
 };
 
+// Helper function to clean HTML tags from strings
+const cleanHtmlTags = (str) => {
+  if (!str) return "";
+  // If it's not a string, convert to string
+  const strValue = String(str);
+  // Remove HTML tags
+  return strValue.replace(/<\/?[^>]+(>|$)/g, "").trim();
+};
+
 function App() {
   // Authentication and user state
   const [auth, setAuth] = useState(null);
@@ -100,12 +110,16 @@ function App() {
   const [printTitle, setPrintTitle] = useState("");
   const [cardCreationModalOpen, setCardCreationModalOpen] = useState(false);
 
-  // User information
+  // User information - enhanced with additional student data
   const getUserInfo = useCallback(() => {
     return {
       id: auth?.id || "",
       email: auth?.email || "",
       name: auth?.name || "",
+      tutorGroup: auth?.tutorGroup || "",
+      yearGroup: auth?.yearGroup || "",
+      tutor: auth?.tutor || "",
+      school: auth?.school || auth?.field_122 || "" // School/Educational Establishment
     };
   }, [auth]);
 
@@ -199,6 +213,17 @@ function App() {
     try {
       // Send data to parent window for saving to Knack
       if (window.parent !== window) {
+        // Get the user info for saving
+        const userInfo = getUserInfo();
+        
+        // Prepare additional fields for Object_102
+        const additionalFields = {
+          field_3010: userInfo.name,                       // Name
+          field_3008: cleanHtmlTags(userInfo.school || auth.field_122 || ""),  // VESPA Customer (school/educational establishment)
+          field_2656: userInfo.email,                      // User Connected email
+          field_3009: userInfo.tutor                       // User "Tutor"
+        };
+        
         window.parent.postMessage(
           {
             type: "SAVE_DATA",
@@ -208,11 +233,13 @@ function App() {
               colorMapping: subjectColorMapping,
               spacedRepetition: spacedRepetitionData,
               userTopics: userTopics,
+              additionalFields: additionalFields
             },
           },
           "*"
         );
 
+        console.log("Saving data with additional fields:", additionalFields);
         showStatus("Saving your flashcards...");
       }
       
@@ -965,7 +992,43 @@ function App() {
         switch (event.data.type) {
           case "KNACK_USER_INFO":
             console.log("Received user info from Knack", event.data.data);
-            setAuth(event.data.data);
+            
+            // Process student data if we have a role of "student"
+            const userRole = event.data.data?.role || "";
+            let userStudentData = {};
+            
+            // Extract school data from any user
+            const schoolData = cleanHtmlTags(event.data.data?.field_122 || "");
+            
+            if (userRole === "student" && event.data.data?.studentData) {
+              try {
+                // Extract student data (cleaning HTML tags if needed)
+                const studentData = event.data.data.studentData || {};
+                
+                // Extract yearGroup, tutorGroup and tutor from studentData
+                userStudentData = {
+                  tutorGroup: cleanHtmlTags(studentData.field_565 || ""),
+                  yearGroup: cleanHtmlTags(studentData.field_548 || ""),
+                  tutor: cleanHtmlTags(studentData.field_1682 || ""),
+                  school: schoolData
+                };
+                
+                console.log("Processed student data:", userStudentData);
+              } catch (e) {
+                console.error("Error processing student data:", e);
+              }
+            } else {
+              // For non-student users, just extract the school data
+              userStudentData = {
+                school: schoolData
+              };
+            }
+            
+            // Set auth with combined user and student data
+            setAuth({
+              ...event.data.data,
+              ...userStudentData
+            });
 
             // If user data was included, process it
             if (event.data.data?.userData) {
@@ -1167,6 +1230,8 @@ function App() {
         onPrintAll={handlePrintAllCards}
         onCreateCard={() => setCardCreationModalOpen(true)}
       />
+      
+      {auth && <UserProfile userInfo={getUserInfo()} />}
 
       {statusMessage && <div className="status-message">{statusMessage}</div>}
 

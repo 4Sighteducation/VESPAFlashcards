@@ -771,55 +771,323 @@
   padding: 20px;
 }
 
-.card-modal {
+.card-modal-content {
   background-color: white;
-  border-radius: 8px;
-  width: 95%;
-  max-width: 800px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 580px;
+  height: auto;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  padding: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-.close-modal-btn {
+.close-modal-button {
   position: absolute;
   top: 15px;
   right: 15px;
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.2);
   border: none;
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
   cursor: pointer;
   z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #333;
+  color: white;
   transition: all 0.2s ease;
 }
 
-.close-modal-btn:hover {
-  background: rgba(0, 0, 0, 0.2);
+.close-modal-button:hover {
+  background: rgba(0, 0, 0, 0.4);
   transform: scale(1.1);
 }
 
-.modal-card-container {
+.card-modal-card-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100%;
-  padding: 20px 0;
+  flex: 1;
+  padding: 20px;
   overflow: visible;
   width: 100%;
+  box-sizing: border-box;
 }
 
-.modal-card-container .flashcard {
+.card-modal-actions {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 15px 20px;
+  box-sizing: border-box;
+  background-color: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+}
+
+.nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.card-counter {
+  font-size: 16px;
+  font-weight: 500;
+  color: #444;
+  margin-bottom: 5px;
+}
+
+.topic-info {
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Responsive fixes for modal at various screen sizes */
+@media (max-width: 1024px) {
+  .card-modal-content {
+    width: 95%;
+    max-width: 540px;
+  }
+  
+  .card-modal-card-container {
+    padding: 15px;
+  }
+  
+  .card-modal-actions {
+    padding: 12px 15px;
+  }
+  
+  .topic-info {
+    font-size: 13px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 840px) {
+  .card-modal-content {
+    max-width: 500px;
+  }
+  
+  .card-modal-card-container {
+    padding: 12px;
+  }
+  
+  .nav-buttons {
+    margin-bottom: 8px;
+  }
+  
+  .card-counter {
+    font-size: 15px;
+  }
+  
+  .topic-info {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .card-modal-content {
+    width: 97%;
+    max-width: 440px;
+    border-radius: 10px;
+  }
+  
+  .card-modal-card-container {
+    padding: 10px;
+  }
+  
+  .card-modal-actions {
+    padding: 10px;
+  }
+  
+  .nav-button {
+    padding: 8px 15px;
+    font-size: 14px;
+    min-width: 80px;
+  }
+  
+  .close-modal-button {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    top: 10px;
+    right: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-modal-content {
+    width: 98%;
+    max-width: 360px;
+    border-radius: 8px;
+  }
+  
+  .card-modal-card-container {
+    padding: 8px;
+  }
+  
+  .card-modal-actions {
+    padding: 8px;
+  }
+  
+  .nav-button {
+    padding: 6px 12px;
+    font-size: 13px;
+    min-width: 70px;
+  }
+  
+  .card-counter {
+    font-size: 14px;
+  }
+  
+  .topic-info {
+    font-size: 11px;
+  }
+  
+  .close-modal-button {
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+    top: 8px;
+    right: 8px;
+  }
+}
+
+/* Topic indicator on cards */
+.card-topic-indicator {
+  font-size: 10px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  padding: 2px 5px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  opacity: 0.9;
+}
+
+.modal-card .card-topic-indicator {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+/* Add specific mid-size device handling for tablets and smaller desktops */
+@media (max-width: 1024px) {
+  .modal-card-container .flashcard {
+    height: 400px;
+    min-height: 400px;
+    max-width: 90%;
+  }
+  
+  .modal-card-container .flashcard .flashcard-front,
+  .modal-card-container .flashcard .flashcard-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+  }
+  
+  .modal-card-container .flashcard .scaled-text {
+    font-size: 16px !important;
+    min-height: 0;
+    height: auto;
+    width: 100%;
+    padding: 5px;
+  }
+  
+  .modal-card .question-title {
+    height: auto;
+    min-height: 80px;
+    margin-bottom: 10px;
+  }
+  
+  .modal-card .options-container {
+    height: auto;
+    flex: 1;
+  }
+}
+
+/* Medium tablet sizes */
+@media (max-width: 840px) {
+  .modal-card-container .flashcard {
+    height: 380px;
+    min-height: 380px;
+  }
+  
+  .modal-card-container .flashcard .scaled-text {
+    font-size: 15px !important;
+  }
+  
+  .modal-options.options-container li {
+    font-size: 13px !important;
+    padding: 4px 6px;
+    margin: 3px 0;
+  }
+}
+
+/* Smaller tablets */
+@media (max-width: 640px) {
+  .modal-card-container .flashcard {
+    height: 350px;
+    min-height: 350px;
+  }
+  
+  .modal-card-container .flashcard .scaled-text {
+    font-size: 14px !important;
+  }
+}
+
+/* Mobile devices - maintain existing rules but ensure consistency */
+@media (max-width: 480px) {
+  .modal-card-container .flashcard {
+    min-height: 280px;
+    border-radius: 6px;
+    height: auto;
+  }
+  
+  .modal-card-container .flashcard .flashcard-front,
+  .modal-card-container .flashcard .flashcard-back {
+    padding: 10px;
+    position: relative;
+  }
+  
+  .modal-card .question-title {
+    padding: 3px;
+    margin-bottom: 3px;
+    min-height: 60px;
+  }
+  
+  .modal-card .question-title .scaled-text {
+    font-size: 12px !important;
+  }
+}
+
+/* Card modal flashcard styling */
+.card-modal-card-container .flashcard {
   width: 100%;
   max-width: 500px;
   height: 400px;
@@ -831,7 +1099,7 @@
   overflow: hidden;
 }
 
-.modal-card-container .flashcard .flashcard-inner {
+.card-modal-card-container .flashcard .flashcard-inner {
   position: relative;
   width: 100%;
   height: 100%;
@@ -840,13 +1108,13 @@
   background-color: white;
 }
 
-.modal-card-container .flashcard .flashcard-front,
-.modal-card-container .flashcard .flashcard-back {
+.card-modal-card-container .flashcard .flashcard-front,
+.card-modal-card-container .flashcard .flashcard-back {
   position: absolute;
   width: 100%;
   height: 100%;
   backface-visibility: hidden;
-  padding: 25px;
+  padding: 20px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -857,427 +1125,140 @@
   color: #333;
 }
 
-.modal-card-container .flashcard .scaled-text {
+.card-modal-card-container .flashcard .scaled-text {
   width: 100%;
   height: auto;
-  text-align: center;
-  overflow: visible;
-  padding: 10px;
-  font-size: 20px !important;
-  line-height: 1.5;
-  color: #333;
-}
-
-.modal-card-container .flashcard .text-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: visible;
-  background-color: white;
-  color: #333;
-}
-
-/* Ensure modal navigation is visible and functional */
-.modal-navigation {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 0;
-  margin-top: 15px;
-  border-top: 1px solid #eee;
-  background-color: white;
-}
-
-.nav-button {
-  padding: 10px 20px;
-  background-color: #153aa3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 500;
-  min-width: 100px;
-  margin: 0 10px;
-}
-
-.card-counter {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 10px;
-}
-
-/* Make sure text is visible in cards */
-.flashcard-list-single-subject .topic-cards .flashcard .flashcard-front,
-.flashcard-list-single-subject .topic-cards .flashcard .flashcard-back,
-.modal-card-container .flashcard .flashcard-front,
-.modal-card-container .flashcard .flashcard-back {
-  display: flex;
-  flex-direction: column;
-  overflow: auto;
-  background-color: white;
-  color: #333;
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  padding: 20px;
-}
-
-/* Fix for modal flashcard text scaling */
-.modal-card-container .flashcard .text-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: visible;
-}
-
-.modal-card-container .flashcard .scaled-text {
-  width: 100%;
-  height: auto;
-  min-height: 100px;
   text-align: center;
   overflow: visible;
   padding: 10px;
   font-size: 18px !important;
   line-height: 1.5;
+  color: #333;
 }
 
-/* Fix modal content overflow */
-.modal-card-container .flashcard-inner {
-  position: relative;
+.card-modal-card-container .flashcard .text-container {
   width: 100%;
   height: 100%;
-  min-height: 350px;
-  transition: transform 0.6s;
-  transform-style: preserve-3d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
   background-color: white;
+  color: #333;
 }
 
-/* Fix for modal flashcard positioning */
-.modal-card-container .flashcard.flipped .flashcard-inner {
+.card-modal-card-container .flashcard.flipped .flashcard-inner {
   transform: rotateY(180deg);
 }
 
-/* Improve contrast for buttons in modal */
-.modal-card-container .flashcard .delete-btn,
-.modal-card-container .flashcard .color-btn,
-.modal-card-container .flashcard .info-btn {
+/* Improved styling for the modal multiple choice options */
+.card-modal-card-container .options-container {
+  margin-top: 15px;
+  width: 100%;
+  max-width: 450px;
+}
+
+.card-modal-card-container .options-container ol {
+  padding-left: 0;
+  list-style-position: inside;
+}
+
+.card-modal-card-container .options-container li {
   background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  width: 30px;
-  height: 30px;
-  font-size: 16px;
-}
-
-/* Improve multiple choice options contrast */
-.multiple-choice-options {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  margin-top: 10px;
-}
-
-.option-item {
-  display: flex;
-  align-items: flex-start;
-  padding: 10px;
-  border: 2px solid #ddd;
+  margin: 8px 0;
+  padding: 8px 12px;
   border-radius: 6px;
-  background-color: #f9f9f9;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
-.option-item:hover {
-  border-color: #153aa3;
-  background-color: #f0f5ff;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.option-item.selected {
-  border-color: #153aa3;
-  background-color: #e6eeff;
-}
-
-.option-item.correct {
-  border-color: #4caf50;
-  background-color: #eaffea;
-}
-
-.option-item.incorrect {
-  border-color: #f44336;
-  background-color: #ffebee;
-}
-
-.option-radio {
-  margin-right: 10px;
-  transform: scale(1.2);
-  cursor: pointer;
-}
-
-.option-text {
-  flex: 1;
-  font-size: 15px;
-}
-
-/* Ensure mobile formatting for modals is good */
-@media (max-width: 768px) {
-  .info-modal {
-    width: 95%;
-    padding: 15px;
-    margin: 0 auto;
+/* Responsive adjustments for modal flashcards */
+@media (max-width: 1024px) {
+  .card-modal-card-container .flashcard {
+    height: 380px;
   }
   
-  .multiple-choice-options {
-    gap: 6px;
+  .card-modal-card-container .flashcard .flashcard-front,
+  .card-modal-card-container .flashcard .flashcard-back {
+    padding: 18px;
   }
   
-  .option-item {
+  .card-modal-card-container .options-container {
+    margin-top: 12px;
+  }
+  
+  .card-modal-card-container .options-container li {
+    padding: 7px 10px;
+    margin: 7px 0;
+  }
+}
+
+@media (max-width: 840px) {
+  .card-modal-card-container .flashcard {
+    height: 360px;
+  }
+  
+  .card-modal-card-container .flashcard .scaled-text {
     padding: 8px;
-  }
-}
-
-/* Enhanced mobile styles for flashcards */
-@media (max-width: 768px) {
-  .flashcard {
-    max-width: 100%;
-    height: 250px; /* Slightly shorter on mobile */
-    margin: 8px 5px;
+    font-size: 16px !important;
   }
   
-  .flashcard-front,
-  .flashcard-back {
-    padding: 12px 10px;
-  }
-  
-  /* Tighter spacing for multiple choice options on mobile */
-  .options-container {
-    padding: 3px;
-  }
-  
-  .options-container li {
-    margin: 3px 0;
-    padding: 5px 6px;
-    -webkit-line-clamp: 3; /* Show fewer lines per option on mobile */
-  }
-  
-  /* Make the question title font size more aggressive on mobile */
-  .question-title .scaled-text > div {
-    font-size: max(12px, min(16px, 5vw)) !important; /* Force a reasonable size range */
-  }
-  
-  /* Adjust modal sizing for better mobile view */
-  .modal-card-container .flashcard {
-    height: auto;
-    min-height: 350px;
-    max-height: 70vh;
-  }
-}
-
-/* Even smaller screens */
-@media (max-width: 480px) {
-  .flashcard {
-    height: 220px;
-    margin: 6px 3px;
-  }
-  
-  .flashcard-front,
-  .flashcard-back {
-    padding: 10px 8px;
-  }
-  
-  .options-container li {
-    margin: 2px 0;
-    padding: 4px 5px;
-    -webkit-line-clamp: 2; /* Even fewer lines on very small screens */
-  }
-  
-  /* Optimize question title for very small screens */
-  .question-title {
-    height: 30%; /* Give more space to options */
-  }
-  
-  .options-container {
-    height: 70%;
-  }
-  
-  /* Ensure modal view is usable on small screens */
-  .modal-card-container .flashcard {
-    min-height: 300px;
-    max-height: 85vh;
-  }
-}
-
-/* Modal card container styling */
-.modal-card-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  padding: 20px 0;
-  overflow: visible;
-  width: 100%;
-}
-
-.modal-card-container .flashcard {
-  width: 100%;
-  max-width: 500px;
-  height: 400px;
-  margin: 0 auto;
-  background-color: white;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  perspective: 1000px;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-/* Ensure modal content is always visible without scrollbars on mobile */
-@media (max-width: 768px) {
-  .modal-card-container .flashcard {
-    height: auto;
-    min-height: 350px;
-    max-height: 70vh;
-  }
-  
-  .modal-card-container .flashcard .flashcard-front,
-  .modal-card-container .flashcard .flashcard-back {
-    position: relative; /* Change from absolute for better mobile layout */
-    overflow: visible; /* Prevent scrollbars */
-    padding: 15px;
-  }
-  
-  .modal-card .question-title {
-    min-height: auto; /* Allow more flexible height */
-    padding: 5px;
-    margin-bottom: 5px;
-    height: auto;
-    max-height: 40%;
-  }
-  
-  .modal-card .options-container {
-    padding: 5px;
-    height: auto;
-    max-height: 60%;
-  }
-  
-  .modal-card .options-container ol {
-    overflow: visible;
-    height: auto;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 14px !important; /* Smaller default font for mobile */
-  }
-  
-  .card-modal {
-    padding: 15px;
-    overflow: hidden;
-  }
-}
-
-@media (max-width: 480px) {
-  .modal-card-container .flashcard {
-    min-height: 280px;
-    border-radius: 6px;
-  }
-  
-  .modal-card-container .flashcard .flashcard-front,
-  .modal-card-container .flashcard .flashcard-back {
-    padding: 10px;
-  }
-  
-  .modal-card .question-title {
-    padding: 3px;
-    margin-bottom: 3px;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 12px !important;
-  }
-}
-
-/* Mobile modal specific adjustments */
-.modal-options.options-container {
-  margin-top: 5px;
-  overflow: visible !important;
-}
-
-.modal-options.options-container ol {
-  overflow: visible !important;
-}
-
-.modal-options.options-container li {
-  margin: 3px 0;
-  padding: 3px 8px;
-  white-space: normal;
-  line-height: 1.2;
-  overflow: visible;
-  -webkit-line-clamp: initial;
-  -webkit-box-orient: initial;
-  display: flex;
-  align-items: flex-start;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-@media (max-width: 768px) {
-  .modal-options.options-container li {
-    font-size: 12px !important; /* Force consistent font size */
-    padding: 2px 5px;
-    margin: 2px 0;
-  }
-  
-  .card-modal {
-    width: 95%;
-    padding: 10px;
-  }
-  
-  .card-modal-overlay {
-    padding: 10px;
-    align-items: center;
-  }
-  
-  .modal-card-container .flashcard {
-    transform-style: flat; /* Help with mobile rendering */
-  }
-  
-  .modal-card-container .flashcard .flashcard-inner {
-    transform-style: flat; /* Help with mobile rendering */
-    overflow: visible;
-  }
-  
-  .card-modal .modal-navigation {
-    margin-top: 5px;
-    padding: 5px 0;
-  }
-  
-  .modal-navigation .nav-button {
-    min-width: 80px;
-    padding: 5px 10px;
+  .card-modal-card-container .options-container li {
+    padding: 6px 8px;
+    margin: 6px 0;
     font-size: 14px;
   }
 }
 
+@media (max-width: 640px) {
+  .card-modal-card-container .flashcard {
+    height: 340px;
+  }
+  
+  .card-modal-card-container .flashcard .flashcard-front,
+  .card-modal-card-container .flashcard .flashcard-back {
+    padding: 15px;
+  }
+  
+  .card-modal-card-container .flashcard .scaled-text {
+    padding: 6px;
+    font-size: 15px !important;
+  }
+  
+  .card-modal-card-container .options-container {
+    margin-top: 10px;
+  }
+  
+  .card-modal-card-container .options-container li {
+    padding: 5px 8px;
+    margin: 5px 0;
+    font-size: 13px;
+  }
+}
+
 @media (max-width: 480px) {
-  .modal-options.options-container li {
-    font-size: 11px !important;
-    padding: 1px 4px;
-    margin: 1px 0;
+  .card-modal-card-container .flashcard {
+    height: auto;
+    min-height: 280px;
   }
   
-  .card-modal {
-    padding: 5px;
-    margin: 0;
+  .card-modal-card-container .flashcard .flashcard-front,
+  .card-modal-card-container .flashcard .flashcard-back {
+    padding: 12px;
+    position: relative;
   }
   
-  .modal-card-container {
-    padding: 5px 0;
+  .card-modal-card-container .flashcard .scaled-text {
+    padding: 4px;
+    font-size: 14px !important;
+  }
+  
+  .card-modal-card-container .options-container {
+    margin-top: 8px;
+  }
+  
+  .card-modal-card-container .options-container li {
+    padding: 4px 6px;
+    margin: 4px 0;
+    font-size: 12px;
   }
 }

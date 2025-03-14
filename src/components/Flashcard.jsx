@@ -103,6 +103,13 @@ const ScaledText = ({ children, className = '', maxFontSize = 18, minFontSize = 
         }
       }
       
+      // Special handling for multiple choice questions - ensure they have enough space
+      if (className.includes('question-title') && container.closest('.flashcard-front')?.querySelector('.options-container')) {
+        // If this is a multiple choice question, reduce the font size further to leave room for options
+        startFontSize = Math.min(startFontSize, isMobile ? 12 : 14);
+        if (contentLength > 100) startFontSize = Math.min(startFontSize, isMobile ? 10 : 12);
+      }
+      
       // Debug output for initial sizing
       console.log(`ScaledText length: ${contentLength}, starting fontSize: ${startFontSize}, modal: ${isInModal}, mobile: ${isMobile}`);
       
@@ -222,8 +229,19 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
       fontSize = Math.min(fontSize, isMobile ? 8 : (isInModal ? 11 : 9));
     }
     
+    // Special handling for preview mode in card generation
+    if (preview) {
+      // In preview mode, we want to ensure the options are readable
+      fontSize = Math.min(fontSize, isMobile ? 9 : 11);
+      
+      // For very long options in preview, be more aggressive
+      if (maxLength > 80) {
+        fontSize = Math.min(fontSize, isMobile ? 7 : 9);
+      }
+    }
+    
     // Debug output
-    console.log(`MultipleChoice options: ${options.length}, max length: ${maxLength}, avg length: ${avgLength.toFixed(1)}, container width: ${containerWidth}, starting fontSize: ${fontSize}, mobile: ${isMobile}`);
+    console.log(`MultipleChoice options: ${options.length}, max length: ${maxLength}, avg length: ${avgLength.toFixed(1)}, container width: ${containerWidth}, starting fontSize: ${fontSize}, mobile: ${isMobile}, preview: ${preview}`);
     
     // Reset all items to the starting fontSize
     items.forEach(item => {
@@ -265,6 +283,17 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
           item.style.margin = "1px 0";
         });
       }
+      
+      // Special handling for preview mode if still overflowing
+      if (preview && isOverflowing) {
+        items.forEach(item => {
+          item.style.lineHeight = "1";
+          item.style.padding = "1px 2px";
+          item.style.margin = "1px 0";
+          // Limit to 2 lines in preview mode
+          item.style.webkitLineClamp = "2";
+        });
+      }
     }
     
     console.log(`MultipleChoice options final fontSize: ${fontSize}`);
@@ -287,7 +316,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
   });
   
   return (
-    <div className={`options-container ${isInModal ? 'modal-options' : ''}`} ref={containerRef}>
+    <div className={`options-container ${isInModal ? 'modal-options' : ''} ${preview ? 'preview-options' : ''}`} ref={containerRef}>
       <ol type="a">
         {cleanedOptions.map((option, index) => (
           <li key={index}>
@@ -504,6 +533,11 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             position: 'absolute',
             boxSizing: 'border-box'
           }}>
+            {card.topic && !preview && (
+              <div className="card-topic-indicator" style={{ color: textColor }}>
+                {card.topic}
+              </div>
+            )}
             {isMultipleChoice ? (
               <>
                 <ScaledText 
@@ -543,6 +577,11 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             position: 'absolute',
             boxSizing: 'border-box'
           }}>
+            {card.topic && !preview && (
+              <div className="card-topic-indicator back-topic">
+                {card.topic}
+              </div>
+            )}
             <ScaledText 
               maxFontSize={isInModal ? 24 : 16} 
               minFontSize={isInModal ? 8 : 6}

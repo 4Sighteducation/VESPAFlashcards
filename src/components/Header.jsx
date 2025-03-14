@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./Header.css";
 
 const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrintAll, onCreateCard }) => {
@@ -47,19 +47,17 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
         >
           Print All
         </button>
+        
+        <button
+          className="save-button"
+          onClick={onSave}
+          disabled={isSaving}
+        >
+          {isSaving ? "Saving..." : "Save Cards"}
+        </button>
       </div>
 
       <div className="header-actions">
-        <button className="save-button" onClick={onSave} disabled={isSaving}>
-          {isSaving ? "Saving..." : "Save Cards"}
-        </button>
-
-        {userInfo.email && (
-          <div className="user-info">
-            <span className="user-email">{userInfo.email}</span>
-          </div>
-        )}
-        
         {window.innerWidth <= 768 && (
           <button 
             className="mobile-menu-toggle" 

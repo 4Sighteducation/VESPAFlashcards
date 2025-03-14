@@ -395,9 +395,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     const topicInfo = isSubjectSlideshow 
       ? `${currentSubject} (All Topics)` 
       : `${currentSubject} | ${currentTopic}`;
-      
-    // Detect if we're on mobile
-    const isMobile = window.innerWidth <= 768;
 
     return (
       <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
