@@ -45,11 +45,9 @@ const SpacedRepetition = ({
 
   // Group cards by subject and topic and filter for review availability
   useEffect(() => {
-    if (spacedRepetitionData) {
-      const boxCards = spacedRepetitionData[`box${currentBox}`] || [];
-      
+    if (cards && cards.length > 0) {
       // Group cards by subject and topic
-      const grouped = boxCards.reduce((acc, card) => {
+      const grouped = cards.reduce((acc, card) => {
         const subject = card.subject || "General";
         const topic = card.topic || "General";
         
@@ -101,8 +99,14 @@ const SpacedRepetition = ({
       
       // Initialize currently selected cards based on filtering
       updateCurrentCards(grouped);
+    } else {
+      // If no cards in this box, clear the grouped data
+      setGroupedBoxCards({});
+      setBoxSubjects([]);
+      setReviewableCards({ subjects: {}, topics: {} });
+      setCurrentCards([]);
     }
-  }, [spacedRepetitionData, currentBox, selectedSubject, selectedTopic]);
+  }, [cards, currentBox, selectedSubject, selectedTopic]);
   
   // Update current study cards based on filtering
   const updateCurrentCards = (grouped) => {
@@ -696,10 +700,6 @@ const SpacedRepetition = ({
       </div>
       
       <div className="box-navigation">
-        <button className="return-button" onClick={onReturnToBank}>
-          Return to Card Bank
-        </button>
-        
         <div className="box-buttons">
           {[1, 2, 3, 4, 5].map((box) => (
             <button

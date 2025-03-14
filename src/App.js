@@ -143,8 +143,12 @@ function App() {
     cards.forEach((card) => {
       const boxNum = card.boxNum || 1;
       if (boxNum >= 1 && boxNum <= 5) {
-        // Store just the card ID as a string
-        newSpacedRepetitionData[`box${boxNum}`].push(card.id);
+        // Store card ID with review date information
+        newSpacedRepetitionData[`box${boxNum}`].push({
+          cardId: card.id,
+          lastReviewed: card.lastReviewed || new Date().toISOString(),
+          nextReviewDate: card.nextReviewDate || new Date().toISOString() // Default to today's date if not present
+        });
       }
     });
 
@@ -614,10 +618,28 @@ function App() {
   // Add a new card
   const addCard = useCallback(
     (card) => {
+      // Ensure the card has a boxNum of 1 for spaced repetition
+      const cardWithSpacedRep = {
+        ...card,
+        boxNum: 1,
+        nextReviewDate: new Date().toISOString() // Set to today so it's immediately reviewable
+      };
+
       setAllCards((prevCards) => {
-        const newCards = [...prevCards, card];
-        updateSpacedRepetitionData(newCards);
+        const newCards = [...prevCards, cardWithSpacedRep];
         return newCards;
+      });
+      
+      // Update spaced repetition data separately to ensure it's added to box1
+      setSpacedRepetitionData((prevData) => {
+        const newData = { ...prevData };
+        // Add the card to box1
+        newData.box1.push({
+          cardId: cardWithSpacedRep.id,
+          lastReviewed: new Date().toISOString(),
+          nextReviewDate: new Date().toISOString() // Reviewable immediately
+        });
+        return newData;
       });
       
       // Update color mapping if needed
@@ -629,7 +651,7 @@ function App() {
       setTimeout(() => saveData(), 100);
       showStatus("Card added successfully!");
     },
-    [updateSpacedRepetitionData, updateColorMapping, saveData, showStatus]
+    [updateColorMapping, saveData, showStatus]
   );
 
   // Delete a card
