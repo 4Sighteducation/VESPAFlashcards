@@ -4,6 +4,9 @@
   align-items: center;
   padding: 20px;
   height: 100%;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .box-info {
@@ -108,6 +111,8 @@
   perspective: 1000px;
   cursor: pointer;
   margin-bottom: 20px;
+  transform-style: preserve-3d;
+  z-index: 1;
 }
 
 .card-inner {
@@ -116,6 +121,8 @@
   transition: transform 0.6s;
   transform-style: preserve-3d;
   position: relative;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .study-card.flipped .card-inner {
@@ -136,7 +143,8 @@
   border-radius: 12px;
   background-color: var(--card-color, white);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  overflow: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .card-back {
@@ -557,18 +565,36 @@
 
   .box-button {
     width: 100%;
+    margin-bottom: 8px;
+    padding: 12px 15px;
+    font-size: 16px;
   }
 
   .card-study-area {
     gap: 10px;
+    width: 100%;
   }
 
   .study-card {
-    height: 350px;
+    height: auto;
+    min-height: 350px;
   }
 
+  /* Improve card front/back for better display */
+  .card-front, .card-back {
+    position: relative;
+    height: auto;
+    min-height: 350px;
+    padding: 15px 12px;
+    overflow-y: auto;
+  }
+
+  /* Make content more readable on small screens */
   .card-content {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
+    padding: 10px 8px;
+    margin-bottom: 10px;
+    max-height: none;
   }
 
   .response-buttons {
@@ -579,6 +605,8 @@
   .correct-button,
   .incorrect-button {
     width: 100%;
+    padding: 12px;
+    font-size: 16px;
   }
 
   .subject-list, .topic-list {
@@ -591,9 +619,235 @@
     text-align: center;
   }
   
+  /* Fix multiple choice styling for mobile */
+  .multiple-choice-options {
+    width: 100%;
+    max-height: none;
+    overflow-y: visible;
+    padding: 0;
+    margin-top: 5px;
+  }
+  
+  .multiple-choice-options h4 {
+    font-size: 1rem;
+    background-color: rgba(255, 255, 255, 0.7);
+    margin: 0 0 10px 0;
+    padding: 8px;
+    border-radius: 4px;
+  }
+  
   .multiple-choice-options li {
+    font-size: 0.95rem;
+    padding: 12px 10px;
+    margin: 8px 0;
+    display: flex;
+    align-items: flex-start;
+    text-align: left;
+    overflow: visible;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    height: auto;
+  }
+
+  /* Better study card styling for multiple choice in mobile */
+  .study-card .card-front.has-multiple-choice {
+    padding-top: 15px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Make the question more visible */
+  .study-card .card-front.has-multiple-choice .card-content {
+    font-size: 1.2rem;
+    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.85);
+    margin: 0 auto 12px;
+    padding: 12px;
+    border-radius: 8px;
+    width: 100%;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .spaced-repetition {
+    padding: 15px 10px;
+  }
+  
+  .study-card .card-front.has-multiple-choice .card-content {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    padding: 10px;
+  }
+  
+  .card-front, .card-back {
+    padding: 12px 10px;
+    min-height: 300px;
+  }
+  
+  .multiple-choice-options li {
+    padding: 10px 8px;
+    font-size: 0.9rem;
+  }
+  
+  .option-letter {
+    min-width: 16px;
+    font-size: 0.9rem;
+  }
+  
+  /* Fix navigation at the bottom */
+  .card-navigation {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    padding: 10px 0;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .card-counter {
+    flex: 0 0 auto;
+    font-size: 0.9rem;
+  }
+  
+  .prev-button, .next-button {
+    flex: 1;
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+  
+  /* Study modal needs more vertical space */
+  .study-modal {
+    max-height: 98vh;
+    padding: 10px;
+    width: 98%;
+    border-radius: 10px;
+  }
+  
+  /* Make the modal's close button easier to tap */
+  .study-modal-close {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    font-size: 1.3rem;
+  }
+}
+
+/* Mobile landscape mode fixes - critical for multiple choice cards */
+@media (max-height: 480px) and (orientation: landscape) {
+  .study-card {
+    height: auto;
+    min-height: 280px;
+  }
+  
+  .card-front, .card-back {
+    height: auto;
+    min-height: 280px;
+  }
+  
+  /* Special layout for multiple choice in landscape */
+  .study-card .card-front.has-multiple-choice {
+    display: grid;
+    grid-template-columns: 40% 60%;
+    grid-gap: 10px;
+    align-items: start;
+    padding: 12px;
+  }
+  
+  .study-card .card-front.has-multiple-choice .card-content {
+    grid-column: 1;
+    margin: 0;
+    max-height: 100%;
     font-size: 1rem;
   }
+  
+  .study-card .card-front.has-multiple-choice .multiple-choice-options {
+    grid-column: 2;
+    max-height: 260px;
+    overflow-y: auto;
+    margin: 0;
+  }
+  
+  .study-card .card-front.has-multiple-choice .multiple-choice-options li {
+    padding: 8px 10px;
+    margin: 6px 0;
+    font-size: 0.85rem;
+  }
+  
+  .card-navigation {
+    margin-top: 10px;
+  }
+  
+  /* Make sure modal doesn't overflow in landscape */
+  .study-modal {
+    max-height: 95vh;
+    overflow-y: auto;
+  }
+}
+
+/* Fix for card subject-topic section on mobile */
+@media (max-width: 768px) {
+  .card-subject-topic {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    gap: 5px;
+  }
+  
+  .card-subject {
+    font-size: 0.9rem;
+  }
+  
+  .card-topic {
+    font-size: 0.8rem;
+    margin-left: 0;
+  }
+  
+  .info-btn {
+    top: 8px;
+    left: 8px;
+    font-size: 1.2rem;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Fix multiple choice answer display on card back for mobile */
+@media (max-width: 768px) {
+  .multiple-choice-answer {
+    padding: 15px 10px;
+  }
+  
+  .multiple-choice-answer h3 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+  
+  .correct-answer-display {
+    padding: 12px;
+    font-size: 1rem;
+  }
+  
+  .answer-letter {
+    font-size: 1.1rem;
+  }
+}
+
+/* Ensure options text wraps properly on small screens */
+.multiple-choice-options li {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+  overflow: visible;
+  white-space: normal;
 }
 
 /* Non-reviewable cards */
@@ -1136,7 +1390,7 @@
   animation: pulse 2s infinite;
 }
 
-/* Study modal styles */
+/* Study modal enhancements */
 .study-modal-overlay {
   position: fixed;
   top: 0;
@@ -1150,6 +1404,7 @@
   z-index: 1000;
   animation: fadeIn 0.3s ease-out;
   backdrop-filter: blur(3px);
+  overflow: hidden; /* Prevent body scrolling when modal is open */
 }
 
 .study-modal {
@@ -1165,6 +1420,109 @@
   overflow-y: auto;
   padding: 20px;
   position: relative;
+  transform: translateZ(0); /* Force GPU acceleration for smoother scrolling */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Ensure modal and card content are properly scrollable on mobile */
+@media (max-width: 768px) {
+  .study-modal {
+    width: 95%;
+    padding: 15px 12px;
+    border-radius: 12px;
+    margin: 0;
+    max-height: 95vh;
+  }
+  
+  .study-modal-overlay {
+    align-items: center;
+    padding: 0;
+  }
+  
+  /* Fix for scrolling issues in the modal */
+  .study-modal-overlay {
+    overscroll-behavior: contain;
+  }
+  
+  .study-modal {
+    overscroll-behavior: contain;
+    overflow-y: auto;
+  }
+  
+  /* Prevent content from being hidden under fixed elements */
+  .study-modal .card-study-area {
+    padding-bottom: 70px; /* Space for navigation buttons */
+  }
+  
+  /* Adjust the modal close button for better touchability */
+  .study-modal-close {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    z-index: 20;
+  }
+}
+
+/* Portrait mode specific adjustments */
+@media (max-width: 480px) and (orientation: portrait) {
+  .study-card {
+    min-height: 400px; /* Taller cards in portrait */
+  }
+  
+  .card-front, .card-back {
+    min-height: 400px;
+    padding: 45px 15px 15px; /* Extra padding at top for buttons/info */
+  }
+  
+  /* Larger click targets for navigation */
+  .prev-button, .next-button {
+    padding: 12px 20px;
+    font-size: 1rem;
+  }
+}
+
+/* Improved empty state for mobile */
+@media (max-width: 768px) {
+  .empty-box {
+    padding: 25px 15px;
+  }
+  
+  .empty-box h3 {
+    font-size: 1.4rem;
+  }
+  
+  .empty-message {
+    font-size: 1.1rem;
+    padding: 12px;
+    margin: 15px auto;
+  }
+  
+  .pro-tip {
+    font-size: 0.9rem;
+    margin: 15px 0 20px;
+  }
+  
+  .return-button {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+  }
+  
+  /* Completion message adjustments */
+  .completion-message {
+    padding: 25px 15px;
+  }
+  
+  .completion-message h3 {
+    font-size: 1.5rem;
+  }
 }
 
 /* Animations for modals */
@@ -1238,59 +1596,45 @@
 @media (max-width: 768px) {
   .study-modal {
     width: 95%;
-    padding: 15px;
+    padding: 15px 12px;
+    border-radius: 12px;
+    margin: 0;
     max-height: 95vh;
   }
   
-  .study-modal .study-card {
-    height: 400px;
+  .study-modal-overlay {
+    align-items: center;
+    padding: 0;
   }
   
-  .study-modal .card-content {
-    font-size: 1.3rem;
+  /* Fix for scrolling issues in the modal */
+  .study-modal-overlay {
+    overscroll-behavior: contain;
   }
   
-  .study-modal .flip-response,
-  .study-modal .answer-feedback {
-    width: 90%;
-    bottom: 80px;
-  }
-}
-
-@media (max-width: 480px) {
   .study-modal {
-    padding: 10px;
+    overscroll-behavior: contain;
+    overflow-y: auto;
   }
   
-  .study-modal .study-card {
-    height: 350px;
+  /* Prevent content from being hidden under fixed elements */
+  .study-modal .card-study-area {
+    padding-bottom: 70px; /* Space for navigation buttons */
   }
   
-  .study-modal .card-content {
-    font-size: 1.1rem;
-    padding: 5px;
-  }
-  
-  .study-modal .flip-response,
-  .study-modal .answer-feedback {
-    bottom: 70px;
-  }
-  
-  .study-modal .card-navigation {
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 20px;
-  }
-  
-  .study-modal .card-counter {
-    width: 100%;
-    order: -1;
-    margin-bottom: 10px;
-  }
-  
-  .study-modal .prev-button,
-  .study-modal .next-button {
-    flex: 1;
+  /* Adjust the modal close button for better touchability */
+  .study-modal-close {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    z-index: 20;
   }
 }
 
@@ -1545,4 +1889,282 @@
 .error-message::before {
   content: "⚠️";
   margin-right: 8px;
+}
+
+/* Enhanced multiple choice styling */
+.multiple-choice-header {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #333;
+  position: sticky;
+  top: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 10px;
+  z-index: 5;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.multiple-choice-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.multiple-choice-option {
+  padding: 12px 15px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 2px solid #e0e0e0;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.multiple-choice-option:hover {
+  background-color: #e8f4fc;
+  border-color: #a0d2f3;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15);
+}
+
+.option-text {
+  flex: 1;
+  padding-left: 10px;
+  line-height: 1.4;
+}
+
+/* Improved multiple choice question styling */
+.card-content.multiple-choice-question {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #000;
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile optimizations for multiple choice */
+@media (max-width: 768px) {
+  .card-content.multiple-choice-question {
+    font-size: 1.3rem;
+    width: 95%;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .multiple-choice-header {
+    font-size: 1rem;
+    padding: 8px;
+  }
+  
+  .multiple-choice-option {
+    padding: 10px 12px;
+  }
+  
+  .option-letter {
+    font-size: 1rem;
+  }
+  
+  .option-text {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-content.multiple-choice-question {
+    font-size: 1.1rem;
+    padding: 10px;
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+  
+  .multiple-choice-header {
+    font-size: 0.9rem;
+    padding: 6px;
+    margin-bottom: 8px;
+  }
+  
+  .multiple-choice-option {
+    padding: 8px 10px;
+  }
+  
+  .option-letter {
+    font-size: 0.9rem;
+    min-width: 18px;
+  }
+  
+  .option-text {
+    font-size: 0.9rem;
+    padding-left: 5px;
+  }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+  .card-content.multiple-choice-question {
+    font-size: 1rem;
+    padding: 10px;
+    text-align: left;
+  }
+  
+  .multiple-choice-list {
+    gap: 6px;
+  }
+  
+  .multiple-choice-option {
+    padding: 6px 8px;
+  }
+}
+
+/* Card flipping improvements */
+@media (max-width: 768px) and (orientation: portrait) {
+  .card-front, .card-back {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 40px 15px 15px; /* Extra padding at top for info button */
+  }
+
+  /* Make sure the content doesn't cause overflow issues */
+  .card-content {
+    width: 95%;
+    overflow-y: auto;
+    max-height: none;
+  }
+  
+  /* Ensure the flipping effect works well on mobile */
+  .study-card {
+    height: auto;
+    min-height: 380px;
+    transform-style: preserve-3d;
+  }
+  
+  .card-inner {
+    height: 100%;
+    min-height: 380px;
+  }
+  
+  /* Prevent accidental scrolling when trying to flip */
+  .card-front, 
+  .card-back {
+    touch-action: pan-y;
+    height: auto;
+    min-height: 380px;
+  }
+  
+  /* Ensure options are scrollable in multiple choice */
+  .multiple-choice-options {
+    max-height: 300px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    margin-bottom: 15px;
+    width: 100%;
+  }
+  
+  .flip-response {
+    position: relative; 
+    transform: none;
+    left: auto;
+    right: auto;
+    margin: 15px auto;
+    width: 95%;
+  }
+}
+
+/* Fix for landscape mode scrolling */
+@media (max-height: 480px) and (orientation: landscape) {
+  .study-modal {
+    align-items: flex-start;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  
+  .study-card {
+    min-height: 280px;
+  }
+  
+  .card-inner {
+    min-height: 280px;
+  }
+  
+  .card-front, 
+  .card-back {
+    min-height: 280px;
+    padding: 10px;
+  }
+  
+  /* Ensure response buttons are visible */
+  .flip-response {
+    margin: 10px auto;
+  }
+  
+  .response-buttons {
+    flex-direction: row;
+    gap: 10px;
+  }
+  
+  .correct-button, 
+  .incorrect-button {
+    flex: 1;
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Fixed response buttons on smaller screens */
+@media (max-width: 480px) {
+  .flip-response {
+    padding: 12px 10px;
+  }
+  
+  .flip-response p {
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+  }
+  
+  .response-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .correct-button, 
+  .incorrect-button {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+  }
+}
+
+/* Fix any z-index issues with modals */
+.modal-overlay,
+.info-modal-overlay,
+.study-modal-overlay {
+  z-index: 9999;
+}
+
+.confirmation-modal,
+.info-modal,
+.review-date-message {
+  z-index: 10000;
 }

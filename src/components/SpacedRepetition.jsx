@@ -434,7 +434,7 @@ const SpacedRepetition = ({
     setShowInfoModal(!showInfoModal);
   };
 
-  // Add the renderMultipleChoice function
+  // Improved multiple choice rendering to ensure questions display better on mobile
   const renderMultipleChoice = (card) => {
     // Add defensive checks
     if (!card || !card.options || !Array.isArray(card.options)) {
@@ -449,12 +449,13 @@ const SpacedRepetition = ({
     
     return (
       <div className="multiple-choice-options">
-        <h4>Choose the correct answer:</h4>
-        <ul>
+        <h4 className="multiple-choice-header">Choose the correct answer:</h4>
+        <ul className="multiple-choice-list">
           {card.options.map((option, index) => (
             <li 
               key={index}
               className={`
+                multiple-choice-option
                 ${selectedOption === option ? 'selected-option' : ''}
                 ${isFlipped && option === card.correctAnswer ? 'correct-option' : ''}
               `}
@@ -462,7 +463,8 @@ const SpacedRepetition = ({
                 if (!isFlipped) handleOptionSelect(option, e);
               }}
             >
-              <span className="option-letter">{String.fromCharCode(65 + index)}.</span> {option}
+              <span className="option-letter">{String.fromCharCode(65 + index)}.</span> 
+              <span className="option-text">{option}</span>
             </li>
           ))}
         </ul>
@@ -798,16 +800,31 @@ const SpacedRepetition = ({
                 </div>
               )}
               
-              <div
-                className="card-content"
-                dangerouslySetInnerHTML={{
-                  __html:
-                    currentCard.front ||
-                    currentCard.question ||
-                    "No question"
-                }}
-              />
-              {currentCard.questionType === 'multiple_choice' && !isFlipped && renderMultipleChoice(currentCard)}
+              {/* Enhanced question display for multiple choice */}
+              {currentCard.questionType === 'multiple_choice' ? (
+                <>
+                  <div
+                    className="card-content multiple-choice-question"
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        currentCard.front ||
+                        currentCard.question ||
+                        "No question"
+                    }}
+                  />
+                  {!isFlipped && renderMultipleChoice(currentCard)}
+                </>
+              ) : (
+                <div
+                  className="card-content"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      currentCard.front ||
+                      currentCard.question ||
+                      "No question"
+                  }}
+                />
+              )}
               
               {!currentCard.isReviewable && (
                 <div className="review-date-overlay">
