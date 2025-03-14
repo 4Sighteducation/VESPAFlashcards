@@ -51,8 +51,9 @@ const BRIGHT_COLORS = [
 
 // API keys - in production, these should be in server environment variables
 const API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
-const KNACK_APP_ID = "64fc50bc3cd0ac00254bb62b"; // Using a direct value to avoid malformed App ID errors
-const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
+// Use environment variable for Knack App ID with fallback
+const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_ID || "5ee90912c38ae7001510c1a9"; // Use env variable with fallback to correct ID
+const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || ""; // Don't use a placeholder for API key
 
 // Helper function to clean OpenAI response
 const cleanOpenAIResponse = (response) => {
@@ -165,10 +166,24 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         return [];
       }
       
+      // Validate the KNACK_APP_ID and KNACK_API_KEY
+      if (!KNACK_APP_ID) {
+        console.error("Missing Knack App ID");
+        throw new Error("Configuration error: Missing Knack App ID");
+      }
+      
+      if (!KNACK_API_KEY) {
+        console.error("Missing Knack API Key");
+        throw new Error("Configuration error: Missing Knack API Key. Please check your environment variables.");
+      }
+      
       console.log("Loading topic lists from Knack for user:", userId);
       
       // Get topic lists from Knack
       const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+      
+      console.log("Making Knack API request with App ID:", KNACK_APP_ID);
+      
       const getResponse = await fetch(getUrl, {
         method: "GET",
         headers: {
@@ -179,8 +194,9 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       });
       
       if (!getResponse.ok) {
-        console.error("Failed to get Knack record:", await getResponse.json());
-        return [];
+        const errorText = await getResponse.text();
+        console.error("Knack API error response:", errorText);
+        throw new Error(`Knack API returned ${getResponse.status}: ${errorText}`);
       }
       
       const userData = await getResponse.json();
@@ -352,8 +368,70 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
     }
   };
 
+  // Save topic list to Knack - updated to save the entire lists array
+  const saveTopicListToKnack = async (topicLists) => {
+    try {
+      // Check if we're authenticated or have a user ID
+      if (!auth || !userId) {
+        console.log("No authentication data or userId, skipping Knack save");
+        setError("You must be logged in to save topic lists");
+        return false;
+      }
+      
+      console.log("Saving topic lists to Knack for user:", userId);
+      
+      // Validate the KNACK_APP_ID and KNACK_API_KEY
+      if (!KNACK_APP_ID) {
+        console.error("Missing Knack App ID");
+        setError("Configuration error: Missing Knack App ID");
+        return false;
+      }
+      
+      if (!KNACK_API_KEY) {
+        console.error("Missing Knack API Key");
+        setError("Configuration error: Missing Knack API Key. Please check your environment variables.");
+        return false;
+      }
+      
+      // Safety check to ensure topicLists is a valid array
+      if (!Array.isArray(topicLists)) {
+        console.error("Topic lists is not an array:", topicLists);
+        setError("Invalid data format: Topic lists must be an array");
+        return false;
+      }
+      
+      // Update Knack record directly with the full lists array
+      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+      const updateResponse = await fetch(updateUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY
+        },
+        body: JSON.stringify({
+          field_3011: JSON.stringify(topicLists)
+        })
+      });
+      
+      if (updateResponse.ok) {
+        console.log("Topic lists saved to Knack successfully:", topicLists.length, "lists");
+        return true;
+      } else {
+        const errorData = await updateResponse.json().catch(e => ({ message: "Unknown error" }));
+        console.error("Failed to save topic lists to Knack:", errorData);
+        setError(`Failed to save topic lists: ${errorData.message || "API error"}`);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error saving topic lists to Knack:", error);
+      setError(`Error saving topic lists: ${error.message || "Unknown error"}`);
+      return false;
+    }
+  };
+
   // Save the current topic list
-  const saveTopicList = () => {
+  const saveTopicList = async () => {
     if (!topicListName.trim()) {
       setError("Please enter a name for your topic list");
       return;
@@ -378,18 +456,21 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       };
       
       const updatedLists = [...savedTopicLists, newSavedList];
-      setSavedTopicLists(updatedLists);
       
-      // Save directly to Knack
-      saveTopicListToKnack(updatedLists);
+      // Save directly to Knack and only update state if successful
+      const saveSuccess = await saveTopicListToKnack(updatedLists);
       
-      // Close save dialog but keep topic modal open
-      setShowSaveTopicDialog(false);
-      setTopicListName("");
-      setError(null);
-      setTopicListSaved(true);
-      
-      console.log("Topic list saved:", newSavedList);
+      if (saveSuccess) {
+        setSavedTopicLists(updatedLists);
+        
+        // Close save dialog but keep topic modal open
+        setShowSaveTopicDialog(false);
+        setTopicListName("");
+        setError(null);
+        setTopicListSaved(true);
+        
+        console.log("Topic list saved:", newSavedList);
+      }
     } catch (error) {
       console.error("Error saving topic list:", error);
       setError("Failed to save topic list: " + error.message);
@@ -401,41 +482,6 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
     const timestamp = new Date().getTime();
     const randomStr = Math.random().toString(36).substring(2, 10);
     return `${prefix}_${timestamp}_${randomStr}`;
-  };
-  
-  // Save topic list to Knack - updated to save the entire lists array
-  const saveTopicListToKnack = async (topicLists) => {
-    try {
-      // Check if we're authenticated or have a user ID
-      if (!auth || !userId) {
-        console.log("No authentication data or userId, skipping Knack save");
-        return;
-      }
-      
-      console.log("Saving topic lists to Knack for user:", userId);
-      
-      // Update Knack record directly with the full lists array
-      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
-      const updateResponse = await fetch(updateUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY
-        },
-        body: JSON.stringify({
-          field_3011: JSON.stringify(topicLists)
-        })
-      });
-      
-      if (updateResponse.ok) {
-        console.log("Topic lists saved to Knack successfully:", topicLists.length, "lists");
-      } else {
-        console.error("Failed to save topic lists to Knack:", await updateResponse.json());
-      }
-    } catch (error) {
-      console.error("Error saving topic lists to Knack:", error);
-    }
   };
   
   // Load a saved topic list
@@ -467,21 +513,29 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   };
   
   // Delete a topic list
-  const deleteTopicList = (listId) => {
+  const deleteTopicList = async (listId) => {
     // Check if authenticated
     if (!auth || !userId) {
       setError("You must be logged in to delete topic lists");
       return;
     }
     
-    // Remove from state
-    const updatedLists = savedTopicLists.filter(list => list.id !== listId);
-    setSavedTopicLists(updatedLists);
-    
-    // Save the updated lists to Knack
-    saveTopicListToKnack(updatedLists);
-    
-    console.log(`Deleted topic list with ID: ${listId}`);
+    try {
+      // Remove from state first
+      const updatedLists = savedTopicLists.filter(list => list.id !== listId);
+      
+      // Save the updated lists to Knack
+      const saveSuccess = await saveTopicListToKnack(updatedLists);
+      
+      if (saveSuccess) {
+        // Only update state if the API call was successful
+        setSavedTopicLists(updatedLists);
+        console.log(`Deleted topic list with ID: ${listId}`);
+      }
+    } catch (error) {
+      console.error(`Error deleting topic list ${listId}:`, error);
+      setError(`Failed to delete topic list: ${error.message}`);
+    }
   };
   
   // Render saved topic lists
@@ -961,6 +1015,14 @@ Use this format for different question types:
 
   return (
     <div className="AICardGenerator">
+      {/* Add error notification for API configuration issues */}
+      {error && error.includes("Configuration error") && (
+        <div className="api-config-error">
+          <h3>API Configuration Error</h3>
+          <p>{error}</p>
+          <p>Please check your environment variables and make sure the KNACK_API_KEY is properly set.</p>
+        </div>
+      )}
       {/* Render your component content here */}
     </div>
   );
