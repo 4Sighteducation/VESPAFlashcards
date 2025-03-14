@@ -43,6 +43,10 @@ const SpacedRepetition = ({
   // State for study modal
   const [showStudyModal, setShowStudyModal] = useState(false);
 
+  // Add these new state variables
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [hasSelectedOnce, setHasSelectedOnce] = useState(false);
+  
   // Group cards by subject and topic and filter for review availability
   useEffect(() => {
     if (cards && cards.length > 0) {
@@ -125,8 +129,15 @@ const SpacedRepetition = ({
         .map(topicMap => Object.values(topicMap).flat())
         .flat();
     }
+
+    // Filter out cards that have been reviewed and should no longer be in this box
+    const today = new Date();
+    const reviewableCards = cardsToStudy.filter(card => {
+      // If card has no next review date or is due for review
+      return !card.nextReviewDate || new Date(card.nextReviewDate) <= today;
+    });
     
-    setCurrentCards(cardsToStudy);
+    setCurrentCards(reviewableCards);
     setCurrentIndex(0);
     setIsFlipped(false);
     setShowFlipResponse(false);
@@ -167,72 +178,102 @@ const SpacedRepetition = ({
   
   // Handle card flip action
   const handleCardFlip = () => {
-    // Only allow flipping if card is reviewable
-    if (currentCards[currentIndex]?.isReviewable === false) {
-      // Show message about review date
-      if (currentCards[currentIndex]?.nextReviewDate) {
-        setNextReviewDate(new Date(currentCards[currentIndex].nextReviewDate));
-        setShowReviewDateMessage(true);
-      }
+    // If this is a multiple choice card and we have a selected option but haven't shown confirmation yet
+    if (
+      currentCards[currentIndex]?.questionType === 'multiple_choice' && 
+      selectedOption && 
+      !hasSelectedOnce && 
+      !showConfirmationModal && 
+      !isFlipped
+    ) {
+      // Show confirmation modal instead of flipping immediately
+      setShowConfirmationModal(true);
       return;
     }
     
-    // For multiple choice questions, only flip if an option is selected
-    if (currentCards[currentIndex]?.questionType === 'multiple_choice' && !isFlipped && !selectedOption) {
-      return;
-    }
-    
-    setIsFlipped(!isFlipped);
-    
-    // Show response buttons a short time after flipping to back
+    // If we have already selected once or this isn't multiple choice, flip the card
     if (!isFlipped) {
-      setShowFlipResponse(false);
-      
-      // If multiple choice and answer selected, show feedback instead of flip response
-      if (currentCards[currentIndex]?.questionType === 'multiple_choice' && selectedOption) {
-        // Check if answer is correct
-        const correctAnswer = currentCards[currentIndex].correctAnswer;
-        const isCorrect = selectedOption === correctAnswer;
-        setIsCorrectAnswer(isCorrect);
-        setTimeout(() => {
-          setShowAnswerFeedback(true);
-        }, 500);
-        
-        return;
-      }
-      
-      setTimeout(() => {
-        setShowFlipResponse(true);
-      }, 300);
+      setIsFlipped(true);
     } else {
-      setShowFlipResponse(false);
+      // Only show flip response if it's not a multiple choice card
+      // For multiple choice, we'll show it automatically based on their answer
+      if (currentCards[currentIndex]?.questionType !== 'multiple_choice') {
+        setShowFlipResponse(true);
+      }
     }
   };
 
-  // Handle next card
+  // Handle multiple choice selection
+  const handleOptionSelect = (option, e) => {
+    e.stopPropagation();
+    
+    if (isFlipped) return; // Don't allow selecting after flip
+    
+    setSelectedOption(option);
+    
+    // If this is the first selection, show confirmation
+    if (!hasSelectedOnce) {
+      setShowConfirmationModal(true);
+    } else {
+      // If they've already selected once before, just flip the card
+      setIsFlipped(true);
+      
+      // After flipping, check if answer is correct and show appropriate feedback
+      const currentCard = currentCards[currentIndex];
+      const isCorrect = option === currentCard?.correctAnswer;
+      
+      setTimeout(() => {
+        setShowFlipResponse(true);
+      }, 500);
+    }
+  };
+  
+  // Handle confirmation response
+  const handleConfirmationResponse = (confirmed) => {
+    setShowConfirmationModal(false);
+    
+    if (confirmed) {
+      // They confirmed, so flip the card
+      setIsFlipped(true);
+      
+      // After flipping, check if answer is correct and show appropriate feedback
+      const currentCard = currentCards[currentIndex];
+      const isCorrect = selectedOption === currentCard?.correctAnswer;
+      
+      setTimeout(() => {
+        setShowFlipResponse(true);
+      }, 500);
+    } else {
+      // They canceled, so allow them to select again
+      setHasSelectedOnce(true);
+      setSelectedOption(null);
+    }
+  };
+  
+  // Reset selection state when moving to a new card
+  const resetSelectionState = () => {
+    setSelectedOption(null);
+    setHasSelectedOnce(false);
+    setShowConfirmationModal(false);
+    setIsFlipped(false);
+    setShowFlipResponse(false);
+  };
+  
+  // Update nextCard and prevCard to use resetSelectionState
   const nextCard = () => {
     if (currentIndex < currentCards.length - 1) {
+      resetSelectionState();
       setCurrentIndex(currentIndex + 1);
-      resetCardState();
     } else {
       setStudyCompleted(true);
     }
   };
   
-  // Handle previous card
   const prevCard = () => {
     if (currentIndex > 0) {
+      resetSelectionState();
       setCurrentIndex(currentIndex - 1);
-      resetCardState();
     }
-  };
-  
-  // Reset card state when navigating
-  const resetCardState = () => {
-    setIsFlipped(false);
-    setShowFlipResponse(false);
-    setSelectedOption(null);
-    setShowAnswerFeedback(false);
   };
   
   // Get contrast color for text
@@ -276,13 +317,31 @@ const SpacedRepetition = ({
     const updatedCard = {
       ...cardToMove,
       nextReviewDate: nextReviewDate.toISOString(),
+      isReviewable: false, // Mark as not reviewable anymore
+      boxNum: nextBox // Make sure boxNum is updated
     };
     
     // Call the parent component's function to move the card
-    onMoveCard(updatedCard, currentBox, nextBox);
+    onMoveCard(cardToMove.id, nextBox);
     
-    // Move to the next card
-    nextCard();
+    // Update the current cards array to mark this card as reviewed
+    setCurrentCards(prev => 
+      prev.map(card => 
+        card.id === cardToMove.id 
+          ? { ...card, isReviewable: false, nextReviewDate: nextReviewDate.toISOString() } 
+          : card
+      )
+    );
+    
+    // Show a confirmation message
+    setShowReviewDateMessage(true);
+    setNextReviewDate(nextReviewDate);
+    
+    // Move to the next card after a delay
+    setTimeout(() => {
+      setShowReviewDateMessage(false);
+      nextCard();
+    }, 1500);
   };
 
   const handleIncorrectAnswer = () => {
@@ -298,13 +357,31 @@ const SpacedRepetition = ({
     const updatedCard = {
       ...cardToMove,
       nextReviewDate: nextReviewDate.toISOString(),
+      isReviewable: false, // Mark as not reviewable anymore
+      boxNum: 1 // Move back to box 1
     };
     
     // Call the parent component's function to move the card
-    onMoveCard(updatedCard, currentBox, 1);
+    onMoveCard(cardToMove.id, 1);
     
-    // Move to the next card
-    nextCard();
+    // Update the current cards array to mark this card as reviewed
+    setCurrentCards(prev => 
+      prev.map(card => 
+        card.id === cardToMove.id 
+          ? { ...card, isReviewable: false, nextReviewDate: nextReviewDate.toISOString() } 
+          : card
+      )
+    );
+    
+    // Show a confirmation message
+    setShowReviewDateMessage(true);
+    setNextReviewDate(nextReviewDate);
+    
+    // Move to the next card after a delay
+    setTimeout(() => {
+      setShowReviewDateMessage(false);
+      nextCard();
+    }, 1500);
   };
 
   // Add function to toggle the info modal
@@ -329,14 +406,32 @@ const SpacedRepetition = ({
                 ${isFlipped && option === card.correctAnswer ? 'correct-option' : ''}
               `}
               onClick={(e) => {
-                e.stopPropagation();
-                if (!isFlipped) setSelectedOption(option);
+                if (!isFlipped) handleOptionSelect(option, e);
               }}
             >
-              {option}
+              <span className="option-letter">{String.fromCharCode(65 + index)}.</span> {option}
             </li>
           ))}
         </ul>
+      </div>
+    );
+  };
+
+  // Add a function to render the simplified back of multiple choice cards
+  const renderMultipleChoiceBack = (card) => {
+    if (!card || !card.correctAnswer) return <p>No answer available</p>;
+    
+    // Find the index of the correct answer to get its letter
+    const correctIndex = card.options ? card.options.findIndex(option => option === card.correctAnswer) : -1;
+    const optionLetter = correctIndex >= 0 ? String.fromCharCode(65 + correctIndex) : '';
+    
+    return (
+      <div className="multiple-choice-answer">
+        <h3>Correct Answer:</h3>
+        <div className="correct-answer-display">
+          {optionLetter && <span className="answer-letter">{optionLetter}.</span>}
+          <span className="answer-text">{card.correctAnswer}</span>
+        </div>
       </div>
     );
   };
@@ -537,13 +632,16 @@ const SpacedRepetition = ({
           className={`study-card ${isFlipped ? "flipped" : ""} ${
             !currentCards[currentIndex].isReviewable ? "not-reviewable" : ""
           }`}
-          onClick={handleCardFlip}
+          onClick={currentCards[currentIndex].questionType === 'multiple_choice' ? null : handleCardFlip}
           style={{
             '--card-color': currentCards[currentIndex].cardColor || '#ffffff'
           }}
         >
           <div className="card-inner">
-            <div className="card-front">
+            <div 
+              className={`card-front ${currentCards[currentIndex].questionType === 'multiple_choice' ? 'has-multiple-choice' : ''}`}
+              onClick={currentCards[currentIndex].questionType === 'multiple_choice' ? null : handleCardFlip}
+            >
               <div className="card-subject-topic">
                 <span className="card-subject">{currentCards[currentIndex].subject || "General"}</span>
                 <span className="card-topic">{currentCards[currentIndex].topic || ""}</span>
@@ -578,7 +676,8 @@ const SpacedRepetition = ({
               
               {!currentCards[currentIndex].isReviewable && (
                 <div className="review-date-overlay">
-                  <p>This card is locked until</p>
+                  <p>This card has been reviewed already</p>
+                  <p>The next review date is:</p>
                   <p className="next-review-date">{new Date(currentCards[currentIndex].nextReviewDate).toLocaleDateString()}</p>
                 </div>
               )}
@@ -597,18 +696,23 @@ const SpacedRepetition = ({
                   ℹ️
                 </button>
               )}
-              <div
-                className="card-content"
-                dangerouslySetInnerHTML={{
-                  __html:
-                    currentCards[currentIndex].back ||
-                    (currentCards[currentIndex].detailedAnswer && !currentCards[currentIndex].additionalInfo ? 
-                      currentCards[currentIndex].detailedAnswer : 
-                      currentCards[currentIndex].correctAnswer || 
-                      "No answer")
-                }}
-              />
-              {currentCards[currentIndex].questionType === 'multiple_choice' && isFlipped && renderMultipleChoice(currentCards[currentIndex])}
+              
+              {/* For multiple choice, show simplified back */}
+              {currentCards[currentIndex].questionType === 'multiple_choice' ? (
+                renderMultipleChoiceBack(currentCards[currentIndex])
+              ) : (
+                <div
+                  className="card-content"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      currentCards[currentIndex].back ||
+                      (currentCards[currentIndex].detailedAnswer && !currentCards[currentIndex].additionalInfo ? 
+                        currentCards[currentIndex].detailedAnswer : 
+                        currentCards[currentIndex].correctAnswer || 
+                        "No answer")
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -635,49 +739,42 @@ const SpacedRepetition = ({
           </button>
         </div>
         
-        {/* Modal and feedback components remain the same */}
-        {showFlipResponse && !showAnswerFeedback && currentCards[currentIndex].questionType !== 'multiple_choice' && (
+        {showFlipResponse && (
           <div className="flip-response">
-            <p>Did you know the answer?</p>
-            <div className="response-buttons">
-              <button className="correct-button" onClick={handleCorrectAnswer}>
-                Correct
-              </button>
-              <button
-                className="incorrect-button"
-                onClick={handleIncorrectAnswer}
-              >
-                Incorrect
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {showAnswerFeedback && currentCards[currentIndex].questionType === 'multiple_choice' && (
-          <div className={`answer-feedback ${isCorrectAnswer ? 'correct' : 'incorrect'}`}>
-            <h3>{isCorrectAnswer ? 'Congratulations!' : 'Unlucky!'}</h3>
-            <p>
-              {isCorrectAnswer 
-                ? `You got that right! Moving up to Box ${Math.min(currentBox + 1, 5)}.` 
-                : `That's incorrect. The correct answer is: ${currentCards[currentIndex].correctAnswer}`}
-            </p>
-            <div className="feedback-buttons">
-              <button 
-                className={isCorrectAnswer ? "correct-button" : "incorrect-button"} 
-                onClick={() => {
-                  // Reset state and process card movement
-                  if (isCorrectAnswer) {
-                    handleCorrectAnswer();
-                  } else {
-                    handleIncorrectAnswer();
-                  }
-                  setSelectedOption(null);
-                  setShowAnswerFeedback(false);
-                }}
-              >
-                {isCorrectAnswer ? "Continue" : "Move to Box 1"}
-              </button>
-            </div>
+            {currentCards[currentIndex]?.questionType === 'multiple_choice' ? (
+              // For multiple choice questions, check if they got it right automatically
+              <div>
+                <p>
+                  {selectedOption === currentCards[currentIndex]?.correctAnswer 
+                    ? "You selected the correct answer!" 
+                    : "Your answer was incorrect."}
+                </p>
+                <div className="response-buttons">
+                  {selectedOption === currentCards[currentIndex]?.correctAnswer ? (
+                    <button className="correct-button" onClick={handleCorrectAnswer}>
+                      Move to Box {Math.min(currentBox + 1, 5)}
+                    </button>
+                  ) : (
+                    <button className="incorrect-button" onClick={handleIncorrectAnswer}>
+                      Move to Box 1
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              // For regular cards, let them self-assess
+              <div>
+                <p>How did you do? Mark your card as correct or incorrect:</p>
+                <div className="response-buttons">
+                  <button className="incorrect-button" onClick={handleIncorrectAnswer}>
+                    Incorrect (Box 1)
+                  </button>
+                  <button className="correct-button" onClick={handleCorrectAnswer}>
+                    Correct (Box {Math.min(currentBox + 1, 5)})
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -770,6 +867,24 @@ const SpacedRepetition = ({
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Confirmation modal */}
+      {showConfirmationModal && (
+        <div className="modal-overlay">
+          <div className="confirmation-modal">
+            <h3>Confirm Your Answer</h3>
+            <p>Are you sure about your answer? This is your last chance to change your mind!</p>
+            <div className="confirmation-buttons">
+              <button className="confirm-no" onClick={() => handleConfirmationResponse(false)}>
+                No, let me select again
+              </button>
+              <button className="confirm-yes" onClick={() => handleConfirmationResponse(true)}>
+                Yes, I'm sure
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -31,7 +31,9 @@
   width: 100%;
   max-width: 800px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
   margin-bottom: 20px;
 }
 
@@ -39,38 +41,28 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
-  width: 100%;
+  gap: 10px;
 }
 
 .box-button {
-  flex: 1;
-  min-width: 100px;
-  padding: 12px 15px;
+  padding: 10px 15px;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   background-color: #f5f5f5;
   color: #333;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  transition: background-color 0.2s, transform 0.2s;
 }
 
 .box-button:hover {
   background-color: #e0e0e0;
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .box-button.active {
   background-color: #06206e;
   color: white;
   font-weight: bold;
-  box-shadow: 0 4px 10px rgba(6, 32, 110, 0.4);
 }
 
 .box-button.glowing {
@@ -169,10 +161,13 @@
 }
 
 .card-content {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   text-align: center;
   width: 100%;
-  padding: 10px;
+  padding: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 15px;
 }
 
 .card-navigation {
@@ -224,6 +219,7 @@
   padding: 15px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   text-align: center;
+  margin: 15px 0;
 }
 
 .flip-response p {
@@ -364,15 +360,23 @@
 
 /* Multiple choice formatting */
 .multiple-choice-options {
-  margin-top: 15px;
+  margin-top: 10px;
   width: 100%;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-bottom: 15px;
 }
 
 .multiple-choice-options h4 {
   font-size: 1rem;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   color: #333;
+  position: sticky;
+  top: 0;
+  background-color: inherit;
+  padding: 5px 0;
+  z-index: 5;
 }
 
 .multiple-choice-options ul {
@@ -383,13 +387,31 @@
 
 .multiple-choice-options li {
   padding: 10px 15px;
-  margin: 8px 0;
+  margin: 10px 0;
   border-radius: 8px;
   background-color: #f5f5f5;
   border: 2px solid #e0e0e0;
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s;
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+}
+
+/* Style for the option letter */
+.option-letter {
+  font-weight: bold;
+  margin-right: 8px;
+  color: #06206e;
+  min-width: 20px;
+  display: inline-block;
+}
+
+/* Adjust card content for multiple choice */
+.study-card .card-front.has-multiple-choice .card-content {
+  max-height: 200px;
+  margin-bottom: 0;
 }
 
 .multiple-choice-options li:hover {
@@ -552,18 +574,20 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.8);
   color: white;
   font-weight: bold;
   font-size: 1.2rem;
   border-radius: 10px;
   text-align: center;
   padding: 20px;
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(4px);
+  z-index: 50;
 }
 
 .review-date-overlay p {
-  margin: 5px 0;
+  margin: 8px 0;
+  max-width: 80%;
 }
 
 .review-date-overlay .next-review-date {
@@ -1115,12 +1139,25 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Remove absolute positioning for feedback elements */
+.study-modal .flip-response,
+.study-modal .answer-feedback {
+  position: static;
+  margin: 20px auto;
+  width: 80%;
+  max-width: 500px;
+}
+
 /* When in modal, adjust the study card area */
 .study-modal .card-study-area {
   min-height: 600px;
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
 .study-modal .study-card {
@@ -1131,28 +1168,6 @@
 .study-modal .card-navigation {
   margin-top: 30px;
   margin-bottom: 10px;
-}
-
-.study-modal .flip-response {
-  position: absolute;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  max-width: 500px;
-  z-index: 100;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-.study-modal .answer-feedback {
-  position: absolute;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  max-width: 500px;
-  z-index: 100;
 }
 
 /* Enhanced close button for modal */
@@ -1297,4 +1312,127 @@
   display: flex;
   flex-direction: column;
   padding-bottom: 15px;
+}
+
+/* Confirmation modal for multiple choice */
+.confirmation-modal {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  padding: 25px;
+  width: 90%;
+  max-width: 450px;
+  text-align: center;
+  animation: slideIn 0.3s ease-out;
+  position: relative;
+  z-index: 1100;
+}
+
+.confirmation-modal h3 {
+  color: #06206e;
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+}
+
+.confirmation-modal p {
+  margin-bottom: 25px;
+  color: #555;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.confirmation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.confirmation-buttons button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.confirmation-buttons button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.confirm-yes {
+  background-color: #4caf50;
+  color: white;
+}
+
+.confirm-no {
+  background-color: #f44336;
+  color: white;
+}
+
+/* Multiple choice answer display on card back */
+.multiple-choice-answer {
+  width: 100%;
+  text-align: center;
+  padding: 20px;
+}
+
+.multiple-choice-answer h3 {
+  color: #06206e;
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+}
+
+.correct-answer-display {
+  background-color: #dff0d8;
+  border: 2px solid #5cb85c;
+  color: #3c763d;
+  padding: 15px 20px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.answer-letter {
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: #06206e;
+}
+
+.answer-text {
+  line-height: 1.4;
+}
+
+/* Adjust responsive design for the confirmation modal */
+@media (max-width: 480px) {
+  .confirmation-modal {
+    width: 95%;
+    padding: 20px;
+  }
+  
+  .confirmation-modal h3 {
+    font-size: 1.2rem;
+  }
+  
+  .confirmation-modal p {
+    font-size: 1rem;
+  }
+  
+  .confirmation-buttons button {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  .correct-answer-display {
+    font-size: 1.1rem;
+    padding: 12px 15px;
+  }
 }
