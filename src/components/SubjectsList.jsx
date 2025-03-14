@@ -1,10 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./SubjectsList.css";
 import ColorEditor from "./ColorEditor";
 
 const SubjectsList = ({ subjects, activeSubject, onSelectSubject, onChangeSubjectColor }) => {
   const [colorEditorOpen, setColorEditorOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState(null);
+  const subjectsListRef = useRef(null);
+  const lastSelectedSubjectRef = useRef(null);
+
+  // This effect will handle scrolling when a subject is selected
+  useEffect(() => {
+    // Only auto-scroll on mobile devices
+    if (window.innerWidth <= 768 && lastSelectedSubjectRef.current) {
+      // Get the element and scroll it into view
+      const element = lastSelectedSubjectRef.current;
+      
+      // Use requestAnimationFrame to ensure the DOM has updated
+      requestAnimationFrame(() => {
+        // Scroll the element into view with smooth behavior
+        const yOffset = -20; // Add some offset at the top
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        
+        window.scrollTo({
+          top: y,
+          behavior: 'smooth'
+        });
+      });
+      
+      // Clear the ref after scrolling
+      lastSelectedSubjectRef.current = null;
+    }
+  }, [activeSubject]);
 
   const openColorEditor = (subject) => {
     setSelectedSubject(subject);
@@ -20,6 +46,32 @@ const SubjectsList = ({ subjects, activeSubject, onSelectSubject, onChangeSubjec
       onChangeSubjectColor(selectedSubject, color, applyToAllTopics);
     }
     closeColorEditor();
+  };
+
+  // Helper function to handle subject selection with scrolling
+  const handleSelectSubject = (subject) => {
+    // Store a reference to the bank-content element for scrolling
+    lastSelectedSubjectRef.current = document.querySelector('.bank-content');
+    onSelectSubject(subject);
+  };
+
+  // Helper function to determine if a background color is dark (for contrast)
+  const isDarkColor = (hexColor) => {
+    if (!hexColor) return false;
+    
+    // Remove # if present
+    hexColor = hexColor.replace('#', '');
+    
+    // Convert to RGB
+    const r = parseInt(hexColor.substring(0, 2), 16);
+    const g = parseInt(hexColor.substring(2, 4), 16);
+    const b = parseInt(hexColor.substring(4, 6), 16);
+    
+    // Calculate brightness using YIQ formula
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    
+    // Return true for dark colors
+    return brightness < 128;
   };
 
   // Debug the subjects prop
@@ -42,46 +94,16 @@ const SubjectsList = ({ subjects, activeSubject, onSelectSubject, onChangeSubjec
     return acc + (typeof subject === 'object' && subject.count ? subject.count : 0);
   }, 0);
 
-  // Helper function to determine if a background color is dark (for contrast)
-  const isDarkColor = (hexColor) => {
-    if (!hexColor) return true; // Default to dark if no color
-    
-    // Remove # if present
-    hexColor = hexColor.replace('#', '');
-    
-    // Convert to RGB
-    const r = parseInt(hexColor.substring(0, 2), 16);
-    const g = parseInt(hexColor.substring(2, 4), 16);
-    const b = parseInt(hexColor.substring(4, 6), 16);
-    
-    // Calculate brightness using YIQ formula
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    
-    // Return true for dark backgrounds
-    return brightness < 140; // Higher threshold to ensure proper contrast
-  };
-
-  // Function to apply color with the right transparency for readability
-  const getBackgroundWithOpacity = (color) => {
-    // Convert hex to RGB
-    let r = parseInt(color.slice(1, 3), 16);
-    let g = parseInt(color.slice(3, 5), 16);
-    let b = parseInt(color.slice(5, 7), 16);
-    
-    // Return rgba color with appropriate opacity
-    return `rgba(${r}, ${g}, ${b}, 0.2)`;
-  };
-
   return (
     <>
-      <div className="subjects-list">
+      <div className="subjects-list" ref={subjectsListRef}>
         <h3>Subjects</h3>
         <div className="subjects-container">
           {/* "All Subjects" option */}
           <div className="subject-button-container">
             <button
               className={`subject-button ${activeSubject === null ? "active" : ""}`}
-              onClick={() => onSelectSubject(null)}
+              onClick={() => handleSelectSubject(null)}
             >
               <span>All Subjects</span>
               <span>({totalCardCount} cards)</span>
@@ -106,7 +128,7 @@ const SubjectsList = ({ subjects, activeSubject, onSelectSubject, onChangeSubjec
                    style={{ backgroundColor: activeSubject === subjectName ? subjectColor : 'transparent' }}>
                 <button
                   className={`subject-button ${activeSubject === subjectName ? "active" : ""}`}
-                  onClick={() => onSelectSubject(subjectName)}
+                  onClick={() => handleSelectSubject(subjectName)}
                   style={{
                     backgroundColor: subjectColor, /* Always use the full subject color */
                     color: textColor, /* Use contrasting text color */

@@ -192,11 +192,25 @@
 @media (max-width: 768px) {
   .subjects-list {
     max-height: calc(100vh - 180px);
+    /* Add sticky positioning for mobile screens */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
   
   .subject-button {
     font-size: 0.85rem;
     padding: 6px 8px;
+  }
+  
+  /* Create a spacer after the subjects list to improve visibility after scrolling */
+  .subjects-list::after {
+    content: '';
+    display: block;
+    height: 15px;
+    width: 100%;
   }
 }
 
@@ -213,6 +227,12 @@
   
   .subject-title {
     font-size: 13px;
+  }
+  
+  /* Improve touch targets for edit color button */
+  .edit-color-button {
+    min-width: 36px;
+    min-height: 36px;
   }
 }
 
