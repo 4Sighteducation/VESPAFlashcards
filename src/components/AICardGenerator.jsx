@@ -390,6 +390,15 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       
       console.log("Saving topic lists to Knack for user:", userId);
       
+      // Extract user information for additional fields
+      const userName = auth.name || "";
+      const userEmail = auth.email || "";
+      const userTutor = auth.tutor || "";
+      const userSchool = auth.school || auth.field_122 || "";
+      const userRole = auth.role || "";
+      const tutorGroup = auth.tutorGroup || "";
+      const yearGroup = auth.yearGroup || "";
+      
       // Update Knack record directly with the full lists array
       const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
       const updateResponse = await fetch(updateUrl, {
@@ -400,12 +409,19 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
           "X-Knack-REST-API-Key": KNACK_API_KEY
         },
         body: JSON.stringify({
-          field_3011: JSON.stringify(topicLists)
+          field_3011: JSON.stringify(topicLists),
+          field_3010: userName,                        // User Name
+          field_3008: userSchool,                      // VESPA Customer (school)
+          field_2956: userEmail,                       // User Account Email
+          field_3009: userTutor,                       // User "Tutor"
+          field_565: tutorGroup,                       // Group (Tutor Group)
+          field_548: yearGroup,                        // Year Group
+          field_73: userRole                           // User Role
         })
       });
       
       if (updateResponse.ok) {
-        console.log("Topic lists saved to Knack successfully:", topicLists.length, "lists");
+        console.log("Topic lists and user information saved to Knack successfully");
       } else {
         console.error("Failed to save topic lists to Knack:", await updateResponse.json());
       }

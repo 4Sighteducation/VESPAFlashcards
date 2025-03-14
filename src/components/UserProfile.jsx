@@ -9,7 +9,8 @@ const UserProfile = ({ userInfo }) => {
     tutorGroup = "",
     yearGroup = "",
     tutor = "",
-    school = ""
+    school = "",
+    role = ""
   } = userInfo || {};
 
   // Only render if we have at least a name or email
@@ -24,13 +25,36 @@ const UserProfile = ({ userInfo }) => {
           {name ? name.charAt(0).toUpperCase() : email.charAt(0).toUpperCase()}
         </div>
         <div className="user-details">
-          {name && <div className="user-name">{name}</div>}
-          {email && <div className="user-email">{email}</div>}
-          <div className="user-school-info">
-            {school && <span className="user-school">School: {school}</span>}
-            {yearGroup && <span className="user-year-group">Year: {yearGroup}</span>}
-            {tutorGroup && <span className="user-tutor-group">Tutor Group: {tutorGroup}</span>}
-            {tutor && <span className="user-tutor">Tutor: {tutor}</span>}
+          <div className="user-primary-info">
+            {name && <div className="user-name">{name}</div>}
+            {email && <div className="user-email">{email}</div>}
+            {role && <div className="user-role">{role}</div>}
+          </div>
+          
+          {/* Show school info if available */}
+          {school && (
+            <div className="user-school">
+              <span className="label">School:</span> {school}
+            </div>
+          )}
+          
+          {/* Highlight student-specific information */}
+          <div className="user-additional-info">
+            {yearGroup && (
+              <div className="info-item user-year-group">
+                <span className="label">Year:</span> {yearGroup}
+              </div>
+            )}
+            {tutorGroup && (
+              <div className="info-item user-tutor-group">
+                <span className="label">Group:</span> {tutorGroup}
+              </div>
+            )}
+            {tutor && (
+              <div className="info-item user-tutor">
+                <span className="label">Tutor:</span> {tutor}
+              </div>
+            )}
           </div>
         </div>
       </div>

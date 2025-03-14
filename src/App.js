@@ -116,6 +116,7 @@ function App() {
       id: auth?.id || "",
       email: auth?.email || "",
       name: auth?.name || "",
+      role: auth?.role || "",  // Add user role
       tutorGroup: auth?.tutorGroup || "",
       yearGroup: auth?.yearGroup || "",
       tutor: auth?.tutor || "",
@@ -216,13 +217,31 @@ function App() {
         // Get the user info for saving
         const userInfo = getUserInfo();
         
+        // Extract the user role directly from auth
+        const userRole = auth.role || "";
+        
+        // Get VESPA Customer info - this should be the school name
+        const vespaCustomer = cleanHtmlTags(userInfo.school || auth.field_122 || "");
+        
+        // Get tutor information - clean any HTML tags and handle undefined values
+        const tutorInfo = cleanHtmlTags(userInfo.tutor || "");
+        
+        // Get user email for the connection fields
+        const userEmail = userInfo.email || auth.email || "";
+        
         // Prepare additional fields for Object_102
         const additionalFields = {
-          field_3010: userInfo.name,                       // Name
-          field_3008: cleanHtmlTags(userInfo.school || auth.field_122 || ""),  // VESPA Customer (school/educational establishment)
-          field_2656: userInfo.email,                      // User Connected email
-          field_3009: userInfo.tutor                       // User "Tutor"
+          field_3010: userInfo.name || "",                  // User Name
+          field_3008: vespaCustomer,                        // VESPA Customer (school/educational establishment)
+          field_2956: userEmail,                            // User Account Email
+          field_3009: tutorInfo,                            // User "Tutor"
+          // Add additional fields for student-specific data if needed
+          field_565: userInfo.tutorGroup || "",             // Group (Tutor Group)
+          field_548: userInfo.yearGroup || "",              // Year Group
+          field_73: userRole                                // User Role
         };
+        
+        console.log("Saving to Knack with additional fields:", additionalFields);
         
         window.parent.postMessage(
           {
@@ -239,7 +258,7 @@ function App() {
           "*"
         );
 
-        console.log("Saving data with additional fields:", additionalFields);
+        console.log("Saving data with additional user fields to Knack Object_102");
         showStatus("Saving your flashcards...");
       }
       
@@ -256,7 +275,7 @@ function App() {
       setIsSaving(false);
       showStatus("Error saving data");
     }
-  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, showStatus, saveToLocalStorage, recordId]);
+  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, showStatus, saveToLocalStorage, recordId, getUserInfo]);
 
   // Generate a random vibrant color
   const getRandomColor = useCallback(() => {
@@ -1000,6 +1019,13 @@ function App() {
             // Extract school data from any user
             const schoolData = cleanHtmlTags(event.data.data?.field_122 || "");
             
+            // Process tutor information
+            let tutorData = "";
+            // If there's a tutor field directly in the data, use it
+            if (event.data.data?.field_1682) {
+              tutorData = cleanHtmlTags(event.data.data.field_1682 || "");
+            }
+            
             if (userRole === "student" && event.data.data?.studentData) {
               try {
                 // Extract student data (cleaning HTML tags if needed)
@@ -1009,7 +1035,7 @@ function App() {
                 userStudentData = {
                   tutorGroup: cleanHtmlTags(studentData.field_565 || ""),
                   yearGroup: cleanHtmlTags(studentData.field_548 || ""),
-                  tutor: cleanHtmlTags(studentData.field_1682 || ""),
+                  tutor: cleanHtmlTags(studentData.field_1682 || tutorData || ""), // Use direct field if available
                   school: schoolData
                 };
                 
@@ -1020,7 +1046,8 @@ function App() {
             } else {
               // For non-student users, just extract the school data
               userStudentData = {
-                school: schoolData
+                school: schoolData,
+                tutor: tutorData // Include tutor data for all user types
               };
             }
             
@@ -1047,7 +1074,7 @@ function App() {
                   setAllCards(userData.cards);
                   updateSpacedRepetitionData(userData.cards);
                 }
-
+                
                 // Process color mapping
                 if (userData.colorMapping) {
                   setSubjectColorMapping(userData.colorMapping);
@@ -1062,8 +1089,11 @@ function App() {
                 if (userData.userTopics) {
                   setUserTopics(userData.userTopics);
                 }
-              } catch (error) {
-                console.error("Error processing user data:", error);
+                
+                // Additional logging to help with debugging
+                console.log("Successfully processed user data from Knack");
+              } catch (e) {
+                console.error("Error processing userData JSON:", e);
                 showStatus("Error loading your data. Loading from local storage instead.");
                 loadFromLocalStorage();
               }
