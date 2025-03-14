@@ -350,10 +350,16 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   };
 
   const renderSubjectHeader = (subject) => {
-    const { id, title, cards, exam_board: examBoard, exam_type: examType } = subject;
+    const { id, title, cards, exam_board: examBoard, exam_type: examType, color } = subject;
+    
+    // If we have a color, use it for the header background with appropriate contrast
+    const headerStyle = color ? {
+      backgroundColor: color,
+      color: getContrastColor(color)
+    } : {};
     
     return (
-      <div className="subject-header" onClick={() => toggleSubject(id)}>
+      <div className="subject-header" onClick={() => toggleSubject(id)} style={headerStyle}>
         <div className="subject-info">
           <h2>{title}</h2>
           <div className="subject-metadata">
@@ -374,13 +380,21 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         </div>
         
         <div className="subject-actions">
-          <button title="Print all cards" onClick={(e) => { e.stopPropagation(); handlePrintSubject(id, e); }}>
+          <button 
+            title="Print all cards" 
+            onClick={(e) => { e.stopPropagation(); handlePrintSubject(id, e); }}
+            style={{ color: getContrastColor(color) }}
+          >
             <FaPrint />
           </button>
-          <button title="Slideshow" onClick={(e) => { e.stopPropagation(); startSlideshow(id); }}>
+          <button 
+            title="Slideshow" 
+            onClick={(e) => { e.stopPropagation(); startSlideshow(id); }}
+            style={{ color: getContrastColor(color) }}
+          >
             <FaPlay />
           </button>
-          <span>
+          <span style={{ color: getContrastColor(color) }}>
             {expandedSubjects[id] ? <FaAngleUp /> : <FaAngleDown />}
           </span>
         </div>
@@ -424,9 +438,18 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
             <div 
               key={subject} 
               className="subject-container"
-              style={{ backgroundColor: 'white', borderLeft: `5px solid ${subjectColor}` }}
+              style={{ 
+                borderLeft: `5px solid ${subjectColor}` 
+              }}
             >
-              {renderSubjectHeader({ id: subject, title: subject, cards: topics.map(topic => groupedCards[subject][topic]), exam_board: examBoard, exam_type: examType })}
+              {renderSubjectHeader({ 
+                id: subject, 
+                title: subject, 
+                cards: topics.map(topic => groupedCards[subject][topic]), 
+                exam_board: examBoard, 
+                exam_type: examType,
+                color: subjectColor
+              })}
               
               {isExpanded && (
                 <div className="topics-container">
@@ -436,12 +459,38 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                     const isTopicExpanded = expandedTopics[topicKey];
                     const topicDate = getTopicDate(topicCards);
                     
+                    // Create a lighter shade of the subject color for the topic header
+                    const lightenColor = (color, percent) => {
+                      if (!color || color === '#ffffff') return '#f0f0f0';
+                      
+                      // Remove the # if present
+                      let hex = color.replace('#', '');
+                      
+                      // Convert to RGB
+                      let r = parseInt(hex.substring(0, 2), 16);
+                      let g = parseInt(hex.substring(2, 4), 16);
+                      let b = parseInt(hex.substring(4, 6), 16);
+                      
+                      // Lighten
+                      r = Math.min(255, Math.floor(r + (255 - r) * percent));
+                      g = Math.min(255, Math.floor(g + (255 - g) * percent));
+                      b = Math.min(255, Math.floor(b + (255 - b) * percent));
+                      
+                      // Convert back to hex
+                      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+                    };
+                    
+                    const topicColor = lightenColor(subjectColor, 0.85); // 85% lighter version of subject color
+                    
                     return (
                       <div key={topic} className="topic-group">
                         <div 
                           className="topic-header" 
                           onClick={() => toggleTopic(subject, topic)}
-                          style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}
+                          style={{ 
+                            backgroundColor: topicColor,
+                            borderLeft: `3px solid ${subjectColor}`
+                          }}
                         >
                           <div className="topic-info">
                             <h3>{topic}</h3>
