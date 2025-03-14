@@ -79,8 +79,9 @@
 
 /* Question title specifically for multiple choice */
 .question-title {
-  height: 40%;
+  height: 35%;
   margin-bottom: 5px;
+  overflow: hidden;
 }
 
 .question-title .scaled-text {
@@ -90,24 +91,31 @@
 /* Options container for multiple choice */
 .options-container {
   height: 60%;
-  overflow-y: auto;
+  overflow: hidden;
   background-color: rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   padding: 10px;
   border: 1px solid rgba(255, 255, 255, 0.5);
   margin-top: 10px;
+  display: flex;
+  flex-direction: column;
 }
 
 .options-container ol {
   margin: 0;
   padding-left: 20px;
   text-align: left;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
 }
 
 .options-container li {
-  margin-bottom: 8px;
-  line-height: 1.3;
-  padding: 8px 10px;
+  margin-bottom: 4px;
+  line-height: 1.2;
+  padding: 4px 8px;
   border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.5);
   background-color: rgba(255, 255, 255, 0.2);
@@ -128,13 +136,13 @@
 
 /* Special handling for slideshow/modal mode */
 .modal-card .options-container {
-  height: 60%;
-  max-height: 300px;
+  height: 65%;
+  overflow: hidden;
 }
 
 .modal-card .question-title {
-  height: 30%;
-  margin-bottom: 15px;
+  height: 35%;
+  margin-bottom: 10px;
 }
 
 .modal-card .options-container li {
@@ -145,8 +153,39 @@
 
 .modal-card-container .flashcard {
   width: 100%;
-  max-width: 600px;
-  height: 450px;
+  max-width: 580px;
+  height: 460px;
+  margin: 0 auto;
+  background-color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.modal-card-container .flashcard .flashcard-front,
+.modal-card-container .flashcard .flashcard-back {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important; /* Force no scrolling */
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  padding: 25px;
+  box-sizing: border-box;
+}
+
+.modal-card-container .flashcard .text-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden !important;
+}
+
+.modal-card-container .flashcard .scaled-text {
+  width: 100%;
+  text-align: center;
+  overflow: hidden;
 }
 
 /* Multiple choice options in spaced repetition mode */
@@ -760,6 +799,306 @@
   align-items: center;
   justify-content: center;
   overflow: visible;
+}
+
+/* Ensure modal navigation is visible and functional */
+.modal-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  margin-top: 15px;
+  border-top: 1px solid #eee;
+  background-color: white;
+}
+
+.nav-button {
+  padding: 10px 20px;
+  background-color: #153aa3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  min-width: 100px;
+  margin: 0 10px;
+}
+
+.card-counter {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 10px;
+}
+
+/* Make sure text is visible in cards */
+.flashcard-list-single-subject .topic-cards .flashcard .flashcard-front,
+.flashcard-list-single-subject .topic-cards .flashcard .flashcard-back,
+.modal-card-container .flashcard .flashcard-front,
+.modal-card-container .flashcard .flashcard-back {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  background-color: white;
+  color: #333;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+}
+
+/* Fix for modal flashcard text scaling */
+.modal-card-container .flashcard .text-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.modal-card-container .flashcard .scaled-text {
+  width: 100%;
+  height: auto;
+  min-height: 100px;
+  text-align: center;
+  overflow: visible;
+  padding: 10px;
+  font-size: 18px !important;
+  line-height: 1.5;
+}
+
+/* Fix modal content overflow */
+.modal-card-container .flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 350px;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  background-color: white;
+}
+
+/* Fix for modal flashcard positioning */
+.modal-card-container .flashcard.flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+/* Improve contrast for buttons in modal */
+.modal-card-container .flashcard .delete-btn,
+.modal-card-container .flashcard .color-btn,
+.modal-card-container .flashcard .info-btn {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+}
+
+/* Improve multiple choice options contrast */
+.multiple-choice-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.option-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.option-item:hover {
+  border-color: #153aa3;
+  background-color: #f0f5ff;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.option-item.selected {
+  border-color: #153aa3;
+  background-color: #e6eeff;
+}
+
+.option-item.correct {
+  border-color: #4caf50;
+  background-color: #eaffea;
+}
+
+.option-item.incorrect {
+  border-color: #f44336;
+  background-color: #ffebee;
+}
+
+.option-radio {
+  margin-right: 10px;
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.option-text {
+  flex: 1;
+  font-size: 15px;
+}
+
+/* Ensure mobile formatting for modals is good */
+@media (max-width: 768px) {
+  .info-modal {
+    width: 95%;
+    padding: 15px;
+    margin: 0 auto;
+  }
+  
+  .multiple-choice-options {
+    gap: 6px;
+  }
+  
+  .option-item {
+    padding: 8px;
+  }
+}
+
+/* Modal overlay style */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Card modal styling */
+.card-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.card-modal {
+  background-color: white;
+  border-radius: 8px;
+  width: 95%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.modal-card-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px 0;
+  overflow: visible;
+}
+
+.modal-card-container .flashcard {
+  width: 100%;
+  max-width: 500px;
+  height: 400px;
+  margin: 0 auto;
+  background-color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  perspective: 1000px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.modal-card-container .flashcard .flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  background-color: white;
+}
+
+.modal-card-container .flashcard .flashcard-front,
+.modal-card-container .flashcard .flashcard-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  padding: 25px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background-color: white;
+  color: #333;
+}
+
+.modal-card-container .flashcard .scaled-text {
+  width: 100%;
+  height: auto;
+  text-align: center;
+  overflow: visible;
+  padding: 10px;
+  font-size: 20px !important;
+  line-height: 1.5;
+  color: #333;
+}
+
+.modal-card-container .flashcard .text-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
   background-color: white;
   color: #333;
 }
@@ -912,4 +1251,350 @@
   flex: 1;
   font-size: 15px;
   color: #333;
+}
+
+/* Ensure mobile formatting for modals is good */
+@media (max-width: 768px) {
+  .info-modal {
+    width: 95%;
+    padding: 15px;
+    margin: 0 auto;
+  }
+  
+  .multiple-choice-options {
+    gap: 6px;
+  }
+  
+  .option-item {
+    padding: 8px;
+  }
+}
+
+/* Modal overlay style */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Card modal styling */
+.card-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.card-modal {
+  background-color: white;
+  border-radius: 8px;
+  width: 95%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.modal-card-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px 0;
+  overflow: visible;
+}
+
+.modal-card-container .flashcard {
+  width: 100%;
+  max-width: 500px;
+  height: 400px;
+  margin: 0 auto;
+  background-color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  perspective: 1000px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.modal-card-container .flashcard .flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  background-color: white;
+}
+
+.modal-card-container .flashcard .flashcard-front,
+.modal-card-container .flashcard .flashcard-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  padding: 25px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background-color: white;
+  color: #333;
+}
+
+.modal-card-container .flashcard .scaled-text {
+  width: 100%;
+  height: auto;
+  text-align: center;
+  overflow: visible;
+  padding: 10px;
+  font-size: 20px !important;
+  line-height: 1.5;
+  color: #333;
+}
+
+.modal-card-container .flashcard .text-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  background-color: white;
+  color: #333;
+}
+
+/* Ensure modal navigation is visible and functional */
+.modal-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  margin-top: 15px;
+  border-top: 1px solid #eee;
+  background-color: white;
+}
+
+.nav-button {
+  padding: 10px 20px;
+  background-color: #153aa3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  min-width: 100px;
+  margin: 0 10px;
+}
+
+.card-counter {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 10px;
+}
+
+/* Make sure text is visible in cards */
+.flashcard-list-single-subject .topic-cards .flashcard .flashcard-front,
+.flashcard-list-single-subject .topic-cards .flashcard .flashcard-back,
+.modal-card-container .flashcard .flashcard-front,
+.modal-card-container .flashcard .flashcard-back {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  background-color: white;
+  color: #333;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+}
+
+/* Fix for modal flashcard text scaling */
+.modal-card-container .flashcard .text-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.modal-card-container .flashcard .scaled-text {
+  width: 100%;
+  height: auto;
+  min-height: 100px;
+  text-align: center;
+  overflow: visible;
+  padding: 10px;
+  font-size: 18px !important;
+  line-height: 1.5;
+}
+
+/* Fix modal content overflow */
+.modal-card-container .flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 350px;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  background-color: white;
+}
+
+/* Fix for modal flashcard positioning */
+.modal-card-container .flashcard.flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+/* Improve contrast for buttons in modal */
+.modal-card-container .flashcard .delete-btn,
+.modal-card-container .flashcard .color-btn,
+.modal-card-container .flashcard .info-btn {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+}
+
+/* Improve multiple choice options contrast */
+.multiple-choice-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.option-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.option-item:hover {
+  border-color: #153aa3;
+  background-color: #f0f5ff;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.option-item.selected {
+  border-color: #153aa3;
+  background-color: #e6eeff;
+}
+
+.option-item.correct {
+  border-color: #4caf50;
+  background-color: #eaffea;
+}
+
+.option-item.incorrect {
+  border-color: #f44336;
+  background-color: #ffebee;
+}
+
+.option-radio {
+  margin-right: 10px;
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.option-text {
+  flex: 1;
+  font-size: 15px;
+  color: #333;
+}
+
+/* Complete override for modal card containers */
+.modal-card-container .flashcard .flashcard-front,
+.modal-card-container .flashcard .flashcard-back {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 25px !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure the options display without scrolling in modal view */
+.modal-card .options-container {
+  height: 65% !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.modal-card .options-container ol {
+  overflow: hidden !important;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-around !important;
+}
+
+.modal-card-container .flashcard .text-container {
+  overflow: hidden !important;
+}
+
+.modal-card-container .flashcard .scaled-text {
+  overflow: hidden !important;
+}
+
+/* Make sure no auto !important rule is applied */
+.modal-card-container .flashcard .flashcard-front *,
+.modal-card-container .flashcard .flashcard-back * {
+  overflow: visible;
 }

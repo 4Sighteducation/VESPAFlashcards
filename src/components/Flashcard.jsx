@@ -26,7 +26,8 @@ const getContrastColor = (hexColor) => {
   return textColor;
 };
 
-const ScaledText = ({ children, minFontSize = 8, maxFontSize = 16, className = '' }) => {
+// Update the ScaledText component for better auto-scaling
+const ScaledText = ({ children, minFontSize = 6, maxFontSize = 16, className = '' }) => {
   const textRef = useRef(null);
   const containerRef = useRef(null);
   
@@ -54,11 +55,23 @@ const ScaledText = ({ children, minFontSize = 8, maxFontSize = 16, className = '
     // Reset font size to maximum to measure properly
     text.style.fontSize = `${maxFontSize}px`;
     
+    // Get content length
+    const contentLength = text.textContent ? text.textContent.length : 0;
+    
+    // For very long content, start with a smaller size
+    if (contentLength > 300) {
+      text.style.fontSize = `${Math.max(minFontSize + 4, maxFontSize - 6)}px`;
+    } else if (contentLength > 200) {
+      text.style.fontSize = `${Math.max(minFontSize + 6, maxFontSize - 4)}px`;
+    } else if (contentLength > 100) {
+      text.style.fontSize = `${Math.max(minFontSize + 8, maxFontSize - 2)}px`;
+    }
+    
     // Check if overflowing (both width and height)
     if (text.scrollHeight > container.clientHeight || text.scrollWidth > container.clientWidth) {
       // Binary search to find the right size
       let min = minFontSize;
-      let max = maxFontSize;
+      let max = parseInt(text.style.fontSize);
       
       while (min <= max) {
         const mid = Math.floor((min + max) / 2);
@@ -71,9 +84,9 @@ const ScaledText = ({ children, minFontSize = 8, maxFontSize = 16, className = '
         }
       }
       
-      // Final adjustment
-      text.style.fontSize = `${max}px`;
-      console.log(`Text scaled to ${max}px (${minFontSize}-${maxFontSize}) for: ${text.textContent.substring(0, 30)}...`);
+      // Final adjustment - subtract 1px to ensure we're not at the exact edge
+      text.style.fontSize = `${Math.max(minFontSize, max - 1)}px`;
+      console.log(`Text scaled to ${max-1}px (${minFontSize}-${maxFontSize}) for content length ${contentLength}`);
       
       // If still overflowing at minimum size, add ellipsis
       if (max <= minFontSize && (text.scrollHeight > container.clientHeight || text.scrollWidth > container.clientWidth)) {
@@ -81,7 +94,7 @@ const ScaledText = ({ children, minFontSize = 8, maxFontSize = 16, className = '
         text.style.textOverflow = 'ellipsis';
       }
     } else {
-      console.log(`Text using max size ${maxFontSize}px for: ${text.textContent.substring(0, 30)}...`);
+      console.log(`Text using ${text.style.fontSize} for content length ${contentLength}`);
     }
   };
   
@@ -94,7 +107,7 @@ const ScaledText = ({ children, minFontSize = 8, maxFontSize = 16, className = '
   );
 };
 
-// Component for multiple choice options with scaling
+// Improved component for multiple choice options with more adaptive scaling
 const MultipleChoiceOptions = ({ options, preview = false }) => {
   const containerRef = useRef(null);
   
@@ -112,38 +125,46 @@ const MultipleChoiceOptions = ({ options, preview = false }) => {
     
     if (items.length === 0) return;
     
-    // Start with a reasonable font size
-    let fontSize = preview ? 12 : 16;
+    // Calculate average option length
+    const totalLength = options.reduce((sum, option) => sum + option.length, 0);
+    const avgLength = totalLength / options.length;
+    
+    // Set starting font size based on content length and number of options
+    let fontSize = 16; // Default
+    
+    if (options.length >= 5) {
+      fontSize = 12;
+    } else if (options.length >= 4) {
+      fontSize = 13;
+    }
+    
+    // Further adjust based on average option length
+    if (avgLength > 100) {
+      fontSize = Math.min(fontSize, 10);
+    } else if (avgLength > 50) {
+      fontSize = Math.min(fontSize, 12);
+    }
     
     // Add debug output for option sizing
-    console.log(`MultipleChoice options: ${options.length}, starting fontSize: ${fontSize}`);
+    console.log(`MultipleChoice options: ${options.length}, avg length: ${avgLength.toFixed(1)}, starting fontSize: ${fontSize}`);
     
     // Reset all items to the starting fontSize
     items.forEach(item => {
       item.style.fontSize = `${fontSize}px`;
     });
     
-    // Reduce font size if any item overflows
-    let overflow = false;
-    do {
-      overflow = false;
-      items.forEach(item => {
-        // Check both width and height overflow
-        if (item.scrollWidth > item.clientWidth || 
-            container.scrollHeight > container.clientHeight) {
-          overflow = true;
-        }
-      });
-      
-      if (overflow && fontSize > 8) {
+    // Check if container is overflowing
+    const isOverflowing = container.scrollHeight > container.clientHeight;
+    
+    // If overflowing, reduce font size until it fits
+    if (isOverflowing) {
+      while (fontSize > 6 && container.scrollHeight > container.clientHeight) {
         fontSize -= 1;
         items.forEach(item => {
           item.style.fontSize = `${fontSize}px`;
         });
-      } else {
-        break;
       }
-    } while (fontSize > 8);
+    }
     
     console.log(`MultipleChoice options final fontSize: ${fontSize}`);
     
@@ -358,7 +379,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             padding: '15px',
             display: 'flex',
             flexDirection: 'column',
-            overflowY: 'auto',
+            overflow: 'hidden',
             height: '100%',
             width: '100%',
             position: 'absolute',
@@ -366,13 +387,20 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
           }}>
             {isMultipleChoice ? (
               <>
-                <ScaledText className="question-title" maxFontSize={isInModal ? 28 : 18} minFontSize={10}>
+                <ScaledText 
+                  className="question-title" 
+                  maxFontSize={isInModal ? 28 : 18} 
+                  minFontSize={isInModal ? 8 : 6}
+                >
                   {card.front || card.question || "No question available"}
                 </ScaledText>
                 <MultipleChoiceOptions options={card.options || []} preview={preview} />
               </>
             ) : (
-              <ScaledText maxFontSize={isInModal ? 28 : 18} minFontSize={10}>
+              <ScaledText 
+                maxFontSize={isInModal ? 28 : 18} 
+                minFontSize={isInModal ? 8 : 6}
+              >
                 {typeof card.front === 'string' || typeof card.question === 'string' ? (
                   <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question available" }} />
                 ) : (
@@ -388,13 +416,16 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             padding: '15px',
             display: 'flex',
             flexDirection: 'column',
-            overflowY: 'auto',
+            overflow: 'hidden',
             height: '100%',
             width: '100%',
             position: 'absolute',
             boxSizing: 'border-box'
           }}>
-            <ScaledText maxFontSize={isInModal ? 24 : 16} minFontSize={10}>
+            <ScaledText 
+              maxFontSize={isInModal ? 24 : 16} 
+              minFontSize={isInModal ? 8 : 6}
+            >
               {card.questionType === 'multiple_choice' ? (
                 <div>
                   Correct Answer: {(() => {
