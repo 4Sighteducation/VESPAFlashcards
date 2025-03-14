@@ -54,6 +54,22 @@ const API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_ID || "64fc50bc3cd0ac00254bb62b";
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 
+// Helper function to clean OpenAI response
+const cleanOpenAIResponse = (response) => {
+  // Remove any markdown code blocks and formatting
+  let cleaned = response.replace(/```json|```/g, '').trim();
+  
+  // Remove any extra text before or after the JSON array
+  const startIndex = cleaned.indexOf('[');
+  const endIndex = cleaned.lastIndexOf(']') + 1;
+  
+  if (startIndex !== -1 && endIndex !== -1) {
+    cleaned = cleaned.substring(startIndex, endIndex);
+  }
+  
+  return cleaned;
+};
+
 const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) => {
   // Step management state
   const [currentStep, setCurrentStep] = useState(1);
