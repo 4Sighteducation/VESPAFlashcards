@@ -620,7 +620,7 @@ const AICardGenerator = ({
       }
       
       try {
-        // Update Knack record directly with the full lists array - using record ID
+        // Save to Knack with the correct record ID
         const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
         debugLog("UPDATE URL", updateUrl);
         
@@ -634,25 +634,57 @@ const AICardGenerator = ({
           body: JSON.stringify(dataToSave)
         });
         
-        const responseStatus = updateResponse.status;
-        const responseStatusText = updateResponse.statusText;
-        debugLog("KNACK API RESPONSE STATUS", { status: responseStatus, statusText: responseStatusText });
-        
-        if (updateResponse.ok) {
-          try {
-            const responseData = await updateResponse.json();
-            debugLog("KNACK API SUCCESS RESPONSE", responseData);
-          } catch (e) {
-            console.log("Could not parse response JSON, but request was successful");
-          }
-          
-          console.log("Topic lists and user information saved to Knack successfully");
-          return true;
-        } else {
+        if (!updateResponse.ok) {
           const errorText = await updateResponse.text();
           debugLog("KNACK API ERROR", errorText);
           console.error("Failed to save topic lists to Knack:", errorText);
           return false;
+        }
+        
+        try {
+          const responseData = await updateResponse.json();
+          debugLog("KNACK API SUCCESS RESPONSE", responseData);
+          
+          // Check if the response indicates no records were updated
+          if (responseData.total_records === 0 || (responseData.records && responseData.records.length === 0)) {
+            console.log("No records were updated despite 200 OK. Trying alternative update method...");
+            
+            // Try a POST request as an alternative
+            const createUrl = `https://api.knack.com/v1/objects/object_102/records`;
+            debugLog("TRYING POST URL", createUrl);
+            
+            // For POST, include the record ID in the data
+            const postData = {
+              ...dataToSave
+            };
+            
+            const createResponse = await fetch(createUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Knack-Application-ID": KNACK_APP_ID,
+                "X-Knack-REST-API-Key": KNACK_API_KEY
+              },
+              body: JSON.stringify(postData)
+            });
+            
+            if (!createResponse.ok) {
+              const createErrorText = await createResponse.text();
+              console.error("Alternative update also failed:", createErrorText);
+              return false;
+            } else {
+              const createResponseData = await createResponse.json();
+              debugLog("POST RESPONSE", createResponseData);
+              console.log("Alternative update method succeeded");
+              return true;
+            }
+          }
+          
+          console.log("Topic lists and user information saved to Knack successfully");
+          return true;
+        } catch (e) {
+          console.log("Could not parse response JSON:", e);
+          return true; // Return true since the API call was successful
         }
       } catch (fetchError) {
         debugLog("FETCH ERROR", { message: fetchError.message, stack: fetchError.stack });
@@ -883,7 +915,7 @@ const AICardGenerator = ({
   // Handle next step in wizard
   const handleNextStep = () => {
     if (currentStep < totalSteps) {
-      // If we're moving from step 6 (question type) to step 7 (confirmation),
+      // If we're moving from step 6 (question type) to step 7,
       // set isGenerating to true to show the loading screen immediately
       // AND trigger the card generation
       if (currentStep === 6) {

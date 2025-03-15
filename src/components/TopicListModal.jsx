@@ -703,6 +703,40 @@ const TopicListModal = ({
         try {
           const responseData = await updateResponse.json();
           debugLog("KNACK API SUCCESS RESPONSE", responseData);
+          
+          // Check if the response indicates no records were updated
+          if (responseData.total_records === 0 || (responseData.records && responseData.records.length === 0)) {
+            console.log("No records were updated. Trying alternative update method...");
+            
+            // Try a POST request as an alternative
+            const createUrl = `https://api.knack.com/v1/objects/object_102/records`;
+            debugLog("TRYING POST URL", createUrl);
+            
+            // For POST, include the record ID in the data
+            const postData = {
+              ...dataToSave,
+              id: recordId
+            };
+            
+            const createResponse = await fetch(createUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Knack-Application-ID": KNACK_APP_ID,
+                "X-Knack-REST-API-Key": KNACK_API_KEY
+              },
+              body: JSON.stringify(postData)
+            });
+            
+            if (!createResponse.ok) {
+              const createErrorText = await createResponse.text();
+              console.error("Alternative update also failed:", createErrorText);
+            } else {
+              const createResponseData = await createResponse.json();
+              debugLog("POST RESPONSE", createResponseData);
+              console.log("Alternative update method succeeded");
+            }
+          }
         } catch (e) {
           console.log("Could not parse response JSON, but request was successful");
         }
