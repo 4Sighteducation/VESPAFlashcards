@@ -52,6 +52,31 @@ const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 
+// Debug logging helper
+const debugLog = (title, data) => {
+  console.log(`%c${title}`, 'color: #5d00ff; font-weight: bold; font-size: 12px;');
+  console.log(JSON.stringify(data, null, 2));
+  return data; // Return data for chaining
+};
+
+// Safely remove HTML tags from a string to avoid issues with connected fields
+const sanitizeField = (value) => {
+  if (!value) return "";
+  if (typeof value !== 'string') return String(value);
+  
+  // Remove HTML tags
+  return value.replace(/<[^>]*>/g, "")
+    // Remove any markdown characters
+    .replace(/[*_~`#]/g, "")
+    // Replace special chars with their text equivalents
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .trim();
+};
+
 const AICardGenerator = ({ 
   onAddCard, 
   onClose, 
@@ -429,6 +454,8 @@ const AICardGenerator = ({
         return false;
       }
       
+      debugLog("AUTH OBJECT", auth);
+      debugLog("USER ID", userId);
       console.log("Saving topic lists to Knack for user:", userId);
       
       // Safety check to ensure topicLists is a valid array
@@ -438,13 +465,23 @@ const AICardGenerator = ({
       }
       
       // Extract user information for additional fields
-      const userName = auth.name || "";
-      const userEmail = auth.email || "";
-      const userTutor = auth.tutor || "";
-      const userSchool = auth.school || auth.field_122 || "";
-      const userRole = auth.role || "";
-      const tutorGroup = auth.tutorGroup || "";
-      const yearGroup = auth.yearGroup || "";
+      const userName = sanitizeField(auth.name || "");
+      const userEmail = sanitizeField(auth.email || "");
+      const userTutor = sanitizeField(auth.tutor || "");
+      const userSchool = sanitizeField(auth.school || auth.field_122 || "");
+      const userRole = sanitizeField(auth.role || "");
+      const tutorGroup = sanitizeField(auth.tutorGroup || "");
+      const yearGroup = sanitizeField(auth.yearGroup || "");
+      
+      debugLog("EXTRACTED USER INFO", {
+        userName,
+        userEmail,
+        userTutor,
+        userSchool,
+        userRole,
+        tutorGroup,
+        yearGroup
+      });
       
       // Create the data object to send
       const dataToSave = {
@@ -455,10 +492,29 @@ const AICardGenerator = ({
         field_3009: userTutor,                       // User "Tutor"
         field_565: tutorGroup,                       // Group (Tutor Group)
         field_548: yearGroup,                        // User Role
-        field_73: userRole
+        field_73: userRole                           // User Role
       };
       
-      console.log("Data being sent to Knack:", dataToSave);
+      // Double check that our JSON is valid for field_3011
+      try {
+        const testParse = JSON.parse(dataToSave.field_3011);
+        if (!Array.isArray(testParse)) {
+          console.warn("field_3011 is not an array after stringification, fixing format");
+          dataToSave.field_3011 = JSON.stringify([]);
+        }
+      } catch (e) {
+        console.error("Invalid JSON for field_3011, using empty array instead:", e);
+        dataToSave.field_3011 = JSON.stringify([]);
+      }
+      
+      debugLog("DATA BEING SENT TO KNACK", dataToSave);
+      console.log("String length of field_3011:", dataToSave.field_3011.length);
+      
+      // Check if the data is too large
+      if (JSON.stringify(dataToSave).length > 1000000) {
+        console.error("Data payload is too large, may exceed Knack's size limits");
+        return false;
+      }
       
       try {
         // Update Knack record directly with the full lists array
@@ -473,19 +529,33 @@ const AICardGenerator = ({
           body: JSON.stringify(dataToSave)
         });
         
+        const responseStatus = updateResponse.status;
+        const responseStatusText = updateResponse.statusText;
+        debugLog("KNACK API RESPONSE STATUS", { status: responseStatus, statusText: responseStatusText });
+        
         if (updateResponse.ok) {
+          try {
+            const responseData = await updateResponse.json();
+            debugLog("KNACK API SUCCESS RESPONSE", responseData);
+          } catch (e) {
+            console.log("Could not parse response JSON, but request was successful");
+          }
+          
           console.log("Topic lists and user information saved to Knack successfully");
           return true;
         } else {
           const errorText = await updateResponse.text();
+          debugLog("KNACK API ERROR", errorText);
           console.error("Failed to save topic lists to Knack:", errorText);
           return false;
         }
       } catch (fetchError) {
+        debugLog("FETCH ERROR", { message: fetchError.message, stack: fetchError.stack });
         console.error("Error with Knack API request:", fetchError);
         return false;
       }
     } catch (error) {
+      debugLog("SAVE TOPIC LIST ERROR", { message: error.message, stack: error.stack });
       console.error("Error saving topic lists to Knack:", error);
       return false;
     }

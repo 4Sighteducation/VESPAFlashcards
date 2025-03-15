@@ -11,6 +11,31 @@ const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
 const EXAM_BOARDS = ["AQA", "Edexcel", "OCR", "WJEC", "SQA", "International Baccalaureate", "Cambridge International"];
 const EXAM_TYPES = ["GCSE", "A-Level", "IB", "AP", "Scottish Higher", "BTEC", "Other"];
 
+// Debug logging helper
+const debugLog = (title, data) => {
+  console.log(`%c${title}`, 'color: #5d00ff; font-weight: bold; font-size: 12px;');
+  console.log(JSON.stringify(data, null, 2));
+  return data; // Return data for chaining
+};
+
+// Safely remove HTML tags from a string to avoid issues with connected fields
+const sanitizeField = (value) => {
+  if (!value) return "";
+  if (typeof value !== 'string') return String(value);
+  
+  // Remove HTML tags
+  return value.replace(/<[^>]*>/g, "")
+    // Remove any markdown characters
+    .replace(/[*_~`#]/g, "")
+    // Replace special chars with their text equivalents
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .trim();
+};
+
 const TopicListModal = ({ 
   subject, 
   examBoard: initialExamBoard, 
@@ -321,10 +346,14 @@ const TopicListModal = ({
         return;
       }
       
+      debugLog("AUTH OBJECT", auth);
+      debugLog("USER ID", userId);
       console.log(`Saving topic list for ${subject} with ${topics.length} topics`);
       
       // Get existing topic lists first
       const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+      debugLog("GET URL", getUrl);
+      
       const getResponse = await fetch(getUrl, {
         method: "GET",
         headers: {
@@ -343,7 +372,7 @@ const TopicListModal = ({
       }
       
       const userData = await getResponse.json();
-      console.log("Fetched user data:", userData);
+      debugLog("FETCHED USER DATA", userData);
       
       // Parse existing topic lists
       let allTopicLists = [];
@@ -362,7 +391,7 @@ const TopicListModal = ({
         console.log("field_3011 not found in user data, initializing empty array");
       }
       
-      console.log("Current topic lists:", allTopicLists);
+      debugLog("CURRENT TOPIC LISTS", allTopicLists);
       
       // Find if topic list for this subject, exam board, and exam type already exists
       const existingIndex = allTopicLists.findIndex(list => 
@@ -381,7 +410,7 @@ const TopicListModal = ({
         lastUpdated: new Date().toISOString()
       };
       
-      console.log("New topic list to save:", newTopicList);
+      debugLog("NEW TOPIC LIST TO SAVE", newTopicList);
       
       // Update or add the topic list
       if (existingIndex >= 0) {
@@ -422,13 +451,63 @@ const TopicListModal = ({
         subjectMetadata.push(newMetadata);
       }
       
-      // Prepare the data to save
+      // Extract user information for additional fields
+      const userName = sanitizeField(auth.name || "");
+      const userEmail = sanitizeField(auth.email || "");
+      const userTutor = sanitizeField(auth.tutor || "");
+      const userSchool = sanitizeField(auth.school || auth.field_122 || "");
+      const userRole = sanitizeField(auth.role || "");
+      const tutorGroup = sanitizeField(auth.tutorGroup || "");
+      const yearGroup = sanitizeField(auth.yearGroup || "");
+      
+      debugLog("EXTRACTED USER INFO", {
+        userName,
+        userEmail,
+        userTutor,
+        userSchool,
+        userRole,
+        tutorGroup,
+        yearGroup
+      });
+      
+      // Prepare the data to save with additional fields
       const dataToSave = {
         field_3011: JSON.stringify(allTopicLists),
-        field_3012: JSON.stringify(subjectMetadata)
+        field_3012: JSON.stringify(subjectMetadata),
+        field_3010: userName,                        // User Name
+        field_3008: userSchool,                      // VESPA Customer (school)
+        field_2956: userEmail,                       // User Account Email
+        field_3009: userTutor,                       // User "Tutor"
+        field_565: tutorGroup,                       // Group (Tutor Group)
+        field_548: yearGroup,                        // User Role
+        field_73: userRole                           // User Role
       };
       
-      console.log("Data being sent to Knack:", dataToSave);
+      // Double check that our JSON is valid for field_3011
+      try {
+        const testParse = JSON.parse(dataToSave.field_3011);
+        if (!Array.isArray(testParse)) {
+          console.warn("field_3011 is not an array after stringification, fixing format");
+          dataToSave.field_3011 = JSON.stringify([]);
+        }
+      } catch (e) {
+        console.error("Invalid JSON for field_3011, using empty array instead:", e);
+        dataToSave.field_3011 = JSON.stringify([]);
+      }
+      
+      // Double check that our JSON is valid for field_3012
+      try {
+        const testParse = JSON.parse(dataToSave.field_3012);
+        if (!Array.isArray(testParse)) {
+          console.warn("field_3012 is not an array after stringification, fixing format");
+          dataToSave.field_3012 = JSON.stringify([]);
+        }
+      } catch (e) {
+        console.error("Invalid JSON for field_3012, using empty array instead:", e);
+        dataToSave.field_3012 = JSON.stringify([]);
+      }
+      
+      debugLog("DATA BEING SENT TO KNACK", dataToSave);
       console.log("String length of field_3011:", JSON.stringify(allTopicLists).length);
       
       // Check if the data is too large
@@ -451,12 +530,24 @@ const TopicListModal = ({
         body: JSON.stringify(dataToSave)
       });
       
+      const responseStatus = updateResponse.status;
+      const responseStatusText = updateResponse.statusText;
+      debugLog("KNACK API RESPONSE STATUS", { status: responseStatus, statusText: responseStatusText });
+      
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text();
+        debugLog("KNACK API ERROR", errorText);
         console.error("Failed to save topic list:", errorText);
         setError("Failed to save topic list");
         setIsSaving(false);
         return;
+      }
+      
+      try {
+        const responseData = await updateResponse.json();
+        debugLog("KNACK API SUCCESS RESPONSE", responseData);
+      } catch (e) {
+        console.log("Could not parse response JSON, but request was successful");
       }
       
       console.log("Topic list saved successfully to Knack");
@@ -464,6 +555,7 @@ const TopicListModal = ({
       setIsSaving(false);
       setStep(3); // Move to post-save options
     } catch (error) {
+      debugLog("SAVE TOPIC LIST ERROR", { message: error.message, stack: error.stack });
       console.error("Error saving topic list:", error);
       setError(`Failed to save topic list: ${error.message}`);
       setIsSaving(false);
