@@ -1351,6 +1351,14 @@ function App() {
               {/* Added header showing total card count */}
               <div className="bank-content-header">
                 <h2>All Flashcards ({getFilteredCards().length})</h2>
+                <button 
+                  className="save-icon-button" 
+                  onClick={saveData}
+                  disabled={isSaving}
+                  title={isSaving ? "Saving..." : "Save Cards"}
+                >
+                  {isSaving ? "⏳" : "💾"}
+                </button>
               </div>
               <FlashcardList
                 cards={getFilteredCards()}

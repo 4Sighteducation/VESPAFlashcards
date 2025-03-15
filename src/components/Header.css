@@ -196,3 +196,28 @@
     width: 100%;
   }
 }
+
+/* Add styles for the logout button - find the section with .save-button styles and add these */
+
+.logout-button {
+  background-color: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.logout-button:hover {
+  background-color: #ee5253;
+}
+
+.logout-button::before {
+  content: "⤶";
+  font-size: 1.2em;
+}

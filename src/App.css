@@ -87,6 +87,8 @@ body {
   display: flex;
   height: calc(100vh - 60px);
   overflow: hidden;
+  gap: 10px;
+  margin-top: 5px;
 }
 
 .bank-container.full-width {
@@ -101,23 +103,6 @@ body {
   height: auto;
   padding: 0 10px;
   overflow: visible;
-}
-
-.bank-content-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 15px;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.bank-content-header h2 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: #333;
 }
 
 .bank-sidebar {
@@ -298,4 +283,50 @@ button:disabled {
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+/* Enhance the bank-content-header to properly align items */
+.bank-content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bank-content-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+/* Add styles for the save icon button */
+.save-icon-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: transform 0.2s, background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.save-icon-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  transform: scale(1.1);
+}
+
+.save-icon-button:active {
+  transform: scale(0.95);
+}
+
+.save-icon-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
