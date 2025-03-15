@@ -205,6 +205,7 @@ const AICardGenerator = ({
         }
         
         const userData = await getResponse.json();
+        debugLog("LOADED USER DATA FROM KNACK", userData);
         
         // Parse topic lists from Knack
         if (userData && userData.field_3011) {
@@ -212,6 +213,18 @@ const AICardGenerator = ({
             const knackTopicLists = JSON.parse(userData.field_3011);
             if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
               console.log("Successfully loaded topic lists from Knack:", knackTopicLists);
+              
+              // Also parse metadata if available
+              let metadata = [];
+              if (userData.field_3030) {
+                try {
+                  metadata = JSON.parse(userData.field_3030);
+                  console.log("Successfully loaded subject metadata:", metadata);
+                } catch (metaError) {
+                  console.error("Error parsing metadata:", metaError);
+                }
+              }
+              
               return knackTopicLists;
             }
           } catch (e) {
@@ -464,6 +477,36 @@ const AICardGenerator = ({
         return false;
       }
       
+      // First get existing data to preserve metadata
+      let existingMetadata = [];
+      try {
+        const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+        const getResponse = await fetch(getUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Knack-Application-ID": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY
+          }
+        });
+        
+        if (getResponse.ok) {
+          const userData = await getResponse.json();
+          if (userData && userData.field_3030) {
+            try {
+              existingMetadata = JSON.parse(userData.field_3030);
+              if (!Array.isArray(existingMetadata)) {
+                existingMetadata = [];
+              }
+            } catch (e) {
+              console.error("Error parsing existing metadata:", e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching existing metadata:", e);
+      }
+      
       // Extract user information for additional fields
       const userName = sanitizeField(auth.name || "");
       const userEmail = sanitizeField(auth.email || "");
@@ -486,6 +529,7 @@ const AICardGenerator = ({
       // Create the data object to send
       const dataToSave = {
         field_3011: JSON.stringify(topicLists),
+        field_3030: JSON.stringify(existingMetadata),
         field_3010: userName,                        // User Name
         field_3008: userSchool,                      // VESPA Customer (school)
         field_2956: userEmail,                       // User Account Email
@@ -505,6 +549,18 @@ const AICardGenerator = ({
       } catch (e) {
         console.error("Invalid JSON for field_3011, using empty array instead:", e);
         dataToSave.field_3011 = JSON.stringify([]);
+      }
+      
+      // Double check that our JSON is valid for field_3030
+      try {
+        const testParse = JSON.parse(dataToSave.field_3030);
+        if (!Array.isArray(testParse)) {
+          console.warn("field_3030 is not an array after stringification, fixing format");
+          dataToSave.field_3030 = JSON.stringify([]);
+        }
+      } catch (e) {
+        console.error("Invalid JSON for field_3030, using empty array instead:", e);
+        dataToSave.field_3030 = JSON.stringify([]);
       }
       
       debugLog("DATA BEING SENT TO KNACK", dataToSave);

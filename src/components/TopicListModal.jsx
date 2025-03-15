@@ -97,9 +97,9 @@ const TopicListModal = ({
         const userData = await getResponse.json();
         
         // Check for subject metadata
-        if (userData && userData.field_3012) {
+        if (userData && userData.field_3030) {
           try {
-            const subjectMetadata = JSON.parse(userData.field_3012);
+            const subjectMetadata = JSON.parse(userData.field_3030);
             
             // Find metadata for current subject
             const subjectData = subjectMetadata.find(meta => meta.subject === subject);
@@ -126,10 +126,16 @@ const TopicListModal = ({
                 setStep(2);
                 loadTopicList();
               }
+              
+              console.log(`Found existing metadata for ${subject}. Set exam board to ${subjectData.examBoard} and exam type to ${subjectData.examType}`);
+            } else {
+              console.log(`No metadata found for ${subject}, using defaults`);
             }
           } catch (e) {
             console.error("Error parsing subject metadata:", e);
           }
+        } else {
+          console.log("No subject metadata found in user data");
         }
         
         setIsLoading(false);
@@ -189,53 +195,121 @@ const TopicListModal = ({
         // Check for existing topic lists
         if (userData && userData.field_3011) {
           try {
-            const allTopicLists = JSON.parse(userData.field_3011);
+            const topicLists = JSON.parse(userData.field_3011);
             
-            // Find topic list for this subject, exam board, and type
-            const matchingList = allTopicLists.find(list => 
-              list.subject === subject && 
-              list.examBoard === examBoard && 
-              list.examType === examType
-            );
-            
-            if (matchingList && matchingList.topics && matchingList.topics.length > 0) {
-              console.log("Found existing topic list:", matchingList);
-              foundTopics = matchingList.topics;
-              setTopicListSaved(true);
-            } else {
-              console.log("No existing topic list found, generating new one");
-              await generateTopics();
-              return;
+            if (Array.isArray(topicLists)) {
+              // Find topic list for this subject, exam board, and exam type
+              const matchingList = topicLists.find(list => 
+                list.subject === subject && 
+                list.examBoard === examBoard && 
+                list.examType === examType
+              );
+              
+              if (matchingList && matchingList.topics) {
+                foundTopics = matchingList.topics;
+                console.log(`Found existing topic list with ${foundTopics.length} topics`);
+              }
             }
           } catch (e) {
             console.error("Error parsing topic lists:", e);
-            await generateTopics();
-            return;
           }
-        } else {
-          console.log("No topic lists found, generating new one");
-          await generateTopics();
-          return;
         }
         
-        setTopics(foundTopics);
-        setIsLoading(false);
+        if (foundTopics.length > 0) {
+          // Use existing topics
+          setTopics(foundTopics);
+          setIsLoading(false);
+          
+          // Update metadata to remember these selections for next time
+          updateSubjectMetadata();
+        } else {
+          // Generate new topics
+          console.log("No existing topic list found, generating new topics");
+          setIsLoading(false);
+          generateTopics();
+        }
       } catch (error) {
         console.error("Error loading topic list:", error);
         setError("Failed to load topic list");
         setIsLoading(false);
-        
-        // Generate new topics if loading fails
-        try {
-          await generateTopics();
-        } catch (genError) {
-          console.error("Failed to generate topics:", genError);
-        }
       }
     } catch (error) {
       console.error("Error in loadTopicList:", error);
       setError("An unexpected error occurred");
       setIsLoading(false);
+    }
+  };
+
+  // Update subject metadata
+  const updateSubjectMetadata = async () => {
+    try {
+      // Get user data from Knack
+      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+      
+      const getResponse = await fetch(getUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY
+        }
+      });
+      
+      if (!getResponse.ok) {
+        console.error("Failed to fetch user data for metadata update");
+        return;
+      }
+      
+      const userData = await getResponse.json();
+      
+      // Get existing metadata or create new array
+      let subjectMetadata = [];
+      if (userData && userData.field_3030) {
+        try {
+          subjectMetadata = JSON.parse(userData.field_3030);
+          if (!Array.isArray(subjectMetadata)) {
+            subjectMetadata = [];
+          }
+        } catch (e) {
+          console.error("Error parsing subject metadata:", e);
+        }
+      }
+      
+      // Find if metadata for this subject already exists
+      const metaIndex = subjectMetadata.findIndex(meta => meta.subject === subject);
+      
+      // Create new metadata object
+      const newMetadata = {
+        subject,
+        examBoard,
+        examType,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      // Update or add the metadata
+      if (metaIndex >= 0) {
+        subjectMetadata[metaIndex] = newMetadata;
+      } else {
+        subjectMetadata.push(newMetadata);
+      }
+      
+      // Save updated metadata
+      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+      await fetch(updateUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY
+        },
+        body: JSON.stringify({
+          field_3030: JSON.stringify(subjectMetadata)
+        })
+      });
+      
+      console.log("Subject metadata updated successfully");
+    } catch (error) {
+      console.error("Error updating subject metadata:", error);
     }
   };
 
@@ -421,9 +495,9 @@ const TopicListModal = ({
       
       // Save metadata for this subject
       let subjectMetadata = [];
-      if (userData && userData.field_3012) {
+      if (userData && userData.field_3030) {
         try {
-          subjectMetadata = JSON.parse(userData.field_3012);
+          subjectMetadata = JSON.parse(userData.field_3030);
           if (!Array.isArray(subjectMetadata)) {
             subjectMetadata = [];
           }
@@ -473,7 +547,7 @@ const TopicListModal = ({
       // Prepare the data to save with additional fields
       const dataToSave = {
         field_3011: JSON.stringify(allTopicLists),
-        field_3012: JSON.stringify(subjectMetadata),
+        field_3030: JSON.stringify(subjectMetadata),
         field_3010: userName,                        // User Name
         field_3008: userSchool,                      // VESPA Customer (school)
         field_2956: userEmail,                       // User Account Email
@@ -495,16 +569,16 @@ const TopicListModal = ({
         dataToSave.field_3011 = JSON.stringify([]);
       }
       
-      // Double check that our JSON is valid for field_3012
+      // Double check that our JSON is valid for field_3030
       try {
-        const testParse = JSON.parse(dataToSave.field_3012);
+        const testParse = JSON.parse(dataToSave.field_3030);
         if (!Array.isArray(testParse)) {
-          console.warn("field_3012 is not an array after stringification, fixing format");
-          dataToSave.field_3012 = JSON.stringify([]);
+          console.warn("field_3030 is not an array after stringification, fixing format");
+          dataToSave.field_3030 = JSON.stringify([]);
         }
       } catch (e) {
-        console.error("Invalid JSON for field_3012, using empty array instead:", e);
-        dataToSave.field_3012 = JSON.stringify([]);
+        console.error("Invalid JSON for field_3030, using empty array instead:", e);
+        dataToSave.field_3030 = JSON.stringify([]);
       }
       
       debugLog("DATA BEING SENT TO KNACK", dataToSave);
