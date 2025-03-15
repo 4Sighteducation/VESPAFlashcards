@@ -76,7 +76,7 @@ const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRef
   return null; // This is a utility component with no UI
 };
 
-const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
+const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) => {
   // State for expanded subjects and topics
   const [expandedSubjects, setExpandedSubjects] = useState({});
   const [expandedTopics, setExpandedTopics] = useState({});
@@ -628,6 +628,18 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
           >
             <span role="img" aria-label="Slideshow">▶️</span>
           </button>
+          
+          <button
+            className="topic-list-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewTopicList && onViewTopicList(subject);
+            }}
+            title="View Topic List"
+          >
+            <span role="img" aria-label="View Topics">📋</span>
+          </button>
+          
           <button
             className="print-button"
             onClick={(e) => {
