@@ -343,6 +343,7 @@ const TopicListModal = ({
       }
       
       const userData = await getResponse.json();
+      console.log("Fetched user data:", userData);
       
       // Parse existing topic lists
       let allTopicLists = [];
@@ -350,12 +351,18 @@ const TopicListModal = ({
         try {
           allTopicLists = JSON.parse(userData.field_3011);
           if (!Array.isArray(allTopicLists)) {
+            console.log("field_3011 is not an array, initializing empty array");
             allTopicLists = [];
           }
         } catch (e) {
           console.error("Error parsing existing topic lists:", e);
+          allTopicLists = [];
         }
+      } else {
+        console.log("field_3011 not found in user data, initializing empty array");
       }
+      
+      console.log("Current topic lists:", allTopicLists);
       
       // Find if topic list for this subject, exam board, and exam type already exists
       const existingIndex = allTopicLists.findIndex(list => 
@@ -374,6 +381,8 @@ const TopicListModal = ({
         lastUpdated: new Date().toISOString()
       };
       
+      console.log("New topic list to save:", newTopicList);
+      
       // Update or add the topic list
       if (existingIndex >= 0) {
         allTopicLists[existingIndex] = newTopicList;
@@ -391,6 +400,7 @@ const TopicListModal = ({
           }
         } catch (e) {
           console.error("Error parsing subject metadata:", e);
+          subjectMetadata = [];
         }
       }
       
@@ -412,6 +422,23 @@ const TopicListModal = ({
         subjectMetadata.push(newMetadata);
       }
       
+      // Prepare the data to save
+      const dataToSave = {
+        field_3011: JSON.stringify(allTopicLists),
+        field_3012: JSON.stringify(subjectMetadata)
+      };
+      
+      console.log("Data being sent to Knack:", dataToSave);
+      console.log("String length of field_3011:", JSON.stringify(allTopicLists).length);
+      
+      // Check if the data is too large
+      if (JSON.stringify(dataToSave).length > 1000000) {
+        console.error("Data payload is too large, may exceed Knack's size limits");
+        setError("Data is too large to save. Try with fewer topics.");
+        setIsSaving(false);
+        return;
+      }
+      
       // Save to Knack
       const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
       const updateResponse = await fetch(updateUrl, {
@@ -421,10 +448,7 @@ const TopicListModal = ({
           "X-Knack-Application-ID": KNACK_APP_ID,
           "X-Knack-REST-API-Key": KNACK_API_KEY
         },
-        body: JSON.stringify({
-          field_3011: JSON.stringify(allTopicLists),
-          field_3012: JSON.stringify(subjectMetadata)
-        })
+        body: JSON.stringify(dataToSave)
       });
       
       if (!updateResponse.ok) {
@@ -435,7 +459,7 @@ const TopicListModal = ({
         return;
       }
       
-      console.log("Topic list saved successfully");
+      console.log("Topic list saved successfully to Knack");
       setTopicListSaved(true);
       setIsSaving(false);
       setStep(3); // Move to post-save options
@@ -490,20 +514,6 @@ const TopicListModal = ({
       <>
         <div className="exam-selection-form">
           <div className="form-group">
-            <label>Exam Board</label>
-            <select 
-              value={examBoard} 
-              onChange={(e) => setExamBoard(e.target.value)}
-              className="exam-select"
-            >
-              <option value="">-- Select Exam Board --</option>
-              {EXAM_BOARDS.map(board => (
-                <option key={board} value={board}>{board}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="form-group">
             <label>Exam Type</label>
             <select 
               value={examType} 
@@ -513,6 +523,20 @@ const TopicListModal = ({
               <option value="">-- Select Exam Type --</option>
               {EXAM_TYPES.map(type => (
                 <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="form-group">
+            <label>Exam Board</label>
+            <select 
+              value={examBoard} 
+              onChange={(e) => setExamBoard(e.target.value)}
+              className="exam-select"
+            >
+              <option value="">-- Select Exam Board --</option>
+              {EXAM_BOARDS.map(board => (
+                <option key={board} value={board}>{board}</option>
               ))}
             </select>
           </div>
@@ -561,13 +585,24 @@ const TopicListModal = ({
           <>
             <div className="topic-list-header">
               <h3>Topics for {subject} ({examBoard} {examType})</h3>
-              <button 
-                className="regenerate-button" 
-                onClick={generateTopics}
-                disabled={isGenerating}
-              >
-                🔄 Regenerate
-              </button>
+              <div className="topic-header-actions">
+                {!topicListSaved && (
+                  <button 
+                    className="save-topic-button" 
+                    onClick={saveTopicList}
+                    disabled={topics.length === 0 || isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Save Topic List'}
+                  </button>
+                )}
+                <button 
+                  className="regenerate-button" 
+                  onClick={generateTopics}
+                  disabled={isGenerating}
+                >
+                  🔄 Regenerate
+                </button>
+              </div>
             </div>
             
             <div className="topics-container">
@@ -595,15 +630,6 @@ const TopicListModal = ({
             )}
             
             <div className="modal-actions">
-              {!topicListSaved && (
-                <button 
-                  className="modal-button save-button" 
-                  onClick={saveTopicList}
-                  disabled={topics.length === 0 || isSaving}
-                >
-                  {isSaving ? 'Saving...' : 'Save Topic List'}
-                </button>
-              )}
               <button 
                 className="modal-button cancel-button" 
                 onClick={onClose}

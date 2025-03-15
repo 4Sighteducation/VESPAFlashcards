@@ -16,13 +16,19 @@ const EXAM_BOARDS = [
   { value: "Edexcel", label: "Edexcel" },
   { value: "OCR", label: "OCR" },
   { value: "WJEC", label: "WJEC" },
-  { value: "CCEA", label: "CCEA" },
-  { value: "International Baccalaureate", label: "IB" }
+  { value: "SQA", label: "SQA" },
+  { value: "International Baccalaureate", label: "International Baccalaureate" },
+  { value: "Cambridge International", label: "Cambridge International" }
 ];
 
 const EXAM_TYPES = [
   { value: "GCSE", label: "GCSE" },
-  { value: "A-Level", label: "A-Level" }
+  { value: "A-Level", label: "A-Level" },
+  { value: "IB", label: "International Baccalaureate" },
+  { value: "AP", label: "Advanced Placement" },
+  { value: "Scottish Higher", label: "Scottish Higher" },
+  { value: "BTEC", label: "BTEC" },
+  { value: "Other", label: "Other" }
 ];
 
 // Function to return compatible exam boards for each exam type
@@ -41,8 +47,8 @@ const BRIGHT_COLORS = [
   "#FF69B4", "#8B4513", "#00CED1", "#ADFF2F", "#DC143C"
 ];
 
-// API keys - in production, these should be in server environment variables
-const API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
+// API keys - using the correct environment variables
+const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 
@@ -293,7 +299,7 @@ const AICardGenerator = ({
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${API_KEY}`,
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -440,6 +446,20 @@ const AICardGenerator = ({
       const tutorGroup = auth.tutorGroup || "";
       const yearGroup = auth.yearGroup || "";
       
+      // Create the data object to send
+      const dataToSave = {
+        field_3011: JSON.stringify(topicLists),
+        field_3010: userName,                        // User Name
+        field_3008: userSchool,                      // VESPA Customer (school)
+        field_2956: userEmail,                       // User Account Email
+        field_3009: userTutor,                       // User "Tutor"
+        field_565: tutorGroup,                       // Group (Tutor Group)
+        field_548: yearGroup,                        // User Role
+        field_73: userRole
+      };
+      
+      console.log("Data being sent to Knack:", dataToSave);
+      
       try {
         // Update Knack record directly with the full lists array
         const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
@@ -450,16 +470,7 @@ const AICardGenerator = ({
             "X-Knack-Application-ID": KNACK_APP_ID,
             "X-Knack-REST-API-Key": KNACK_API_KEY
           },
-          body: JSON.stringify({
-            field_3011: JSON.stringify(topicLists),
-            field_3010: userName,                        // User Name
-            field_3008: userSchool,                      // VESPA Customer (school)
-            field_2956: userEmail,                       // User Account Email
-            field_3009: userTutor,                       // User "Tutor"
-            field_565: tutorGroup,                       // Group (Tutor Group)
-            field_548: yearGroup,                        // Year Group
-            field_73: userRole                           // User Role
-          })
+          body: JSON.stringify(dataToSave)
         });
         
         if (updateResponse.ok) {
@@ -887,7 +898,7 @@ Use this format for different question types:
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${API_KEY}`,
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -1405,81 +1416,6 @@ Use this format for different question types:
     }
   };
 
-  // New function to render topic selection modal
-  const renderTopicModal = () => {
-    if (!showTopicModal) return null;
-    
-    return (
-      <div className="topic-modal-overlay">
-        <div className="topic-modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="topic-modal-header">
-            <h3>Select a Topic</h3>
-            <button className="close-modal-button" onClick={() => setShowTopicModal(false)}>×</button>
-          </div>
-          
-          <div className="topic-modal-body">
-            {isGenerating ? (
-              <div className="loading-indicator">
-                <div className="spinner"></div>
-                <p>Generating topics for {formData.subject || formData.newSubject}...</p>
-                <p className="loading-subtext">This may take a moment as we analyze the curriculum and create relevant topics.</p>
-              </div>
-            ) : (
-              <>
-                {availableTopics.length > 0 ? (
-                  <>
-                    <div className="topics-header-actions">
-                      <h4>Available Topics</h4>
-                      <button 
-                        className="regenerate-topics-button"
-                        onClick={handleRegenerateTopics}
-                        disabled={isGenerating}
-                      >
-                        Regenerate Topics
-                      </button>
-                    </div>
-                    <div className="topic-list-container">
-                      {availableTopics.map((topic) => (
-                        <div 
-                          key={topic} 
-                          className={`topic-item ${selectedTopicForConfirmation === topic ? 'selected' : ''}`}
-                          onClick={() => handleTopicClick(topic)}
-                        >
-                          {topic}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div className="no-topics-message">
-                    <p>No topics generated yet. Click the "Generate Topics" button to create topics for this subject.</p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-          
-          <div className="topic-modal-actions">
-            <button 
-              className="save-button"
-              disabled={isGenerating || topicListSaved || availableTopics.length === 0}
-              onClick={() => setShowSaveTopicDialog(true)}
-            >
-              {topicListSaved ? "Topic List Saved ✓" : "Save Topic List"}
-            </button>
-            
-            <button 
-              className="close-button"
-              onClick={() => setShowTopicModal(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   // Updated function to render topic selection UI
   const renderTopicSelectionUI = () => {
     return (
@@ -1491,6 +1427,18 @@ Use this format for different question types:
         >
           {isGenerating ? "Generating..." : "Generate Topics"}
         </button>
+        
+        {formData.topic && (
+          <div className="selected-topic">
+            <span>Selected Topic: <strong>{formData.topic}</strong></span>
+            <button 
+              className="change-topic-btn"
+              onClick={() => setFormData(prev => ({ ...prev, topic: '' }))}
+            >
+              Change
+            </button>
+          </div>
+        )}
         
         <div className="topic-input-section">
           <label>Or Enter a New Topic:</label>
@@ -1665,10 +1613,11 @@ Use this format for different question types:
   
   // Function to confirm topic selection
   const confirmTopicSelection = () => {
-    setFormData(prev => ({ ...prev, topic: selectedTopicForConfirmation }));
+    setFormData(prev => ({ ...prev, topic: selectedTopicForConfirmation, newTopic: '' }));
     setShowTopicConfirmation(false);
     setShowTopicModal(false);
-    handleNextStep();
+    // No longer auto-advancing to next step - wait for user to click Next
+    console.log(`Selected topic: ${selectedTopicForConfirmation}`);
   };
 
   // Render topic confirmation dialog
@@ -1766,6 +1715,98 @@ Use this format for different question types:
       setCurrentStep(4);
     }
   }, [initialSubject, initialTopic]);
+
+  // New function to render topic selection modal
+  const renderTopicModal = () => {
+    if (!showTopicModal) return null;
+    
+    return (
+      <div className="topic-modal-overlay" onClick={() => setShowTopicModal(false)}>
+        <div className="topic-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="topic-modal-header">
+            <h3>Topics for {formData.subject || formData.newSubject}</h3>
+            <button className="close-modal-button" onClick={() => setShowTopicModal(false)}>×</button>
+          </div>
+          
+          <div className="topic-modal-body">
+            {isGenerating ? (
+              <div className="loading-indicator">
+                <div className="spinner"></div>
+                <p>Generating topics for {formData.subject || formData.newSubject}...</p>
+                <p className="loading-subtext">This may take a moment as we analyze the curriculum and create relevant topics.</p>
+              </div>
+            ) : (
+              <>
+                {availableTopics.length > 0 ? (
+                  <>
+                    <div className="topics-header-actions">
+                      <h4>Available Topics for {formData.examBoard} {formData.examType}</h4>
+                      <button 
+                        className="regenerate-topics-button"
+                        onClick={handleRegenerateTopics}
+                        disabled={isGenerating}
+                      >
+                        Regenerate Topics
+                      </button>
+                    </div>
+                    <div className="topic-list-container">
+                      {availableTopics.map((topic) => (
+                        <div 
+                          key={topic} 
+                          className={`topic-item ${selectedTopicForConfirmation === topic ? 'selected' : ''}`}
+                          onClick={() => handleTopicClick(topic)}
+                        >
+                          {topic}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {!topicListSaved && (
+                      <div className="save-notice">
+                        <span role="img" aria-label="Info">ℹ️</span> These topics haven't been saved yet. Click "Save Topic List" to save them for future use.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="no-topics-message">
+                    <p>No topics available for {formData.subject || formData.newSubject} ({formData.examBoard} {formData.examType}) yet.</p>
+                    <p>Click the "Regenerate Topics" button to create topics for this subject.</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          
+          <div className="topic-modal-actions">
+            {availableTopics.length > 0 && !topicListSaved && (
+              <button 
+                className="save-button"
+                onClick={() => setShowSaveTopicDialog(true)}
+                disabled={isGenerating}
+              >
+                Save Topic List
+              </button>
+            )}
+            
+            <button 
+              className="generate-topics-button"
+              onClick={handleRegenerateTopics}
+              disabled={isGenerating}
+            >
+              {isGenerating ? "Generating..." : availableTopics.length === 0 ? "Generate Topics" : "Regenerate Topics"}
+            </button>
+            
+            <button 
+              className="close-button"
+              onClick={() => setShowTopicModal(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="ai-card-generator">

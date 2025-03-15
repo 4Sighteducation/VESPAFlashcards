@@ -1483,11 +1483,31 @@
 }
 
 .selected-topic {
-  padding: 10px;
-  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f0f8ff;
+  padding: 10px 15px;
   border-radius: 4px;
-  border-left: 3px solid #3498db;
-  font-weight: 500;
+  margin: 10px 0;
+  border-left: 3px solid #06206e;
+}
+
+.selected-topic strong {
+  color: #06206e;
+}
+
+.change-topic-btn {
+  background-color: transparent;
+  border: none;
+  color: #06206e;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.change-topic-btn:hover {
+  color: #00e5db;
 }
 
 .open-topic-modal-button {
