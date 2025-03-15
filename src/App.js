@@ -14,7 +14,7 @@ import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForRevi
 import TopicListModal from './components/TopicListModal';
 
 // API Keys and constants
-const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_ID || "64fc50bc3cd0ac00254bb62b";
+const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 
 // Box descriptions
@@ -1447,40 +1447,38 @@ function App() {
             </div>
           )}
           
-          <div className="bank-container">
-            <div className="sidebar">
-              <SubjectsList
-                subjects={getSubjects()}
-                activeSubject={selectedSubject}
-                onSelectSubject={setSelectedSubject}
-                onChangeSubjectColor={updateColorMapping}
-                onViewTopicList={handleViewTopicList}
-              />
-              <TopicsList
-                topics={getTopicsForSubject(selectedSubject)}
-                activeTopic={selectedTopic}
-                onSelectTopic={setSelectedTopic}
-              />
-            </div>
-            
+          <div className="bank-container full-width">
             <div className="bank-content">
               {/* Added header showing total card count */}
               <div className="bank-content-header">
                 <h2>All Flashcards ({getFilteredCards().length})</h2>
                 <button 
                   className="save-icon-button" 
-                  onClick={saveData}
+                  onClick={saveData} 
                   disabled={isSaving}
-                  title={isSaving ? "Saving..." : "Save Cards"}
+                  title="Save All Changes"
                 >
-                  {isSaving ? "⏳" : "💾"}
+                  {isSaving ? '⏳' : '💾'}
                 </button>
               </div>
-              <FlashcardList
-                cards={getFilteredCards()}
-                onDeleteCard={deleteCard}
-                onUpdateCard={updateCard}
-              />
+              
+              {/* Show empty state or card list based on whether there are cards */}
+              {allCards.length === 0 ? (
+                <div className="empty-card-bank">
+                  <h3>No flashcards yet</h3>
+                  <p>Create your first flashcard to get started!</p>
+                  <button className="primary-button" onClick={() => setCardCreationModalOpen(true)}>
+                    Create Flashcard
+                  </button>
+                </div>
+              ) : (
+                <FlashcardList 
+                  cards={getFilteredCards()} 
+                  onDeleteCard={deleteCard} 
+                  onUpdateCard={updateCard}
+                  onViewTopicList={handleViewTopicList}
+                />
+              )}
             </div>
           </div>
         </div>
