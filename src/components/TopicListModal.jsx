@@ -243,8 +243,43 @@ const TopicListModal = ({
   // Update subject metadata
   const updateSubjectMetadata = async () => {
     try {
-      // Get user data from Knack
-      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+      // First get the actual record ID for this user in object_102
+      let recordId = null;
+      const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
+      
+      const searchResponse = await fetch(searchUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY
+        }
+      });
+      
+      if (searchResponse.ok) {
+        const allRecords = await searchResponse.json();
+        
+        // Find the record matching this user ID
+        if (allRecords && allRecords.records) {
+          const userRecord = allRecords.records.find(record => {
+            return record.field_2954 === userId || 
+                   (record.field_2958 && record.field_2958 === auth.email);
+          });
+          
+          if (userRecord) {
+            recordId = userRecord.id;
+            console.log("Found matching record ID for metadata update:", recordId);
+          }
+        }
+      }
+      
+      if (!recordId) {
+        console.error("Could not find a record for this user ID:", userId);
+        return;
+      }
+      
+      // Get user data from Knack using the correct record ID
+      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
       
       const getResponse = await fetch(getUrl, {
         method: "GET",
@@ -293,8 +328,8 @@ const TopicListModal = ({
         subjectMetadata.push(newMetadata);
       }
       
-      // Save updated metadata
-      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+      // Save updated metadata using the correct record ID
+      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
       await fetch(updateUrl, {
         method: "PUT",
         headers: {
@@ -424,210 +459,264 @@ const TopicListModal = ({
       debugLog("USER ID", userId);
       console.log(`Saving topic list for ${subject} with ${topics.length} topics`);
       
-      // Get existing topic lists first
-      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
-      debugLog("GET URL", getUrl);
+      // First get the actual record ID for this user in object_102
+      const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
+      debugLog("RECORD SEARCH URL", searchUrl);
       
-      const getResponse = await fetch(getUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY
+      try {
+        const searchResponse = await fetch(searchUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Knack-Application-ID": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY
+          }
+        });
+        
+        if (!searchResponse.ok) {
+          const errorText = await searchResponse.text();
+          console.error("Failed to search for user record:", errorText);
+          setError("Failed to find your data record");
+          setIsSaving(false);
+          return;
         }
-      });
+        
+        const allRecords = await searchResponse.json();
+        debugLog("ALL RECORDS", allRecords);
+        
+        // Find the record matching this user ID
+        let recordId = null;
+        if (allRecords && allRecords.records) {
+          const userRecord = allRecords.records.find(record => {
+            return record.field_2954 === userId || 
+                   (record.field_2958 && record.field_2958 === auth.email);
+          });
+          
+          if (userRecord) {
+            recordId = userRecord.id;
+            console.log("Found matching record ID:", recordId);
+          }
+        }
+        
+        if (!recordId) {
+          console.error("Could not find a record for this user ID:", userId);
+          setError("Failed to locate your user record");
+          setIsSaving(false);
+          return;
+        }
+        
+        // Now get the current data for this record
+        const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+        debugLog("GET URL", getUrl);
+        
+        const getResponse = await fetch(getUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Knack-Application-ID": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY
+          }
+        });
+        
+        if (!getResponse.ok) {
+          const errorText = await getResponse.text();
+          console.error("Failed to get existing topic lists:", errorText);
+          setError("Failed to save topic list");
+          setIsSaving(false);
+          return;
+        }
+        
+        const userData = await getResponse.json();
+        debugLog("FETCHED USER DATA", userData);
       
-      if (!getResponse.ok) {
-        const errorText = await getResponse.text();
-        console.error("Failed to get existing topic lists:", errorText);
-        setError("Failed to save topic list");
-        setIsSaving(false);
-        return;
-      }
-      
-      const userData = await getResponse.json();
-      debugLog("FETCHED USER DATA", userData);
-      
-      // Parse existing topic lists
-      let allTopicLists = [];
-      if (userData && userData.field_3011) {
-        try {
-          allTopicLists = JSON.parse(userData.field_3011);
-          if (!Array.isArray(allTopicLists)) {
-            console.log("field_3011 is not an array, initializing empty array");
+        // Parse existing topic lists
+        let allTopicLists = [];
+        if (userData && userData.field_3011) {
+          try {
+            allTopicLists = JSON.parse(userData.field_3011);
+            if (!Array.isArray(allTopicLists)) {
+              console.log("field_3011 is not an array, initializing empty array");
+              allTopicLists = [];
+            }
+          } catch (e) {
+            console.error("Error parsing existing topic lists:", e);
             allTopicLists = [];
           }
-        } catch (e) {
-          console.error("Error parsing existing topic lists:", e);
-          allTopicLists = [];
+        } else {
+          console.log("field_3011 not found in user data, initializing empty array");
         }
-      } else {
-        console.log("field_3011 not found in user data, initializing empty array");
-      }
-      
-      debugLog("CURRENT TOPIC LISTS", allTopicLists);
-      
-      // Find if topic list for this subject, exam board, and exam type already exists
-      const existingIndex = allTopicLists.findIndex(list => 
-        list.subject === subject && 
-        list.examBoard === examBoard && 
-        list.examType === examType
-      );
-      
-      // Create new topic list object
-      const newTopicList = {
-        id: existingIndex >= 0 ? allTopicLists[existingIndex].id : generateId('list'),
-        subject,
-        examBoard,
-        examType,
-        topics,
-        lastUpdated: new Date().toISOString()
-      };
-      
-      debugLog("NEW TOPIC LIST TO SAVE", newTopicList);
-      
-      // Update or add the topic list
-      if (existingIndex >= 0) {
-        allTopicLists[existingIndex] = newTopicList;
-      } else {
-        allTopicLists.push(newTopicList);
-      }
-      
-      // Save metadata for this subject
-      let subjectMetadata = [];
-      if (userData && userData.field_3030) {
-        try {
-          subjectMetadata = JSON.parse(userData.field_3030);
-          if (!Array.isArray(subjectMetadata)) {
+        
+        debugLog("CURRENT TOPIC LISTS", allTopicLists);
+        
+        // Find if topic list for this subject, exam board, and exam type already exists
+        const existingIndex = allTopicLists.findIndex(list => 
+          list.subject === subject && 
+          list.examBoard === examBoard && 
+          list.examType === examType
+        );
+        
+        // Create new topic list object
+        const newTopicList = {
+          id: existingIndex >= 0 ? allTopicLists[existingIndex].id : generateId('list'),
+          subject,
+          examBoard,
+          examType,
+          topics,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        debugLog("NEW TOPIC LIST TO SAVE", newTopicList);
+        
+        // Update or add the topic list
+        if (existingIndex >= 0) {
+          allTopicLists[existingIndex] = newTopicList;
+        } else {
+          allTopicLists.push(newTopicList);
+        }
+        
+        // Save metadata for this subject
+        let subjectMetadata = [];
+        if (userData && userData.field_3030) {
+          try {
+            subjectMetadata = JSON.parse(userData.field_3030);
+            if (!Array.isArray(subjectMetadata)) {
+              subjectMetadata = [];
+            }
+          } catch (e) {
+            console.error("Error parsing subject metadata:", e);
             subjectMetadata = [];
           }
-        } catch (e) {
-          console.error("Error parsing subject metadata:", e);
-          subjectMetadata = [];
         }
-      }
-      
-      // Find if metadata for this subject already exists
-      const metaIndex = subjectMetadata.findIndex(meta => meta.subject === subject);
-      
-      // Create new metadata object
-      const newMetadata = {
-        subject,
-        examBoard,
-        examType,
-        lastUpdated: new Date().toISOString()
-      };
-      
-      // Update or add the metadata
-      if (metaIndex >= 0) {
-        subjectMetadata[metaIndex] = newMetadata;
-      } else {
-        subjectMetadata.push(newMetadata);
-      }
-      
-      // Extract user information for additional fields
-      const userName = sanitizeField(auth.name || "");
-      const userEmail = sanitizeField(auth.email || "");
-      const userTutor = sanitizeField(auth.tutor || "");
-      const userSchool = sanitizeField(auth.school || auth.field_122 || "");
-      const userRole = sanitizeField(auth.role || "");
-      const tutorGroup = sanitizeField(auth.tutorGroup || "");
-      const yearGroup = sanitizeField(auth.yearGroup || "");
-      
-      debugLog("EXTRACTED USER INFO", {
-        userName,
-        userEmail,
-        userTutor,
-        userSchool,
-        userRole,
-        tutorGroup,
-        yearGroup
-      });
-      
-      // Prepare the data to save with additional fields
-      const dataToSave = {
-        field_3011: JSON.stringify(allTopicLists),
-        field_3030: JSON.stringify(subjectMetadata),
-        field_3010: userName,                        // User Name
-        field_3008: userSchool,                      // VESPA Customer (school)
-        field_2956: userEmail,                       // User Account Email
-        field_3009: userTutor,                       // User "Tutor"
-        field_565: tutorGroup,                       // Group (Tutor Group)
-        field_548: yearGroup,                        // User Role
-        field_73: userRole                           // User Role
-      };
-      
-      // Double check that our JSON is valid for field_3011
-      try {
-        const testParse = JSON.parse(dataToSave.field_3011);
-        if (!Array.isArray(testParse)) {
-          console.warn("field_3011 is not an array after stringification, fixing format");
+        
+        // Find if metadata for this subject already exists
+        const metaIndex = subjectMetadata.findIndex(meta => meta.subject === subject);
+        
+        // Create new metadata object
+        const newMetadata = {
+          subject,
+          examBoard,
+          examType,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        // Update or add the metadata
+        if (metaIndex >= 0) {
+          subjectMetadata[metaIndex] = newMetadata;
+        } else {
+          subjectMetadata.push(newMetadata);
+        }
+        
+        // Extract user information for additional fields
+        const userName = sanitizeField(auth.name || "");
+        const userEmail = sanitizeField(auth.email || "");
+        const userTutor = sanitizeField(auth.tutor || "");
+        const userSchool = sanitizeField(auth.school || auth.field_122 || "");
+        const userRole = sanitizeField(auth.role || "");
+        const tutorGroup = sanitizeField(auth.tutorGroup || "");
+        const yearGroup = sanitizeField(auth.yearGroup || "");
+        
+        debugLog("EXTRACTED USER INFO", {
+          userName,
+          userEmail,
+          userTutor,
+          userSchool,
+          userRole,
+          tutorGroup,
+          yearGroup
+        });
+        
+        // Prepare the data to save with additional fields
+        const dataToSave = {
+          field_3011: JSON.stringify(allTopicLists),
+          field_3030: JSON.stringify(subjectMetadata),
+          field_3010: userName,                        // User Name
+          field_3008: userSchool,                      // VESPA Customer (school)
+          field_2956: userEmail,                       // User Account Email
+          field_3009: userTutor,                       // User "Tutor"
+          field_565: tutorGroup,                       // Group (Tutor Group)
+          field_548: yearGroup,                        // User Role
+          field_73: userRole                           // User Role
+        };
+        
+        // Double check that our JSON is valid for field_3011
+        try {
+          const testParse = JSON.parse(dataToSave.field_3011);
+          if (!Array.isArray(testParse)) {
+            console.warn("field_3011 is not an array after stringification, fixing format");
+            dataToSave.field_3011 = JSON.stringify([]);
+          }
+        } catch (e) {
+          console.error("Invalid JSON for field_3011, using empty array instead:", e);
           dataToSave.field_3011 = JSON.stringify([]);
         }
-      } catch (e) {
-        console.error("Invalid JSON for field_3011, using empty array instead:", e);
-        dataToSave.field_3011 = JSON.stringify([]);
-      }
-      
-      // Double check that our JSON is valid for field_3030
-      try {
-        const testParse = JSON.parse(dataToSave.field_3030);
-        if (!Array.isArray(testParse)) {
-          console.warn("field_3030 is not an array after stringification, fixing format");
+        
+        // Double check that our JSON is valid for field_3030
+        try {
+          const testParse = JSON.parse(dataToSave.field_3030);
+          if (!Array.isArray(testParse)) {
+            console.warn("field_3030 is not an array after stringification, fixing format");
+            dataToSave.field_3030 = JSON.stringify([]);
+          }
+        } catch (e) {
+          console.error("Invalid JSON for field_3030, using empty array instead:", e);
           dataToSave.field_3030 = JSON.stringify([]);
         }
-      } catch (e) {
-        console.error("Invalid JSON for field_3030, using empty array instead:", e);
-        dataToSave.field_3030 = JSON.stringify([]);
-      }
-      
-      debugLog("DATA BEING SENT TO KNACK", dataToSave);
-      console.log("String length of field_3011:", JSON.stringify(allTopicLists).length);
-      
-      // Check if the data is too large
-      if (JSON.stringify(dataToSave).length > 1000000) {
-        console.error("Data payload is too large, may exceed Knack's size limits");
-        setError("Data is too large to save. Try with fewer topics.");
+        
+        debugLog("DATA BEING SENT TO KNACK", dataToSave);
+        console.log("String length of field_3011:", JSON.stringify(allTopicLists).length);
+        
+        // Check if the data is too large
+        if (JSON.stringify(dataToSave).length > 1000000) {
+          console.error("Data payload is too large, may exceed Knack's size limits");
+          setError("Data is too large to save. Try with fewer topics.");
+          setIsSaving(false);
+          return;
+        }
+        
+        // Save to Knack - using the actual record ID, not userId
+        const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+        debugLog("UPDATE URL", updateUrl);
+        
+        const updateResponse = await fetch(updateUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Knack-Application-ID": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY
+          },
+          body: JSON.stringify(dataToSave)
+        });
+        
+        const responseStatus = updateResponse.status;
+        const responseStatusText = updateResponse.statusText;
+        debugLog("KNACK API RESPONSE STATUS", { status: responseStatus, statusText: responseStatusText });
+        
+        if (!updateResponse.ok) {
+          const errorText = await updateResponse.text();
+          debugLog("KNACK API ERROR", errorText);
+          console.error("Failed to save topic list:", errorText);
+          setError("Failed to save topic list");
+          setIsSaving(false);
+          return;
+        }
+        
+        try {
+          const responseData = await updateResponse.json();
+          debugLog("KNACK API SUCCESS RESPONSE", responseData);
+        } catch (e) {
+          console.log("Could not parse response JSON, but request was successful");
+        }
+        
+        console.log("Topic list saved successfully to Knack");
+        setTopicListSaved(true);
         setIsSaving(false);
-        return;
-      }
-      
-      // Save to Knack
-      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
-      const updateResponse = await fetch(updateUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY
-        },
-        body: JSON.stringify(dataToSave)
-      });
-      
-      const responseStatus = updateResponse.status;
-      const responseStatusText = updateResponse.statusText;
-      debugLog("KNACK API RESPONSE STATUS", { status: responseStatus, statusText: responseStatusText });
-      
-      if (!updateResponse.ok) {
-        const errorText = await updateResponse.text();
-        debugLog("KNACK API ERROR", errorText);
-        console.error("Failed to save topic list:", errorText);
-        setError("Failed to save topic list");
+        setStep(3); // Move to post-save options
+      } catch (apiError) {
+        debugLog("API ERROR", { message: apiError.message, stack: apiError.stack });
+        console.error("Error with Knack API:", apiError);
+        setError(`API error: ${apiError.message}`);
         setIsSaving(false);
-        return;
       }
-      
-      try {
-        const responseData = await updateResponse.json();
-        debugLog("KNACK API SUCCESS RESPONSE", responseData);
-      } catch (e) {
-        console.log("Could not parse response JSON, but request was successful");
-      }
-      
-      console.log("Topic list saved successfully to Knack");
-      setTopicListSaved(true);
-      setIsSaving(false);
-      setStep(3); // Move to post-save options
     } catch (error) {
       debugLog("SAVE TOPIC LIST ERROR", { message: error.message, stack: error.stack });
       console.error("Error saving topic list:", error);

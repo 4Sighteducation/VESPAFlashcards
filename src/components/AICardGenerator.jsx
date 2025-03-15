@@ -477,10 +477,57 @@ const AICardGenerator = ({
         return false;
       }
       
-      // First get existing data to preserve metadata
+      // First find the actual record ID for this user in object_102
+      let recordId = null;
+      try {
+        const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
+        debugLog("RECORD SEARCH URL", searchUrl);
+        
+        const searchResponse = await fetch(searchUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Knack-Application-ID": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY
+          }
+        });
+        
+        if (!searchResponse.ok) {
+          const errorText = await searchResponse.text();
+          console.error("Failed to search for user record:", errorText);
+          return false;
+        }
+        
+        const allRecords = await searchResponse.json();
+        
+        // Find the record matching this user ID
+        if (allRecords && allRecords.records) {
+          const userRecord = allRecords.records.find(record => {
+            return record.field_2954 === userId || 
+                   (record.field_2958 && record.field_2958 === auth.email);
+          });
+          
+          if (userRecord) {
+            recordId = userRecord.id;
+            console.log("Found matching record ID:", recordId);
+          }
+        }
+        
+        if (!recordId) {
+          console.error("Could not find a record for this user ID:", userId);
+          return false;
+        }
+      } catch (searchError) {
+        console.error("Error searching for user record:", searchError);
+        return false;
+      }
+      
+      // Now get existing data to preserve metadata
       let existingMetadata = [];
       try {
-        const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+        const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+        debugLog("GET URL", getUrl);
+        
         const getResponse = await fetch(getUrl, {
           method: "GET",
           headers: {
@@ -573,8 +620,10 @@ const AICardGenerator = ({
       }
       
       try {
-        // Update Knack record directly with the full lists array
-        const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+        // Update Knack record directly with the full lists array - using record ID
+        const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+        debugLog("UPDATE URL", updateUrl);
+        
         const updateResponse = await fetch(updateUrl, {
           method: "PUT",
           headers: {
