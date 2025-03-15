@@ -85,8 +85,39 @@ body {
 
 .bank-container {
   display: flex;
-  gap: 10px;
-  margin-top: 5px;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+.bank-container.full-width {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  padding: 0;
+}
+
+.bank-container.full-width .bank-content {
+  width: 100%;
+  height: auto;
+  padding: 0 10px;
+  overflow: visible;
+}
+
+.bank-content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bank-content-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
 }
 
 .bank-sidebar {
@@ -174,6 +205,19 @@ button:disabled {
 
   .bank-sidebar {
     width: 100%;
+  }
+
+  .bank-container.full-width {
+    padding: 0 5px;
+  }
+  
+  .bank-content-header {
+    padding: 8px 10px;
+    margin-bottom: 10px;
+  }
+  
+  .bank-content-header h2 {
+    font-size: 1.1rem;
   }
 }
 

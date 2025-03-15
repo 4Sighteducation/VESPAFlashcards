@@ -3,7 +3,8 @@ import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
 import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
-import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown } from 'react-icons/fa';
+import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette } from 'react-icons/fa';
+import ColorEditor from "./ColorEditor";
 
 // ScrollManager component to handle scrolling to elements
 const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRefs }) => {
@@ -95,6 +96,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   // Track last expanded subjects and topics for ScrollManager
   const [lastExpandedSubject, setLastExpandedSubject] = useState(null);
   const [lastExpandedTopic, setLastExpandedTopic] = useState(null);
+  
+  // Add new state for color editor
+  const [colorEditorOpen, setColorEditorOpen] = useState(false);
+  const [selectedSubjectForColor, setSelectedSubjectForColor] = useState(null);
   
   // Group cards by subject and topic
   const groupedCards = useMemo(() => {
@@ -647,6 +652,13 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
           >
             <span role="img" aria-label="Delete">🗑️</span>
           </button>
+          <button
+            className="color-edit-button"
+            onClick={(e) => openColorEditor(subject, e)}
+            title="Edit subject color"
+          >
+            <FaPalette />
+          </button>
           <span 
             className="expand-icon" 
             style={{ 
@@ -659,6 +671,38 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         </div>
       </div>
     );
+  };
+
+  // Add function to open color editor
+  const openColorEditor = (subject, e) => {
+    if (e) e.stopPropagation(); // Prevent toggling subject expansion
+    setSelectedSubjectForColor(subject);
+    setColorEditorOpen(true);
+  };
+  
+  // Add function to close color editor
+  const closeColorEditor = () => {
+    setColorEditorOpen(false);
+  };
+  
+  // Add function to handle color change
+  const handleColorChange = (color, applyToAllTopics = false) => {
+    if (selectedSubjectForColor && onUpdateCard) {
+      // Update all cards with this subject to have the new color
+      const cardsToUpdate = cards.filter(card => 
+        (card.subject || "General") === selectedSubjectForColor
+      );
+      
+      cardsToUpdate.forEach(card => {
+        const updatedCard = { 
+          ...card, 
+          cardColor: color,
+          baseColor: color // Store the base color as well for reference
+        };
+        onUpdateCard(updatedCard);
+      });
+    }
+    closeColorEditor();
   };
 
   // Render the accordion structure with subjects and topics
@@ -846,6 +890,19 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add the color editor modal */}
+      {colorEditorOpen && selectedSubjectForColor && (
+        <ColorEditor
+          subject={selectedSubjectForColor}
+          subjectColor={
+            cards.find(card => (card.subject || "General") === selectedSubjectForColor)?.cardColor ||
+            "#007bff"
+          }
+          onClose={closeColorEditor}
+          onSelectColor={handleColorChange}
+        />
       )}
     </div>
   );

@@ -765,6 +765,22 @@ function App() {
         return newData;
       });
       
+      // Also update the card's boxNum property in allCards
+      setAllCards(prevCards => {
+        return prevCards.map(card => {
+          if (String(card.id).trim() === stringCardId) {
+            return {
+              ...card,
+              boxNum: box,
+              nextReviewDate: calculateNextReviewDate(box),
+              lastReviewed: new Date().toISOString(),
+              isReviewable: false
+            };
+          }
+          return card;
+        });
+      });
+      
       // Save the updated data
       setTimeout(() => saveData(), 100);
       console.log(`Card ${cardId} moved to box ${box}`);
@@ -1283,7 +1299,8 @@ function App() {
         onCreateCard={() => setCardCreationModalOpen(true)}
       />
       
-      {auth && <UserProfile userInfo={getUserInfo()} />}
+      {/* Temporarily hiding UserProfile */}
+      {/* {auth && <UserProfile userInfo={getUserInfo()} />} */}
 
       {statusMessage && <div className="status-message">{statusMessage}</div>}
 
@@ -1328,19 +1345,13 @@ function App() {
             </div>
           )}
           
-          <div className="bank-container">
-            <div className="bank-sidebar">
-              <SubjectsList
-                subjects={getSubjects()}
-                activeSubject={selectedSubject}
-                onSelectSubject={setSelectedSubject}
-                onChangeSubjectColor={(subject, color, updateTopics = false) => {
-                  updateColorMapping(subject, null, color, updateTopics);
-                }}
-              />
-            </div>
-
+          <div className="bank-container full-width">
+            {/* Removed SubjectsList sidebar */}
             <div className="bank-content">
+              {/* Added header showing total card count */}
+              <div className="bank-content-header">
+                <h2>All Flashcards ({getFilteredCards().length})</h2>
+              </div>
               <FlashcardList
                 cards={getFilteredCards()}
                 onDeleteCard={deleteCard}
