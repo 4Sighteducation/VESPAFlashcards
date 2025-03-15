@@ -557,9 +557,53 @@ const AICardGenerator = ({
       // Extract user information for additional fields
       const userName = sanitizeField(auth.name || "");
       const userEmail = sanitizeField(auth.email || "");
-      const userTutor = sanitizeField(auth.tutor || "");
-      const userSchool = sanitizeField(auth.school || auth.field_122 || "");
-      const userRole = sanitizeField(auth.role || "");
+      
+      // For connected fields, check if we have IDs
+      // Tutor connection field
+      let userTutor = null;
+      if (auth.tutor) {
+        // Check if this is an ID or just a string
+        if (typeof auth.tutor === 'object' && auth.tutor.id) {
+          userTutor = auth.tutor.id; // Use ID for connected field
+        } else if (typeof auth.tutor === 'string') {
+          // If it's a string but looks like an ID (e.g. starts with '5' for Knack IDs)
+          if (auth.tutor.match(/^[0-9a-f]{24}$/i)) {
+            userTutor = auth.tutor; // Already an ID
+          } else {
+            userTutor = sanitizeField(auth.tutor); // Regular string, sanitize it
+          }
+        }
+      }
+      
+      // VESPA Customer (school) connection field
+      let userSchool = null;
+      if (auth.school || auth.field_122) {
+        const schoolValue = auth.school || auth.field_122;
+        if (typeof schoolValue === 'object' && schoolValue.id) {
+          userSchool = schoolValue.id; // Use ID for connected field
+        } else if (typeof schoolValue === 'string') {
+          if (schoolValue.match(/^[0-9a-f]{24}$/i)) {
+            userSchool = schoolValue; // Already an ID
+          } else {
+            userSchool = sanitizeField(schoolValue); // Regular string, sanitize it
+          }
+        }
+      }
+      
+      // Handle user role if it's a connected field
+      let userRole = null;
+      if (auth.role) {
+        if (typeof auth.role === 'object' && auth.role.id) {
+          userRole = auth.role.id; // Use ID for connected field
+        } else if (typeof auth.role === 'string') {
+          if (auth.role.match(/^[0-9a-f]{24}$/i)) {
+            userRole = auth.role; // Already an ID
+          } else {
+            userRole = sanitizeField(auth.role); // Regular string, sanitize it
+          }
+        }
+      }
+      
       const tutorGroup = sanitizeField(auth.tutorGroup || "");
       const yearGroup = sanitizeField(auth.yearGroup || "");
       
@@ -576,15 +620,17 @@ const AICardGenerator = ({
       // Create the data object to send
       const dataToSave = {
         field_3011: JSON.stringify(topicLists),
-        field_3030: JSON.stringify(existingMetadata),
-        field_3010: userName,                        // User Name
-        field_3008: userSchool,                      // VESPA Customer (school)
-        field_2956: userEmail,                       // User Account Email
-        field_3009: userTutor,                       // User "Tutor"
-        field_565: tutorGroup,                       // Group (Tutor Group)
-        field_548: yearGroup,                        // User Role
-        field_73: userRole                           // User Role
+        field_3030: JSON.stringify(existingMetadata)
       };
+      
+      // Only add fields if they have values
+      if (userName) dataToSave.field_3010 = userName;           // User Name
+      if (userSchool) dataToSave.field_3008 = userSchool;       // VESPA Customer (school)
+      if (userEmail) dataToSave.field_2956 = userEmail;         // User Account Email
+      if (userTutor) dataToSave.field_3009 = userTutor;         // User "Tutor"
+      if (tutorGroup) dataToSave.field_565 = tutorGroup;        // Group (Tutor Group)
+      if (yearGroup) dataToSave.field_548 = yearGroup;          // Year Group
+      if (userRole) dataToSave.field_73 = userRole;             // User Role
       
       // Double check that our JSON is valid for field_3011
       try {
@@ -1996,14 +2042,6 @@ Use this format for different question types:
             )}
             
             <button 
-              className="generate-topics-button"
-              onClick={handleRegenerateTopics}
-              disabled={isGenerating}
-            >
-              {isGenerating ? "Generating..." : availableTopics.length === 0 ? "Generate Topics" : "Regenerate Topics"}
-            </button>
-            
-            <button 
               className="close-button"
               onClick={() => setShowTopicModal(false)}
             >
@@ -2024,6 +2062,12 @@ Use this format for different question types:
       
       {/* Render the topic modal */}
       {renderTopicModal()}
+      
+      {/* Render topic confirmation dialog */}
+      {renderTopicConfirmation()}
+      
+      {/* Render save confirmation dialog */}
+      {renderSaveConfirmation()}
       
       {/* Render the save topic dialog */}
       {renderSaveTopicDialog()}
@@ -2076,12 +2120,6 @@ Use this format for different question types:
       </div>
       
       {renderSuccessModal()}
-      
-      {/* Render save confirmation dialog */}
-      {renderSaveConfirmation()}
-      
-      {/* Render topic selection confirmation dialog */}
-      {renderTopicConfirmation()}
     </div>
   );
 };
