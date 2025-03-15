@@ -460,205 +460,126 @@ const AICardGenerator = ({
   
   // Save topic list to Knack - updated to save the entire lists array
   const saveTopicListToKnack = async (topicLists) => {
+    if (!auth || !userId) {
+      console.error("User not authenticated");
+      return false;
+    }
+
+    setIsGenerating(true);
+    setError("");
+    debugLog("USER ID FOR SAVE", userId);
+    
     try {
-      // Check if we're authenticated or have a user ID
-      if (!auth || !userId) {
-        console.log("No authentication data or userId, skipping Knack save");
-        return false;
-      }
-      
-      debugLog("AUTH OBJECT", auth);
-      debugLog("USER ID", userId);
-      console.log("Saving topic lists to Knack for user:", userId);
-      
-      // Safety check to ensure topicLists is a valid array
-      if (!Array.isArray(topicLists)) {
-        console.error("Topic lists is not an array:", topicLists);
-        return false;
-      }
-      
-      // First find the actual record ID for this user in object_102
+      // First get the actual record ID for this user in object_102
+      const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
       let recordId = null;
-      try {
-        const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
-        debugLog("RECORD SEARCH URL", searchUrl);
-        
-        const searchResponse = await fetch(searchUrl, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY
-          }
-        });
-        
-        if (!searchResponse.ok) {
-          const errorText = await searchResponse.text();
-          console.error("Failed to search for user record:", errorText);
-          return false;
-        }
-        
-        const allRecords = await searchResponse.json();
-        
-        // Find the record matching this user ID
-        if (allRecords && allRecords.records) {
-          const userRecord = allRecords.records.find(record => {
-            return record.field_2954 === userId || 
-                   (record.field_2958 && record.field_2958 === auth.email);
-          });
-          
-          if (userRecord) {
-            recordId = userRecord.id;
-            console.log("Found matching record ID:", recordId);
-          }
-        }
-        
-        if (!recordId) {
-          console.error("Could not find a record for this user ID:", userId);
-          return false;
-        }
-      } catch (searchError) {
-        console.error("Error searching for user record:", searchError);
-        return false;
-      }
       
-      // Now get existing data to preserve metadata
-      let existingMetadata = [];
-      try {
-        const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-        debugLog("GET URL", getUrl);
-        
-        const getResponse = await fetch(getUrl, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY
-          }
-        });
-        
-        if (getResponse.ok) {
-          const userData = await getResponse.json();
-          if (userData && userData.field_3030) {
-            try {
-              existingMetadata = JSON.parse(userData.field_3030);
-              if (!Array.isArray(existingMetadata)) {
-                existingMetadata = [];
-              }
-            } catch (e) {
-              console.error("Error parsing existing metadata:", e);
-            }
-          }
+      const searchResponse = await fetch(searchUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY
         }
-      } catch (e) {
-        console.error("Error fetching existing metadata:", e);
-      }
-      
-      // Extract user information for additional fields
-      const userName = sanitizeField(auth.name || "");
-      const userEmail = sanitizeField(auth.email || "");
-      
-      // For connected fields, check if we have IDs
-      // Tutor connection field
-      let userTutor = null;
-      if (auth.tutor) {
-        // Check if this is an ID or just a string
-        if (typeof auth.tutor === 'object' && auth.tutor.id) {
-          userTutor = auth.tutor.id; // Use ID for connected field
-        } else if (typeof auth.tutor === 'string') {
-          // If it's a string but looks like an ID (e.g. starts with '5' for Knack IDs)
-          if (auth.tutor.match(/^[0-9a-f]{24}$/i)) {
-            userTutor = auth.tutor; // Already an ID
-          } else {
-            userTutor = sanitizeField(auth.tutor); // Regular string, sanitize it
-          }
-        }
-      }
-      
-      // VESPA Customer (school) connection field
-      let userSchool = null;
-      if (auth.school || auth.field_122) {
-        const schoolValue = auth.school || auth.field_122;
-        if (typeof schoolValue === 'object' && schoolValue.id) {
-          userSchool = schoolValue.id; // Use ID for connected field
-        } else if (typeof schoolValue === 'string') {
-          if (schoolValue.match(/^[0-9a-f]{24}$/i)) {
-            userSchool = schoolValue; // Already an ID
-          } else {
-            userSchool = sanitizeField(schoolValue); // Regular string, sanitize it
-          }
-        }
-      }
-      
-      // Handle user role if it's a connected field
-      let userRole = null;
-      if (auth.role) {
-        if (typeof auth.role === 'object' && auth.role.id) {
-          userRole = auth.role.id; // Use ID for connected field
-        } else if (typeof auth.role === 'string') {
-          if (auth.role.match(/^[0-9a-f]{24}$/i)) {
-            userRole = auth.role; // Already an ID
-          } else {
-            userRole = sanitizeField(auth.role); // Regular string, sanitize it
-          }
-        }
-      }
-      
-      const tutorGroup = sanitizeField(auth.tutorGroup || "");
-      const yearGroup = sanitizeField(auth.yearGroup || "");
-      
-      debugLog("EXTRACTED USER INFO", {
-        userName,
-        userEmail,
-        userTutor,
-        userSchool,
-        userRole,
-        tutorGroup,
-        yearGroup
       });
       
-      // Create the data object to send
+      if (!searchResponse.ok) {
+        throw new Error("Failed to search for user record");
+      }
+      
+      const allRecords = await searchResponse.json();
+      
+      // Find the record matching this user ID
+      if (allRecords && allRecords.records) {
+        const userRecord = allRecords.records.find(record => {
+          return record.field_2954 === userId || 
+                 (record.field_2958 && record.field_2958 === auth.email);
+        });
+        
+        if (userRecord) {
+          recordId = userRecord.id;
+          console.log("Found matching record ID:", recordId);
+        }
+      }
+      
+      if (!recordId) {
+        throw new Error("Could not find a record for this user");
+      }
+      
+      // Now get the current data for this record
+      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+      
+      const getResponse = await fetch(getUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY
+        }
+      });
+      
+      if (!getResponse.ok) {
+        throw new Error("Failed to get existing topic lists");
+      }
+      
+      const userData = await getResponse.json();
+      const existingMetadata = userData.field_3030 ? JSON.parse(userData.field_3030) : [];
+      
+      // Create data object to send
       const dataToSave = {
-        field_3011: JSON.stringify(topicLists),
-        field_3030: JSON.stringify(existingMetadata)
+        field_3011: JSON.stringify(topicLists) // Topic lists
       };
       
       // Only add user name if it has a value (not a connection field)
+      const userName = sanitizeField(auth.name || "");
       if (userName) dataToSave.field_3010 = userName;
       
-      // Only add email as a connection field if it's an actual ID
-      // Otherwise, just use the plain email text for field_2958
+      // Handle email fields
+      const userEmail = sanitizeField(auth.email || "");
       if (userEmail) {
-        // field_2958 is the plain text email field (not a connection)
+        // field_2958 is always the plain text email (not a connection)
         dataToSave.field_2958 = userEmail;
         
-        // field_2956 is the connection field - only add if it's an ID
-        if (typeof userEmail === 'string' && userEmail.match(/^[0-9a-f]{24}$/i)) {
-          dataToSave.field_2956 = userEmail;
+        // Only add email as a connection (field_2956) if it's a valid ID
+        // from Object_3 / field_70
+        if (auth.emailId && typeof auth.emailId === 'string' && 
+            auth.emailId.match(/^[0-9a-f]{24}$/i)) {
+          dataToSave.field_2956 = auth.emailId;
         }
       }
       
-      // Only add connected fields if they have valid IDs
-      // VESPA Customer (school) - only add if it's an ID
-      if (userSchool && typeof userSchool === 'string' && userSchool.match(/^[0-9a-f]{24}$/i)) {
-        dataToSave.field_3008 = userSchool;
+      // VESPA Customer/school (field_3008) - only add if it's a valid ID 
+      // from Object_2 / Field_44
+      if (auth.schoolId && typeof auth.schoolId === 'string' && 
+          auth.schoolId.match(/^[0-9a-f]{24}$/i)) {
+        dataToSave.field_3008 = auth.schoolId;
       }
       
-      // Tutor connection - only add if it's an ID
-      if (userTutor && typeof userTutor === 'string' && userTutor.match(/^[0-9a-f]{24}$/i)) {
-        dataToSave.field_3009 = userTutor;
+      // Tutor connection (field_3009) - only add if it's a valid ID
+      // from object_7 / field_96
+      if (auth.tutorId && typeof auth.tutorId === 'string' && 
+          auth.tutorId.match(/^[0-9a-f]{24}$/i)) {
+        dataToSave.field_3009 = auth.tutorId;
       }
       
-      // User Role - only add if it's an ID
-      if (userRole && typeof userRole === 'string' && userRole.match(/^[0-9a-f]{24}$/i)) {
-        dataToSave.field_73 = userRole;
+      // User Role (field_73) - only add if it's a valid ID
+      if (auth.roleId && typeof auth.roleId === 'string' && 
+          auth.roleId.match(/^[0-9a-f]{24}$/i)) {
+        dataToSave.field_73 = auth.roleId;
       }
       
-      // These fields are not connections, so we can add them as text
+      // Add non-connection fields as regular text
+      const tutorGroup = sanitizeField(auth.tutorGroup || "");
+      const yearGroup = sanitizeField(auth.yearGroup || "");
       if (tutorGroup) dataToSave.field_565 = tutorGroup;
       if (yearGroup) dataToSave.field_548 = yearGroup;
       
-      // Double check that our JSON is valid for field_3011
+      // Include the existing metadata
+      if (existingMetadata && Array.isArray(existingMetadata)) {
+        dataToSave.field_3030 = JSON.stringify(existingMetadata);
+      }
+      
+      // Double check that our JSON for field_3011 is valid
       try {
         const testParse = JSON.parse(dataToSave.field_3011);
         if (!Array.isArray(testParse)) {
@@ -670,102 +591,47 @@ const AICardGenerator = ({
         dataToSave.field_3011 = JSON.stringify([]);
       }
       
-      // Double check that our JSON is valid for field_3030
+      debugLog("DATA BEING SENT TO KNACK", dataToSave);
+      
+      // Save to Knack - using the correct record ID, not userId
+      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+      
+      const updateResponse = await fetch(updateUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY
+        },
+        body: JSON.stringify(dataToSave)
+      });
+      
+      if (!updateResponse.ok) {
+        throw new Error(`Failed to save topic list: ${updateResponse.status} ${updateResponse.statusText}`);
+      }
+      
+      console.log("Topic list saved successfully to Knack");
+      
+      // Try to parse and check the response
       try {
-        const testParse = JSON.parse(dataToSave.field_3030);
-        if (!Array.isArray(testParse)) {
-          console.warn("field_3030 is not an array after stringification, fixing format");
-          dataToSave.field_3030 = JSON.stringify([]);
+        const responseData = await updateResponse.json();
+        debugLog("KNACK API SUCCESS RESPONSE", responseData);
+        
+        // Check if it might be an empty record response
+        if (responseData.total_records === 0 || (responseData.records && responseData.records.length === 0)) {
+          console.log("No records were updated but request was successful. This is expected in some cases.");
         }
       } catch (e) {
-        console.error("Invalid JSON for field_3030, using empty array instead:", e);
-        dataToSave.field_3030 = JSON.stringify([]);
+        console.log("Could not parse response JSON, but request was successful");
       }
       
-      debugLog("DATA BEING SENT TO KNACK", dataToSave);
-      console.log("String length of field_3011:", dataToSave.field_3011.length);
-      
-      // Check if the data is too large
-      if (JSON.stringify(dataToSave).length > 1000000) {
-        console.error("Data payload is too large, may exceed Knack's size limits");
-        return false;
-      }
-      
-      try {
-        // Save to Knack with the correct record ID
-        const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-        debugLog("UPDATE URL", updateUrl);
-        
-        const updateResponse = await fetch(updateUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY
-          },
-          body: JSON.stringify(dataToSave)
-        });
-        
-        if (!updateResponse.ok) {
-          const errorText = await updateResponse.text();
-          debugLog("KNACK API ERROR", errorText);
-          console.error("Failed to save topic lists to Knack:", errorText);
-          return false;
-        }
-        
-        try {
-          const responseData = await updateResponse.json();
-          debugLog("KNACK API SUCCESS RESPONSE", responseData);
-          
-          // Check if the response indicates no records were updated
-          if (responseData.total_records === 0 || (responseData.records && responseData.records.length === 0)) {
-            console.log("No records were updated despite 200 OK. Trying alternative update method...");
-            
-            // Try a POST request as an alternative
-            const createUrl = `https://api.knack.com/v1/objects/object_102/records`;
-            debugLog("TRYING POST URL", createUrl);
-            
-            // For POST, include the record ID in the data
-            const postData = {
-              ...dataToSave
-            };
-            
-            const createResponse = await fetch(createUrl, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Knack-Application-ID": KNACK_APP_ID,
-                "X-Knack-REST-API-Key": KNACK_API_KEY
-              },
-              body: JSON.stringify(postData)
-            });
-            
-            if (!createResponse.ok) {
-              const createErrorText = await createResponse.text();
-              console.error("Alternative update also failed:", createErrorText);
-              return false;
-            } else {
-              const createResponseData = await createResponse.json();
-              debugLog("POST RESPONSE", createResponseData);
-              console.log("Alternative update method succeeded");
-              return true;
-            }
-          }
-          
-          console.log("Topic lists and user information saved to Knack successfully");
-          return true;
-        } catch (e) {
-          console.log("Could not parse response JSON:", e);
-          return true; // Return true since the API call was successful
-        }
-      } catch (fetchError) {
-        debugLog("FETCH ERROR", { message: fetchError.message, stack: fetchError.stack });
-        console.error("Error with Knack API request:", fetchError);
-        return false;
-      }
+      setIsGenerating(false);
+      setError("");
+      return true;
     } catch (error) {
-      debugLog("SAVE TOPIC LIST ERROR", { message: error.message, stack: error.stack });
-      console.error("Error saving topic lists to Knack:", error);
+      console.error("Error saving topic list:", error);
+      setError(error.message || "Failed to save topic list");
+      setIsGenerating(false);
       return false;
     }
   };

@@ -610,66 +610,7 @@ const TopicListModal = ({
         const userName = sanitizeField(auth.name || "");
         const userEmail = sanitizeField(auth.email || "");
         
-        // For connected fields, check if we have IDs
-        // Tutor connection field
-        let userTutor = null;
-        if (auth.tutor) {
-          // Check if this is an ID or just a string
-          if (typeof auth.tutor === 'object' && auth.tutor.id) {
-            userTutor = auth.tutor.id; // Use ID for connected field
-          } else if (typeof auth.tutor === 'string') {
-            // If it's a string but looks like an ID (e.g. starts with '5' for Knack IDs)
-            if (auth.tutor.match(/^[0-9a-f]{24}$/i)) {
-              userTutor = auth.tutor; // Already an ID
-            } else {
-              userTutor = sanitizeField(auth.tutor); // Regular string, sanitize it
-            }
-          }
-        }
-        
-        // VESPA Customer (school) connection field
-        let userSchool = null;
-        if (auth.school || auth.field_122) {
-          const schoolValue = auth.school || auth.field_122;
-          if (typeof schoolValue === 'object' && schoolValue.id) {
-            userSchool = schoolValue.id; // Use ID for connected field
-          } else if (typeof schoolValue === 'string') {
-            if (schoolValue.match(/^[0-9a-f]{24}$/i)) {
-              userSchool = schoolValue; // Already an ID
-            } else {
-              userSchool = sanitizeField(schoolValue); // Regular string, sanitize it
-            }
-          }
-        }
-        
-        // Handle user role if it's a connected field
-        let userRole = null;
-        if (auth.role) {
-          if (typeof auth.role === 'object' && auth.role.id) {
-            userRole = auth.role.id; // Use ID for connected field
-          } else if (typeof auth.role === 'string') {
-            if (auth.role.match(/^[0-9a-f]{24}$/i)) {
-              userRole = auth.role; // Already an ID
-            } else {
-              userRole = sanitizeField(auth.role); // Regular string, sanitize it
-            }
-          }
-        }
-        
-        const tutorGroup = sanitizeField(auth.tutorGroup || "");
-        const yearGroup = sanitizeField(auth.yearGroup || "");
-        
-        debugLog("EXTRACTED USER INFO", {
-          userName,
-          userEmail,
-          userTutor,
-          userSchool,
-          userRole,
-          tutorGroup,
-          yearGroup
-        });
-        
-        // Prepare the data to save with additional fields
+        // Prepare the data to save
         const dataToSave = {
           field_3011: JSON.stringify(allTopicLists),
           field_3030: JSON.stringify(subjectMetadata)
@@ -678,35 +619,42 @@ const TopicListModal = ({
         // Only add user name if it has a value (not a connection field)
         if (userName) dataToSave.field_3010 = userName;
         
-        // Only add email as a connection field if it's an actual ID
-        // Otherwise, just use the plain email text for field_2958
+        // Handle email fields
         if (userEmail) {
-          // field_2958 is the plain text email field (not a connection)
+          // field_2958 is always the plain text email (not a connection)
           dataToSave.field_2958 = userEmail;
           
-          // field_2956 is the connection field - only add if it's an ID
-          if (typeof userEmail === 'string' && userEmail.match(/^[0-9a-f]{24}$/i)) {
-            dataToSave.field_2956 = userEmail;
+          // Only add email as a connection (field_2956) if it's a valid ID
+          // from Object_3 / field_70
+          if (auth.emailId && typeof auth.emailId === 'string' && 
+              auth.emailId.match(/^[0-9a-f]{24}$/i)) {
+            dataToSave.field_2956 = auth.emailId;
           }
         }
         
-        // Only add connected fields if they have valid IDs
-        // VESPA Customer (school) - only add if it's an ID
-        if (userSchool && typeof userSchool === 'string' && userSchool.match(/^[0-9a-f]{24}$/i)) {
-          dataToSave.field_3008 = userSchool;
+        // VESPA Customer/school (field_3008) - only add if it's a valid ID 
+        // from Object_2 / Field_44
+        if (auth.schoolId && typeof auth.schoolId === 'string' && 
+            auth.schoolId.match(/^[0-9a-f]{24}$/i)) {
+          dataToSave.field_3008 = auth.schoolId;
         }
         
-        // Tutor connection - only add if it's an ID
-        if (userTutor && typeof userTutor === 'string' && userTutor.match(/^[0-9a-f]{24}$/i)) {
-          dataToSave.field_3009 = userTutor;
+        // Tutor connection (field_3009) - only add if it's a valid ID
+        // from object_7 / field_96
+        if (auth.tutorId && typeof auth.tutorId === 'string' && 
+            auth.tutorId.match(/^[0-9a-f]{24}$/i)) {
+          dataToSave.field_3009 = auth.tutorId;
         }
         
-        // User Role - only add if it's an ID
-        if (userRole && typeof userRole === 'string' && userRole.match(/^[0-9a-f]{24}$/i)) {
-          dataToSave.field_73 = userRole;
+        // User Role (field_73) - only add if it's a valid ID
+        if (auth.roleId && typeof auth.roleId === 'string' && 
+            auth.roleId.match(/^[0-9a-f]{24}$/i)) {
+          dataToSave.field_73 = auth.roleId;
         }
         
         // These fields are not connections, so we can add them as text
+        const tutorGroup = sanitizeField(auth.tutorGroup || "");
+        const yearGroup = sanitizeField(auth.yearGroup || "");
         if (tutorGroup) dataToSave.field_565 = tutorGroup;
         if (yearGroup) dataToSave.field_548 = yearGroup;
         
