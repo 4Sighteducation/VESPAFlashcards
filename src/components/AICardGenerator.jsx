@@ -623,14 +623,40 @@ const AICardGenerator = ({
         field_3030: JSON.stringify(existingMetadata)
       };
       
-      // Only add fields if they have values
-      if (userName) dataToSave.field_3010 = userName;           // User Name
-      if (userSchool) dataToSave.field_3008 = userSchool;       // VESPA Customer (school)
-      if (userEmail) dataToSave.field_2956 = userEmail;         // User Account Email
-      if (userTutor) dataToSave.field_3009 = userTutor;         // User "Tutor"
-      if (tutorGroup) dataToSave.field_565 = tutorGroup;        // Group (Tutor Group)
-      if (yearGroup) dataToSave.field_548 = yearGroup;          // Year Group
-      if (userRole) dataToSave.field_73 = userRole;             // User Role
+      // Only add user name if it has a value (not a connection field)
+      if (userName) dataToSave.field_3010 = userName;
+      
+      // Only add email as a connection field if it's an actual ID
+      // Otherwise, just use the plain email text for field_2958
+      if (userEmail) {
+        // field_2958 is the plain text email field (not a connection)
+        dataToSave.field_2958 = userEmail;
+        
+        // field_2956 is the connection field - only add if it's an ID
+        if (typeof userEmail === 'string' && userEmail.match(/^[0-9a-f]{24}$/i)) {
+          dataToSave.field_2956 = userEmail;
+        }
+      }
+      
+      // Only add connected fields if they have valid IDs
+      // VESPA Customer (school) - only add if it's an ID
+      if (userSchool && typeof userSchool === 'string' && userSchool.match(/^[0-9a-f]{24}$/i)) {
+        dataToSave.field_3008 = userSchool;
+      }
+      
+      // Tutor connection - only add if it's an ID
+      if (userTutor && typeof userTutor === 'string' && userTutor.match(/^[0-9a-f]{24}$/i)) {
+        dataToSave.field_3009 = userTutor;
+      }
+      
+      // User Role - only add if it's an ID
+      if (userRole && typeof userRole === 'string' && userRole.match(/^[0-9a-f]{24}$/i)) {
+        dataToSave.field_73 = userRole;
+      }
+      
+      // These fields are not connections, so we can add them as text
+      if (tutorGroup) dataToSave.field_565 = tutorGroup;
+      if (yearGroup) dataToSave.field_548 = yearGroup;
       
       // Double check that our JSON is valid for field_3011
       try {
