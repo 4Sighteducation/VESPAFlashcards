@@ -1453,7 +1453,7 @@ function App() {
                 subjects={getSubjects()}
                 activeSubject={selectedSubject}
                 onSelectSubject={setSelectedSubject}
-                onChangeSubjectColor={updateSubjectColor}
+                onChangeSubjectColor={updateColorMapping}
                 onViewTopicList={handleViewTopicList}
               />
               <TopicsList
