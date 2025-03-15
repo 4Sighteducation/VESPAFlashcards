@@ -43,7 +43,7 @@ const BRIGHT_COLORS = [
 
 // API keys - in production, these should be in server environment variables
 const API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
-const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_ID || "64fc50bc3cd0ac00254bb62b";
+const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 
 const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) => {
@@ -145,33 +145,40 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       
       // Get topic lists from Knack
       const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
-      const getResponse = await fetch(getUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY
-        }
-      });
       
-      if (!getResponse.ok) {
-        console.error("Failed to get Knack record:", await getResponse.json());
-        return [];
-      }
-      
-      const userData = await getResponse.json();
-      
-      // Parse topic lists from Knack
-      if (userData.field_3011) {
-        try {
-          const knackTopicLists = JSON.parse(userData.field_3011);
-          if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
-            console.log("Successfully loaded topic lists from Knack:", knackTopicLists);
-            return knackTopicLists;
+      try {
+        const getResponse = await fetch(getUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Knack-Application-ID": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY
           }
-        } catch (e) {
-          console.error("Error parsing Knack topic lists:", e);
+        });
+        
+        if (!getResponse.ok) {
+          // Try to get the error as text first to avoid JSON parsing errors
+          const errorText = await getResponse.text();
+          console.error("Failed to get Knack record:", errorText);
+          return [];
         }
+        
+        const userData = await getResponse.json();
+        
+        // Parse topic lists from Knack
+        if (userData && userData.field_3011) {
+          try {
+            const knackTopicLists = JSON.parse(userData.field_3011);
+            if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
+              console.log("Successfully loaded topic lists from Knack:", knackTopicLists);
+              return knackTopicLists;
+            }
+          } catch (e) {
+            console.error("Error parsing Knack topic lists:", e);
+          }
+        }
+      } catch (fetchError) {
+        console.error("Error fetching from Knack API:", fetchError);
       }
       
       return [];
@@ -408,6 +415,12 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       
       console.log("Saving topic lists to Knack for user:", userId);
       
+      // Safety check to ensure topicLists is a valid array
+      if (!Array.isArray(topicLists)) {
+        console.error("Topic lists is not an array:", topicLists);
+        return false;
+      }
+      
       // Extract user information for additional fields
       const userName = auth.name || "";
       const userEmail = auth.email || "";
@@ -417,32 +430,38 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       const tutorGroup = auth.tutorGroup || "";
       const yearGroup = auth.yearGroup || "";
       
-      // Update Knack record directly with the full lists array
-      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
-      const updateResponse = await fetch(updateUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY
-        },
-        body: JSON.stringify({
-          field_3011: JSON.stringify(topicLists),
-          field_3010: userName,                        // User Name
-          field_3008: userSchool,                      // VESPA Customer (school)
-          field_2956: userEmail,                       // User Account Email
-          field_3009: userTutor,                       // User "Tutor"
-          field_565: tutorGroup,                       // Group (Tutor Group)
-          field_548: yearGroup,                        // Year Group
-          field_73: userRole                           // User Role
-        })
-      });
-      
-      if (updateResponse.ok) {
-        console.log("Topic lists and user information saved to Knack successfully");
-        return true;
-      } else {
-        console.error("Failed to save topic lists to Knack:", await updateResponse.json());
+      try {
+        // Update Knack record directly with the full lists array
+        const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+        const updateResponse = await fetch(updateUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Knack-Application-ID": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY
+          },
+          body: JSON.stringify({
+            field_3011: JSON.stringify(topicLists),
+            field_3010: userName,                        // User Name
+            field_3008: userSchool,                      // VESPA Customer (school)
+            field_2956: userEmail,                       // User Account Email
+            field_3009: userTutor,                       // User "Tutor"
+            field_565: tutorGroup,                       // Group (Tutor Group)
+            field_548: yearGroup,                        // Year Group
+            field_73: userRole                           // User Role
+          })
+        });
+        
+        if (updateResponse.ok) {
+          console.log("Topic lists and user information saved to Knack successfully");
+          return true;
+        } else {
+          const errorText = await updateResponse.text();
+          console.error("Failed to save topic lists to Knack:", errorText);
+          return false;
+        }
+      } catch (fetchError) {
+        console.error("Error with Knack API request:", fetchError);
         return false;
       }
     } catch (error) {
@@ -1430,7 +1449,7 @@ Use this format for different question types:
               disabled={isGenerating || topicListSaved || availableTopics.length === 0}
               onClick={() => setShowSaveTopicDialog(true)}
             >
-              {topicListSaved ? "Topic List Saved" : "Save Topic List"}
+              {topicListSaved ? "Topic List Saved ✓" : "Save Topic List"}
             </button>
             
             <button 

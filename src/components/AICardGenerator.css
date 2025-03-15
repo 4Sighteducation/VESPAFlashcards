@@ -1297,3 +1297,255 @@
     padding: 10px;
   }
 }
+
+/* Topic Modal Styles */
+.topic-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.topic-modal-content {
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 2px solid #06206e;
+}
+
+.topic-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #06206e;
+  color: white;
+}
+
+.topic-modal-header h3 {
+  margin: 0;
+  color: white;
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.close-modal-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-modal-button:hover {
+  color: #e0e0e0;
+}
+
+.topic-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 40vh;
+  flex-grow: 1;
+}
+
+.topic-list-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.topic-item {
+  padding: 12px 15px;
+  background-color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid #06206e;
+  color: #06206e;
+  font-weight: 600;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.topic-item:hover {
+  background-color: #f8f9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.topic-item.selected {
+  background-color: #06206e;
+  border-color: #06206e;
+  font-weight: bold;
+  color: white;
+}
+
+.topic-modal-actions {
+  padding: 15px 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.topic-modal-actions .generate-button,
+.topic-modal-actions .save-button,
+.topic-modal-actions .close-button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  flex: 1;
+}
+
+.topic-modal-actions .generate-button {
+  background-color: #3498db;
+  color: white;
+}
+
+.topic-modal-actions .save-button {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  flex: 2;
+  background-color: #06206e;
+  color: white;
+  font-size: 1rem;
+}
+
+.topic-modal-actions .close-button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  flex: 1;
+  background-color: #f5f5f5;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.topic-modal-actions .generate-button:hover {
+  background-color: #2980b9;
+}
+
+.topic-modal-actions .save-button:hover {
+  background-color: #041a54;
+  transform: translateY(-2px);
+}
+
+.topic-modal-actions .close-button:hover {
+  background-color: #e0e0e0;
+}
+
+.topic-modal-actions .save-button:disabled {
+  background-color: #a0a0a0;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Updated Topic Selection Container */
+.topic-selection-container {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+}
+
+.selected-topic-display {
+  margin-bottom: 15px;
+}
+
+.selected-topic-display label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+}
+
+.selected-topic {
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  border-left: 3px solid #3498db;
+  font-weight: 500;
+}
+
+.open-topic-modal-button {
+  width: 100%;
+  padding: 12px;
+  margin: 15px 0;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.open-topic-modal-button:hover {
+  background-color: #2980b9;
+}
+
+.topic-input-section {
+  margin-top: 15px;
+}
+
+.topic-input-section label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #555;
+}
+
+.topic-input-section input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .topic-list-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .topic-modal-actions {
+    flex-direction: column;
+  }
+  
+  .topic-modal-content {
+    width: 95%;
+    max-height: 85vh;
+  }
+  
+  .topic-modal-header {
+    padding: 10px 15px;
+  }
+  
+  .topic-modal-body {
+    padding: 15px;
+    max-height: 50vh;
+  }
+}
