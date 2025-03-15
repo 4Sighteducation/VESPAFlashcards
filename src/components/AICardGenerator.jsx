@@ -342,6 +342,12 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
     }
     
     try {
+      // Validate that we have topics to save
+      if (!hierarchicalTopics || hierarchicalTopics.length === 0) {
+        setError("No topics available to save. Please generate topics first.");
+        return;
+      }
+      
       const newSavedList = {
         id: generateId('topiclist'),
         name: topicListName,
@@ -353,19 +359,31 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         userId: userId // Add userId to the list object for future reference
       };
       
+      // Log the new list for debugging
+      console.log("Creating new topic list:", newSavedList);
+      
       const updatedLists = [...savedTopicLists, newSavedList];
       setSavedTopicLists(updatedLists);
       
       // Save directly to Knack
-      saveTopicListToKnack(updatedLists);
-      
-      // Close save dialog but keep topic modal open
-      setShowSaveTopicDialog(false);
-      setTopicListName("");
-      setError(null);
-      setTopicListSaved(true);
-      
-      console.log("Topic list saved:", newSavedList);
+      saveTopicListToKnack(updatedLists)
+        .then(success => {
+          if (success) {
+            // Close save dialog but keep topic modal open
+            setShowSaveTopicDialog(false);
+            setTopicListName("");
+            setError(null);
+            setTopicListSaved(true);
+            console.log("Topic list saved successfully:", newSavedList.name);
+          } else {
+            // Error message is set by saveTopicListToKnack
+            console.error("Failed to save topic list to Knack");
+          }
+        })
+        .catch(err => {
+          console.error("Error in save operation:", err);
+          setError("Failed to save topic list: " + err.message);
+        });
     } catch (error) {
       console.error("Error saving topic list:", error);
       setError("Failed to save topic list: " + error.message);
@@ -385,7 +403,7 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       // Check if we're authenticated or have a user ID
       if (!auth || !userId) {
         console.log("No authentication data or userId, skipping Knack save");
-        return;
+        return false;
       }
       
       console.log("Saving topic lists to Knack for user:", userId);
@@ -422,11 +440,14 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       
       if (updateResponse.ok) {
         console.log("Topic lists and user information saved to Knack successfully");
+        return true;
       } else {
         console.error("Failed to save topic lists to Knack:", await updateResponse.json());
+        return false;
       }
     } catch (error) {
       console.error("Error saving topic lists to Knack:", error);
+      return false;
     }
   };
   
@@ -501,6 +522,12 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
               </div>
               <div className="topic-list-actions">
                 <button onClick={() => loadTopicList(list.id)}>Load</button>
+                <button 
+                  className="generate-cards-button" 
+                  onClick={() => generateCardsFromTopicList(list)}
+                >
+                  Generate Cards
+                </button>
                 <button className="delete-button" onClick={() => deleteTopicList(list.id)}>Delete</button>
               </div>
             </div>
@@ -508,6 +535,27 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         </div>
       </div>
     );
+  };
+
+  // Generate cards directly from a saved topic list
+  const generateCardsFromTopicList = (list) => {
+    // First load the topic list data
+    setFormData(prev => ({
+      ...prev,
+      examBoard: list.examBoard,
+      examType: list.examType,
+      subject: list.subject,
+      // We'll select a random topic from the list
+      topic: list.topics[Math.floor(Math.random() * list.topics.length)].topic,
+      // Default to multiple choice questions
+      questionType: "multiple_choice",
+      numCards: 5
+    }));
+    
+    // Move to the question type step (step 5)
+    setCurrentStep(5);
+    
+    console.log(`Loaded topic list for card generation: ${list.name}`);
   };
 
   // Render hierarchical topics
@@ -1033,6 +1081,14 @@ Use this format for different question types:
     setTimeout(() => {
       setSuccessModal(prev => ({...prev, show: false}));
     }, 3000);
+    
+    // Trigger an explicit save operation to ensure cards are saved to the database
+    // This is important to prevent data loss if the user refreshes the page
+    if (window.parent && window.parent.postMessage) {
+      // Send a message to trigger a save operation
+      window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
+      console.log("Triggered explicit save after adding all cards");
+    }
   };
   
   // Modal to show successfully added cards

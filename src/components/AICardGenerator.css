@@ -833,17 +833,19 @@
 
 .topic-list-actions {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 15px;
 }
 
 .topic-list-actions button {
-  padding: 8px 16px;
+  padding: 8px 12px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.2s;
+  font-size: 0.9rem;
 }
 
 .topic-list-actions button:first-child {
@@ -853,6 +855,18 @@
 
 .topic-list-actions button:first-child:hover {
   background-color: #2980b9;
+  transform: translateY(-2px);
+}
+
+.topic-list-actions .generate-cards-button {
+  background-color: #06206e;
+  color: white;
+  flex-grow: 1;
+}
+
+.topic-list-actions .generate-cards-button:hover {
+  background-color: #041a54;
+  transform: translateY(-2px);
 }
 
 .topic-list-actions .delete-button {
@@ -862,6 +876,7 @@
 
 .topic-list-actions .delete-button:hover {
   background-color: #c0392b;
+  transform: translateY(-2px);
 }
 
 .no-saved-topics {
@@ -1201,571 +1216,44 @@
   }
 }
 
-/* Enhanced button styling */
-.generated-cards-actions.bottom-actions {
-  margin-top: 25px;
-  padding: 20px;
-  background-color: #f7f7f7;
-  border-radius: 8px;
+/* Bottom actions for generated cards */
+.bottom-actions {
+  margin-top: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
+  justify-content: center;
+  width: 100%;
 }
 
 .add-all-button {
-  font-size: 1.1rem;
-  padding: 12px 24px;
-  width: 100%;
-  max-width: 400px;
-  border-radius: 8px;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.add-all-button:not(:disabled):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.add-all-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-.status-text {
-  margin-top: 10px;
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.generated-cards-actions.top-actions {
-  display: flex;
-  justify-content: flex-end;
   margin-bottom: 15px;
-}
-
-/* Make the "NEXT" button at the bottom more visible */
-.generator-step .step-actions {
-  position: sticky;
-  bottom: 0;
-  background: white;
-  padding: 15px 0;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-  z-index: 5;
-  margin-top: 30px;
-}
-
-/* Topic Modal Styles */
-.topic-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.topic-modal-content {
-  width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 2px solid #06206e;
-}
-
-.topic-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  border-bottom: 1px solid #e0e0e0;
-  background-color: #06206e;
-  color: white;
-}
-
-.topic-modal-header h3 {
-  margin: 0;
-  color: white;
-  font-size: 1.3rem;
-  font-weight: bold;
-}
-
-.close-modal-button {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: white;
-  padding: 0;
-  line-height: 1;
-}
-
-.close-modal-button:hover {
-  color: #e0e0e0;
-}
-
-.topic-modal-body {
-  padding: 20px;
-  overflow-y: auto;
-  max-height: 40vh;
-  flex-grow: 1;
-}
-
-.topic-list-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
-}
-
-.topic-item {
-  padding: 12px 15px;
-  background-color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 2px solid #06206e;
-  color: #06206e;
-  font-weight: 600;
-  margin-bottom: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.topic-item:hover {
-  background-color: #f8f9ff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.topic-item.selected {
-  background-color: #06206e;
-  border-color: #06206e;
-  font-weight: bold;
-  color: white;
-}
-
-.topic-modal-actions {
-  padding: 15px 20px;
-  border-top: 1px solid #e0e0e0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 15px;
-}
-
-.topic-modal-actions .generate-button,
-.topic-modal-actions .save-button,
-.topic-modal-actions .close-button {
-  padding: 10px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  flex: 1;
-}
-
-.topic-modal-actions .generate-button {
-  background-color: #3498db;
-  color: white;
-}
-
-.topic-modal-actions .save-button {
-  padding: 12px 18px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  flex: 2;
-  background-color: #06206e;
-  color: white;
   font-size: 1rem;
-}
-
-.topic-modal-actions .close-button {
-  padding: 10px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  flex: 1;
-  background-color: #f5f5f5;
-  color: #555;
-  font-size: 0.9rem;
-}
-
-.topic-modal-actions .generate-button:hover {
-  background-color: #2980b9;
-}
-
-.topic-modal-actions .save-button:hover {
-  background-color: #041a54;
-  transform: translateY(-2px);
-}
-
-.topic-modal-actions .close-button:hover {
-  background-color: #e0e0e0;
-}
-
-.topic-modal-actions .save-button:disabled {
-  background-color: #a0a0a0;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Updated Topic Selection Container */
-.topic-selection-container {
-  margin-bottom: 20px;
-  padding: 15px;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-}
-
-.selected-topic-display {
-  margin-bottom: 15px;
-}
-
-.selected-topic-display label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #555;
-}
-
-.selected-topic {
-  padding: 10px;
-  background-color: #f0f0f0;
-  border-radius: 4px;
-  border-left: 3px solid #3498db;
-  font-weight: 500;
-}
-
-.open-topic-modal-button {
-  width: 100%;
-  padding: 12px;
-  margin: 15px 0;
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.open-topic-modal-button:hover {
-  background-color: #2980b9;
-}
-
-.topic-input-section {
-  margin-top: 15px;
-}
-
-.topic-input-section label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
-  color: #555;
-}
-
-.topic-input-section input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.95rem;
-}
-
-@media (max-width: 768px) {
-  .topic-list-container {
-    grid-template-columns: 1fr;
-  }
-  
-  .topic-modal-actions {
-    flex-direction: column;
-  }
-  
-  .topic-modal-content {
-    width: 95%;
-    max-height: 85vh;
-  }
-  
-  .topic-modal-header {
-    padding: 10px 15px;
-  }
-  
-  .topic-modal-body {
-    padding: 15px;
-    max-height: 50vh;
-  }
-}
-
-/* Save Confirmation Dialog */
-.save-confirmation-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1100; /* Higher than topic modal */
-}
-
-.save-confirmation-dialog {
-  width: 85%;
-  max-width: 360px; /* Smaller max-width for a more compact look */
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-  padding: 20px; /* Reduced padding */
-  text-align: center;
-  animation: fadeInScale 0.2s ease;
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.save-confirmation-dialog h4 {
-  margin-top: 0;
-  color: #06206e;
-  font-size: 1.2rem; /* Slightly smaller font */
-  margin-bottom: 12px;
-}
-
-.save-confirmation-dialog p {
-  margin-bottom: 15px; /* Reduced margin */
-  color: #444;
-  font-size: 0.95rem; /* Slightly smaller font */
-}
-
-.confirmation-actions {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-}
-
-.confirmation-actions button {
-  flex: 1;
   padding: 12px 20px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.confirmation-actions .secondary-button {
-  background-color: #f1f1f1;
-  color: #333;
-}
-
-.confirmation-actions .primary-button {
-  background-color: #06206e;
-  color: white;
-}
-
-.confirmation-actions .secondary-button:hover {
-  background-color: #e0e0e0;
-  transform: translateY(-2px);
-}
-
-.confirmation-actions .primary-button:hover {
-  background-color: #041a54;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-/* Topic Selection Confirmation */
-.topic-confirmation-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1200; /* Higher than topic modal */
-}
-
-.topic-confirmation-dialog {
-  width: 85%;
-  max-width: 360px; /* Smaller max-width for a more compact look */
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-  padding: 20px; /* Reduced padding */
-  text-align: center;
-  animation: fadeInScale 0.2s ease;
-}
-
-.topic-confirmation-dialog h4 {
-  margin-top: 0;
-  color: #06206e;
-  font-size: 1.2rem; /* Slightly smaller font */
-  margin-bottom: 12px;
-}
-
-.selected-topic-preview {
-  background-color: #f0f7ff;
-  border: 2px solid #06206e;
-  border-radius: 6px;
-  padding: 15px;
-  margin: 15px 0;
-  font-weight: 600;
-  color: #06206e;
-}
-
-/* Updated topic selection container */
-.topic-selection-container {
-  margin-bottom: 20px;
-  padding: 15px;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-}
-
-.generate-topics-button {
   width: 100%;
-  padding: 12px;
-  margin-bottom: 15px;
-  background-color: #06206e;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: background-color 0.2s, transform 0.2s;
+  max-width: 300px;
 }
 
-.generate-topics-button:hover {
-  background-color: #041a54;
-  transform: translateY(-2px);
-}
-
-.generate-topics-main-button {
-  width: 100%;
-  padding: 14px;
-  margin: 10px 0;
-  background-color: #06206e;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1.1rem;
-  transition: background-color 0.2s, transform 0.2s;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.generate-topics-main-button:hover:not(:disabled) {
-  background-color: #041a54;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.generate-topics-main-button:disabled {
-  background-color: #a0a0a0;
-  cursor: not-allowed;
-}
-
-/* Topics Header Actions */
-.topics-header-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  border-bottom: 1px solid #e0e0e0;
-  padding-bottom: 10px;
-}
-
-.topics-header-actions h4 {
-  margin: 0;
-  color: #06206e;
-  font-size: 1.1rem;
-}
-
-.regenerate-topics-button {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 12px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
-}
-
-.regenerate-topics-button:hover:not(:disabled) {
-  background-color: #2980b9;
-  transform: translateY(-2px);
-}
-
-.regenerate-topics-button:disabled {
-  background-color: #a0a0a0;
-  cursor: not-allowed;
-}
-
-/* Responsive adjustments for confirmation dialogs */
+/* Mobile optimizations for bottom navigation */
 @media (max-width: 768px) {
-  .save-confirmation-dialog, .topic-confirmation-dialog {
-    width: 90%;
-    padding: 15px;
+  .generator-controls {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
   }
   
-  .confirmation-actions {
-    flex-direction: column;
+  .bottom-actions {
+    margin-bottom: 80px; /* Add space below the Add All button to prevent overlap with navigation */
   }
   
-  .confirmation-actions button {
-    margin-bottom: 8px;
-  }
-}
-
-@media (max-width: 768px) {
-  .success-modal {
-    width: 250px;
-    padding: 12px;
+  .add-all-button {
+    z-index: 5; /* Ensure the button is above other elements */
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2); /* Add shadow to make it stand out */
   }
   
-  .success-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 22px;
-    margin-bottom: 10px;
-  }
-  
-  .success-modal h3 {
-    font-size: 1rem;
-    margin-bottom: 10px;
-  }
-  
-  .success-card-item {
-    padding: 6px;
-    font-size: 11px;
+  .status-text {
+    margin-bottom: 20px;
   }
 }
 
@@ -1791,4 +1279,21 @@
   margin-bottom: 8px;
   font-size: 0.95rem;
   line-height: 1.4;
+}
+
+/* Mobile optimizations for topic list cards */
+@media (max-width: 768px) {
+  .topic-list-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .topic-list-actions {
+    flex-direction: column;
+  }
+  
+  .topic-list-actions button {
+    width: 100%;
+    margin-bottom: 5px;
+    padding: 10px;
+  }
 }

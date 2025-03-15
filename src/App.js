@@ -1271,6 +1271,68 @@ function App() {
     openPrintModal(cardsToDisplay, "All Flashcards");
   };
 
+  // Effect to listen for messages from the parent window
+  useEffect(() => {
+    const handleMessage = (event) => {
+      // Handle data from Knack
+      if (event.data && event.data.type === "KNACK_DATA") {
+        console.log("Received data from Knack:", event.data);
+        
+        // Set the record ID for saving
+        if (event.data.recordId) {
+          setRecordId(event.data.recordId);
+        }
+        
+        // Set authentication status
+        if (event.data.auth) {
+          setAuth(event.data.auth);
+        }
+        
+        // Load cards if available
+        if (event.data.cards && Array.isArray(event.data.cards)) {
+          setAllCards(event.data.cards);
+          console.log(`Loaded ${event.data.cards.length} cards from Knack`);
+        }
+        
+        // Load color mapping if available
+        if (event.data.colorMapping) {
+          setSubjectColorMapping(event.data.colorMapping);
+          console.log("Loaded color mapping from Knack");
+        }
+        
+        // Load spaced repetition data if available
+        if (event.data.spacedRepetition) {
+          setSpacedRepetitionData(event.data.spacedRepetition);
+          console.log("Loaded spaced repetition data from Knack");
+        }
+        
+        // Load user topics if available
+        if (event.data.userTopics) {
+          setUserTopics(event.data.userTopics);
+          console.log("Loaded user topics from Knack");
+        }
+        
+        setLoading(false);
+      }
+      
+      // Handle save confirmation
+      if (event.data && event.data.type === "SAVE_CONFIRMATION") {
+        console.log("Save confirmation received:", event.data);
+        setIsSaving(false);
+        showStatus("Saved successfully!");
+      }
+      
+      // Handle explicit save request from AICardGenerator
+      if (event.data && event.data.type === "TRIGGER_SAVE") {
+        console.log("Explicit save request received");
+        saveData();
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [saveData, showStatus]);
+
   // Show loading state
   if (loading) {
     return <LoadingSpinner message={loadingMessage} />;
