@@ -2,7 +2,13 @@ import React, { useState, useRef, useEffect } from "react";
 import "./SubjectsList.css";
 import ColorEditor from "./ColorEditor";
 
-const SubjectsList = ({ subjects, activeSubject, onSelectSubject, onChangeSubjectColor }) => {
+const SubjectsList = ({ 
+  subjects, 
+  activeSubject, 
+  onSelectSubject, 
+  onChangeSubjectColor,
+  onViewTopicList 
+}) => {
   const [colorEditorOpen, setColorEditorOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const subjectsListRef = useRef(null);
@@ -48,30 +54,40 @@ const SubjectsList = ({ subjects, activeSubject, onSelectSubject, onChangeSubjec
     closeColorEditor();
   };
 
-  // Helper function to handle subject selection with scrolling
   const handleSelectSubject = (subject) => {
-    // Store a reference to the bank-content element for scrolling
-    lastSelectedSubjectRef.current = document.querySelector('.bank-content');
     onSelectSubject(subject);
+    
+    // Set the ref for scrolling on mobile
+    if (window.innerWidth <= 768) {
+      // Find the element that was just selected
+      const elements = document.querySelectorAll('.subject-button-container');
+      for (let i = 0; i < elements.length; i++) {
+        const button = elements[i].querySelector('.subject-button');
+        if (button && button.textContent.includes(subject || 'All Subjects')) {
+          lastSelectedSubjectRef.current = elements[i];
+          break;
+        }
+      }
+    }
   };
 
-  // Helper function to determine if a background color is dark (for contrast)
+  // Helper function to determine if a color is dark
   const isDarkColor = (hexColor) => {
-    if (!hexColor) return false;
-    
     // Remove # if present
-    hexColor = hexColor.replace('#', '');
+    if (hexColor.startsWith('#')) {
+      hexColor = hexColor.slice(1);
+    }
     
     // Convert to RGB
-    const r = parseInt(hexColor.substring(0, 2), 16);
-    const g = parseInt(hexColor.substring(2, 4), 16);
-    const b = parseInt(hexColor.substring(4, 6), 16);
+    const r = parseInt(hexColor.substr(0, 2), 16);
+    const g = parseInt(hexColor.substr(2, 2), 16);
+    const b = parseInt(hexColor.substr(4, 2), 16);
     
-    // Calculate brightness using YIQ formula
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     
     // Return true for dark colors
-    return brightness < 128;
+    return luminance < 0.5;
   };
 
   // Debug the subjects prop
@@ -141,16 +157,29 @@ const SubjectsList = ({ subjects, activeSubject, onSelectSubject, onChangeSubjec
                   </span>
                 </button>
                 
-                <button
-                  className="edit-color-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openColorEditor(subjectName);
-                  }}
-                  title="Edit subject color"
-                >
-                  <span role="img" aria-label="Edit color">🎨</span>
-                </button>
+                <div className="subject-actions">
+                  <button
+                    className="view-topics-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewTopicList && onViewTopicList(subjectName);
+                    }}
+                    title="View Topic List"
+                  >
+                    <span role="img" aria-label="View Topics">📋</span>
+                  </button>
+                  
+                  <button
+                    className="edit-color-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openColorEditor(subjectName);
+                    }}
+                    title="Edit subject color"
+                  >
+                    <span role="img" aria-label="Edit color">🎨</span>
+                  </button>
+                </div>
               </div>
             );
           })}

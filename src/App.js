@@ -11,6 +11,7 @@ import UserProfile from "./components/UserProfile";
 import AICardGenerator from './components/AICardGenerator';
 import PrintModal from './components/PrintModal';
 import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
+import TopicListModal from './components/TopicListModal';
 
 // API Keys and constants
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_ID || "64fc50bc3cd0ac00254bb62b";
@@ -86,6 +87,12 @@ function App() {
   // Filters and selections
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
+
+  // Topic List Modal state
+  const [topicListModalOpen, setTopicListModalOpen] = useState(false);
+  const [topicListSubject, setTopicListSubject] = useState(null);
+  const [topicListExamBoard, setTopicListExamBoard] = useState("AQA");
+  const [topicListExamType, setTopicListExamType] = useState("A-Level");
 
   // Spaced repetition state
   const [currentBox, setCurrentBox] = useState(1);
@@ -1333,6 +1340,25 @@ function App() {
     return () => window.removeEventListener("message", handleMessage);
   }, [saveData, showStatus]);
 
+  // Handle opening the topic list modal for a subject
+  const handleViewTopicList = useCallback((subject) => {
+    setTopicListSubject(subject);
+    setTopicListModalOpen(true);
+  }, []);
+
+  // Handle selecting a topic from the topic list modal
+  const handleSelectTopicFromList = useCallback((topic) => {
+    setSelectedTopic(topic);
+    setTopicListModalOpen(false);
+  }, []);
+
+  // Handle generating cards directly from the topic list modal
+  const handleGenerateCardsFromTopic = useCallback((topic) => {
+    setSelectedTopic(topic);
+    setTopicListModalOpen(false);
+    setView("aiGenerator");
+  }, []);
+
   // Show loading state
   if (loading) {
     return <LoadingSpinner message={loadingMessage} />;
@@ -1365,6 +1391,20 @@ function App() {
       {/* {auth && <UserProfile userInfo={getUserInfo()} />} */}
 
       {statusMessage && <div className="status-message">{statusMessage}</div>}
+      
+      {/* Topic List Modal */}
+      {topicListModalOpen && topicListSubject && (
+        <TopicListModal
+          subject={topicListSubject}
+          examBoard={topicListExamBoard}
+          examType={topicListExamType}
+          onClose={() => setTopicListModalOpen(false)}
+          onSelectTopic={handleSelectTopicFromList}
+          onGenerateCards={handleGenerateCardsFromTopic}
+          auth={auth}
+          userId={auth?.id}
+        />
+      )}
 
       {view === "cardBank" && (
         <div className="card-bank-view">
@@ -1407,8 +1447,22 @@ function App() {
             </div>
           )}
           
-          <div className="bank-container full-width">
-            {/* Removed SubjectsList sidebar */}
+          <div className="bank-container">
+            <div className="sidebar">
+              <SubjectsList
+                subjects={getSubjects()}
+                activeSubject={selectedSubject}
+                onSelectSubject={setSelectedSubject}
+                onChangeSubjectColor={updateSubjectColor}
+                onViewTopicList={handleViewTopicList}
+              />
+              <TopicsList
+                topics={getTopicsForSubject(selectedSubject)}
+                activeTopic={selectedTopic}
+                onSelectTopic={setSelectedTopic}
+              />
+            </div>
+            
             <div className="bank-content">
               {/* Added header showing total card count */}
               <div className="bank-content-header">
@@ -1454,6 +1508,10 @@ function App() {
           subjects={getSubjects()}
           auth={auth}
           userId={auth?.id}
+          initialSubject={selectedSubject}
+          initialTopic={selectedTopic}
+          examBoard={topicListExamBoard}
+          examType={topicListExamType}
         />
       )}
 

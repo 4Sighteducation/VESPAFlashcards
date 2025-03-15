@@ -46,21 +46,31 @@ const API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 
-const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) => {
+const AICardGenerator = ({ 
+  onAddCard, 
+  onClose, 
+  subjects = [], 
+  auth, 
+  userId,
+  initialSubject = "",
+  initialTopic = "",
+  examBoard = "AQA",
+  examType = "A-Level"
+}) => {
   // Step management state
   const [currentStep, setCurrentStep] = useState(1);
   const [totalSteps, setTotalSteps] = useState(7);
   
   // Form data state
   const [formData, setFormData] = useState({
-    examBoard: "",
-    examType: "",
-    subject: "",
+    examBoard: examBoard,
+    examType: examType,
+    subject: initialSubject,
     newSubject: "",
-    topic: "",
+    topic: initialTopic,
     newTopic: "",
     numCards: 5,
-    questionType: "",
+    questionType: "multiple_choice",
     subjectColor: BRIGHT_COLORS[0],
     generatedCards: []
   });
@@ -1072,6 +1082,12 @@ Use this format for different question types:
     setTimeout(() => {
       setSuccessModal(prev => ({...prev, show: false}));
     }, 2000);
+    
+    // Trigger an explicit save operation to prevent data loss on refresh
+    if (window.parent && window.parent.postMessage) {
+      window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
+      console.log("Triggered save after adding card to bank");
+    }
   };
 
   // Add all cards to the bank
@@ -1739,6 +1755,17 @@ Use this format for different question types:
     fontWeight: 'normal',
     display: 'block'
   };
+
+  // If we have initial values, skip to the appropriate step
+  useEffect(() => {
+    if (initialSubject && initialTopic) {
+      // Skip to question type selection (step 5)
+      setCurrentStep(5);
+    } else if (initialSubject) {
+      // Skip to topic selection (step 4)
+      setCurrentStep(4);
+    }
+  }, [initialSubject, initialTopic]);
 
   return (
     <div className="ai-card-generator">
