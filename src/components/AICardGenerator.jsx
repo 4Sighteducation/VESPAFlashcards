@@ -1493,7 +1493,7 @@ Use this format for different question types:
     try {
       setIsGenerating(true);
       setError(null);
-      // Show the modal immediately with the loading indicator
+      // Show the topic modal immediately with the loading indicator
       setShowTopicModal(true);
       
       // Get the subject value, ensuring it's a string not an object
@@ -1513,7 +1513,10 @@ Use this format for different question types:
       
       // Show options explanation modal after topics are generated successfully
       if (topics.length > 0) {
-        setShowOptionsExplanationModal(true);
+        // Ensure we're displaying the options explanation modal
+        setTimeout(() => {
+          setShowOptionsExplanationModal(true);
+        }, 500); // Small delay to ensure UI is updated
       }
     } catch (err) {
       setError(err.message);
@@ -1909,6 +1912,8 @@ Use this format for different question types:
   const handleTopicClick = (topic) => {
     setSelectedTopicForConfirmation(topic);
     setShowTopicConfirmation(true);
+    // Hide the options explanation modal when a topic is selected
+    setShowOptionsExplanationModal(false);
   };
   
   // Function to confirm topic selection
@@ -1918,9 +1923,9 @@ Use this format for different question types:
     setShowTopicConfirmation(false);
     setShowTopicModal(false);
     
-    // Automatically move to the next step (stage 6)
+    // Automatically move to the next step (stage 5 - number of cards)
     console.log(`Selected topic: ${selectedTopic}`);
-    setCurrentStep(6);  // Move directly to the number of cards step
+    setCurrentStep(5);  // Move directly to the number of cards step
   };
 
   // Render topic confirmation dialog
@@ -1928,23 +1933,25 @@ Use this format for different question types:
     if (!showTopicConfirmation) return null;
     
     return (
-      <div className="topic-options-modal">
-        <h4>Topic Options: {selectedTopicForConfirmation}</h4>
-        <p>What would you like to do with this topic?</p>
-        
-        <div className="topic-options-buttons">
-          <button 
-            className="generate-cards"
-            onClick={confirmTopicSelection}
-          >
-            Select & Generate Cards
-          </button>
-          <button 
-            className="cancel"
-            onClick={() => setShowTopicConfirmation(false)}
-          >
-            Cancel
-          </button>
+      <div className="topic-confirmation-overlay">
+        <div className="topic-options-modal">
+          <h4>Topic Selected: {selectedTopicForConfirmation}</h4>
+          <p>What would you like to do with this topic?</p>
+          
+          <div className="topic-options-buttons">
+            <button 
+              className="generate-cards"
+              onClick={confirmTopicSelection}
+            >
+              Select & Generate Cards
+            </button>
+            <button 
+              className="cancel"
+              onClick={() => setShowTopicConfirmation(false)}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     );

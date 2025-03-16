@@ -1676,3 +1676,68 @@
   color: #2e7d32;
   font-weight: 500;
 }
+
+.topic-options-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1200;
+  width: 90%;
+  max-width: 400px;
+}
+
+.topic-confirmation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1150;
+}
+
+.topic-options-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.topic-options-buttons button {
+  flex: 1;
+  padding: 12px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.topic-options-buttons .generate-cards {
+  background-color: #06206e;
+  color: white;
+}
+
+.topic-options-buttons .generate-cards:hover {
+  background-color: #041a54;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.topic-options-buttons .cancel {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.topic-options-buttons .cancel:hover {
+  background-color: #c0c0c0;
+  transform: translateY(-2px);
+}
