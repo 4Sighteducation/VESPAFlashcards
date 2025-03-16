@@ -439,6 +439,19 @@ const AICardGenerator = ({
             setError(null);
             setTopicListSaved(true);
             console.log("Topic list saved successfully:", newSavedList.name);
+            
+            // Show a temporary success message
+            const successElement = document.createElement('div');
+            successElement.className = 'save-success-message';
+            successElement.innerHTML = '✅ Topic list saved successfully!';
+            document.querySelector('.topic-modal-body').appendChild(successElement);
+            
+            // Remove the message after 3 seconds
+            setTimeout(() => {
+              if (successElement.parentNode) {
+                successElement.parentNode.removeChild(successElement);
+              }
+            }, 3000);
           } else {
             // Error message is set by saveTopicListToKnack
             console.error("Failed to save topic list to Knack");
@@ -1900,11 +1913,14 @@ Use this format for different question types:
   
   // Function to confirm topic selection
   const confirmTopicSelection = () => {
-    setFormData(prev => ({ ...prev, topic: selectedTopicForConfirmation, newTopic: '' }));
+    const selectedTopic = selectedTopicForConfirmation;
+    setFormData(prev => ({ ...prev, topic: selectedTopic, newTopic: '' }));
     setShowTopicConfirmation(false);
     setShowTopicModal(false);
-    // No longer auto-advancing to next step - wait for user to click Next
-    console.log(`Selected topic: ${selectedTopicForConfirmation}`);
+    
+    // Automatically move to the next step (stage 6)
+    console.log(`Selected topic: ${selectedTopic}`);
+    setCurrentStep(6);  // Move directly to the number of cards step
   };
 
   // Render topic confirmation dialog
@@ -2048,6 +2064,12 @@ Use this format for different question types:
                         <span role="img" aria-label="Info">ℹ️</span> These topics haven't been saved yet. Click "Save Topic List" to save them for future use.
                       </div>
                     )}
+                    
+                    {topicListSaved && (
+                      <div className="save-notice success">
+                        <span role="img" aria-label="Success">✅</span> Topic list saved successfully! You can now select a topic to generate cards.
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="no-topics-message">
@@ -2060,13 +2082,13 @@ Use this format for different question types:
           </div>
           
           <div className="topic-modal-actions">
-            {availableTopics.length > 0 && !topicListSaved && (
+            {availableTopics.length > 0 && (
               <button 
                 className="save-button"
                 onClick={() => setShowSaveTopicDialog(true)}
-                disabled={isGenerating}
+                disabled={isGenerating || topicListSaved}
               >
-                Save Topic List
+                {topicListSaved ? "Topic List Saved ✓" : "Save Topic List"}
               </button>
             )}
             
@@ -2074,7 +2096,7 @@ Use this format for different question types:
               className="close-button"
               onClick={() => setShowTopicModal(false)}
             >
-              Cancel
+              Close
             </button>
           </div>
         </div>
@@ -2090,25 +2112,25 @@ Use this format for different question types:
       <div className="options-modal-overlay" onClick={() => setShowOptionsExplanationModal(false)}>
         <div className="options-modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="options-modal-header">
-            <h3>Topic Options</h3>
+            <h3>Your Topic Adventure Awaits!</h3>
           </div>
           
-          <p>What would you like to do with these topics?</p>
+          <p>Behold the magical topics! What would you like to do next?</p>
           
           <ul className="options-list">
             <li>
-              <strong>Regenerate Topics</strong>
-              <p>If you don't see all the topics you need, our AI might have missed some. Click "Regenerate" to create a fresh list!</p>
+              <strong>🔄 Regenerate Topics</strong>
+              <p>Our AI missed some topics? No worries! It probably got distracted by cat videos. Click "Regenerate" for a fresh batch of brain food!</p>
             </li>
             
             <li>
-              <strong>Save Topic List</strong>
-              <p>Want to use these topics again later? Save them to your account and access them anytime you return!</p>
+              <strong>💾 Save Topic List</strong>
+              <p>Love these topics? Save them for later! It's like meal prepping, but for your brain. Future you will thank present you!</p>
             </li>
             
             <li>
-              <strong>Generate Cards Now</strong>
-              <p>Ready to dive in? Click on any topic to start creating flashcards right away!</p>
+              <strong>🚀 Generate Cards Now</strong>
+              <p>Can't wait to start learning? Click any topic to dive right in. Warning: may cause sudden outbursts of intelligence!</p>
             </li>
           </ul>
           
@@ -2116,7 +2138,7 @@ Use this format for different question types:
             className="primary-button"
             onClick={() => setShowOptionsExplanationModal(false)}
           >
-            Got it!
+            Let's Go!
           </button>
         </div>
       </div>
