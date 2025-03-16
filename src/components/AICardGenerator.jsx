@@ -142,6 +142,9 @@ const AICardGenerator = ({
   const [showTopicConfirmation, setShowTopicConfirmation] = useState(false);
   const [selectedTopicForConfirmation, setSelectedTopicForConfirmation] = useState("");
   const [topicListSaved, setTopicListSaved] = useState(false);
+  
+  // New state for options explanation modal
+  const [showOptionsExplanationModal, setShowOptionsExplanationModal] = useState(false);
 
   // Load saved topic lists from both localStorage and Knack on mount
   useEffect(() => {
@@ -624,7 +627,7 @@ const AICardGenerator = ({
       };
       
       // Only add user name if it has a value (not a connection field)
-      if (userName) dataToSave.field_3010 = userName;
+      if (userName) dataToSave.field_3029 = userName;
       
       // Only add email as a connection field if it's an actual ID
       // Otherwise, just use the plain email text for field_2958
@@ -1494,6 +1497,11 @@ Use this format for different question types:
       setAvailableTopics(topics);
       setHierarchicalTopics(topics.map(topic => ({ topic })));
       setTopicListSaved(false);
+      
+      // Show options explanation modal after topics are generated successfully
+      if (topics.length > 0) {
+        setShowOptionsExplanationModal(true);
+      }
     } catch (err) {
       setError(err.message);
       // Don't close the modal on error, just show the error inside it
@@ -1904,28 +1912,23 @@ Use this format for different question types:
     if (!showTopicConfirmation) return null;
     
     return (
-      <div className="topic-confirmation-overlay">
-        <div className="topic-confirmation-dialog">
-          <h4>Confirm Topic Selection</h4>
-          <div className="selected-topic-preview">
-            {selectedTopicForConfirmation}
-          </div>
-          <p>Would you like to select this topic?</p>
-          
-          <div className="confirmation-actions">
-            <button 
-              className="secondary-button" 
-              onClick={() => setShowTopicConfirmation(false)}
-            >
-              Close and choose again
-            </button>
-            <button 
-              className="primary-button" 
-              onClick={confirmTopicSelection}
-            >
-              Select this topic
-            </button>
-          </div>
+      <div className="topic-options-modal">
+        <h4>Topic Options: {selectedTopicForConfirmation}</h4>
+        <p>What would you like to do with this topic?</p>
+        
+        <div className="topic-options-buttons">
+          <button 
+            className="generate-cards"
+            onClick={confirmTopicSelection}
+          >
+            Select & Generate Cards
+          </button>
+          <button 
+            className="cancel"
+            onClick={() => setShowTopicConfirmation(false)}
+          >
+            Cancel
+          </button>
         </div>
       </div>
     );
@@ -2079,6 +2082,47 @@ Use this format for different question types:
     );
   };
 
+  // New function to render options explanation modal
+  const renderOptionsExplanationModal = () => {
+    if (!showOptionsExplanationModal) return null;
+    
+    return (
+      <div className="options-modal-overlay" onClick={() => setShowOptionsExplanationModal(false)}>
+        <div className="options-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="options-modal-header">
+            <h3>Topic Options</h3>
+          </div>
+          
+          <p>What would you like to do with these topics?</p>
+          
+          <ul className="options-list">
+            <li>
+              <strong>Regenerate Topics</strong>
+              <p>If you don't see all the topics you need, our AI might have missed some. Click "Regenerate" to create a fresh list!</p>
+            </li>
+            
+            <li>
+              <strong>Save Topic List</strong>
+              <p>Want to use these topics again later? Save them to your account and access them anytime you return!</p>
+            </li>
+            
+            <li>
+              <strong>Generate Cards Now</strong>
+              <p>Ready to dive in? Click on any topic to start creating flashcards right away!</p>
+            </li>
+          </ul>
+          
+          <button 
+            className="primary-button"
+            onClick={() => setShowOptionsExplanationModal(false)}
+          >
+            Got it!
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="ai-card-generator">
       <div className="generator-header">
@@ -2146,6 +2190,7 @@ Use this format for different question types:
       </div>
       
       {renderSuccessModal()}
+      {renderOptionsExplanationModal()}
     </div>
   );
 };

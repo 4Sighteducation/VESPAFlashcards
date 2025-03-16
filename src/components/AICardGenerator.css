@@ -1015,20 +1015,27 @@
   margin-bottom: 15px;
 }
 
-.generate-button {
-  width: 100%;
-  padding: 12px;
+.generate-topics-button {
+  padding: 18px 35px;
+  font-size: 1.3rem;
   background-color: #3498db;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin: 25px auto;
+  display: block;
+  width: 350px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-.generate-button:hover {
+.generate-topics-button:hover {
   background-color: #2980b9;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Save Topic Dialog Styles */
@@ -1314,8 +1321,8 @@
 
 .topic-modal-content {
   width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
+  max-width: 800px;
+  max-height: 90vh;
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);

@@ -676,7 +676,7 @@ const TopicListModal = ({
         };
         
         // Only add user name if it has a value (not a connection field)
-        if (userName) dataToSave.field_3010 = userName;
+        if (userName) dataToSave.field_3029 = userName;
         
         // Only add email as a connection field if it's an actual ID
         // Otherwise, just use the plain email text for field_2958
