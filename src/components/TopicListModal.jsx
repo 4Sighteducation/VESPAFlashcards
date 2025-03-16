@@ -56,6 +56,10 @@ const TopicListModal = ({
   const [topicListSaved, setTopicListSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showAddTopicModal, setShowAddTopicModal] = useState(false);
+  const [newTopicName, setNewTopicName] = useState("");
+  const [topicListId, setTopicListId] = useState(null);
+  const [prioritizationMode, setPrioritizationMode] = useState(false);
 
   // Load existing topic list when component mounts
   useEffect(() => {
@@ -836,6 +840,43 @@ const TopicListModal = ({
     return `${prefix}_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
   };
   
+  // Handle adding a new topic
+  const handleAddTopic = () => {
+    if (!newTopicName.trim()) {
+      setError("Please enter a topic name");
+      return;
+    }
+    
+    // Create new topic object
+    const newTopic = {
+      id: generateId('topic'),
+      name: newTopicName.trim()
+    };
+    
+    // Add to topics list
+    setTopics(prevTopics => [...prevTopics, newTopic]);
+    
+    // Reset form and close modal
+    setNewTopicName("");
+    setShowAddTopicModal(false);
+    setTopicListSaved(false); // Indicate changes need to be saved
+  };
+  
+  // Handle deleting a topic
+  const handleDeleteTopic = (topicId, event) => {
+    event.stopPropagation(); // Prevent topic selection
+    
+    // Remove topic from list
+    setTopics(prevTopics => prevTopics.filter(topic => topic.id !== topicId));
+    
+    // If the deleted topic was selected, clear selection
+    if (selectedTopic && selectedTopic.id === topicId) {
+      setSelectedTopic(null);
+    }
+    
+    setTopicListSaved(false); // Indicate changes need to be saved
+  };
+  
   // Handle clicking a topic
   const handleTopicClick = (topic) => {
     setSelectedTopic(topic);
@@ -863,7 +904,13 @@ const TopicListModal = ({
   // Handle generating cards from selected topic
   const handleGenerateCards = () => {
     if (selectedTopic) {
-      onGenerateCards(selectedTopic);
+      // Pass metadata along with the selected topic to skip initial steps
+      onGenerateCards({
+        topic: selectedTopic.name,
+        examBoard,
+        examType,
+        subject
+      });
     } else {
       setError("Please select a topic first");
     }
@@ -947,6 +994,22 @@ const TopicListModal = ({
             <div className="topic-list-header">
               <h3>Topics for {subject} ({examBoard} {examType})</h3>
               <div className="topic-header-actions">
+                <button
+                  className="add-topic-button"
+                  onClick={() => setShowAddTopicModal(true)}
+                  title="Add a new topic"
+                >
+                  ➕ Add Topic
+                </button>
+                
+                <button
+                  className="prioritize-button"
+                  onClick={() => setPrioritizationMode(!prioritizationMode)}
+                  title="Prioritize topics"
+                >
+                  {prioritizationMode ? "✓ Done" : "🔝 Prioritize"}
+                </button>
+                
                 {!topicListSaved && (
                   <button 
                     className="save-topic-button" 
@@ -956,6 +1019,7 @@ const TopicListModal = ({
                     {isSaving ? 'Saving...' : 'Save Topic List'}
                   </button>
                 )}
+                
                 <button 
                   className="regenerate-button" 
                   onClick={generateTopics}
@@ -975,7 +1039,17 @@ const TopicListModal = ({
                       className={`topic-item ${selectedTopic?.id === topic.id ? 'selected' : ''}`}
                       onClick={() => handleTopicClick(topic)}
                     >
-                      {topic.name}
+                      <span className="topic-name">{topic.name}</span>
+                      
+                      <div className="topic-actions">
+                        <button
+                          className="delete-topic-button"
+                          onClick={(e) => handleDeleteTopic(topic.id, e)}
+                          title="Delete this topic"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -1030,6 +1104,13 @@ const TopicListModal = ({
           </button>
           
           <button 
+            className="modal-button continue-editing-button" 
+            onClick={() => setStep(2)}
+          >
+            Continue Editing Topics
+          </button>
+          
+          <button 
             className="modal-button return-button" 
             onClick={onClose}
           >
@@ -1040,6 +1121,47 @@ const TopicListModal = ({
     );
   };
 
+  // Render Add Topic modal
+  const renderAddTopicModal = () => {
+    if (!showAddTopicModal) return null;
+    
+    return (
+      <div className="add-topic-modal-overlay">
+        <div className="add-topic-modal">
+          <h3>Add New Topic</h3>
+          <div className="add-topic-form">
+            <input
+              type="text"
+              value={newTopicName}
+              onChange={(e) => setNewTopicName(e.target.value)}
+              placeholder="Enter topic name"
+              className="topic-input"
+            />
+            
+            <div className="add-topic-actions">
+              <button 
+                className="cancel-button" 
+                onClick={() => {
+                  setNewTopicName(""); 
+                  setShowAddTopicModal(false);
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="add-button" 
+                onClick={handleAddTopic}
+                disabled={!newTopicName.trim()}
+              >
+                Add Topic
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal-container topic-list-modal">
@@ -1047,9 +1169,9 @@ const TopicListModal = ({
         
         <div className="modal-header">
           <h2>
-            {step === 1 ? 'Select Exam Details' : 
-             step === 2 ? 'Topic List for ' + subject : 
-             'Topic List Saved'}
+            {step === 1 && `Set up Topic List for ${subject}`}
+            {step === 2 && `Topic List for ${subject}`}
+            {step === 3 && `Topic List for ${subject} Saved!`}
           </h2>
         </div>
         
@@ -1058,6 +1180,8 @@ const TopicListModal = ({
           {step === 2 && renderTopicList()}
           {step === 3 && renderPostSaveOptions()}
         </div>
+        
+        {renderAddTopicModal()}
       </div>
     </div>
   );

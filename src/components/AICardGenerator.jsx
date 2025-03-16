@@ -2012,14 +2012,28 @@ Use this format for different question types:
 
   // If we have initial values, skip to the appropriate step
   useEffect(() => {
-    if (initialSubject && initialTopic) {
+    if (initialSubject && initialTopic && examBoard && examType) {
+      // We have all metadata, skip to number of cards selection (step 5)
+      setCurrentStep(5);
+      
+      // Ensure form data is properly set
+      setFormData(prev => ({
+        ...prev,
+        subject: initialSubject,
+        topic: initialTopic,
+        examBoard: examBoard,
+        examType: examType
+      }));
+      
+      console.log(`Skipping to step 5 with metadata: ${initialSubject}, ${initialTopic}, ${examBoard}, ${examType}`);
+    } else if (initialSubject && initialTopic) {
       // Skip to question type selection (step 5)
       setCurrentStep(5);
     } else if (initialSubject) {
       // Skip to topic selection (step 4)
       setCurrentStep(4);
     }
-  }, [initialSubject, initialTopic]);
+  }, [initialSubject, initialTopic, examBoard, examType]);
 
   // New function to render topic selection modal
   const renderTopicModal = () => {

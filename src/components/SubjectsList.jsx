@@ -166,7 +166,7 @@ const SubjectsList = ({
                     }}
                     title="View Topic List"
                   >
-                    <span role="img" aria-label="View Topics">📋</span>
+                    <span role="img" aria-label="View Topics">🗃️</span>
                   </button>
                   
                   <button

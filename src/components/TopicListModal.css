@@ -92,6 +92,9 @@
   color: #333;
   font-weight: 500;
   border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .topic-item:last-child {
@@ -106,6 +109,41 @@
   background-color: #06206e;
   font-weight: bold;
   color: white;
+}
+
+.topic-name {
+  flex-grow: 1;
+}
+
+.topic-actions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.delete-topic-button {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
+.delete-topic-button:hover {
+  color: #e74c3c;
+  background-color: rgba(231, 76, 60, 0.1);
+  opacity: 1;
+}
+
+.topic-item:hover .delete-topic-button {
+  opacity: 1;
 }
 
 .modal-actions {
@@ -209,6 +247,36 @@ button:disabled {
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.add-topic-button, .prioritize-button {
+  background-color: #f5f5f5;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.add-topic-button:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-2px);
+}
+
+.prioritize-button {
+  background-color: #f39c12;
+  color: white;
+}
+
+.prioritize-button:hover {
+  background-color: #e67e22;
+  transform: translateY(-2px);
 }
 
 .save-topic-button {
@@ -328,4 +396,89 @@ button:disabled {
   .post-save-options {
     padding: 0 10px;
   }
+}
+
+/* Add Topic Modal */
+.add-topic-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+.add-topic-modal {
+  width: 90%;
+  max-width: 500px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  padding: 20px;
+}
+
+.add-topic-modal h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #06206e;
+  font-size: 1.2rem;
+}
+
+.add-topic-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.topic-input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  width: 100%;
+}
+
+.topic-input:focus {
+  outline: none;
+  border-color: #06206e;
+  box-shadow: 0 0 0 2px rgba(6, 32, 110, 0.2);
+}
+
+.add-topic-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.add-topic-actions button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.add-topic-actions .cancel-button {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.add-topic-actions .cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+.add-topic-actions .add-button {
+  background-color: #06206e;
+  color: white;
+}
+
+.add-topic-actions .add-button:hover:not(:disabled) {
+  background-color: #041a54;
+  transform: translateY(-2px);
 } 
