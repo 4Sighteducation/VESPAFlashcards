@@ -699,3 +699,43 @@
 html {
   scroll-behavior: smooth;
 }
+
+.swipe-indicator {
+  position: absolute;
+  bottom: 15px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 20px;
+  margin: 0 auto;
+  width: max-content;
+  pointer-events: none;
+  animation: fadeInOut 3s forwards;
+  opacity: 0;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Hide swipe indicator in landscape mode */
+.landscape-mode .swipe-indicator {
+  display: none;
+}
+
+/* Remove or hide expand icons that might be overriding the display:none with inline styles */
+.subject-actions .expand-icon,
+.topic-actions .expand-icon {
+  display: none !important; /* Use !important to override any inline styles */
+  opacity: 0;
+  visibility: hidden;
+  position: absolute;
+  pointer-events: none;
+}

@@ -496,6 +496,37 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       }
     };
 
+    // Touch swipe functionality
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
+    
+    // Required minimum distance between touchStart and touchEnd to be detected as swipe
+    const minSwipeDistance = 50;
+    
+    const onTouchStart = (e) => {
+      setTouchEnd(null); // Reset touchEnd
+      setTouchStart(e.targetTouches[0].clientX);
+    };
+    
+    const onTouchMove = (e) => {
+      setTouchEnd(e.targetTouches[0].clientX);
+    };
+    
+    const onTouchEnd = () => {
+      if (!touchStart || !touchEnd) return;
+      
+      const distance = touchStart - touchEnd;
+      const isLeftSwipe = distance > minSwipeDistance;
+      const isRightSwipe = distance < -minSwipeDistance;
+      
+      // Handle swipe actions based on direction
+      if (isLeftSwipe && currentIndex < totalCards - 1) {
+        handleNextCard();
+      } else if (isRightSwipe && currentIndex > 0) {
+        handlePrevCard();
+      }
+    };
+
     // Get topic information for display
     const topicInfo = isSubjectSlideshow 
       ? `${currentSubject} (All Topics)` 
@@ -520,6 +551,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
               '--card-bg-color': selectedCard.cardColor, 
               '--card-text-color': getContrastColor(selectedCard.cardColor) 
             }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             <Flashcard 
               card={selectedCard} 
@@ -555,6 +589,12 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
               <div className="topic-info">{topicInfo}</div>
             </div>
           </div>
+          
+          {isMobile && (
+            <div className="swipe-indicator">
+              <span>← Swipe to navigate →</span>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -686,15 +726,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
           >
             <FaPalette />
           </button>
-          <span 
-            className="expand-icon" 
-            style={{ 
-              transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-              color: textColor
-            }}
-          >
-            {isExpanded ? '▼' : '▲'}
-          </span>
         </div>
       </div>
     );

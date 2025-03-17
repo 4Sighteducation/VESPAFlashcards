@@ -180,23 +180,31 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
   const containerRef = useRef(null);
   
   useEffect(() => {
-    adjustOptionsFontSize();
-    window.addEventListener('resize', adjustOptionsFontSize);
-    return () => window.removeEventListener('resize', adjustOptionsFontSize);
+    if (!containerRef.current || !options || options.length === 0) return;
+    
+    // Restart auto-scaling after render
+    const timer = setTimeout(() => {
+      autoScaleOptions();
+    }, 0);
+    
+    return () => {
+      clearTimeout(timer);
+    };
   }, [options]);
   
-  const adjustOptionsFontSize = () => {
+  // Automatically scale the options to fit within the container
+  const autoScaleOptions = () => {
     if (!containerRef.current) return;
     
     const container = containerRef.current;
-    const items = container.querySelectorAll('li');
+    const items = Array.from(container.querySelectorAll('li'));
     
     if (items.length === 0) return;
     
-    // Calculate average option length
-    const totalLength = options.reduce((sum, option) => sum + option.length, 0);
-    const avgLength = totalLength / options.length;
-    const maxLength = Math.max(...options.map(option => option.length));
+    // Calculate content properties to inform scaling
+    const lengths = items.map(item => item.textContent.length);
+    const maxLength = Math.max(...lengths);
+    const avgLength = lengths.reduce((sum, len) => sum + len, 0) / lengths.length;
     
     // Set starting font size based on content length, number of options, and container width
     const containerWidth = container.clientWidth;
@@ -310,9 +318,21 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
     }
   };
   
-  // Clean options by removing any existing letter prefixes
+  // Enhanced option cleaning to handle various prefix formats
   const cleanedOptions = options.map(option => {
-    return option.replace(/^[a-d]\)\s*/i, '');
+    if (!option) return '';
+    
+    // Handle different letter prefix formats:
+    // Format 1: "a) Option text"
+    // Format 2: "a. Option text"
+    // Format 3: "(a) Option text"
+    // Format 4: "a - Option text"
+    
+    return option
+      .replace(/^[a-z]\)\s*/i, '') // Format 1
+      .replace(/^[a-z]\.\s*/i, '') // Format 2
+      .replace(/^\([a-z]\)\s*/i, '') // Format 3
+      .replace(/^[a-z]\s*-\s*/i, ''); // Format 4
   });
   
   return (
