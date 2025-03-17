@@ -37,7 +37,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
 
   // Determine what view toggle to show based on current view
   const isInCardBank = currentView === "cardBank";
-  const alternateViewName = isInCardBank ? "Spaced Repetition" : "Card Bank";
+  const alternateViewName = isInCardBank ? "Study" : "Cards";
   const alternateViewIcon = isInCardBank ? "🔄" : "📚";
   const alternateViewAction = isInCardBank 
     ? () => onViewChange("spacedRepetition") 
@@ -77,7 +77,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
           onClick={() => handleNavClick(onPrintAll)}
         >
           <span className="button-icon">🖨️</span>
-          Print All Cards
+          Print
         </button>
         
         <button

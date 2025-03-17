@@ -18,11 +18,18 @@ const PrintModal = ({ cards, title, onClose }) => {
     onClose();
   };
 
+  // Determine if we're printing all cards or just a topic
+  const isAllCards = !title || title === "All Cards" || title.toLowerCase().includes("all");
+  const printInfoText = isAllCards 
+    ? "This will Print your cards from ALL Subjects" 
+    : "This will Print your cards from this topic";
+
   return (
     <div className="print-modal-overlay" onClick={onClose}>
       <div className="print-modal" onClick={(e) => e.stopPropagation()}>
         <div className="print-modal-header">
           <button className="close-modal-btn" onClick={onClose}>✕</button>
+          <h3 className="print-scope-info">{printInfoText}</h3>
         </div>
         <div className="print-modal-content">
           <p>Select print format for {cards.length} cards:</p>

@@ -48,7 +48,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 13px;
-  background-color: #153aa3;
+  background-color: #079baa;
   color: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   border-bottom: 3px solid #00e5db;
@@ -78,13 +78,13 @@
 
 /* Specific styles for the logout button */
 .logout-button {
-  background-color: #01ddd8;
+  background-color: #079baa;
   border-bottom: 3px solid white;
-  color: #06206e;
+  color: white;
 }
 
 .logout-button:hover {
-  background-color: #00c5c1;
+  background-color: #068998;
 }
 
 /* Updated Print button style to match nav-button */
@@ -193,11 +193,11 @@
 }
 
 .toggle-view-btn {
-  background-color: #2a4fd6;
+  background-color: #079baa;
   border-bottom: 3px solid #00e5db;
   font-weight: 600;
 }
 
 .toggle-view-btn:hover {
-  background-color: #3a5fe6;
+  background-color: #068998;
 }
