@@ -13,6 +13,8 @@ import PrintModal from './components/PrintModal';
 import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
 import TopicListModal from './components/TopicListModal';
 import SubjectSelectionWizard from './components/SubjectSelectionWizard';
+import TopicGenerationModal from './components/TopicGenerationModal';
+import { generateTopicPrompt } from './prompts/topicListPrompt';
 
 // API Keys and constants
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
@@ -120,6 +122,13 @@ function App() {
 
   // New state for subject wizard
   const [subjectWizardOpen, setSubjectWizardOpen] = useState(false);
+  
+  // New state for topic generation
+  const [topicGenerationModalOpen, setTopicGenerationModalOpen] = useState(false);
+  const [subjectsToGenerateTopics, setSubjectsToGenerateTopics] = useState([]);
+  const [generatingTopics, setGeneratingTopics] = useState(false);
+  const [topicGenerationProgress, setTopicGenerationProgress] = useState({ current: 0, total: 0 });
+  const [currentGeneratingSubject, setCurrentGeneratingSubject] = useState(null);
 
   // User information - enhanced with additional student data
   const getUserInfo = useCallback(() => {
@@ -1387,9 +1396,12 @@ function App() {
         topic: "General",
         cardColor: color,
         subjectColor: color,
+        // Add both top-level properties and in metadata to ensure they're displayed
+        exam_board: examBoard,
+        exam_type: examType,
         metadata: {
-          examBoard,
-          examType,
+          exam_board: examBoard,
+          exam_type: examType,
           subject: name
         },
         template: true,
@@ -1404,8 +1416,14 @@ function App() {
     // Update subject colors
     setSubjectColorMapping(newSubjectColorMapping);
     
-    // Show a success message
-    showStatus("Subjects added successfully! Now let's generate topic lists.", 5000);
+    // Show success message and prompt for topic generation
+    showStatus("Subjects added successfully!", 3000);
+    
+    // After a short delay, show the topic generation modal
+    setTimeout(() => {
+      setTopicGenerationModalOpen(true);
+      setSubjectsToGenerateTopics(subjectsData);
+    }, 500);
   };
 
   // Render subject wizard
@@ -1433,6 +1451,155 @@ function App() {
         </button>
       </div>
     );
+  };
+
+  // Render topic generation modal
+  const renderTopicGenerationModal = () => {
+    if (!topicGenerationModalOpen) return null;
+    
+    return (
+      <TopicGenerationModal
+        onClose={() => setTopicGenerationModalOpen(false)}
+        onGenerateAll={handleGenerateAllTopics}
+        subjects={subjectsToGenerateTopics}
+        isGenerating={generatingTopics}
+        progress={topicGenerationProgress}
+        currentSubject={currentGeneratingSubject}
+      />
+    );
+  };
+
+  // Handle generating topics for all subjects
+  const handleGenerateAllTopics = async () => {
+    if (subjectsToGenerateTopics.length === 0) return;
+    
+    // Set up for topic generation
+    setGeneratingTopics(true);
+    setTopicGenerationProgress({ current: 0, total: subjectsToGenerateTopics.length });
+    
+    // Process each subject one at a time with delay between each
+    for (let i = 0; i < subjectsToGenerateTopics.length; i++) {
+      const subject = subjectsToGenerateTopics[i];
+      setCurrentGeneratingSubject(subject.name);
+      
+      // Generate topic list for this subject
+      try {
+        await generateTopicListForSubject(subject);
+        
+        // Update progress
+        setTopicGenerationProgress(prev => ({
+          ...prev,
+          current: prev.current + 1
+        }));
+        
+        // Small delay between subjects to avoid rate limiting
+        if (i < subjectsToGenerateTopics.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error(`Error generating topics for ${subject.name}:`, error);
+        // Continue with next subject even if one fails
+      }
+    }
+    
+    // Done with all subjects
+    setGeneratingTopics(false);
+    setTopicGenerationModalOpen(false);
+    setCurrentGeneratingSubject(null);
+    showStatus("Topic lists generated successfully!", 5000);
+  };
+
+  // Generate topic list for a single subject
+  const generateTopicListForSubject = async (subject) => {
+    const { name, examBoard, examType } = subject;
+    
+    // Generate the topic list using the API
+    try {
+      // Create the prompt for topic list generation
+      const prompt = generateTopicPrompt(name, examBoard, examType);
+      
+      // Make API call to generate topics
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.REACT_APP_OPENAI_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo", // Or gpt-4 if available
+          messages: [
+            { role: "system", content: "You are an expert curriculum designer for educational content." },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const topicListText = data.choices[0].message.content;
+      
+      // Parse the topic list response
+      let topics = [];
+      try {
+        // Try to parse as JSON first
+        if (topicListText.includes('[') && topicListText.includes(']')) {
+          const jsonMatch = topicListText.match(/\[([\s\S]*)\]/);
+          if (jsonMatch) {
+            const jsonStr = `[${jsonMatch[1]}]`;
+            topics = JSON.parse(jsonStr.replace(/'/g, '"'));
+          }
+        }
+        
+        // If JSON parsing failed, extract topics line by line
+        if (!topics.length) {
+          topics = topicListText
+            .split('\n')
+            .filter(line => line.trim())
+            .map(line => line.replace(/^\d+\.\s*/, '').trim())
+            .filter(topic => topic.length > 0);
+        }
+      } catch (parseError) {
+        console.error("Error parsing topic list:", parseError);
+        // Fallback to simple line splitting
+        topics = topicListText
+          .split('\n')
+          .filter(line => line.trim())
+          .map(line => line.replace(/^\d+\.\s*/, '').trim())
+          .filter(topic => topic.length > 0);
+      }
+      
+      // Save the topic list
+      if (topics.length > 0) {
+        // Save topic list to user data
+        setUserTopics(prev => ({
+          ...prev,
+          [name]: topics
+        }));
+        
+        // Update the subject card to show it has a topic list
+        setAllCards(prevCards => 
+          prevCards.map(card => {
+            if (card.subject === name && card.template) {
+              return {
+                ...card,
+                hasTopicList: true
+              };
+            }
+            return card;
+          })
+        );
+      }
+      
+      return topics;
+    } catch (error) {
+      console.error(`Error generating topic list for ${name}:`, error);
+      throw error;
+    }
   };
 
   // Show loading state
@@ -1616,6 +1783,9 @@ function App() {
 
           {/* Subject Selection Wizard */}
           {renderSubjectWizard()}
+          
+          {/* Topic Generation Modal */}
+          {renderTopicGenerationModal()}
         </>
       )}
     </div>
