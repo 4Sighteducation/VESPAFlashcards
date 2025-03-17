@@ -29,6 +29,14 @@ const TopicListModal = ({
                            Array.isArray(existingTopics) && 
                            existingTopics.length > 0;
 
+  // Handle clicking outside the modal to close it
+  const handleOverlayClick = (e) => {
+    // Only close if the overlay itself was clicked (not its children)
+    if (e.target.className === 'topic-list-modal-overlay') {
+      onClose();
+    }
+  };
+
   useEffect(() => {
     console.log("TopicListModal mounted with:", { subject, examBoard, examType, existingTopics });
     
@@ -44,7 +52,19 @@ const TopicListModal = ({
       console.log("Generating new topics");
       generateTopics();
     }
-  }, [subject, examBoard, examType, regenerate]);
+
+    // Add ESC key handler for closing the modal
+    const handleEscKey = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscKey);
+    return () => {
+      window.removeEventListener('keydown', handleEscKey);
+    };
+  }, [subject, examBoard, examType, regenerate, hasExistingTopics, existingTopics, onClose]);
 
   // Generate topics using OpenAI
   const generateTopics = async () => {
@@ -168,11 +188,17 @@ const TopicListModal = ({
   };
   
   return (
-    <div className="topic-list-modal-overlay">
+    <div className="topic-list-modal-overlay" onClick={handleOverlayClick}>
       <div className="topic-list-modal">
         <div className="topic-list-header">
           <h2>{subject} Topics</h2>
-          <button className="close-modal-button" onClick={onClose}>✕</button>
+          <button 
+            className="close-modal-button" 
+            onClick={onClose}
+            aria-label="Close"
+          >
+            ✕
+          </button>
         </div>
         
         <div className="topic-list-body">

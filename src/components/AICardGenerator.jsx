@@ -79,26 +79,27 @@ const sanitizeField = (value) => {
 
 const AICardGenerator = ({ 
   onAddCard, 
+  onSaveCards,  // Updated prop for saving cards
   onClose, 
   subjects = [], 
   auth, 
   userId,
   initialSubject = "",
   initialTopic = "",
-  examBoard = "AQA",
-  examType = "A-Level"
+  initialExamBoard = "",
+  initialExamType = ""
 }) => {
   // Step management state
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(initialTopic ? 5 : 1); // Skip to card generation if topic is provided
   const [totalSteps, setTotalSteps] = useState(7);
   
   // Form data state
   const [formData, setFormData] = useState({
-    examBoard: examBoard,
-    examType: examType,
-    subject: initialSubject,
+    examBoard: initialExamBoard || "AQA",
+    examType: initialExamType || "A-Level",
+    subject: initialSubject || "",
     newSubject: "",
-    topic: initialTopic,
+    topic: initialTopic || "",
     newTopic: "",
     numCards: 5,
     questionType: "multiple_choice",
@@ -114,7 +115,102 @@ const AICardGenerator = ({
   const [generatedCards, setGeneratedCards] = useState([]);
   
   // Progress tracking
-  const [completedSteps, setCompletedSteps] = useState({});
+  const [completedSteps, setCompletedSteps] = useState(initialTopic ? {
+    1: true, 2: true, 3: true, 4: true
+  } : {});
+
+  // Log initial props for debugging
+  useEffect(() => {
+    console.log("AICardGenerator initialized with:", {
+      initialSubject,
+      initialTopic,
+      initialExamBoard,
+      initialExamType,
+      currentStep
+    });
+  }, []);
+  
+  // If we have initialTopic, go directly to card generation
+  useEffect(() => {
+    if (initialTopic && currentStep === 5) {
+      console.log("Automatically generating cards for topic:", initialTopic);
+      // Allow time for the component to mount and state to settle
+      const timer = setTimeout(() => {
+        generateCards();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [initialTopic, currentStep]);
+  
+  // Handle adding all cards and closing
+  const handleAddAllCards = () => {
+    const unadded = generatedCards.filter(card => !card.added);
+    
+    if (unadded.length === 0) {
+      return; // No cards to add
+    }
+    
+    // Process the cards with correct metadata
+    const cardsToAdd = unadded.map(card => ({
+      ...card,
+      subject: formData.subject,
+      topic: formData.topic,
+      subjectColor: formData.subjectColor,
+      cardColor: formData.subjectColor,
+      // Add metadata for consistency
+      exam_board: formData.examBoard,
+      exam_type: formData.examType,
+      examBoard: formData.examBoard,
+      examType: formData.examType,
+      courseType: formData.examType,
+      board: formData.examBoard,
+      meta: {
+        exam_board: formData.examBoard,
+        exam_type: formData.examType,
+        examBoard: formData.examBoard,
+        examType: formData.examType
+      },
+      metadata: {
+        exam_board: formData.examBoard,
+        exam_type: formData.examType,
+        examBoard: formData.examBoard,
+        examType: formData.examType,
+        subject: formData.subject
+      }
+    }));
+    
+    // Use the new onSaveCards prop for saving the cards
+    if (onSaveCards) {
+      onSaveCards(cardsToAdd);
+    } else if (onAddCard) {
+      // Backward compatibility - add cards one by one
+      cardsToAdd.forEach(card => onAddCard(card));
+    }
+    
+    // Mark all cards as added
+    setGeneratedCards(prev => prev.map(c => ({...c, added: true})));
+    
+    // Show success modal with all added cards
+    setSuccessModal({
+      show: true,
+      addedCards: cardsToAdd
+    });
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      setSuccessModal(prev => ({...prev, show: false}));
+      // Close the generator when success modal is hidden
+      onClose();
+    }, 3000);
+    
+    // Trigger an explicit save operation to ensure cards are saved to the database
+    // This is important to prevent data loss if the user refreshes the page
+    if (window.parent && window.parent.postMessage) {
+      // Send a message to trigger a save operation
+      window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
+      console.log("Triggered explicit save after adding all cards");
+    }
+  };
   
   // New states for hierarchical topics and saved topic lists
   const [hierarchicalTopics, setHierarchicalTopics] = useState([]);
@@ -1402,42 +1498,19 @@ Use this format for different question types:
     }
   };
 
-  // Add all cards to the bank
-  const handleAddAllCards = () => {
-    const unadded = generatedCards.filter(card => !card.added);
+  // Generate new batch of cards
+  const handleRegenerateCards = () => {
+    setGeneratedCards([]);
+    setIsGenerating(true);
     
-    if (unadded.length === 0) {
-      return; // No cards to add
-    }
+    // Keep the existing color when regenerating
+    const currentColor = formData.subjectColor;
     
-    // Add all unadded cards
-    unadded.forEach(card => {
-      onAddCard(card);
-    });
-    
-    // Mark all cards as added
-    setGeneratedCards(prev => prev.map(c => ({...c, added: true})));
-    
-    // Show success modal with all added cards
-    setSuccessModal({
-      show: true,
-      addedCards: unadded
-    });
-    
-    // Auto-hide after 3 seconds
-    setTimeout(() => {
-      setSuccessModal(prev => ({...prev, show: false}));
-    }, 3000);
-    
-    // Trigger an explicit save operation to ensure cards are saved to the database
-    // This is important to prevent data loss if the user refreshes the page
-    if (window.parent && window.parent.postMessage) {
-      // Send a message to trigger a save operation
-      window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
-      console.log("Triggered explicit save after adding all cards");
-    }
+    // We want to keep all the existing parameters the same,
+    // including the color, but generate new cards
+    generateCards();
   };
-  
+
   // Modal to show successfully added cards
   const renderSuccessModal = () => {
     if (!successModal.show) return null;
@@ -1460,19 +1533,6 @@ Use this format for different question types:
         </div>
       </div>
     );
-  };
-
-  // Generate new batch of cards
-  const handleRegenerateCards = () => {
-    setGeneratedCards([]);
-    setIsGenerating(true);
-    
-    // Keep the existing color when regenerating
-    const currentColor = formData.subjectColor;
-    
-    // We want to keep all the existing parameters the same,
-    // including the color, but generate new cards
-    generateCards();
   };
 
   // Helper to get contrast color for text
@@ -2034,7 +2094,7 @@ Use this format for different question types:
 
   // If we have initial values, skip to the appropriate step
   useEffect(() => {
-    if (initialSubject && initialTopic && examBoard && examType) {
+    if (initialSubject && initialTopic && initialExamBoard && initialExamType) {
       // We have all metadata, skip to number of cards selection (step 5)
       setCurrentStep(5);
       
@@ -2043,11 +2103,11 @@ Use this format for different question types:
         ...prev,
         subject: initialSubject,
         topic: initialTopic,
-        examBoard: examBoard,
-        examType: examType
+        examBoard: initialExamBoard,
+        examType: initialExamType
       }));
       
-      console.log(`Skipping to step 5 with metadata: ${initialSubject}, ${initialTopic}, ${examBoard}, ${examType}`);
+      console.log(`Skipping to step 5 with metadata: ${initialSubject}, ${initialTopic}, ${initialExamBoard}, ${initialExamType}`);
     } else if (initialSubject && initialTopic) {
       // Skip to question type selection (step 5)
       setCurrentStep(5);
@@ -2055,7 +2115,7 @@ Use this format for different question types:
       // Skip to topic selection (step 4)
       setCurrentStep(4);
     }
-  }, [initialSubject, initialTopic, examBoard, examType]);
+  }, [initialSubject, initialTopic, initialExamBoard, initialExamType]);
 
   // New function to render topic selection modal
   const renderTopicModal = () => {

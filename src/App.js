@@ -109,6 +109,8 @@ function App() {
   const [aiCardGeneratorOpen, setAiCardGeneratorOpen] = useState(false);
   const [currentAIGeneratorSubject, setCurrentAIGeneratorSubject] = useState("");
   const [currentAIGeneratorTopic, setCurrentAIGeneratorTopic] = useState("");
+  const [currentAIGeneratorExamBoard, setCurrentAIGeneratorExamBoard] = useState("");
+  const [currentAIGeneratorExamType, setCurrentAIGeneratorExamType] = useState("");
 
   // Spaced repetition state
   const [currentBox, setCurrentBox] = useState(1);
@@ -1737,8 +1739,11 @@ function App() {
       
       // After a delay, open the AI card generator
       setTimeout(() => {
+        // Pass all the required metadata to the AI card generator
         setCurrentAIGeneratorSubject(subject);
         setCurrentAIGeneratorTopic(topicListData.topic);
+        setCurrentAIGeneratorExamBoard(topicListData.examBoard);
+        setCurrentAIGeneratorExamType(topicListData.examType);
         setAiCardGeneratorOpen(true);
       }, 500);
       
@@ -1757,14 +1762,27 @@ function App() {
       
       // If we have auth and userId, save to Knack
       if (auth && auth.id) {
+        console.log("Auth object when saving topic list:", auth);
+        console.log("Field_3011:", auth.field_3011);
+        console.log("Field_2979:", auth.field_2979);
+        
         // Try to get existing topic lists
         let existingLists = [];
         try {
+          // Check both possible fields
           if (auth.field_3011) {
             existingLists = JSON.parse(auth.field_3011);
             if (!Array.isArray(existingLists)) {
               existingLists = [];
             }
+            console.log("Found existing lists in field_3011:", existingLists);
+          } else if (auth.field_2979) {
+            // Try the other field if the first one is empty
+            existingLists = JSON.parse(auth.field_2979);
+            if (!Array.isArray(existingLists)) {
+              existingLists = [];
+            }
+            console.log("Found existing lists in field_2979:", existingLists);
           }
         } catch (e) {
           console.error("Error parsing existing topic lists:", e);
@@ -1780,16 +1798,27 @@ function App() {
           existingLists[existingIndex] = {
             ...existingLists[existingIndex],
             ...topicListData,
-            topics: topicListData.topics
+            topics: topicListData.topics,
+            lastUpdated: new Date().toISOString()
           };
         } else {
           // Add new topic list
-          existingLists.push(topicListData);
+          existingLists.push({
+            ...topicListData,
+            lastUpdated: new Date().toISOString()
+          });
         }
         
-        // Save to Knack
+        // Save to Knack - try both fields to ensure compatibility
         try {
-          console.log("Saving to Knack:", JSON.stringify(existingLists));
+          console.log("Saving to Knack field_3011:", JSON.stringify(existingLists));
+          
+          // Create request body with both fields
+          const requestBody = {
+            field_3011: JSON.stringify(existingLists),
+            field_2979: JSON.stringify(existingLists)  // Save to both fields for backward compatibility
+          };
+          
           const response = await fetch(`https://api.knack.com/v1/objects/object_5/records/${auth.id}`, {
             method: "PUT",
             headers: {
@@ -1797,16 +1826,23 @@ function App() {
               "X-Knack-Application-Id": KNACK_APP_ID,
               "X-Knack-REST-API-Key": KNACK_API_KEY
             },
-            body: JSON.stringify({
-              field_3011: JSON.stringify(existingLists)
-            })
+            body: JSON.stringify(requestBody)
           });
           
           console.log("Knack API response status:", response.status);
           
           if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Knack API error response:", errorText);
             throw new Error(`Failed to save topic list: ${response.status}`);
           }
+          
+          // Also try updating auth object locally
+          setAuth(prevAuth => ({
+            ...prevAuth,
+            field_3011: JSON.stringify(existingLists),
+            field_2979: JSON.stringify(existingLists)
+          }));
           
           // Show success message
           showStatus("Topic list saved successfully!", 3000);
@@ -1833,6 +1869,36 @@ function App() {
       showStatus("Failed to save topic list. Please try again.", 3000);
     }
   }, [auth, KNACK_API_KEY, KNACK_APP_ID, showStatus]);
+
+  // Handle saving AI-generated cards
+  const handleSaveAICards = useCallback((generatedCards) => {
+    console.log("Saving AI-generated cards:", generatedCards);
+    
+    if (!generatedCards || !Array.isArray(generatedCards) || generatedCards.length === 0) {
+      console.error("No cards to save");
+      return;
+    }
+    
+    // Process the generated cards
+    const newCards = generatedCards.map(card => ({
+      ...card,
+      id: `card-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      timestamp: new Date().toISOString(),
+      subjectColor: subjectColorMapping[card.subject] || "#e6194b"
+    }));
+    
+    // Add the new cards to the card bank
+    setAllCards(prevCards => [...prevCards, ...newCards]);
+    
+    // Show a success message
+    showStatus(`Added ${newCards.length} new flashcards!`, 3000);
+    
+    // Close the AI generator
+    setAiCardGeneratorOpen(false);
+    
+    // Save the cards to storage
+    saveData([...allCards, ...newCards]);
+  }, [allCards, saveData, showStatus, subjectColorMapping]);
 
   // Show loading state
   if (loading) {
@@ -1991,15 +2057,14 @@ function App() {
 
           {view === "aiGenerator" && (
             <AICardGenerator
-              onAddCard={addCard}
-              onClose={() => setView("cardBank")}
-              subjects={getSubjects()}
+              onClose={() => setAiCardGeneratorOpen(false)}
+              onSaveCards={handleSaveAICards}
+              initialSubject={currentAIGeneratorSubject}
+              initialTopic={currentAIGeneratorTopic}
+              initialExamBoard={currentAIGeneratorExamBoard}
+              initialExamType={currentAIGeneratorExamType}
               auth={auth}
               userId={auth?.id}
-              initialSubject={selectedSubject}
-              initialTopic={selectedTopic}
-              examBoard={topicListExamBoard}
-              examType={topicListExamType}
             />
           )}
 
