@@ -1678,6 +1678,7 @@ function App() {
         // Save to Knack if we have auth
         if (auth && auth.id) {
           try {
+            console.log("Saving to Knack:", JSON.stringify(field3011Data));
             const response = await fetch(`https://api.knack.com/v1/objects/object_5/records/${auth.id}`, {
               method: "PUT",
               headers: {
@@ -1690,26 +1691,32 @@ function App() {
               })
             });
             
+            console.log("Knack API response status:", response.status);
+            
             if (!response.ok) {
-              console.error("Failed to save topic list to Knack");
+              throw new Error(`Failed to save topic list: ${response.status}`);
             }
+            
+            // Show success message
+            showStatus("Topic list saved successfully!", 3000);
+            
+            // Update subject card to show it has a topic list
+            setAllCards(prevCards => 
+              prevCards.map(card => {
+                if (card.subject === name && card.template) {
+                  return {
+                    ...card,
+                    hasTopicList: true
+                  };
+                }
+                return card;
+              })
+            );
           } catch (error) {
             console.error("Error saving topic list to Knack:", error);
+            showStatus("Failed to save topic list. Please try again.", 3000);
           }
         }
-        
-        // Update the subject card to show it has a topic list
-        setAllCards(prevCards => 
-          prevCards.map(card => {
-            if (card.subject === name && card.template) {
-              return {
-                ...card,
-                hasTopicList: true
-              };
-            }
-            return card;
-          })
-        );
       }
       
       return topics;
@@ -1782,6 +1789,7 @@ function App() {
         
         // Save to Knack
         try {
+          console.log("Saving to Knack:", JSON.stringify(existingLists));
           const response = await fetch(`https://api.knack.com/v1/objects/object_5/records/${auth.id}`, {
             method: "PUT",
             headers: {
@@ -1793,6 +1801,8 @@ function App() {
               field_3011: JSON.stringify(existingLists)
             })
           });
+          
+          console.log("Knack API response status:", response.status);
           
           if (!response.ok) {
             throw new Error(`Failed to save topic list: ${response.status}`);
