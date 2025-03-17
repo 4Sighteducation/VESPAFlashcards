@@ -454,10 +454,15 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
 
   // CardModal component: Update for better responsiveness
   const CardModal = () => {
+    // Determine the current subject from selectedCard
+    const currentSubject = selectedCard ? selectedCard.metadata?.subject || "Unknown Subject" : "";
+    
     // Find the current topic for this card
-    const currentTopic = Object.keys(groupedCards[currentSubject] || {}).find(
-      topic => groupedCards[currentSubject][topic].some(c => c.id === selectedCard.id)
-    );
+    const currentTopic = selectedCard && currentSubject && groupedCards[currentSubject] 
+      ? Object.keys(groupedCards[currentSubject] || {}).find(
+          topic => groupedCards[currentSubject][topic].some(c => c.id === selectedCard.id)
+        )
+      : null;
 
     // Get all cards from the current subject or topic
     let modalCards = [];
