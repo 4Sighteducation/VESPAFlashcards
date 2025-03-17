@@ -330,3 +330,50 @@ button:disabled {
   opacity: 0.6;
   cursor: wait;
 }
+
+/* Subject Selection Button */
+.select-subjects-container {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.select-subjects-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #002f5d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.select-subjects-button:hover {
+  background-color: #004080;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.select-subjects-button .button-icon {
+  margin-right: 8px;
+  font-size: 1.1rem;
+}
+
+/* For mobile screens */
+@media (max-width: 768px) {
+  .select-subjects-button {
+    width: 100%;
+    max-width: 280px;
+    font-size: 0.9rem;
+    padding: 10px 20px;
+  }
+}

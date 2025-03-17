@@ -12,6 +12,7 @@ import AICardGenerator from './components/AICardGenerator';
 import PrintModal from './components/PrintModal';
 import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
 import TopicListModal from './components/TopicListModal';
+import SubjectSelectionWizard from './components/SubjectSelectionWizard';
 
 // API Keys and constants
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
@@ -116,6 +117,9 @@ function App() {
   const [cardsToPrint, setCardsToPrint] = useState([]);
   const [printTitle, setPrintTitle] = useState("");
   const [cardCreationModalOpen, setCardCreationModalOpen] = useState(false);
+
+  // New state for subject wizard
+  const [subjectWizardOpen, setSubjectWizardOpen] = useState(false);
 
   // User information - enhanced with additional student data
   const getUserInfo = useCallback(() => {
@@ -1359,6 +1363,78 @@ function App() {
     setView("aiGenerator");
   }, []);
 
+  // Handle saving subjects from wizard
+  const handleSaveSubjects = (subjectsData) => {
+    console.log("Saving subjects:", subjectsData);
+    
+    // Create empty subjects in the card bank
+    const newSubjectColorMapping = { ...subjectColorMapping };
+    
+    // Process each subject
+    subjectsData.forEach(subject => {
+      const { name, color, examBoard, examType } = subject;
+      
+      // Add to subject color mapping
+      newSubjectColorMapping[name] = color;
+      
+      // Create an empty "shell" card to represent the subject
+      // This will make the subject appear in the card bank
+      const subjectCard = {
+        id: `template-${name}-${Date.now()}`,
+        question: "",
+        answer: "",
+        subject: name,
+        topic: "General",
+        cardColor: color,
+        subjectColor: color,
+        metadata: {
+          examBoard,
+          examType,
+          subject: name
+        },
+        template: true,
+        boxNum: 1,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Add the template card
+      setAllCards(prevCards => [...prevCards, subjectCard]);
+    });
+    
+    // Update subject colors
+    setSubjectColorMapping(newSubjectColorMapping);
+    
+    // Show a success message
+    showStatus("Subjects added successfully! Now let's generate topic lists.", 5000);
+  };
+
+  // Render subject wizard
+  const renderSubjectWizard = () => {
+    if (!subjectWizardOpen) return null;
+    
+    return (
+      <SubjectSelectionWizard 
+        onClose={() => setSubjectWizardOpen(false)}
+        onSaveSubjects={handleSaveSubjects}
+      />
+    );
+  };
+
+  // Render the "Select Your Subjects" button
+  const renderSelectSubjectsButton = () => {
+    return (
+      <div className="select-subjects-container">
+        <button 
+          className="select-subjects-button"
+          onClick={() => setSubjectWizardOpen(true)}
+        >
+          <span className="button-icon">📚</span>
+          Select Your Subjects
+        </button>
+      </div>
+    );
+  };
+
   // Show loading state
   if (loading) {
     return <LoadingSpinner message={loadingMessage} />;
@@ -1403,6 +1479,9 @@ function App() {
             </div>
           )}
           
+          {/* Select Subjects Button */}
+          {renderSelectSubjectsButton()}
+
           {/* Topic List Modal */}
           {topicListModalOpen && topicListSubject && (
             <TopicListModal
@@ -1534,6 +1613,9 @@ function App() {
               onReturnToBank={() => setView("cardBank")}
             />
           )}
+
+          {/* Subject Selection Wizard */}
+          {renderSubjectWizard()}
         </>
       )}
     </div>

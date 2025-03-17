@@ -24,11 +24,11 @@ const EXAM_BOARDS = [
 const EXAM_TYPES = [
   { value: "GCSE", label: "GCSE" },
   { value: "A-Level", label: "A-Level" },
-  { value: "IB", label: "International Baccalaureate" },
-  { value: "AP", label: "Advanced Placement" },
+  { value: "International Baccalaureate", label: "International Baccalaureate" },
+  { value: "Advanced Placement", label: "Advanced Placement" },
   { value: "Scottish Higher", label: "Scottish Higher" },
-  { value: "BTEC", label: "BTEC" },
-  { value: "Other", label: "Other" }
+  { value: "BTEC / Cambridge Nationals Level 2", label: "BTEC / Cambridge Nationals Level 2" },
+  { value: "BTEC / Cambridge Nationals Level 3", label: "BTEC / Cambridge Nationals Level 3" }
 ];
 
 // Function to return compatible exam boards for each exam type
