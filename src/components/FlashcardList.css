@@ -287,13 +287,14 @@
   justify-content: center;
   align-items: center;
   z-index: 1100;
-  padding: 10px;
+  padding: 0;
 }
 
 .card-modal-content {
   background-color: #f8f8f8;
   width: 95%;
-  max-width: 800px;
+  max-width: 600px;
+  height: auto;
   max-height: 90vh;
   border-radius: 12px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
@@ -303,56 +304,55 @@
   overflow: hidden;
 }
 
-/* Landscape layout for card modal */
-.card-modal-content.landscape-mode {
-  flex-direction: row;
-  width: 95%;
-  height: 90vh;
-}
-
 .card-modal-card-container {
   display: flex;
   justify-content: center;
   align-items: center;
   flex: 1;
-  padding: 20px;
+  padding: 20px 15px;
   position: relative;
+  overflow: hidden;
+  min-height: 60vh;
 }
 
-.landscape-mode .card-modal-card-container {
-  width: 70%;
-  overflow: hidden;
-  padding: 15px;
+.card-modal-card-container .flashcard {
+  width: 100%;
+  height: 100%;
+  max-width: 500px;
+  max-height: 60vh;
+  margin: 0 auto;
+  box-shadow: none;
 }
 
 .card-modal-actions {
   padding: 15px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: rgba(0, 0, 0, 0.05);
   border-top: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
-.landscape-mode .card-modal-actions {
-  width: 30%;
-  border-top: none;
-  border-left: 1px solid rgba(0, 0, 0, 0.1);
-  justify-content: center;
-  padding: 10px;
+.card-info {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.card-counter {
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
+.topic-info {
+  font-size: 0.85rem;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .nav-buttons {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   gap: 10px;
-  width: 100%;
-}
-
-.landscape-mode .nav-buttons {
-  flex-direction: column;
-  gap: 15px;
 }
 
 .nav-button {
@@ -363,16 +363,11 @@
   padding: 8px 15px;
   font-size: 14px;
   cursor: pointer;
+  flex: 1;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 80px;
-  transition: all 0.2s;
-}
-
-.landscape-mode .nav-button {
-  width: 100%;
-  padding: 10px;
 }
 
 .nav-button:hover:not(:disabled) {
@@ -384,48 +379,16 @@
   cursor: not-allowed;
 }
 
-.card-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  margin: 0 5px;
-}
-
-.landscape-mode .card-info {
-  margin: 10px 0;
-  order: -1;
-}
-
-.swipe-indicator {
-  position: absolute;
-  bottom: 15px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  color: rgba(0, 0, 0, 0.5);
-  font-size: 14px;
-  pointer-events: none;
-  animation: fadeInOut 3s infinite;
-}
-
-.landscape-mode .swipe-indicator {
-  display: none;
-}
-
-@keyframes fadeInOut {
-  0%, 100% { opacity: 0; }
-  50% { opacity: 1; }
-}
-
-/* Make sure navigation buttons are properly positioned on mobile in portrait */
+/* Make sure navigation buttons are properly positioned on mobile */
 @media (max-width: 768px) {
   .card-modal-content {
+    width: 98%;
     max-height: 95vh;
   }
   
   .card-modal-card-container {
-    padding: 15px;
+    padding: 15px 10px;
+    min-height: 50vh;
   }
   
   .card-modal-actions {
@@ -433,50 +396,40 @@
   }
   
   .nav-button {
-    min-width: 60px;
-    padding: 6px 10px;
-  }
-}
-
-/* Ensure proper modal positioning in landscape */
-@media (orientation: landscape) and (max-height: 500px) {
-  .card-modal-content {
-    height: 95vh;
-  }
-  
-  .card-modal-card-container {
-    padding: 10px;
-  }
-}
-
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  .card-modal-content {
-    width: 100%;
-    height: 100%;
-    max-height: none;
-    border-radius: 0;
-  }
-  
-  .card-modal-overlay {
-    padding: 0;
-  }
-  
-  .nav-button {
-    padding: 15px;
-    font-size: 1.2rem;
+    padding: 8px 10px;
   }
   
   .card-info {
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
+    margin-bottom: 10px;
   }
   
-  .topic-info {
-    text-align: center;
-    max-width: 100%;
+  .subjects-accordion {
+    height: calc(100vh - 100px);
+    padding-bottom: 80px;
   }
+  
+  .topic-cards {
+    min-height: 300px;
+  }
+}
+
+.close-modal-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 /* No-cards message styling */
@@ -976,43 +929,47 @@ html {
 .app-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100%;
+  height: 100vh;
   width: 100%;
+  position: relative;
 }
 
 .flashcard-list {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: calc(100vh - 80px); /* Account for header */
+  flex-grow: 1;
+  min-height: 100%;
   width: 100%;
+  height: calc(100vh - 60px); /* Adjust for header */
   overflow: hidden;
+  position: relative;
 }
 
 .bank-content {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex-grow: 1;
   height: 100%;
+  position: relative;
   overflow: hidden;
 }
 
 .subjects-accordion {
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   width: 100%;
-  height: auto;
-  flex: 1;
-  overflow: auto;
-  min-height: calc(100vh - 200px); /* Ensure it takes up available space */
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 60px; /* Add padding at bottom for better scrolling */
 }
 
 .topic-group {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  height: auto;
-  overflow: hidden;
+  width: 100%;
 }
 
 .topic-cards {
@@ -1021,10 +978,10 @@ html {
   justify-content: center;
   gap: 15px;
   padding: 15px;
-  overflow-y: auto;
-  min-height: 300px;
+  min-height: 350px;
   max-height: none;
-  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Mobile-specific fixes */

@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from "react";
 import "./Header.css";
 
-const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrintAll, onCreateCard }) => {
+const Header = ({ 
+  userInfo, 
+  currentView, 
+  onViewChange, 
+  onSave, 
+  isSaving, 
+  onPrintAll, 
+  onCreateCard,
+  // New props for spaced repetition
+  currentBox = 1,
+  onSelectBox = () => {},
+  spacedRepetitionData = {}
+}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const toggleMobileMenu = () => {
@@ -37,11 +49,36 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
 
   // Determine what view toggle to show based on current view
   const isInCardBank = currentView === "cardBank";
+  const isInSpacedRep = currentView === "spacedRepetition";
   const alternateViewName = isInCardBank ? "Study" : "Cards";
   const alternateViewIcon = isInCardBank ? "🔄" : "📚";
   const alternateViewAction = isInCardBank 
     ? () => onViewChange("spacedRepetition") 
     : () => onViewChange("cardBank");
+
+  // Render the box selectors for spaced repetition
+  const renderBoxSelectors = () => {
+    return (
+      <div className="header-box-selectors">
+        {[1, 2, 3, 4, 5].map((box) => (
+          <button
+            key={box}
+            className={`box-selector ${currentBox === box ? "active" : ""} ${
+              (spacedRepetitionData[`box${box}`]?.some(card => 
+                !card.nextReviewDate || new Date(card.nextReviewDate) <= new Date()
+              )) ? "has-reviewable" : ""
+            }`}
+            onClick={() => handleNavClick(() => onSelectBox(box))}
+          >
+            {box}
+            <span className="box-count">
+              {spacedRepetitionData[`box${box}`]?.length || 0}
+            </span>
+          </button>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <header className="header">
@@ -64,22 +101,31 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
           {alternateViewName}
         </button>
         
-        <button
-          className="nav-button create-card-btn"
-          onClick={() => handleNavClick(onCreateCard)}
-        >
-          <span className="button-icon">➕</span>
-          Create Card
-        </button>
+        {/* Only show Create Card, Print, and Logout buttons in Card Bank view */}
+        {isInCardBank && (
+          <>
+            <button
+              className="nav-button create-card-btn"
+              onClick={() => handleNavClick(onCreateCard)}
+            >
+              <span className="button-icon">➕</span>
+              Create Card
+            </button>
+            
+            <button
+              className="nav-button print-button"
+              onClick={() => handleNavClick(onPrintAll)}
+            >
+              <span className="button-icon">🖨️</span>
+              Print
+            </button>
+          </>
+        )}
         
-        <button
-          className="nav-button print-button"
-          onClick={() => handleNavClick(onPrintAll)}
-        >
-          <span className="button-icon">🖨️</span>
-          Print
-        </button>
+        {/* Only show box selectors in Spaced Repetition view */}
+        {isInSpacedRep && renderBoxSelectors()}
         
+        {/* Always show logout button */}
         <button
           className="nav-button logout-button"
           onClick={() => handleNavClick(handleLogout)}

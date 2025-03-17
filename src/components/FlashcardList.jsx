@@ -528,94 +528,16 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
 
     // Handler functions for navigation
     const handlePrevCard = () => {
-      console.log("Trying to navigate to previous card");
+      console.log("Navigating to previous card");
       if (currentIndex > 0) {
         setSelectedCard(modalCards[currentIndex - 1]);
       }
     };
     
     const handleNextCard = () => {
-      console.log("Trying to navigate to next card");
+      console.log("Navigating to next card");
       if (currentIndex < totalCards - 1) {
         setSelectedCard(modalCards[currentIndex + 1]);
-      }
-    };
-
-    // Touch swipe functionality 
-    const [touchStart, setTouchStart] = useState(null);
-    const [touchEnd, setTouchEnd] = useState(null);
-    const [touchStartY, setTouchStartY] = useState(null);
-    const [touchMoved, setTouchMoved] = useState(false);
-    const touchTimeout = useRef(null);
-    const swipeEnabled = useRef(true);
-    
-    // Required minimum distance between touchStart and touchEnd to be detected as swipe
-    const minSwipeDistance = 50;
-    
-    const onTouchStart = (e) => {
-      // Reset swipe enabled state
-      swipeEnabled.current = true;
-      
-      // Don't process touch events on buttons or interactive elements
-      if (e.target.closest('button') || 
-          e.target.closest('.delete-button') || 
-          e.target.closest('.info-button') || 
-          e.target.closest('.color-edit-button') ||
-          e.target.closest('.close-modal-button') ||
-          e.target.closest('.flashcard-buttons')) {
-        console.log("Touch on interactive element, disabling swipe");
-        swipeEnabled.current = false;
-        return;
-      }
-      
-      setTouchEnd(null); // Reset touchEnd
-      setTouchStart(e.targetTouches[0].clientX);
-      setTouchStartY(e.targetTouches[0].clientY);
-      setTouchMoved(false);
-      
-      // Clear any existing timeout
-      if (touchTimeout.current) {
-        clearTimeout(touchTimeout.current);
-      }
-    };
-    
-    const onTouchMove = (e) => {
-      // Skip if swipe is disabled for this touch gesture
-      if (!swipeEnabled.current || !touchStart) return;
-      
-      // Calculate both X and Y distances
-      const currentX = e.targetTouches[0].clientX;
-      const currentY = e.targetTouches[0].clientY;
-      const distanceX = Math.abs(currentX - touchStart);
-      const distanceY = Math.abs(currentY - touchStartY);
-      
-      // Check if moving more vertically than horizontally
-      if (distanceY > distanceX * 1.5) {
-        // This is a vertical scroll - disable swipe for this touch
-        swipeEnabled.current = false;
-        return;
-      }
-      
-      // Update for horizontal movement
-      setTouchEnd(currentX);
-      setTouchMoved(distanceX > 10);
-    };
-    
-    const onTouchEnd = (e) => {
-      // Skip if swipe is disabled or no valid touch data
-      if (!swipeEnabled.current || !touchStart || !touchEnd || !touchMoved) return;
-      
-      const distance = touchStart - touchEnd;
-      const isLeftSwipe = distance > minSwipeDistance;
-      const isRightSwipe = distance < -minSwipeDistance;
-      
-      console.log(`Swipe detected - distance: ${distance}, left: ${isLeftSwipe}, right: ${isRightSwipe}`);
-      
-      // Handle swipe actions based on direction
-      if (isLeftSwipe && currentIndex < totalCards - 1) {
-        handleNextCard();
-      } else if (isRightSwipe && currentIndex > 0) {
-        handlePrevCard();
       }
     };
 
@@ -624,9 +546,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       ? `${currentSubject} | ${currentTopic}`
       : currentSubject;
 
-    // Check if we're on a mobile device
+    // Responsive layout variables
     const isMobile = window.innerWidth <= 768;
-    // Check if we're in landscape orientation
     const isLandscape = window.innerWidth > window.innerHeight;
 
     // Safely determine card color accounting for missing properties
@@ -636,7 +557,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     return (
       <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
         <div 
-          className={`card-modal-content ${isLandscape ? 'landscape-mode' : ''}`} 
+          className="card-modal-content" 
           onClick={(e) => e.stopPropagation()}
         >
           <button 
@@ -653,9 +574,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
               '--card-bg-color': cardBgColor, 
               '--card-text-color': cardTextColor
             }}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
           >
             <Flashcard 
               card={selectedCard} 
@@ -667,38 +585,32 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
             />
           </div>
           
-          <div className={`card-modal-actions ${isLandscape ? 'landscape-actions' : ''}`}>
+          <div className="card-modal-actions">
+            <div className="card-info">
+              <div className="card-counter">
+                {currentIndex + 1} of {totalCards}
+              </div>
+              <div className="topic-info">{topicInfo}</div>
+            </div>
+            
             <div className="nav-buttons">
               <button 
                 onClick={handlePrevCard} 
                 disabled={currentIndex <= 0}
                 className="nav-button prev"
               >
-                {isMobile ? "←" : "Previous"}
+                {isMobile ? "← Previous" : "Previous Card"}
               </button>
-              
-              <div className="card-info">
-                <div className="card-counter">
-                  {currentIndex + 1} of {totalCards}
-                </div>
-                <div className="topic-info">{topicInfo}</div>
-              </div>
               
               <button 
                 onClick={handleNextCard} 
                 disabled={currentIndex >= totalCards - 1}
                 className="nav-button next"
               >
-                {isMobile ? "→" : "Next"}
+                {isMobile ? "Next →" : "Next Card"}
               </button>
             </div>
           </div>
-          
-          {isMobile && (
-            <div className="swipe-indicator">
-              <span>← Swipe to navigate →</span>
-            </div>
-          )}
         </div>
       </div>
     );

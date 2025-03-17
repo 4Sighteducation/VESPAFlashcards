@@ -1035,37 +1035,16 @@ const SpacedRepetition = ({
   // Render the study interface
   return (
     <div className="spaced-repetition">
+      {/* Box Info */}
       <div className="box-info">
-        <h2>Spaced Repetition</h2>
+        <h2>Box {currentBox}</h2>
         <p>
-          You are viewing cards in Box {currentBox}. {" "}
           {currentBox === 1 && "Review daily."}
           {currentBox === 2 && "Review every 2 days."}
           {currentBox === 3 && "Review every 3 days."}
           {currentBox === 4 && "Review every 7 days."}
           {currentBox === 5 && "These cards are mastered. Occasional review."}
         </p>
-      </div>
-      
-      <div className="box-navigation">
-        <div className="box-buttons">
-          {[1, 2, 3, 4, 5].map((box) => (
-            <button
-              key={box}
-              className={`box-button ${currentBox === box ? "active" : ""} ${
-                (spacedRepetitionData[`box${box}`]?.some(card => 
-                  !card.nextReviewDate || new Date(card.nextReviewDate) <= new Date()
-                )) ? "has-reviewable" : ""
-              }`}
-              onClick={() => onSelectBox(box)}
-            >
-              Box {box}
-              <span className="card-count">
-                ({spacedRepetitionData[`box${box}`]?.length || 0})
-              </span>
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Always render subject containers */}

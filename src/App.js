@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -1376,152 +1376,165 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <Header
-        userInfo={getUserInfo()}
-        currentView={view}
-        onViewChange={setView}
-        onSave={saveData}
-        isSaving={isSaving}
-        onPrintAll={handlePrintAllCards}
-        onCreateCard={() => setCardCreationModalOpen(true)}
-      />
-      
-      {/* Temporarily hiding UserProfile */}
-      {/* {auth && <UserProfile userInfo={getUserInfo()} />} */}
+    <div className="app-container">
+      {loading ? (
+        <LoadingSpinner message={loadingMessage} />
+      ) : (
+        <>
+          <Header
+            userInfo={getUserInfo()}
+            currentView={view}
+            onViewChange={setView}
+            onSave={saveData}
+            isSaving={isSaving}
+            onPrintAll={handlePrintAllCards}
+            onCreateCard={() => setCardCreationModalOpen(true)}
+            currentBox={currentBox}
+            onSelectBox={setCurrentBox}
+            spacedRepetitionData={spacedRepetitionData}
+          />
+          
+          {/* Temporarily hiding UserProfile */}
+          {/* {auth && <UserProfile userInfo={getUserInfo()} />} */}
 
-      {statusMessage && <div className="status-message">{statusMessage}</div>}
-      
-      {/* Topic List Modal */}
-      {topicListModalOpen && topicListSubject && (
-        <TopicListModal
-          subject={topicListSubject}
-          examBoard={topicListExamBoard}
-          examType={topicListExamType}
-          onClose={() => setTopicListModalOpen(false)}
-          onSelectTopic={handleSelectTopicFromList}
-          onGenerateCards={handleGenerateCardsFromTopic}
-          auth={auth}
-          userId={auth?.id}
-        />
-      )}
-
-      {view === "cardBank" && (
-        <div className="card-bank-view">
-          {printModalOpen && (
-            <PrintModal 
-              cards={cardsToPrint} 
-              title={printTitle} 
-              onClose={() => setPrintModalOpen(false)} 
+          {statusMessage && (
+            <div className="status-message">
+              <p>{statusMessage}</p>
+            </div>
+          )}
+          
+          {/* Topic List Modal */}
+          {topicListModalOpen && topicListSubject && (
+            <TopicListModal
+              subject={topicListSubject}
+              examBoard={topicListExamBoard}
+              examType={topicListExamType}
+              onClose={() => setTopicListModalOpen(false)}
+              onSelectTopic={handleSelectTopicFromList}
+              onGenerateCards={handleGenerateCardsFromTopic}
+              auth={auth}
+              userId={auth?.id}
             />
           )}
-          
-          {/* Card Creation Modal */}
-          {cardCreationModalOpen && (
-            <div className="modal-overlay" onClick={() => setCardCreationModalOpen(false)}>
-              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <button className="modal-close-btn" onClick={() => setCardCreationModalOpen(false)}>×</button>
-                <h2>Create Flashcards</h2>
-                <div className="modal-options">
-                  <button 
-                    className="primary-button"
-                    onClick={() => {
-                      setCardCreationModalOpen(false);
-                      setView("aiGenerator");
-                    }}
-                  >
-                    <span className="button-icon">🤖</span> Generate Cards with AI
-                  </button>
-                  <div className="option-divider">or</div>
-                  <button 
-                    className="secondary-button"
-                    onClick={() => {
-                      setCardCreationModalOpen(false);
-                      setView("manualCreate");
-                    }}
-                  >
-                    <span className="button-icon">✍️</span> Create Cards Manually
-                  </button>
+
+          {view === "cardBank" && (
+            <div className="card-bank-view">
+              {printModalOpen && (
+                <PrintModal 
+                  cards={cardsToPrint} 
+                  title={printTitle} 
+                  onClose={() => setPrintModalOpen(false)} 
+                />
+              )}
+              
+              {/* Card Creation Modal */}
+              {cardCreationModalOpen && (
+                <div className="modal-overlay" onClick={() => setCardCreationModalOpen(false)}>
+                  <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <button className="modal-close-btn" onClick={() => setCardCreationModalOpen(false)}>×</button>
+                    <h2>Create Flashcards</h2>
+                    <div className="modal-options">
+                      <button 
+                        className="primary-button"
+                        onClick={() => {
+                          setCardCreationModalOpen(false);
+                          setView("aiGenerator");
+                        }}
+                      >
+                        <span className="button-icon">🤖</span> Generate Cards with AI
+                      </button>
+                      <div className="option-divider">or</div>
+                      <button 
+                        className="secondary-button"
+                        onClick={() => {
+                          setCardCreationModalOpen(false);
+                          setView("manualCreate");
+                        }}
+                      >
+                        <span className="button-icon">✍️</span> Create Cards Manually
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="bank-container full-width">
+                <div className="bank-content">
+                  {/* Added header showing total card count */}
+                  <div className="bank-content-header">
+                    <h2>All Flashcards ({getFilteredCards().length})</h2>
+                    <button 
+                      className="save-icon-button" 
+                      onClick={saveData} 
+                      disabled={isSaving}
+                      title="Save All Changes"
+                    >
+                      {isSaving ? '⏳' : '💾'}
+                    </button>
+                  </div>
+                  
+                  {/* Show empty state or card list based on whether there are cards */}
+                  {allCards.length === 0 ? (
+                    <div className="empty-card-bank">
+                      <h3>No flashcards yet</h3>
+                      <p>Create your first flashcard to get started!</p>
+                      <button className="primary-button" onClick={() => setCardCreationModalOpen(true)}>
+                        Create Flashcard
+                      </button>
+                    </div>
+                  ) : (
+                    <FlashcardList 
+                      cards={getFilteredCards()} 
+                      onDeleteCard={deleteCard} 
+                      onUpdateCard={updateCard}
+                      onViewTopicList={handleViewTopicList}
+                    />
+                  )}
                 </div>
               </div>
             </div>
           )}
-          
-          <div className="bank-container full-width">
-            <div className="bank-content">
-              {/* Added header showing total card count */}
-              <div className="bank-content-header">
-                <h2>All Flashcards ({getFilteredCards().length})</h2>
-                <button 
-                  className="save-icon-button" 
-                  onClick={saveData} 
-                  disabled={isSaving}
-                  title="Save All Changes"
-                >
-                  {isSaving ? '⏳' : '💾'}
-                </button>
-              </div>
-              
-              {/* Show empty state or card list based on whether there are cards */}
-              {allCards.length === 0 ? (
-                <div className="empty-card-bank">
-                  <h3>No flashcards yet</h3>
-                  <p>Create your first flashcard to get started!</p>
-                  <button className="primary-button" onClick={() => setCardCreationModalOpen(true)}>
-                    Create Flashcard
-                  </button>
-                </div>
-              ) : (
-                <FlashcardList 
-                  cards={getFilteredCards()} 
-                  onDeleteCard={deleteCard} 
-                  onUpdateCard={updateCard}
-                  onViewTopicList={handleViewTopicList}
-                />
-              )}
+
+          {view === "manualCreate" && (
+            <div className="create-card-container">
+              <CardCreator
+                onAddCard={addCard}
+                onCancel={() => setView("cardBank")}
+                subjects={getSubjects()}
+                getTopicsForSubject={getUserTopicsForSubject}
+                currentColor={currentSubjectColor}
+                onColorChange={setCurrentSubjectColor}
+                getColorForSubjectTopic={getColorForSubjectTopic}
+                updateColorMapping={updateColorMapping}
+              />
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {view === "manualCreate" && (
-        <div className="create-card-container">
-          <CardCreator
-            onAddCard={addCard}
-            onCancel={() => setView("cardBank")}
-            subjects={getSubjects()}
-            getTopicsForSubject={getUserTopicsForSubject}
-            currentColor={currentSubjectColor}
-            onColorChange={setCurrentSubjectColor}
-            getColorForSubjectTopic={getColorForSubjectTopic}
-            updateColorMapping={updateColorMapping}
-          />
-        </div>
-      )}
+          {view === "aiGenerator" && (
+            <AICardGenerator
+              onAddCard={addCard}
+              onClose={() => setView("cardBank")}
+              subjects={getSubjects()}
+              auth={auth}
+              userId={auth?.id}
+              initialSubject={selectedSubject}
+              initialTopic={selectedTopic}
+              examBoard={topicListExamBoard}
+              examType={topicListExamType}
+            />
+          )}
 
-      {view === "aiGenerator" && (
-        <AICardGenerator
-          onAddCard={addCard}
-          onClose={() => setView("cardBank")}
-          subjects={getSubjects()}
-          auth={auth}
-          userId={auth?.id}
-          initialSubject={selectedSubject}
-          initialTopic={selectedTopic}
-          examBoard={topicListExamBoard}
-          examType={topicListExamType}
-        />
-      )}
-
-      {view === "spacedRepetition" && (
-        <SpacedRepetition
-          cards={getCardsForCurrentBox()}
-          currentBox={currentBox}
-          spacedRepetitionData={spacedRepetitionData}
-          onSelectBox={setCurrentBox}
-          onMoveCard={moveCardToBox}
-          onReturnToBank={() => setView("cardBank")}
-        />
+          {view === "spacedRepetition" && (
+            <SpacedRepetition
+              cards={getCardsForCurrentBox()}
+              currentBox={currentBox}
+              spacedRepetitionData={spacedRepetitionData}
+              onSelectBox={setCurrentBox}
+              onMoveCard={moveCardToBox}
+              onReturnToBank={() => setView("cardBank")}
+            />
+          )}
+        </>
       )}
     </div>
   );
