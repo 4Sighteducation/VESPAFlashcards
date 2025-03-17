@@ -84,6 +84,13 @@ function App() {
 
   // Flashcard data
   const [allCards, setAllCards] = useState([]);
+  const [currentCards, setCurrentCards] = useState([]);
+  const [filter, setFilter] = useState("");
+  const [subjectsFilter, setSubjectsFilter] = useState([]);
+  const [topicsFilter, setTopicsFilter] = useState([]);
+  const [currentCard, setCurrentCard] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [subjectColorMapping, setSubjectColorMapping] = useState({});
   const [currentSubjectColor, setCurrentSubjectColor] = useState("#e6194b");
 
@@ -93,9 +100,15 @@ function App() {
 
   // Topic List Modal state
   const [topicListModalOpen, setTopicListModalOpen] = useState(false);
-  const [topicListSubject, setTopicListSubject] = useState(null);
+  const [topicListSubject, setTopicListSubject] = useState("");
   const [topicListExamBoard, setTopicListExamBoard] = useState("AQA");
   const [topicListExamType, setTopicListExamType] = useState("A-Level");
+  const [existingTopicListData, setExistingTopicListData] = useState(null);
+  
+  // AI Card Generator state
+  const [aiCardGeneratorOpen, setAiCardGeneratorOpen] = useState(false);
+  const [currentAIGeneratorSubject, setCurrentAIGeneratorSubject] = useState("");
+  const [currentAIGeneratorTopic, setCurrentAIGeneratorTopic] = useState("");
 
   // Spaced repetition state
   const [currentBox, setCurrentBox] = useState(1);
@@ -129,9 +142,6 @@ function App() {
   const [generatingTopics, setGeneratingTopics] = useState(false);
   const [topicGenerationProgress, setTopicGenerationProgress] = useState({ current: 0, total: 0 });
   const [currentGeneratingSubject, setCurrentGeneratingSubject] = useState(null);
-
-  // New state for existing topic list data
-  const [existingTopicListData, setExistingTopicListData] = useState(null);
 
   // User information - enhanced with additional student data
   const getUserInfo = useCallback(() => {
