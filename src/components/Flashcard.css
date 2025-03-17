@@ -184,15 +184,16 @@
 
 /* Options container for multiple choice */
 .options-container {
-  margin-top: 15px;
-  background-color: rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  padding: 10px;
-  width: 100%;
   display: block !important;
   visibility: visible !important;
-  position: relative;
-  overflow: auto;
+  margin-top: 10px;
+  overflow-y: auto;
+  max-height: 40%;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
 .options-container ol {
@@ -283,8 +284,10 @@
 
 /* Special handling for slideshow/modal mode */
 .modal-card .options-container {
-  background-color: rgba(255, 255, 255, 0.2);
-  max-height: none;
+  display: block !important;
+  visibility: visible !important;
+  margin-top: auto;
+  margin-bottom: 5px;
 }
 
 .modal-card .options-container li {
@@ -746,56 +749,31 @@
 
 /* Multiple choice enhancements */
 .multiple-choice-options {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  margin-top: 10px;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  display: block;
 }
 
 .option-item {
-  display: flex;
-  align-items: flex-start;
-  padding: 10px;
-  border: 2px solid #ddd;
-  border-radius: 6px;
-  background-color: #f9f9f9;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
+  display: flex !important;
+  align-items: center;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
-.option-item:hover {
-  border-color: #153aa3;
-  background-color: #f0f5ff;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.option-item.selected {
-  border-color: #153aa3;
-  background-color: #e6eeff;
-}
-
-.option-item.correct {
-  border-color: #4caf50;
-  background-color: #eaffea;
-}
-
-.option-item.incorrect {
-  border-color: #f44336;
-  background-color: #ffebee;
-}
-
-.option-radio {
-  margin-right: 10px;
-  transform: scale(1.2);
-  cursor: pointer;
+.option-letter {
+  font-weight: bold;
+  margin-right: 8px;
+  min-width: 15px;
 }
 
 .option-text {
   flex: 1;
-  font-size: 15px;
 }
 
 /* Ensure mobile formatting for modals is good */
@@ -811,7 +789,8 @@
   }
   
   .option-item {
-    padding: 8px;
+    padding: 6px 8px;
+    margin-bottom: 5px;
   }
 }
 
@@ -1956,5 +1935,64 @@
     flex-direction: column;
     justify-content: center;
   }
+}
+
+/* CRITICAL FIX: Ensure options are ALWAYS visible in all views */
+.options-container,
+.flashcard .options-container,
+.flashcard-front .options-container {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  overflow: visible !important;
+  margin-top: 10px !important;
+  margin-bottom: 5px !important;
+  padding: 5px !important;
+  border-radius: 5px !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  width: 100% !important;
+  max-height: none !important;
+  z-index: 5 !important;
+}
+
+/* Force options to be visible */
+.options-container ol,
+.options-container li,
+.multiple-choice-options,
+.option-item {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+}
+
+/* Card Bank specific option styling */
+.flashcard:not(.modal-card) .options-container {
+  margin-top: 15px !important;
+  overflow-y: auto !important;
+  max-height: 60% !important;
+  background-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.flashcard:not(.modal-card) .options-container li {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  padding: 5px 8px !important;
+  margin-bottom: 5px !important;
+  border-radius: 4px !important;
+  font-size: 0.85rem !important;
+  line-height: 1.2 !important;
+}
+
+/* Force questions to be legible */
+.question-title,
+.flashcard .question-title,
+.modal-card .question-title {
+  font-size: 18px !important;
+  min-height: 20px !important;
+  margin-bottom: 10px !important;
+  padding: 5px !important;
+  max-height: 40% !important;
+  overflow-y: auto !important;
 }
 

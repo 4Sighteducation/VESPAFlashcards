@@ -544,21 +544,61 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     // Touch swipe functionality 
     const [touchStart, setTouchStart] = useState(null);
     const [touchEnd, setTouchEnd] = useState(null);
+    const [touchStartY, setTouchStartY] = useState(null);
+    const [touchMoved, setTouchMoved] = useState(false);
+    const touchTimeout = useRef(null);
     
     // Required minimum distance between touchStart and touchEnd to be detected as swipe
     const minSwipeDistance = 50;
     
     const onTouchStart = (e) => {
+      // Don't process touch events on buttons or interactive elements
+      if (e.target.closest('button') || 
+          e.target.closest('.delete-button') || 
+          e.target.closest('.info-button') || 
+          e.target.closest('.color-edit-button') ||
+          e.target.closest('.close-modal-button')) {
+        return;
+      }
+      
       setTouchEnd(null); // Reset touchEnd
       setTouchStart(e.targetTouches[0].clientX);
+      setTouchStartY(e.targetTouches[0].clientY);
+      setTouchMoved(false);
+      
+      // Clear any existing timeout
+      if (touchTimeout.current) {
+        clearTimeout(touchTimeout.current);
+      }
     };
     
     const onTouchMove = (e) => {
+      // Don't interfere with vertical scrolling
+      if (!touchStart) return;
+      
       setTouchEnd(e.targetTouches[0].clientX);
+      
+      // Calculate both X and Y distances
+      const distanceX = Math.abs(e.targetTouches[0].clientX - touchStart);
+      const distanceY = Math.abs(e.targetTouches[0].clientY - touchStartY);
+      
+      // If we've moved significantly in any direction, mark as moved
+      if (distanceX > 10 || distanceY > 10) {
+        setTouchMoved(true);
+      }
+      
+      // If moving more vertically than horizontally, don't handle (allow scrolling)
+      if (distanceY > distanceX) {
+        return;
+      }
     };
     
-    const onTouchEnd = () => {
+    const onTouchEnd = (e) => {
+      // Only process if we had a valid touchstart and touchend
       if (!touchStart || !touchEnd) return;
+      
+      // Don't interfere with buttons or taps that didn't move much
+      if (!touchMoved) return;
       
       const distance = touchStart - touchEnd;
       const isLeftSwipe = distance > minSwipeDistance;
@@ -593,8 +633,17 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
         <div 
           className={`card-modal-content ${isLandscape && isMobile ? 'landscape-mode' : ''}`} 
           onClick={(e) => e.stopPropagation()}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
         >
-          <button className="close-modal-button" onClick={() => setShowModalAndSelectedCard(false)}>✕</button>
+          <button 
+            className="close-modal-button" 
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowModalAndSelectedCard(false);
+            }}
+          >✕</button>
           
           <div 
             className="card-modal-card-container" 
@@ -602,9 +651,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
               '--card-bg-color': cardBgColor, 
               '--card-text-color': cardTextColor
             }}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
           >
             <Flashcard 
               card={selectedCard} 
@@ -795,40 +841,13 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
                 </div>
               </>
             ) : (
-              <>
-                <button
-                  className="subject-actions-toggle"
-                  onClick={(e) => toggleMobileMenu(subject, e)}
-                  title="Show actions"
-                >
-                  <FaBars />
-                </button>
-                <button
-                  className="slideshow-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Start slideshow with first card in subject
-                    const firstCard = cards.flat()[0];
-                    if (firstCard) {
-                      handleSetShowModalAndSelectedCard(firstCard);
-                    }
-                  }}
-                  title="Start slideshow"
-                >
-                  <span role="img" aria-label="Slideshow">▶️</span>
-                </button>
-                
-                <button
-                  className="topic-list-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onViewTopicList && onViewTopicList(subject);
-                  }}
-                  title="View Topic List"
-                >
-                  <span role="img" aria-label="View Topics">📋</span>
-                </button>
-              </>
+              <button
+                className="subject-actions-toggle"
+                onClick={(e) => toggleMobileMenu(subject, e)}
+                title="Show actions"
+              >
+                <FaBars />
+              </button>
             )}
           </div>
         ) : (

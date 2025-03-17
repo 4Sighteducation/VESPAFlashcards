@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import './Flashcard.css';
+import ScaledText from './ScaledText';
+import MultipleChoiceOptions from './MultipleChoiceOptions';
 
 // Helper function for determining text color based on background color
 export const getContrastColor = (hexColor) => {
@@ -175,118 +177,29 @@ const ScaledText = ({ children, className = '', maxFontSize = 18, minFontSize = 
   );
 };
 
-// Improved component for multiple choice options with more responsive scaling
-const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) => {
-  const containerRef = useRef(null);
+// Helper function to clean option text by removing letter prefixes (a., a), etc.)
+const cleanOptionText = (option) => {
+  if (!option) return '';
   
-  useEffect(() => {
-    if (!containerRef.current || !options || options.length === 0) return;
-    
-    // Restart auto-scaling after render
-    const timer = setTimeout(() => {
-      autoScaleOptions();
-    }, 0);
-    
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [options]);
-  
-  // Clean option text - remove letter prefixes like "a)", "a.", "(a)", etc.
-  const cleanOptionText = (option) => {
-    if (!option) return '';
-    // Match patterns like a), a., (a), a-, etc. at beginning of string
-    return option.replace(/^([a-z][\.\)\-\:]|\([a-z]\))\s*/i, '').trim();
-  };
-  
-  // Automatically scale the options to fit within the container
-  const autoScaleOptions = () => {
-    if (!containerRef.current) return;
-    
-    const container = containerRef.current;
-    const items = Array.from(container.querySelectorAll('li'));
-    
-    if (items.length === 0) return;
-    
-    console.log("Auto-scaling options:", items.length, "items detected");
-    
-    // Calculate content properties to inform scaling
-    const lengths = items.map(item => item.textContent.length);
-    const maxLength = Math.max(...lengths);
-    const avgLength = lengths.reduce((sum, len) => sum + len, 0) / lengths.length;
-    
-    // Set starting font size based on content length, number of options, and container width
-    const containerWidth = container.clientWidth;
-    const isMobile = window.innerWidth <= 768;
-    const isVerySmallScreen = window.innerWidth <= 480;
-    
-    // Adjust starting font size based on screen size and content
-    let fontSize = isInModal ? 16 : 14; // Default - INCREASED
+  // Match patterns like a), a., (a), a-, etc. at the beginning of string
+  const prefixRegex = /^([a-z][\.\)\-\:]|\([a-z]\))\s*/i;
+  return option.replace(prefixRegex, '').trim();
+};
 
-    // More aggressive font size reduction for mobile modal view
-    if (isInModal && isMobile) {
-      fontSize = isVerySmallScreen ? 12 : 14;
-    }
-    // Smaller starting size for regular mobile view
-    else if (isMobile) {
-      fontSize = isVerySmallScreen ? 11 : 12;
-    }
+// Add this function to better scale questions
+const getAppropriateQuestionSize = (contentLength, isInModal, isMobile) => {
+  // Start with larger font sizes 
+  let size = isInModal ? 
+    (isMobile ? 18 : 24) : // Modal view
+    (isMobile ? 16 : 20);  // Regular view
     
-    // Adjust based on number of options
-    if (options.length >= 5) {
-      fontSize = Math.min(fontSize, isMobile ? 10 : (isInModal ? 14 : 12));
-    } else if (options.length >= 4) {
-      fontSize = Math.min(fontSize, isMobile ? 11 : (isInModal ? 15 : 13));
-    }
-    
-    // Further adjust based on content length
-    if (maxLength > 100) {
-      fontSize = Math.min(fontSize, isMobile ? 9 : (isInModal ? 12 : 10));
-    } else if (avgLength > 50) {
-      fontSize = Math.min(fontSize, isMobile ? 10 : (isInModal ? 13 : 11));
-    }
-    
-    // Debug output
-    console.log(`MultipleChoice options: ${options.length}, max length: ${maxLength}, avg length: ${avgLength.toFixed(1)}, container width: ${containerWidth}, starting fontSize: ${fontSize}, mobile: ${isMobile}, preview: ${preview}`);
-    
-    // Reset all items to the starting fontSize and ensure visibility
-    items.forEach(item => {
-      item.style.fontSize = `${fontSize}px`;
-      item.style.display = 'block';
-      item.style.visibility = 'visible';
-      
-      // Ensure option styling is applied
-      item.style.backgroundColor = 'rgba(0, 0, 0, 0.07)';
-      item.style.padding = '8px 10px';
-      item.style.marginBottom = '5px';
-      item.style.borderRadius = '4px';
-    });
-  };
+  // Reduce for longer content
+  if (contentLength > 200) size -= 2;
+  if (contentLength > 300) size -= 2;
+  if (contentLength > 400) size -= 2;
   
-  if (!options || options.length === 0) {
-    console.log("No options provided to MultipleChoiceOptions");
-    return null;
-  }
-
-  // Create option elements with explicit lettering (a, b, c, d, etc.)
-  return (
-    <div className="options-container" ref={containerRef}>
-      <ol className="multiple-choice-options">
-        {options.map((option, index) => {
-          if (!option) return null; // Skip null/undefined options
-          const letter = String.fromCharCode(97 + index); // a, b, c, d, etc.
-          const cleanedText = cleanOptionText(option);
-          
-          return (
-            <li key={index} className="option-item">
-              <span className="option-letter">{letter})</span>
-              <span className="option-text">{cleanedText}</span>
-            </li>
-          );
-        })}
-      </ol>
-    </div>
-  );
+  // Ensure minimum readable size
+  return Math.max(size, isMobile ? 14 : 16);
 };
 
 const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, preview = false, style = {}, isInModal = false, onClick }) => {
@@ -536,19 +449,30 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
               <>
                 <ScaledText 
                   className="question-title" 
-                  maxFontSize={isInModal ? 28 : 18} 
-                  minFontSize={isInModal ? 8 : 6}
+                  maxFontSize={isInModal ? 32 : 24} 
+                  minFontSize={isInModal ? 14 : 12}
                   isInModal={isInModal}
+                  isQuestion={true}
                 >
                   {card.front || card.question || "No question available"}
                 </ScaledText>
-                <MultipleChoiceOptions options={card.options || []} preview={preview} isInModal={isInModal} />
+                <div style={{ 
+                  flex: 1, 
+                  overflow: 'auto', 
+                  width: '100%', 
+                  display: 'block',
+                  marginTop: '10px',
+                  position: 'relative'
+                }}>
+                  <MultipleChoiceOptions options={card.options || []} preview={preview} isInModal={isInModal} />
+                </div>
               </>
             ) : (
               <ScaledText 
-                maxFontSize={isInModal ? 28 : 18} 
-                minFontSize={isInModal ? 8 : 6}
+                maxFontSize={isInModal ? 32 : 24} 
+                minFontSize={isInModal ? 14 : 12}
                 isInModal={isInModal}
+                isQuestion={true}
               >
                 {typeof card.front === 'string' || typeof card.question === 'string' ? (
                   <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question available" }} />
