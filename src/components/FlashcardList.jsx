@@ -527,14 +527,16 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     console.log(`CardModal debug - cards: ${totalCards}, currentIndex: ${currentIndex}, subject: ${currentSubject}, topic: ${currentTopic}`);
 
     // Handler functions for navigation
-    const handlePrevCard = () => {
+    const handlePrevCard = (e) => {
+      e.stopPropagation(); // Stop the event from propagating
       console.log("Navigating to previous card");
       if (currentIndex > 0) {
         setSelectedCard(modalCards[currentIndex - 1]);
       }
     };
     
-    const handleNextCard = () => {
+    const handleNextCard = (e) => {
+      e.stopPropagation(); // Stop the event from propagating
       console.log("Navigating to next card");
       if (currentIndex < totalCards - 1) {
         setSelectedCard(modalCards[currentIndex + 1]);

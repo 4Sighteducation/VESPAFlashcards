@@ -280,27 +280,28 @@
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.85);
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(3px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1100;
-  padding: 0;
+  z-index: 1000;
+  overflow: auto;
+  padding: 10px;
 }
 
 .card-modal-content {
-  background-color: #f8f8f8;
-  width: 95%;
-  max-width: 600px;
-  height: auto;
-  max-height: 90vh;
-  border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-  position: relative;
   display: flex;
   flex-direction: column;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  position: relative;
   overflow: hidden;
 }
 
@@ -325,9 +326,13 @@
 }
 
 .card-modal-actions {
-  padding: 15px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  background-color: rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+  position: relative;
+  z-index: 1;
 }
 
 .card-info {
@@ -351,32 +356,40 @@
 
 .nav-buttons {
   display: flex;
-  justify-content: space-between;
   gap: 10px;
+  margin-top: 10px;
 }
 
 .nav-button {
+  padding: 12px 16px;
+  border: none;
   background-color: #079baa;
   color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 8px 15px;
-  font-size: 14px;
+  border-radius: 4px;
   cursor: pointer;
-  flex: 1;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-button:hover:not(:disabled) {
-  background-color: #068998;
+  font-weight: 500;
+  min-width: 100px;
+  font-size: 16px;
+  margin: 0;
+  text-align: center;
+  display: inline-block;
+  touch-action: manipulation;
+  position: relative;
+  z-index: 2;
 }
 
 .nav-button:disabled {
-  opacity: 0.5;
+  background-color: #cccccc;
   cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.nav-button:not(:disabled):hover {
+  background-color: #068998;
+}
+
+.nav-button:not(:disabled):active {
+  transform: translateY(1px);
 }
 
 /* Make sure navigation buttons are properly positioned on mobile */
@@ -396,7 +409,10 @@
   }
   
   .nav-button {
-    padding: 8px 10px;
+    flex: 1;
+    min-width: 0;
+    padding: 12px 8px;
+    font-size: 14px;
   }
   
   .card-info {
@@ -430,6 +446,10 @@
   cursor: pointer;
   z-index: 10;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.close-modal-button:hover {
+  background: rgba(0, 0, 0, 0.8);
 }
 
 /* No-cards message styling */
@@ -844,17 +864,21 @@ html {
 }
 
 @media (orientation: landscape) {
-  .card-modal-actions.side-controls {
-    width: 30%;
-    justify-content: center;
-    align-self: center;
+  .card-modal-overlay {
+    overflow-y: auto;
+    align-items: flex-start;
+    padding-top: 20px;
+    padding-bottom: 20px;
   }
   
-  /* Move navigation buttons below the card in landscape on mobile */
-  .card-modal-content.landscape-mode .card-modal-actions {
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
+  .card-modal-content {
+    max-height: none;
+    overflow: visible;
+  }
+  
+  .card-modal-card-container {
+    overflow-y: auto;
+    min-height: 200px;
   }
 }
 

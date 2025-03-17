@@ -59,23 +59,26 @@ const Header = ({
   // Render the box selectors for spaced repetition
   const renderBoxSelectors = () => {
     return (
-      <div className="header-box-selectors">
-        {[1, 2, 3, 4, 5].map((box) => (
-          <button
-            key={box}
-            className={`box-selector ${currentBox === box ? "active" : ""} ${
-              (spacedRepetitionData[`box${box}`]?.some(card => 
-                !card.nextReviewDate || new Date(card.nextReviewDate) <= new Date()
-              )) ? "has-reviewable" : ""
-            }`}
-            onClick={() => handleNavClick(() => onSelectBox(box))}
-          >
-            {box}
-            <span className="box-count">
-              {spacedRepetitionData[`box${box}`]?.length || 0}
-            </span>
-          </button>
-        ))}
+      <div className="header-box-selectors-container">
+        <div className="box-selectors-label">Study Boxes</div>
+        <div className="header-box-selectors">
+          {[1, 2, 3, 4, 5].map((box) => (
+            <button
+              key={box}
+              className={`box-selector ${currentBox === box ? "active" : ""} ${
+                (spacedRepetitionData[`box${box}`]?.some(card => 
+                  !card.nextReviewDate || new Date(card.nextReviewDate) <= new Date()
+                )) ? "has-reviewable" : ""
+              }`}
+              onClick={() => handleNavClick(() => onSelectBox(box))}
+            >
+              {box}
+              <span className="box-count">
+                {spacedRepetitionData[`box${box}`]?.length || 0}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
     );
   };
@@ -109,7 +112,7 @@ const Header = ({
               onClick={() => handleNavClick(onCreateCard)}
             >
               <span className="button-icon">➕</span>
-              Create Card
+              Create
             </button>
             
             <button
@@ -119,20 +122,19 @@ const Header = ({
               <span className="button-icon">🖨️</span>
               Print
             </button>
+            
+            <button
+              className="nav-button logout-button"
+              onClick={() => handleNavClick(handleLogout)}
+            >
+              <span className="button-icon">↪️</span>
+              Logout
+            </button>
           </>
         )}
         
         {/* Only show box selectors in Spaced Repetition view */}
         {isInSpacedRep && renderBoxSelectors()}
-        
-        {/* Always show logout button */}
-        <button
-          className="nav-button logout-button"
-          onClick={() => handleNavClick(handleLogout)}
-        >
-          <span className="button-icon">↪️</span>
-          Logout
-        </button>
       </div>
 
       <div className="header-actions">

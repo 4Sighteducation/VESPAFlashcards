@@ -203,12 +203,27 @@
 }
 
 /* Box selector styles in header */
+.header-box-selectors-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.box-selectors-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .header-box-selectors {
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-left: 5px;
-  margin-right: 5px;
 }
 
 .box-selector {
