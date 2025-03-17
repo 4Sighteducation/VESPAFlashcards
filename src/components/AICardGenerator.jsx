@@ -1522,11 +1522,15 @@ Use this format for different question types:
       
       // Then show options explanation modal after topics are generated successfully
       if (topics.length > 0) {
-        // Use a slightly longer delay to ensure the topic modal is fully rendered first
+        // Close any other modals that might be blocking this one
+        console.log("Generated topics:", topics);
+        
+        // Use a longer delay to ensure the topic modal is fully rendered first
         setTimeout(() => {
+          // Force the options modal to appear
           setShowOptionsExplanationModal(true);
           console.log("Showing options explanation modal");
-        }, 800);
+        }, 1000);
       }
     } catch (err) {
       setError(err.message);
@@ -1920,10 +1924,18 @@ Use this format for different question types:
 
   // Function to handle topic click in the modal
   const handleTopicClick = (topic) => {
-    setSelectedTopicForConfirmation(topic);
-    setShowTopicConfirmation(true);
-    // Hide the options explanation modal when a topic is selected
-    setShowOptionsExplanationModal(false);
+    console.log("Selected topic:", topic);
+    
+    // If the options explanation modal is showing, let's keep it visible
+    // until the user explicitly dismisses it by clicking the "Let's Go!" button
+    if (!showOptionsExplanationModal) {
+      setSelectedTopicForConfirmation(topic);
+      setShowTopicConfirmation(true);
+    } else {
+      // If options modal is showing, just set the selected topic
+      // but don't show confirmation yet until user dismisses the explanation
+      setSelectedTopicForConfirmation(topic);
+    }
   };
   
   // Function to confirm topic selection
@@ -2135,12 +2147,17 @@ Use this format for different question types:
     );
   };
 
-  // New function to render options explanation modal
+  // Update the renderOptionsExplanationModal function to ensure it appears
+  // on top of other modals with a higher z-index
   const renderOptionsExplanationModal = () => {
     if (!showOptionsExplanationModal) return null;
     
     return (
-      <div className="options-modal-overlay" onClick={() => setShowOptionsExplanationModal(false)}>
+      <div 
+        className="options-modal-overlay" 
+        onClick={() => setShowOptionsExplanationModal(false)}
+        style={{ zIndex: 2000 }} // Higher z-index to ensure it appears on top
+      >
         <div className="options-modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="options-modal-header">
             <h3>Your Topic Adventure Awaits!</h3>
@@ -2167,7 +2184,17 @@ Use this format for different question types:
           
           <button 
             className="primary-button"
-            onClick={() => setShowOptionsExplanationModal(false)}
+            onClick={() => {
+              setShowOptionsExplanationModal(false);
+              
+              // If a topic was selected while the explanation modal was visible,
+              // show the confirmation dialog for that topic now
+              if (selectedTopicForConfirmation) {
+                setTimeout(() => {
+                  setShowTopicConfirmation(true);
+                }, 100);
+              }
+            }}
           >
             Let's Go!
           </button>

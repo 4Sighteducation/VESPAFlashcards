@@ -202,19 +202,26 @@
 }
 
 .options-container li {
-  margin: 4px 0;
-  padding: 6px 8px;
-  text-align: left;
+  background-color: rgba(255, 255, 255, 0.9);
   border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.8);
-  font-size: inherit;
-  position: relative;
-  overflow: visible;
-  white-space: normal;
-  display: block;
-  word-wrap: break-word;
-  hyphens: auto;
+  padding: 8px 10px;
+  margin-bottom: 8px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative;
+  font-size: 0.95rem;
+  font-weight: normal;
+  /* Apply better contrast with background */
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* For cards in the bank view, add contrast to ensure readability */
+.flashcard .options-container li {
+  /* Use semi-transparent background to work with any card color */
+  background-color: rgba(255, 255, 255, 0.85);
+  color: inherit; /* Inherit text color from the card */
+  font-weight: 500; /* Slightly bolder for better readability */
+  border-radius: 4px;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.2); /* Add subtle text shadow for better contrast */
 }
 
 /* Style for option letters */
@@ -1694,5 +1701,59 @@
   height: auto;
   min-height: 200px;
   overflow-y: auto !important;
+}
+
+/* Ensure options inherit background color from card */
+.card-modal-card-container .options-container li,
+.modal-card .options-container li {
+  font-size: 1.2rem !important; /* Significantly larger font for options */
+  padding: 12px 15px !important; /* More padding for better visibility */
+  margin-bottom: 10px !important; /* More spacing between options */
+  background-color: inherit !important; /* Inherit from parent */
+  color: inherit !important; /* Inherit text color */
+  border-radius: 8px !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+  position: relative;
+  /* Use the background from card-topic-indicator */
+  background-color: var(--card-bg-color, #880000) !important;
+  color: var(--card-text-color, white) !important;
+}
+
+/* Apply same style to the option letter to make it stand out */
+.card-modal-card-container .options-container .option-letter,
+.modal-card .options-container .option-letter {
+  font-weight: bold;
+  margin-right: 8px;
+  display: inline-block;
+  min-width: 20px;
+}
+
+/* Adjust the options container in modal view */
+.modal-card .options-container {
+  padding: 10px !important;
+  margin-top: 15px !important;
+  width: 100% !important;
+}
+
+/* Script to dynamically set CSS variables based on card color */
+.flashcard-inner::before {
+  content: '';
+  display: none;
+}
+
+/* Make sure the card topic indicator styling is captured */
+.modal-card .card-topic-indicator {
+  background-color: var(--card-bg-color, #880000);
+  color: var(--card-text-color, white);
+}
+
+/* Ensure metadata text is readable on all backgrounds */
+.card-metadata {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  color: white !important;
+  border-radius: 4px;
+  padding: 5px 8px !important;
+  margin: 5px 0 !important;
+  font-size: 0.9rem !important;
 }
 

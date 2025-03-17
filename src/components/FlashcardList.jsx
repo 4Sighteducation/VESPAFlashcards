@@ -5,6 +5,7 @@ import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
 import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette } from 'react-icons/fa';
 import ColorEditor from "./ColorEditor";
+import { getContrastColor } from '../helper';
 
 // ScrollManager component to handle scrolling to elements
 const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRefs }) => {
@@ -505,7 +506,13 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
         <div className="card-modal-content" onClick={(e) => e.stopPropagation()}>
           <button className="close-modal-button" onClick={() => setShowModalAndSelectedCard(false)}>✕</button>
           
-          <div className="card-modal-card-container">
+          <div 
+            className="card-modal-card-container" 
+            style={{ 
+              '--card-bg-color': selectedCard.cardColor, 
+              '--card-text-color': getContrastColor(selectedCard.cardColor) 
+            }}
+          >
             <Flashcard 
               card={selectedCard} 
               onDelete={() => onDeleteCard(selectedCard.id)}

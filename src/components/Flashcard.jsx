@@ -460,6 +460,23 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   // Special class for modal view
   const cardClass = `flashcard ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''} ${preview ? 'preview-card' : ''} ${isInModal ? 'modal-card' : ''}`;
   
+  // In the component, add a useEffect to set CSS variables based on card colors
+  useEffect(() => {
+    if (card.cardColor) {
+      // Set CSS variables for use in styling options and other elements
+      document.documentElement.style.setProperty('--card-bg-color', card.cardColor);
+      
+      // Calculate if text should be white or black based on background color brightness
+      const r = parseInt(card.cardColor.slice(1, 3), 16);
+      const g = parseInt(card.cardColor.slice(3, 5), 16);
+      const b = parseInt(card.cardColor.slice(5, 7), 16);
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      
+      const textColor = brightness > 125 ? '#000000' : '#ffffff';
+      document.documentElement.style.setProperty('--card-text-color', textColor);
+    }
+  }, [card.cardColor]);
+  
   return (
     <>
       <div 
@@ -635,7 +652,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
       {/* Information Modal - Moved outside of flashcard div for better positioning */}
       {showInfoModal && ReactDOM.createPortal(
         <div className="info-modal-overlay" onClick={closeInfoModal}>
-          <div className="info-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="info-modal" onClick={(e) => e.stopPropagation()} style={{ '--card-bg-color': card.cardColor, '--card-text-color': getContrastColor(card.cardColor) }}>
             <div className="info-modal-header">
               <h3>Additional Information</h3>
               <button className="close-modal-btn" onClick={closeInfoModal}>✕</button>
