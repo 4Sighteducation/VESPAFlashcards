@@ -454,13 +454,67 @@
   }
   
   .subject-actions {
-    gap: 5px;
+    position: relative;
   }
   
-  .subject-actions button {
+  /* Burger menu for subject actions on mobile */
+  .subject-actions.mobile-menu-active {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 5px;
+  }
+  
+  .subject-actions-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    padding: 5px;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 40px;
+  }
+  
+  .subject-actions-menu.active {
+    display: flex;
+  }
+  
+  .subject-actions-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+  }
+  
+  .subject-actions-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  /* Grid layout for subject actions on small screens */
+  .subject-actions.grid-layout {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    max-width: 110px;
+  }
+  
+  .subject-actions.grid-layout button {
     width: 28px;
     height: 28px;
     font-size: 0.9rem;
+    padding: 4px;
+    margin: 0;
   }
   
   .topic-header {
@@ -507,6 +561,17 @@
   .subject-actions button {
     width: 26px;
     height: 26px;
+  }
+  
+  .subject-actions.grid-layout {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 70px;
+  }
+  
+  .subject-actions.grid-layout button {
+    width: 26px;
+    height: 26px;
+    font-size: 0.8rem;
   }
 }
 
@@ -700,25 +765,26 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Swipe indicator styles */
 .swipe-indicator {
   position: absolute;
-  bottom: 15px;
+  bottom: 60px;
   left: 0;
   right: 0;
   text-align: center;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(0, 0, 0, 0.5);
   font-size: 0.9rem;
-  padding: 8px;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 5px;
   border-radius: 20px;
+  width: 70%;
   margin: 0 auto;
-  width: max-content;
-  pointer-events: none;
-  animation: fadeInOut 3s forwards;
-  opacity: 0;
+  pointer-events: none; /* Make sure touch events pass through */
+  animation: fadeInAndOut 3s forwards;
+  z-index: 100;
 }
 
-@keyframes fadeInOut {
+@keyframes fadeInAndOut {
   0% { opacity: 0; }
   20% { opacity: 1; }
   80% { opacity: 1; }
@@ -726,8 +792,25 @@ html {
 }
 
 /* Hide swipe indicator in landscape mode */
-.landscape-mode .swipe-indicator {
-  display: none;
+@media (orientation: landscape) {
+  .swipe-indicator {
+    display: none;
+  }
+}
+
+/* Make navigation buttons larger and more clickable on mobile */
+@media (max-width: 768px) {
+  .nav-button {
+    min-width: 50px !important;
+    min-height: 40px !important;
+    font-size: 1.5rem !important;
+    padding: 8px 12px !important;
+    margin: 0 8px !important;
+  }
+  
+  .nav-buttons {
+    padding: 10px 0 !important;
+  }
 }
 
 /* Remove or hide expand icons that might be overriding the display:none with inline styles */

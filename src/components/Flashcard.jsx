@@ -192,6 +192,13 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
     };
   }, [options]);
   
+  // Clean option text - remove letter prefixes like "a)", "a.", "(a)", etc.
+  const cleanOptionText = (option) => {
+    if (!option) return '';
+    // Match patterns like a), a., (a), a-, etc. at beginning of string
+    return option.replace(/^([a-z][\.\)\-\:]|\([a-z]\))\s*/i, '').trim();
+  };
+  
   // Automatically scale the options to fit within the container
   const autoScaleOptions = () => {
     if (!containerRef.current) return;
@@ -200,6 +207,8 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
     const items = Array.from(container.querySelectorAll('li'));
     
     if (items.length === 0) return;
+    
+    console.log("Auto-scaling options:", items.length, "items detected");
     
     // Calculate content properties to inform scaling
     const lengths = items.map(item => item.textContent.length);
@@ -212,137 +221,69 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
     const isVerySmallScreen = window.innerWidth <= 480;
     
     // Adjust starting font size based on screen size and content
-    let fontSize = isInModal ? 14 : 12; // Default
+    let fontSize = isInModal ? 16 : 14; // Default - INCREASED
 
     // More aggressive font size reduction for mobile modal view
     if (isInModal && isMobile) {
-      fontSize = isVerySmallScreen ? 11 : 13;
+      fontSize = isVerySmallScreen ? 12 : 14;
     }
     // Smaller starting size for regular mobile view
     else if (isMobile) {
-      fontSize = isVerySmallScreen ? 9 : 10;
+      fontSize = isVerySmallScreen ? 11 : 12;
     }
     
     // Adjust based on number of options
     if (options.length >= 5) {
-      fontSize = Math.min(fontSize, isMobile ? 8 : (isInModal ? 12 : 10));
+      fontSize = Math.min(fontSize, isMobile ? 10 : (isInModal ? 14 : 12));
     } else if (options.length >= 4) {
-      fontSize = Math.min(fontSize, isMobile ? 9 : (isInModal ? 13 : 11));
+      fontSize = Math.min(fontSize, isMobile ? 11 : (isInModal ? 15 : 13));
     }
     
     // Further adjust based on content length
     if (maxLength > 100) {
-      fontSize = Math.min(fontSize, isMobile ? 7 : (isInModal ? 10 : 8));
+      fontSize = Math.min(fontSize, isMobile ? 9 : (isInModal ? 12 : 10));
     } else if (avgLength > 50) {
-      fontSize = Math.min(fontSize, isMobile ? 8 : (isInModal ? 11 : 9));
-    }
-    
-    // Special handling for preview mode in card generation
-    if (preview) {
-      // In preview mode, we want to ensure the options are readable
-      fontSize = Math.min(fontSize, isMobile ? 9 : 11);
-      
-      // For very long options in preview, be more aggressive
-      if (maxLength > 80) {
-        fontSize = Math.min(fontSize, isMobile ? 7 : 9);
-      }
+      fontSize = Math.min(fontSize, isMobile ? 10 : (isInModal ? 13 : 11));
     }
     
     // Debug output
     console.log(`MultipleChoice options: ${options.length}, max length: ${maxLength}, avg length: ${avgLength.toFixed(1)}, container width: ${containerWidth}, starting fontSize: ${fontSize}, mobile: ${isMobile}, preview: ${preview}`);
     
-    // Reset all items to the starting fontSize
+    // Reset all items to the starting fontSize and ensure visibility
     items.forEach(item => {
       item.style.fontSize = `${fontSize}px`;
+      item.style.display = 'block';
+      item.style.visibility = 'visible';
+      
+      // Ensure option styling is applied
+      item.style.backgroundColor = 'rgba(0, 0, 0, 0.07)';
+      item.style.padding = '8px 10px';
+      item.style.marginBottom = '5px';
+      item.style.borderRadius = '4px';
     });
-    
-    // Check if container is overflowing - be more aggressive on smaller screens
-    let isOverflowing = container.scrollHeight > container.clientHeight || container.scrollWidth > container.clientWidth;
-    
-    // If overflowing, reduce font size until it fits
-    if (isOverflowing) {
-      let attempts = 0;
-      const minFontSize = isMobile ? 3 : 4; // More aggressive for mobile
-      const step = isMobile ? 0.75 : 0.5; // Larger steps for mobile
-      
-      while (fontSize > minFontSize && isOverflowing && attempts < 25) {
-        fontSize -= step;
-        items.forEach(item => {
-          item.style.fontSize = `${fontSize}px`;
-        });
-        attempts++;
-        isOverflowing = container.scrollHeight > container.clientHeight || container.scrollWidth > container.clientWidth;
-      }
-      
-      // If we're in a modal and still struggling, try other adjustments
-      if (isInModal && isMobile && isOverflowing) {
-        container.style.overflow = 'visible';
-        items.forEach(item => {
-          item.style.lineHeight = "1";
-          item.style.padding = "1px 4px";
-          item.style.margin = "1px 0";
-        });
-      }
-      // If we hit minimum font size and still overflowing, reduce line height
-      else if (fontSize <= minFontSize && isOverflowing) {
-        items.forEach(item => {
-          item.style.lineHeight = "1";
-          item.style.padding = "1px 0";
-          item.style.margin = "1px 0";
-        });
-      }
-      
-      // Special handling for preview mode if still overflowing
-      if (preview && isOverflowing) {
-        items.forEach(item => {
-          item.style.lineHeight = "1";
-          item.style.padding = "1px 2px";
-          item.style.margin = "1px 0";
-          // Limit to 2 lines in preview mode
-          item.style.webkitLineClamp = "2";
-        });
-      }
-    }
-    
-    console.log(`MultipleChoice options final fontSize: ${fontSize}`);
-    
-    // Add classes to adjust styles based on font size
-    container.classList.remove('small-font-options', 'very-small-font-options', 'tiny-font-options');
-    
-    if (fontSize <= 5) {
-      container.classList.add('tiny-font-options');
-    } else if (fontSize <= 7) {
-      container.classList.add('very-small-font-options');
-    } else if (fontSize <= 9) {
-      container.classList.add('small-font-options');
-    }
   };
   
-  // Enhanced option cleaning to handle various prefix formats
-  const cleanedOptions = options.map(option => {
-    if (!option) return '';
-    
-    // Handle different letter prefix formats:
-    // Format 1: "a) Option text"
-    // Format 2: "a. Option text"
-    // Format 3: "(a) Option text"
-    // Format 4: "a - Option text"
-    
-    return option
-      .replace(/^[a-z]\)\s*/i, '') // Format 1
-      .replace(/^[a-z]\.\s*/i, '') // Format 2
-      .replace(/^\([a-z]\)\s*/i, '') // Format 3
-      .replace(/^[a-z]\s*-\s*/i, ''); // Format 4
-  });
-  
+  if (!options || options.length === 0) {
+    console.log("No options provided to MultipleChoiceOptions");
+    return null;
+  }
+
+  // Create option elements with explicit lettering (a, b, c, d, etc.)
   return (
-    <div className={`options-container ${isInModal ? 'modal-options' : ''} ${preview ? 'preview-options' : ''}`} ref={containerRef}>
-      <ol type="a">
-        {cleanedOptions.map((option, index) => (
-          <li key={index}>
-            <span className="option-letter">{String.fromCharCode(97 + index)})</span> {option}
-          </li>
-        ))}
+    <div className="options-container" ref={containerRef}>
+      <ol className="multiple-choice-options">
+        {options.map((option, index) => {
+          if (!option) return null; // Skip null/undefined options
+          const letter = String.fromCharCode(97 + index); // a, b, c, d, etc.
+          const cleanedText = cleanOptionText(option);
+          
+          return (
+            <li key={index} className="option-item">
+              <span className="option-letter">{letter})</span>
+              <span className="option-text">{cleanedText}</span>
+            </li>
+          );
+        })}
       </ol>
     </div>
   );

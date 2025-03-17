@@ -3,7 +3,7 @@ import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
 import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
-import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette } from 'react-icons/fa';
+import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes } from 'react-icons/fa';
 import ColorEditor from "./ColorEditor";
 import { getContrastColor } from '../helper';
 
@@ -101,6 +101,38 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // Add new state for color editor
   const [colorEditorOpen, setColorEditorOpen] = useState(false);
   const [selectedSubjectForColor, setSelectedSubjectForColor] = useState(null);
+  
+  // Add new state for mobile menu
+  const [mobileMenuOpen, setMobileMenuOpen] = useState({});
+  const menuRef = useRef({});
+  
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      Object.keys(menuRef.current).forEach(subject => {
+        if (menuRef.current[subject] && !menuRef.current[subject].contains(event.target)) {
+          setMobileMenuOpen(prev => ({...prev, [subject]: false}));
+        }
+      });
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Check if we're on a mobile device
+  const isMobile = window.innerWidth <= 768;
+  
+  // Toggle mobile menu for a subject
+  const toggleMobileMenu = (subject, e) => {
+    e.stopPropagation();
+    setMobileMenuOpen(prev => ({
+      ...prev, 
+      [subject]: !prev[subject]
+    }));
+  };
   
   // Group cards by subject and topic
   const groupedCards = useMemo(() => {
@@ -455,53 +487,61 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // CardModal component: Update for better responsiveness
   const CardModal = () => {
     // Determine the current subject from selectedCard
-    const currentSubject = selectedCard ? selectedCard.metadata?.subject || "Unknown Subject" : "";
+    const currentSubject = selectedCard ? selectedCard.metadata?.subject || selectedCard.subject || "Unknown Subject" : "";
     
     // Find the current topic for this card
     const currentTopic = selectedCard && currentSubject && groupedCards[currentSubject] 
       ? Object.keys(groupedCards[currentSubject] || {}).find(
           topic => groupedCards[currentSubject][topic].some(c => c.id === selectedCard.id)
         )
-      : null;
+      : selectedCard?.topic || selectedCard?.metadata?.topic || "Unknown Topic";
 
     // Get all cards from the current subject or topic
     let modalCards = [];
     
-    // Check if we're in subject-level slideshow (i.e., all topics) or topic-level slideshow
-    // (This happens when we navigate between topics in the modal, or when the 
-    // next and previous cards have different topics when navigating in the slideshow)
-    const isSubjectSlideshow = groupedCards[currentSubject] && 
-      Object.keys(groupedCards[currentSubject]).length > 1 && 
-      !currentTopic;
-    
-    if (isSubjectSlideshow) {
-      // Subject-level: get all cards from all topics in this subject
-      modalCards = Object.keys(groupedCards[currentSubject] || {}).flatMap(
-        topic => groupedCards[currentSubject][topic]
-      );
-    } else if (currentTopic) {
-      // Topic-level: get all cards from this specific topic
-      modalCards = groupedCards[currentSubject][currentTopic] || [];
+    if (currentSubject && groupedCards[currentSubject]) {
+      // Subject-level slideshow
+      if (Object.keys(groupedCards[currentSubject]).length > 0) {
+        // Get all cards from all topics in this subject
+        modalCards = Object.keys(groupedCards[currentSubject]).flatMap(
+          topic => groupedCards[currentSubject][topic]
+        );
+      }
+    }
+
+    // CRITICAL: Make sure modalCards is never empty if we have a selectedCard
+    if (modalCards.length === 0 && selectedCard) {
+      console.log("Using fallback single card mode");
+      modalCards = [selectedCard];
+    }
+
+    // Ensure selectedCard is included in modalCards
+    if (selectedCard && !modalCards.some(c => c.id === selectedCard.id)) {
+      modalCards.push(selectedCard);
     }
 
     // Find the index of the current card in the array
     const currentIndex = modalCards.findIndex(c => c.id === selectedCard.id);
     const totalCards = modalCards.length;
+    
+    console.log(`CardModal debug - cards: ${totalCards}, currentIndex: ${currentIndex}, subject: ${currentSubject}, topic: ${currentTopic}`);
 
     // Handler functions for navigation
     const handlePrevCard = () => {
+      console.log("Trying to navigate to previous card");
       if (currentIndex > 0) {
-        handleSetShowModalAndSelectedCard(modalCards[currentIndex - 1]);
+        setSelectedCard(modalCards[currentIndex - 1]);
       }
     };
     
     const handleNextCard = () => {
+      console.log("Trying to navigate to next card");
       if (currentIndex < totalCards - 1) {
-        handleSetShowModalAndSelectedCard(modalCards[currentIndex + 1]);
+        setSelectedCard(modalCards[currentIndex + 1]);
       }
     };
 
-    // Touch swipe functionality
+    // Touch swipe functionality 
     const [touchStart, setTouchStart] = useState(null);
     const [touchEnd, setTouchEnd] = useState(null);
     
@@ -524,6 +564,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       const isLeftSwipe = distance > minSwipeDistance;
       const isRightSwipe = distance < -minSwipeDistance;
       
+      console.log(`Swipe detected - distance: ${distance}, left: ${isLeftSwipe}, right: ${isRightSwipe}`);
+      
       // Handle swipe actions based on direction
       if (isLeftSwipe && currentIndex < totalCards - 1) {
         handleNextCard();
@@ -532,15 +574,19 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       }
     };
 
-    // Get topic information for display
-    const topicInfo = isSubjectSlideshow 
-      ? `${currentSubject} (All Topics)` 
-      : `${currentSubject} | ${currentTopic}`;
+    // Get topic information for display - ensure we never display "null"
+    const topicInfo = currentTopic && currentTopic !== "Unknown Topic"
+      ? `${currentSubject} | ${currentTopic}`
+      : currentSubject;
 
     // Check if we're on a mobile device
     const isMobile = window.innerWidth <= 768;
     // Check if we're in landscape orientation
     const isLandscape = window.innerWidth > window.innerHeight;
+
+    // Safely determine card color accounting for missing properties
+    const cardBgColor = selectedCard?.cardColor || '#3cb44b';
+    const cardTextColor = getContrastColor(cardBgColor);
 
     return (
       <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
@@ -553,8 +599,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
           <div 
             className="card-modal-card-container" 
             style={{ 
-              '--card-bg-color': selectedCard.cardColor, 
-              '--card-text-color': getContrastColor(selectedCard.cardColor) 
+              '--card-bg-color': cardBgColor, 
+              '--card-text-color': cardTextColor
             }}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
@@ -574,7 +620,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
             <div className="nav-buttons">
               <button 
                 onClick={handlePrevCard} 
-                disabled={currentIndex === 0}
+                disabled={currentIndex <= 0}
                 className="nav-button prev"
               >
                 {isMobile ? "←" : "Previous"}
@@ -673,65 +719,179 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
             <span className="card-count">{cardCount} {cardCount === 1 ? 'card' : 'cards'}</span>
           </div>
         </div>
-        <div className="subject-actions">
-          <button
-            className="slideshow-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Start slideshow with first card in subject
-              const firstCard = cards.flat()[0];
-              if (firstCard) {
-                handleSetShowModalAndSelectedCard(firstCard);
-              }
-            }}
-            title="Start slideshow"
+        
+        {isMobile ? (
+          <div 
+            className={`subject-actions ${mobileMenuOpen[subject] ? 'mobile-menu-active' : 'grid-layout'}`}
+            ref={el => menuRef.current[subject] = el}
           >
-            <span role="img" aria-label="Slideshow">▶️</span>
-          </button>
-          
-          <button
-            className="topic-list-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewTopicList && onViewTopicList(subject);
-            }}
-            title="View Topic List"
-          >
-            <span role="img" aria-label="View Topics">📋</span>
-          </button>
-          
-          <button
-            className="print-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePrintSubject(subject);
-            }}
-            title="Print all cards in this subject"
-          >
-            <span role="img" aria-label="Print">🖨️</span>
-          </button>
-          <button
-            className="delete-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteSubjectCards(subject);
-            }}
-            title="Delete all cards in this subject"
-            style={{ 
-              backgroundColor: `rgba(255, 0, 0, 0.2)`,
-              color: textColor
-            }}
-          >
-            <span role="img" aria-label="Delete">🗑️</span>
-          </button>
-          <button
-            className="color-edit-button"
-            onClick={(e) => openColorEditor(subject, e)}
-            title="Edit subject color"
-          >
-            <FaPalette />
-          </button>
-        </div>
+            {mobileMenuOpen[subject] ? (
+              <>
+                <button
+                  className="subject-actions-toggle"
+                  onClick={(e) => toggleMobileMenu(subject, e)}
+                  title="Close menu"
+                >
+                  <FaTimes />
+                </button>
+                <div className={`subject-actions-menu ${mobileMenuOpen[subject] ? 'active' : ''}`}>
+                  <button
+                    className="slideshow-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Start slideshow with first card in subject
+                      const firstCard = cards.flat()[0];
+                      if (firstCard) {
+                        handleSetShowModalAndSelectedCard(firstCard);
+                      }
+                    }}
+                    title="Start slideshow"
+                  >
+                    <span role="img" aria-label="Slideshow">▶️</span>
+                  </button>
+                  
+                  <button
+                    className="topic-list-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewTopicList && onViewTopicList(subject);
+                    }}
+                    title="View Topic List"
+                  >
+                    <span role="img" aria-label="View Topics">📋</span>
+                  </button>
+                  
+                  <button
+                    className="print-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePrintSubject(subject);
+                    }}
+                    title="Print all cards in this subject"
+                  >
+                    <span role="img" aria-label="Print">🖨️</span>
+                  </button>
+                  <button
+                    className="delete-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteSubjectCards(subject);
+                    }}
+                    title="Delete all cards in this subject"
+                    style={{ 
+                      backgroundColor: `rgba(255, 0, 0, 0.2)`,
+                      color: textColor
+                    }}
+                  >
+                    <span role="img" aria-label="Delete">🗑️</span>
+                  </button>
+                  <button
+                    className="color-edit-button"
+                    onClick={(e) => openColorEditor(subject, e)}
+                    title="Edit subject color"
+                  >
+                    <FaPalette />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <button
+                  className="subject-actions-toggle"
+                  onClick={(e) => toggleMobileMenu(subject, e)}
+                  title="Show actions"
+                >
+                  <FaBars />
+                </button>
+                <button
+                  className="slideshow-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Start slideshow with first card in subject
+                    const firstCard = cards.flat()[0];
+                    if (firstCard) {
+                      handleSetShowModalAndSelectedCard(firstCard);
+                    }
+                  }}
+                  title="Start slideshow"
+                >
+                  <span role="img" aria-label="Slideshow">▶️</span>
+                </button>
+                
+                <button
+                  className="topic-list-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewTopicList && onViewTopicList(subject);
+                  }}
+                  title="View Topic List"
+                >
+                  <span role="img" aria-label="View Topics">📋</span>
+                </button>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="subject-actions">
+            <button
+              className="slideshow-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Start slideshow with first card in subject
+                const firstCard = cards.flat()[0];
+                if (firstCard) {
+                  handleSetShowModalAndSelectedCard(firstCard);
+                }
+              }}
+              title="Start slideshow"
+            >
+              <span role="img" aria-label="Slideshow">▶️</span>
+            </button>
+            
+            <button
+              className="topic-list-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewTopicList && onViewTopicList(subject);
+              }}
+              title="View Topic List"
+            >
+              <span role="img" aria-label="View Topics">📋</span>
+            </button>
+            
+            <button
+              className="print-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePrintSubject(subject);
+              }}
+              title="Print all cards in this subject"
+            >
+              <span role="img" aria-label="Print">🖨️</span>
+            </button>
+            <button
+              className="delete-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteSubjectCards(subject);
+              }}
+              title="Delete all cards in this subject"
+              style={{ 
+                backgroundColor: `rgba(255, 0, 0, 0.2)`,
+                color: textColor
+              }}
+            >
+              <span role="img" aria-label="Delete">🗑️</span>
+            </button>
+            <button
+              className="color-edit-button"
+              onClick={(e) => openColorEditor(subject, e)}
+              title="Edit subject color"
+            >
+              <FaPalette />
+            </button>
+          </div>
+        )}
       </div>
     );
   };
