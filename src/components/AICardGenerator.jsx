@@ -266,7 +266,7 @@ const AICardGenerator = ({
     "Mathematics", "Further Mathematics", "Statistics", "Physics", "Chemistry", "Biology", "Combined Science",
     "Combined Science - Double Award", "Combined Science - Triple Award", "Environmental Science", "Computer Science",
     "Electronics", "English Language", "English Literature", "History", "Geography", "Religious Studies / Theology",
-    "Philosophy", "Classics", "Classics - Latin", "Classesics - Ancient Greek", "Classesics - Classical Civilisation",
+    "Philosophy", "Classics", "Classics - Latin", "Classics - Ancient Greek", "Classics - Classical Civilisation",
     "Economics", "Business Studies", "Accounting", "Government and Politics / Politics", "Law", "Psychology",
     "Sociology", "Media Studies", "French", "Spanish", "German", "Italian", "Mandarin Chinese", "Arabic",
     "Japanese", "Russian", "Welsh", "Art and Design", "Design and Technology",

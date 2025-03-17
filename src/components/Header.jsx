@@ -51,6 +51,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
           className={`nav-button ${currentView === "cardBank" ? "active" : ""}`}
           onClick={() => handleNavClick(() => onViewChange("cardBank"))}
         >
+          <span className="button-icon">📚</span>
           Card Bank
         </button>
         
@@ -58,6 +59,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
           className="nav-button create-card-btn"
           onClick={() => handleNavClick(onCreateCard)}
         >
+          <span className="button-icon">➕</span>
           Create Card
         </button>
         
@@ -65,20 +67,23 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
           className="nav-button spaced-rep-btn"
           onClick={() => handleNavClick(() => onViewChange("spacedRepetition"))}
         >
+          <span className="button-icon">🔄</span>
           Spaced Repetition
         </button>
         
         <button
-          className="print-button"
+          className="nav-button print-button"
           onClick={() => handleNavClick(onPrintAll)}
         >
-          Print All
+          <span className="button-icon">🖨️</span>
+          Print All Cards
         </button>
         
         <button
-          className="logout-button"
+          className="nav-button logout-button"
           onClick={() => handleNavClick(handleLogout)}
         >
+          <span className="button-icon">🚪</span>
           Logout
         </button>
       </div>
