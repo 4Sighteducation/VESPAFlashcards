@@ -86,38 +86,38 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   // Get contrast color for text based on background
   const textColor = card.textColor || getContrastColor(card.cardColor || '#3cb44b');
   
-  // Handle card flipping
-  const handleFlip = (e) => {
-    // Don't flip if clicking on buttons or controls
-    if (
-      e.target.closest('.delete-btn') || 
-      e.target.closest('.color-btn') || 
-      e.target.closest('.info-btn') || 
-      e.target.closest('.delete-confirm') || 
-      e.target.closest('.color-picker-container')
-    ) {
+  // Handle card click to flip
+  const handleClick = (e) => {
+    // If clicking on a button, don't flip
+    if (e.target.closest('button') || e.target.closest('.card-topic-indicator')) {
       return;
     }
     
-    setIsFlipped(!isFlipped);
-    if (onFlip) onFlip(card, !isFlipped);
+    // Otherwise, flip the card
+    if (onClick) {
+      onClick(); // Use the custom handler if provided
+    } else {
+      toggleFlip(e); // Otherwise use the default flip
+    }
   };
   
-  // Handle clicking on the card - for opening modal view
-  const handleClick = (e) => {
-    if (onClick && !isInModal) {
-      // Only trigger onClick if it's not a button click and we're not already in modal
-      if (
-        !e.target.closest('.delete-btn') && 
-        !e.target.closest('.color-btn') && 
-        !e.target.closest('.info-btn') && 
-        !e.target.closest('.delete-confirm') && 
-        !e.target.closest('.color-picker-container')
-      ) {
-        onClick(e);
-      }
-    } else {
-      handleFlip(e);
+  // Toggle card flip
+  const toggleFlip = (e) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    
+    // If we're in preview mode, don't flip
+    if (preview) {
+      return;
+    }
+    
+    // Otherwise, toggle the flip state
+    setIsFlipped(!isFlipped);
+    
+    // Call the onFlip callback if provided
+    if (onFlip) {
+      onFlip(card, !isFlipped);
     }
   };
   
@@ -231,69 +231,72 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
         onClick={handleClick}
         style={cardStyle}
       >
+        {/* Buttons that should appear on both front and back */}
         {showButtons && !preview && (
-          <>
-            {confirmDelete ? (
-              <div className="delete-confirm">
-                <span style={{ color: textColor }}>Delete?</span>
-                <button onClick={confirmDeleteCard} className="confirm-btn">Yes</button>
-                <button onClick={cancelDelete} className="cancel-btn">No</button>
-              </div>
-            ) : (
-              <>
-                <button 
-                  className="delete-btn" 
-                  onClick={handleDeleteClick}
-                  title="Delete card"
-                  style={{ color: textColor }}
-                >
-                  ✕
-                </button>
-                
-                <button 
-                  className="color-btn" 
-                  onClick={toggleColorPicker}
-                  title="Change color"
-                  style={{ color: textColor }}
-                >
-                  🎨
-                </button>
-                
-                {hasAdditionalInfo && (
+          <div className="flashcard-buttons">
+            <div className="card-buttons">
+              {confirmDelete ? (
+                <div className="delete-confirm">
+                  <span style={{ color: textColor }}>Delete?</span>
+                  <button onClick={confirmDeleteCard} className="confirm-btn">Yes</button>
+                  <button onClick={cancelDelete} className="cancel-btn">No</button>
+                </div>
+              ) : (
+                <>
                   <button 
-                    className="info-btn" 
-                    onClick={toggleInfoModal}
-                    title="View additional information"
+                    className="delete-btn" 
+                    onClick={handleDeleteClick}
+                    title="Delete card"
                     style={{ color: textColor }}
                   >
-                    ℹ️
+                    ✕
                   </button>
-                )}
-              </>
-            )}
-            
-            {showColorPicker && (
-              <div className="color-picker-container" onClick={(e) => e.stopPropagation()}>
-                <div className="color-options">
-                  {colorOptions.map((color) => (
-                    <div 
-                      key={color}
-                      className="color-option"
-                      style={{ 
-                        backgroundColor: color,
-                        border: color === card.cardColor ? '2px solid white' : '2px solid transparent'
-                      }}
-                      onClick={() => handleColorChange(color)}
-                    />
-                  ))}
+                  
+                  <button 
+                    className="color-btn" 
+                    onClick={toggleColorPicker}
+                    title="Change color"
+                    style={{ color: textColor }}
+                  >
+                    🎨
+                  </button>
+                  
+                  {hasAdditionalInfo && (
+                    <button 
+                      className="info-btn" 
+                      onClick={toggleInfoModal}
+                      title="View additional information"
+                      style={{ color: textColor }}
+                    >
+                      ℹ️
+                    </button>
+                  )}
+                </>
+              )}
+              
+              {showColorPicker && (
+                <div className="color-picker-container" onClick={(e) => e.stopPropagation()}>
+                  <div className="color-options">
+                    {colorOptions.map((color) => (
+                      <div 
+                        key={color}
+                        className="color-option"
+                        style={{ 
+                          backgroundColor: color,
+                          border: color === card.cardColor ? '2px solid white' : '2px solid transparent'
+                        }}
+                        onClick={() => handleColorChange(color)}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
+              )}
+            </div>
+          </div>
         )}
         
         <div className="flashcard-inner">
-          <div className="flashcard-front" style={{ 
+          <div className="flashcard-front flashcard-flip-area" style={{ 
             color: textColor,
             backgroundColor: card.cardColor || '#3cb44b',
             padding: '15px',
@@ -303,7 +306,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             height: '100%',
             width: '100%',
             position: 'absolute',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            cursor: preview ? 'default' : 'pointer'
           }}>
             {card.topic && !preview && (
               <div className="card-topic-indicator" style={{ color: textColor }}>
@@ -348,7 +352,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             )}
           </div>
           
-          <div className="flashcard-back" style={{ 
+          <div className="flashcard-back flashcard-flip-area" style={{ 
             color: '#000000', 
             backgroundColor: '#ffffff',
             padding: '15px',
@@ -358,7 +362,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             height: '100%',
             width: '100%',
             position: 'absolute',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            cursor: preview ? 'default' : 'pointer'
           }}>
             {card.topic && !preview && (
               <div className="card-topic-indicator back-topic">

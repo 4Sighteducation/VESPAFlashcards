@@ -35,6 +35,14 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
     window.location.href = "https://vespaacademy.knack.com/vespa-academy#flashcards/";
   };
 
+  // Determine what view toggle to show based on current view
+  const isInCardBank = currentView === "cardBank";
+  const alternateViewName = isInCardBank ? "Spaced Repetition" : "Card Bank";
+  const alternateViewIcon = isInCardBank ? "🔄" : "📚";
+  const alternateViewAction = isInCardBank 
+    ? () => onViewChange("spacedRepetition") 
+    : () => onViewChange("cardBank");
+
   return (
     <header className="header">
       <div className="app-title">
@@ -47,12 +55,13 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
       </div>
 
       <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
+        {/* Toggle button for switching between Card Bank and Spaced Repetition */}
         <button
-          className={`nav-button ${currentView === "cardBank" ? "active" : ""}`}
-          onClick={() => handleNavClick(() => onViewChange("cardBank"))}
+          className={`nav-button toggle-view-btn`}
+          onClick={() => handleNavClick(alternateViewAction)}
         >
-          <span className="button-icon">📚</span>
-          Card Bank
+          <span className="button-icon">{alternateViewIcon}</span>
+          {alternateViewName}
         </button>
         
         <button
@@ -61,14 +70,6 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
         >
           <span className="button-icon">➕</span>
           Create Card
-        </button>
-        
-        <button
-          className="nav-button spaced-rep-btn"
-          onClick={() => handleNavClick(() => onViewChange("spacedRepetition"))}
-        >
-          <span className="button-icon">🔄</span>
-          Spaced Repetition
         </button>
         
         <button
@@ -83,7 +84,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving, onPrint
           className="nav-button logout-button"
           onClick={() => handleNavClick(handleLogout)}
         >
-          <span className="button-icon">🚪</span>
+          <span className="button-icon">↪️</span>
           Logout
         </button>
       </div>

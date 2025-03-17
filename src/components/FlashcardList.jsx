@@ -557,7 +557,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
           e.target.closest('.delete-button') || 
           e.target.closest('.info-button') || 
           e.target.closest('.color-edit-button') ||
-          e.target.closest('.close-modal-button')) {
+          e.target.closest('.close-modal-button') ||
+          e.target.closest('.flashcard-flip-area') ||
+          e.target.closest('.flashcard-buttons')) {
+        console.log("Touch on interactive element ignored for swipe detection");
         return;
       }
       
@@ -573,8 +576,20 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     };
     
     const onTouchMove = (e) => {
-      // Don't interfere with vertical scrolling
-      if (!touchStart) return;
+      // Don't interfere with vertical scrolling or if we didn't start tracking touch
+      if (!touchStart) {
+        return;
+      }
+      
+      // Check again if we're on an interactive element
+      if (e.target.closest('button') || 
+          e.target.closest('.flashcard-buttons')) {
+        // Reset touch tracking to prevent swipe detection
+        setTouchStart(null);
+        setTouchEnd(null);
+        setTouchMoved(false);
+        return;
+      }
       
       setTouchEnd(e.targetTouches[0].clientX);
       
@@ -589,6 +604,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       
       // If moving more vertically than horizontally, don't handle (allow scrolling)
       if (distanceY > distanceX) {
+        // Reset touch tracking for swipe
+        setTouchStart(null);
+        setTouchEnd(null);
+        setTouchMoved(false);
         return;
       }
     };
@@ -599,6 +618,13 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       
       // Don't interfere with buttons or taps that didn't move much
       if (!touchMoved) return;
+      
+      // Check final target to make sure we're not on an interactive element
+      if (e.target.closest('button') || 
+          e.target.closest('.flashcard-buttons')) {
+        console.log("Touch ended on interactive element, canceling swipe");
+        return;
+      }
       
       const distance = touchStart - touchEnd;
       const isLeftSwipe = distance > minSwipeDistance;
@@ -612,6 +638,11 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       } else if (isRightSwipe && currentIndex > 0) {
         handlePrevCard();
       }
+      
+      // Reset touch tracking
+      setTouchStart(null);
+      setTouchEnd(null);
+      setTouchMoved(false);
     };
 
     // Get topic information for display - ensure we never display "null"
@@ -633,9 +664,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
         <div 
           className={`card-modal-content ${isLandscape && isMobile ? 'landscape-mode' : ''}`} 
           onClick={(e) => e.stopPropagation()}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
         >
           <button 
             className="close-modal-button" 
@@ -651,6 +679,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
               '--card-bg-color': cardBgColor, 
               '--card-text-color': cardTextColor
             }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             <Flashcard 
               card={selectedCard} 
@@ -671,6 +702,12 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
               >
                 {isMobile ? "←" : "Previous"}
               </button>
+              <div className="card-info">
+                <div className="card-counter">
+                  {currentIndex + 1} of {totalCards}
+                </div>
+                <div className="topic-info">{topicInfo}</div>
+              </div>
               <button 
                 onClick={handleNextCard} 
                 disabled={currentIndex >= totalCards - 1}
@@ -678,12 +715,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
               >
                 {isMobile ? "→" : "Next"}
               </button>
-            </div>
-            <div className="card-info">
-              <div className="card-counter">
-                {currentIndex + 1} of {totalCards}
-              </div>
-              <div className="topic-info">{topicInfo}</div>
             </div>
           </div>
           

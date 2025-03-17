@@ -3,14 +3,18 @@
   display: flex;
   flex-direction: column;
   padding: 15px;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* Subjects accordion styling */
 .subjects-accordion {
   display: flex;
   flex-direction: column;
-  gap: 15px;
   width: 100%;
+  height: 100%;
+  overflow: auto;
+  flex: 1;
 }
 
 .subject-container {
@@ -180,11 +184,17 @@
   transition: all 0.3s ease-out;
   padding-top: 5px;
   padding-bottom: 5px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .topic-group {
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .topic-header {
@@ -250,6 +260,10 @@
   background-color: rgba(0, 0, 0, 0.02);
   border-top: 1px solid rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease-out;
+  flex: 1;
+  overflow-y: auto;
+  max-height: none;
+  min-height: 200px;
 }
 
 /* Style for the flashcards inside the accordion */
@@ -296,6 +310,25 @@
   height: 90vh;
 }
 
+.card-modal-content.landscape-mode .card-modal-card-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  width: 70%;
+  padding: 15px;
+  overflow: hidden;
+  position: relative;
+}
+
+.card-modal-content.landscape-mode .card-modal-actions {
+  width: 30%;
+  justify-content: center;
+  padding: 10px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
 .card-modal-card-container {
   display: flex;
   justify-content: center;
@@ -330,7 +363,9 @@
 .nav-buttons {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 10px;
+  width: 100%;
 }
 
 .nav-button {
@@ -376,15 +411,17 @@
 
 .card-info {
   display: flex;
-  justify-content: space-between;
-  margin-top: 15px;
-  color: #555;
-  font-size: clamp(0.8rem, 2vw, 0.9rem);
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  text-align: center;
+  flex: 0 1 auto;
 }
 
-/* Adjust text sizing for better readability */
 .card-counter {
   font-weight: bold;
+  font-size: 0.9rem;
 }
 
 .topic-info {
@@ -827,4 +864,87 @@ html {
   visibility: hidden;
   position: absolute;
   pointer-events: none;
+}
+
+/* Ensure navbuttons are below card in mobile portrait but on the side in landscape */
+@media (orientation: portrait) and (max-width: 768px) {
+  .card-modal-actions {
+    margin-top: auto; /* Push to bottom in portrait */
+    width: 100%;
+  }
+}
+
+@media (orientation: landscape) {
+  .card-modal-actions.side-controls {
+    width: 30%;
+    justify-content: center;
+    align-self: center;
+  }
+  
+  /* Move navigation buttons below the card in landscape on mobile */
+  .card-modal-content.landscape-mode .card-modal-actions {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+  }
+}
+
+/* Fix the accordion spacing issue to maximize available space */
+.subjects-accordion {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  flex: 1;
+}
+
+.topics-container {
+  background-color: white;
+  transition: all 0.3s ease-out;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  flex: 1; /* Allow topics container to grow */
+  display: flex;
+  flex-direction: column;
+}
+
+.topic-group {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* Allow topic group to grow */
+}
+
+.topic-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease-out;
+  flex: 1; /* Allow topic cards to grow and fill available space */
+  overflow-y: auto; /* Enable scrolling within the container */
+  max-height: none; /* Remove any max-height limitations */
+  min-height: 200px; /* Ensure minimum height for better visibility */
+}
+
+/* Ensure the flashcard-list uses full height available */
+.flashcard-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.bank-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
 }
