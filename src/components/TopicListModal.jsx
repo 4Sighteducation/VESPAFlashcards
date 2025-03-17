@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./TopicListModal.css";
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
+import LoadingSpinner from "./LoadingSpinner";
 
 // API keys - using the correct environment variables
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
@@ -44,7 +45,9 @@ const TopicListModal = ({
   onSelectTopic, 
   onGenerateCards,
   auth,
-  userId
+  userId,
+  onTopicListSave,
+  existingTopics = null // Pass existing topics for subjects that already have topic lists
 }) => {
   const [step, setStep] = useState(1); // 1 = Exam selection, 2 = Topic list, 3 = Post-save options
   const [examBoard, setExamBoard] = useState(initialExamBoard || "");
@@ -60,7 +63,10 @@ const TopicListModal = ({
   const [newTopicName, setNewTopicName] = useState("");
   const [topicListId, setTopicListId] = useState(null);
   const [prioritizationMode, setPrioritizationMode] = useState(false);
+  const [regenerate, setRegenerate] = useState(false);
 
+  const hasExistingTopics = Array.isArray(existingTopics) && existingTopics.length > 0;
+  
   // Load existing topic list when component mounts
   useEffect(() => {
     checkSubjectMetadata();

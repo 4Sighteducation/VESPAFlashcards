@@ -481,4 +481,126 @@ button:disabled {
 .add-topic-actions .add-button:hover:not(:disabled) {
   background-color: #041a54;
   transform: translateY(-2px);
+}
+
+.topic-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+.topic-button {
+  background-color: #f0f9fa;
+  border: 1px solid #079baa;
+  border-radius: 8px;
+  padding: 12px 15px;
+  text-align: left;
+  transition: all 0.2s;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #333;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.topic-button:hover {
+  background-color: #e0f7f8;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.topic-button:active {
+  background-color: #d0f0f2;
+  transform: translateY(0);
+}
+
+.topic-button::after {
+  content: "→";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.2s, right 0.2s;
+}
+
+.topic-button:hover::after {
+  opacity: 1;
+  right: 15px;
+}
+
+.success-message {
+  background-color: #e7f7e7;
+  border-left: 4px solid #4caf50;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.success-message p {
+  margin: 5px 0;
+  color: #2e7d32;
+}
+
+.success-message p:first-child {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.create-cards-confirmation {
+  background-color: #f0f9fa;
+  border: 1px solid #079baa;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.create-cards-confirmation p {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.confirmation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.confirmation-buttons button {
+  padding: 10px 20px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.confirmation-buttons button:first-child {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.confirmation-buttons .confirm-button {
+  background-color: #079baa;
+  color: white;
+}
+
+.regenerate-button {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 15px;
+  cursor: pointer;
+  margin-top: 10px;
+  color: #555;
+}
+
+.regenerate-button:hover {
+  background-color: #e5e5e5;
 } 

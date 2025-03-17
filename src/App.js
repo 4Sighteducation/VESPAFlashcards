@@ -130,6 +130,9 @@ function App() {
   const [topicGenerationProgress, setTopicGenerationProgress] = useState({ current: 0, total: 0 });
   const [currentGeneratingSubject, setCurrentGeneratingSubject] = useState(null);
 
+  // New state for existing topic list data
+  const [existingTopicListData, setExistingTopicListData] = useState(null);
+
   // User information - enhanced with additional student data
   const getUserInfo = useCallback(() => {
     return {
@@ -1353,11 +1356,50 @@ function App() {
     return () => window.removeEventListener("message", handleMessage);
   }, [saveData, showStatus]);
 
-  // Handle opening the topic list modal for a subject
-  const handleViewTopicList = useCallback((subject) => {
+  // Handle opening the topic list modal
+  const handleViewTopicList = useCallback((subject, examBoard, examType) => {
+    console.log("Opening topic list for:", subject, examBoard, examType);
+    
     setTopicListSubject(subject);
+    setTopicListExamBoard(examBoard || "AQA");
+    setTopicListExamType(examType || "A-Level");
+    
+    // Check if we already have a topic list for this subject
+    let existingTopics = null;
+    
+    // First check userTopics state
+    if (userTopics[subject]) {
+      existingTopics = userTopics[subject];
+    } else {
+      // Then try to find in field_3011
+      try {
+        if (auth && auth.field_3011) {
+          const topicLists = JSON.parse(auth.field_3011);
+          const subjectTopicList = topicLists.find(list => 
+            list.subject === subject || list.name.toLowerCase() === subject.toLowerCase()
+          );
+          
+          if (subjectTopicList && Array.isArray(subjectTopicList.topics)) {
+            existingTopics = subjectTopicList.topics;
+            
+            // Also update userTopics state for future reference
+            setUserTopics(prev => ({
+              ...prev,
+              [subject]: subjectTopicList.topics
+            }));
+          }
+        }
+      } catch (error) {
+        console.error("Error finding existing topic list:", error);
+      }
+    }
+    
+    // Pass existingTopics to the modal when we open it
+    setExistingTopicListData(existingTopics);
+    
+    // Open the modal
     setTopicListModalOpen(true);
-  }, []);
+  }, [auth, userTopics]);
 
   // Handle selecting a topic from the topic list modal
   const handleSelectTopicFromList = useCallback((topic) => {
@@ -1396,14 +1438,27 @@ function App() {
         topic: "General",
         cardColor: color,
         subjectColor: color,
-        // Add both top-level properties and in metadata to ensure they're displayed
+        // Add metadata in ALL possible formats to ensure display
         exam_board: examBoard,
         exam_type: examType,
+        examBoard: examBoard,
+        examType: examType,
+        courseType: examType,
+        board: examBoard,
+        meta: {
+          exam_board: examBoard,
+          exam_type: examType,
+          examBoard: examBoard,
+          examType: examType
+        },
         metadata: {
           exam_board: examBoard,
           exam_type: examType,
+          examBoard: examBoard,
+          examType: examType,
           subject: name
         },
+        hasTopicList: false,
         template: true,
         boxNum: 1,
         timestamp: new Date().toISOString()
@@ -1575,11 +1630,63 @@ function App() {
       
       // Save the topic list
       if (topics.length > 0) {
-        // Save topic list to user data
+        // Format topics for storage in field_3011
+        const topicListObj = {
+          id: `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
+          name: name.toLowerCase(),
+          examBoard: examBoard,
+          examType: examType,
+          subject: name,
+          topics: topics.map(topic => ({ topic })),
+          created: new Date().toISOString(),
+          userId: auth?.id || ""
+        };
+        
+        // Save topic list to user topics
         setUserTopics(prev => ({
           ...prev,
-          [name]: topics
+          [name]: topics.map(topic => ({ topic }))
         }));
+        
+        // Store in field_3011 format
+        let field3011Data = [];
+        try {
+          // Try to parse existing data if any
+          if (auth && auth.field_3011) {
+            const existingData = JSON.parse(auth.field_3011);
+            if (Array.isArray(existingData)) {
+              field3011Data = existingData;
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing existing topic lists:", e);
+        }
+        
+        // Add the new topic list
+        field3011Data.push(topicListObj);
+        
+        // Save to Knack if we have auth
+        if (auth && auth.id) {
+          try {
+            const response = await fetch(`https://api.knack.com/v1/objects/object_5/records/${auth.id}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Knack-Application-Id": KNACK_APP_ID,
+                "X-Knack-REST-API-Key": KNACK_API_KEY
+              },
+              body: JSON.stringify({
+                field_3011: JSON.stringify(field3011Data)
+              })
+            });
+            
+            if (!response.ok) {
+              console.error("Failed to save topic list to Knack");
+            }
+          } catch (error) {
+            console.error("Error saving topic list to Knack:", error);
+          }
+        }
         
         // Update the subject card to show it has a topic list
         setAllCards(prevCards => 
@@ -1601,6 +1708,111 @@ function App() {
       throw error;
     }
   };
+
+  // Handle saving a topic list
+  const handleSaveTopicList = useCallback(async (topicListData, subject) => {
+    console.log("Saving topic list:", topicListData);
+    
+    // Check if this is a request to create cards
+    if (topicListData.createCards) {
+      // Show fun message
+      showStatus("Great choice! Let's create some flashcards!", 2000);
+      
+      // After a delay, open the AI card generator
+      setTimeout(() => {
+        setCurrentAIGeneratorSubject(subject);
+        setCurrentAIGeneratorTopic(topicListData.topic);
+        setAiCardGeneratorOpen(true);
+      }, 500);
+      
+      return;
+    }
+    
+    // Otherwise, this is a normal topic list save
+    try {
+      // First, try to save the topic list to userTopics state
+      if (subject && topicListData.topics) {
+        setUserTopics(prev => ({
+          ...prev,
+          [subject]: topicListData.topics
+        }));
+      }
+      
+      // If we have auth and userId, save to Knack
+      if (auth && auth.id) {
+        // Try to get existing topic lists
+        let existingLists = [];
+        try {
+          if (auth.field_3011) {
+            existingLists = JSON.parse(auth.field_3011);
+            if (!Array.isArray(existingLists)) {
+              existingLists = [];
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing existing topic lists:", e);
+        }
+        
+        // Check if we already have a topic list for this subject
+        const existingIndex = existingLists.findIndex(list => 
+          list.subject === subject || (list.name && list.name.toLowerCase() === subject.toLowerCase())
+        );
+        
+        if (existingIndex >= 0) {
+          // Update existing topic list
+          existingLists[existingIndex] = {
+            ...existingLists[existingIndex],
+            ...topicListData,
+            topics: topicListData.topics
+          };
+        } else {
+          // Add new topic list
+          existingLists.push(topicListData);
+        }
+        
+        // Save to Knack
+        try {
+          const response = await fetch(`https://api.knack.com/v1/objects/object_5/records/${auth.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Knack-Application-Id": KNACK_APP_ID,
+              "X-Knack-REST-API-Key": KNACK_API_KEY
+            },
+            body: JSON.stringify({
+              field_3011: JSON.stringify(existingLists)
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to save topic list: ${response.status}`);
+          }
+          
+          // Show success message
+          showStatus("Topic list saved successfully!", 3000);
+          
+          // Update subject card to show it has a topic list
+          setAllCards(prevCards => 
+            prevCards.map(card => {
+              if (card.subject === subject && card.template) {
+                return {
+                  ...card,
+                  hasTopicList: true
+                };
+              }
+              return card;
+            })
+          );
+        } catch (error) {
+          console.error("Error saving topic list to Knack:", error);
+          showStatus("Failed to save topic list. Please try again.", 3000);
+        }
+      }
+    } catch (error) {
+      console.error("Error in handleSaveTopicList:", error);
+      showStatus("Failed to save topic list. Please try again.", 3000);
+    }
+  }, [auth, KNACK_API_KEY, KNACK_APP_ID, showStatus]);
 
   // Show loading state
   if (loading) {
@@ -1650,16 +1862,17 @@ function App() {
           {renderSelectSubjectsButton()}
 
           {/* Topic List Modal */}
-          {topicListModalOpen && topicListSubject && (
+          {topicListModalOpen && (
             <TopicListModal
-              subject={topicListSubject}
               examBoard={topicListExamBoard}
               examType={topicListExamType}
+              subject={topicListSubject}
               onClose={() => setTopicListModalOpen(false)}
-              onSelectTopic={handleSelectTopicFromList}
-              onGenerateCards={handleGenerateCardsFromTopic}
-              auth={auth}
+              knackAppId={KNACK_APP_ID}
               userId={auth?.id}
+              onTopicListSave={handleSaveTopicList}
+              existingTopics={existingTopicListData}
+              auth={auth}
             />
           )}
 
