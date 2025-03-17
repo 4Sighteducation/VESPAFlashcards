@@ -85,6 +85,11 @@
   display: flex;
   align-items: center;
   gap: 5px;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: inherit;
+  font-weight: 500;
 }
 
 .subject-actions {
@@ -263,24 +268,32 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 1100;
+  padding: clamp(5px, 3vw, 20px);
 }
 
 .card-modal-content {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  width: 92%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow: hidden;
+  background-color: #fff;
+  width: min(95%, 900px);
+  max-height: 95vh;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
   display: flex;
   flex-direction: column;
-  position: relative;
+  overflow: hidden;
+}
+
+/* Apply landscape mode layout */
+.card-modal-content.landscape-mode {
+  flex-direction: row;
+  width: 95vw;
+  max-width: none;
+  height: 90vh;
 }
 
 .card-modal-card-container {
@@ -301,227 +314,115 @@
 }
 
 .card-modal-actions {
+  padding: clamp(10px, 3vw, 20px);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 15px;
-  background-color: #f5f5f5;
-  border-top: 1px solid #e0e0e0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Side controls for landscape mode */
+.card-modal-actions.side-controls {
+  width: 30%;
+  justify-content: center;
+  padding: 20px;
 }
 
 .nav-buttons {
   display: flex;
+  justify-content: space-between;
   gap: 10px;
 }
 
-.nav-button, .close-modal-button {
-  background: none;
+.nav-button {
+  flex: 1;
+  padding: clamp(8px, 2vw, 12px);
+  background-color: #06206e;
+  color: white;
   border: none;
-  font-size: 1.2rem;
+  border-radius: 5px;
   cursor: pointer;
-  padding: 5px 10px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
+  transition: all 0.2s;
 }
 
-.nav-button:hover, .close-modal-button:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+.nav-button:hover:not(:disabled) {
+  background-color: #0a338f;
+  transform: translateY(-2px);
+}
+
+.nav-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 
 .close-modal-button {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: rgba(0, 0, 0, 0.2);
+  top: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.6);
   color: white;
+  border: none;
   width: 30px;
   height: 30px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  font-size: 1rem;
-  z-index: 5;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .card-info {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
+  justify-content: space-between;
+  margin-top: 15px;
+  color: #555;
+  font-size: clamp(0.8rem, 2vw, 0.9rem);
+}
+
+/* Adjust text sizing for better readability */
+.card-counter {
+  font-weight: bold;
 }
 
 .topic-info {
-  font-size: 0.8rem;
-  color: #666;
-  max-width: 200px;
-  white-space: nowrap;
+  font-style: italic;
+  text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
 }
 
-.card-counter {
-  font-size: 0.9rem;
-  color: #666;
-}
-
-/* Responsive media queries for modal */
-@media (max-width: 1024px) {
-  .card-modal-content {
-    width: 95%;
-    max-width: 700px;
-  }
-  
-  .card-info {
-    max-width: 180px;
-  }
-}
-
-/* Tablet-sized devices */
+/* Mobile optimizations */
 @media (max-width: 768px) {
   .card-modal-content {
-    width: 95%;
-    max-height: 85vh;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
   }
   
-  .card-modal-card-container {
-    padding: 10px;
-  }
-  
-  .card-modal-card-container .flashcard {
-    min-height: 400px;
-    height: auto;
-  }
-  
-  .card-modal-actions {
-    padding: 8px 12px;
-  }
-  
-  .nav-button, .close-modal-button {
-    font-size: 1rem;
-  }
-  
-  .card-info {
-    max-width: 150px;
-  }
-  
-  .topic-info {
-    font-size: 0.75rem;
-  }
-  
-  .subject-header {
-    position: sticky;
-    top: -1px; /* Slightly off the top to show a hint of the next subject */
-    z-index: 10;
-  }
-  
-  .topic-header {
-    position: relative;
-    z-index: 5;
-  }
-  
-  /* Add more space when collapsed to make targets easier to tap */
-  .subject-container {
-    padding-bottom: 3px;
-  }
-  
-  /* Support overscroll behavior for smoother mobile scrolling */
-  .flashcard-list {
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Improve tappable area for buttons */
-  .subject-actions button,
-  .topic-actions button {
-    min-width: 32px;
-    min-height: 32px;
-  }
-  
-  .color-edit-button {
-    width: 28px;
-    height: 28px;
-  }
-  
-  .subject-actions {
-    gap: 4px;
-  }
-}
-
-/* Small tablet and large phone screens */
-@media (max-width: 640px) {
-  .card-modal-card-container .flashcard {
-    min-height: 350px;
+  .card-modal-overlay {
+    padding: 0;
   }
   
   .nav-button {
-    padding: 4px 8px;
-    font-size: 0.9rem;
-  }
-}
-
-/* Mobile phones */
-@media (max-width: 480px) {
-  .card-modal-content {
-    width: 98%;
-    max-height: 90vh;
-  }
-  
-  .card-modal-card-container {
-    padding: 8px;
-  }
-  
-  .card-modal-card-container .flashcard {
-    min-height: 0;
-    height: auto;
-    aspect-ratio: 3/4;
+    padding: 15px;
+    font-size: 1.2rem;
   }
   
   .card-info {
-    max-width: 120px;
-  }
-  
-  .nav-buttons {
+    flex-direction: column;
+    align-items: center;
     gap: 5px;
   }
   
-  .nav-button {
-    min-width: 60px;
-    padding: 3px 6px;
-    font-size: 0.85rem;
-  }
-  
   .topic-info {
-    font-size: 0.7rem;
-    max-width: 120px;
-  }
-  
-  .card-counter {
-    font-size: 0.8rem;
-  }
-  
-  .subject-header,
-  .topic-header {
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-  
-  .subject-actions button,
-  .topic-actions button {
-    min-width: 30px;
-    min-height: 30px;
-  }
-  
-  /* Give extra space between topics for better separation */
-  .topic-group {
-    margin-bottom: 2px;
-  }
-  
-  /* More visible focus styles for accessibility */
-  .subject-header:focus-visible,
-  .topic-header:focus-visible {
-    outline: 2px solid #0066cc;
-    outline-offset: -2px;
+    text-align: center;
+    max-width: 100%;
   }
 }
 

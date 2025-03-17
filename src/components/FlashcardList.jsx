@@ -452,58 +452,66 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     );
   };
 
-  // Modal view for slideshow
-  const renderModal = () => {
-    if (!showModalAndSelectedCard || !selectedCard) return null;
+  // CardModal component: Update for better responsiveness
+  const CardModal = () => {
+    // Find the current topic for this card
+    const currentTopic = Object.keys(groupedCards[currentSubject] || {}).find(
+      topic => groupedCards[currentSubject][topic].some(c => c.id === selectedCard.id)
+    );
 
-    // Get current subject and topic
-    const currentSubject = selectedCard.subject || "General";
-    const currentTopic = selectedCard.topic || "General";
+    // Get all cards from the current subject or topic
+    let modalCards = [];
     
-    // Get all cards for the current subject+topic or just all cards in the subject
-    let currentCards = [];
-    
-    // Check if we're viewing all cards from a subject (we determine this by checking if the
+    // Check if we're in subject-level slideshow (i.e., all topics) or topic-level slideshow
+    // (This happens when we navigate between topics in the modal, or when the 
     // next and previous cards have different topics when navigating in the slideshow)
     const isSubjectSlideshow = groupedCards[currentSubject] && 
-      Object.keys(groupedCards[currentSubject]).length > 1;
-      
+      Object.keys(groupedCards[currentSubject]).length > 1 && 
+      !currentTopic;
+    
     if (isSubjectSlideshow) {
-      // Flatten all topics in the subject into a single array
-      const allTopics = Object.keys(groupedCards[currentSubject] || {});
-      currentCards = allTopics.reduce((allCards, topic) => {
-        return allCards.concat(groupedCards[currentSubject][topic] || []);
-      }, []);
-    } else {
-      // Just use cards from the specific topic
-      currentCards = groupedCards[currentSubject]?.[currentTopic] || [];
+      // Subject-level: get all cards from all topics in this subject
+      modalCards = Object.keys(groupedCards[currentSubject] || {}).flatMap(
+        topic => groupedCards[currentSubject][topic]
+      );
+    } else if (currentTopic) {
+      // Topic-level: get all cards from this specific topic
+      modalCards = groupedCards[currentSubject][currentTopic] || [];
     }
 
-    const currentIndex = currentCards.findIndex(card => card.id === selectedCard.id);
-    const totalCards = currentCards.length;
+    // Find the index of the current card in the array
+    const currentIndex = modalCards.findIndex(c => c.id === selectedCard.id);
+    const totalCards = modalCards.length;
 
-    const handlePrevCard = (e) => {
-      e.stopPropagation();
+    // Handler functions for navigation
+    const handlePrevCard = () => {
       if (currentIndex > 0) {
-        setSelectedCard(currentCards[currentIndex - 1]);
+        handleSetShowModalAndSelectedCard(modalCards[currentIndex - 1]);
       }
     };
-
-    const handleNextCard = (e) => {
-      e.stopPropagation();
+    
+    const handleNextCard = () => {
       if (currentIndex < totalCards - 1) {
-        setSelectedCard(currentCards[currentIndex + 1]);
+        handleSetShowModalAndSelectedCard(modalCards[currentIndex + 1]);
       }
     };
 
-    // Topic display in navigation
+    // Get topic information for display
     const topicInfo = isSubjectSlideshow 
       ? `${currentSubject} (All Topics)` 
       : `${currentSubject} | ${currentTopic}`;
 
+    // Check if we're on a mobile device
+    const isMobile = window.innerWidth <= 768;
+    // Check if we're in landscape orientation
+    const isLandscape = window.innerWidth > window.innerHeight;
+
     return (
       <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
-        <div className="card-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className={`card-modal-content ${isLandscape && isMobile ? 'landscape-mode' : ''}`} 
+          onClick={(e) => e.stopPropagation()}
+        >
           <button className="close-modal-button" onClick={() => setShowModalAndSelectedCard(false)}>✕</button>
           
           <div 
@@ -523,21 +531,21 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
             />
           </div>
           
-          <div className="card-modal-actions">
+          <div className={`card-modal-actions ${isLandscape && isMobile ? 'side-controls' : ''}`}>
             <div className="nav-buttons">
               <button 
                 onClick={handlePrevCard} 
                 disabled={currentIndex === 0}
                 className="nav-button prev"
               >
-                Previous
+                {isMobile ? "←" : "Previous"}
               </button>
               <button 
                 onClick={handleNextCard} 
                 disabled={currentIndex >= totalCards - 1}
                 className="nav-button next"
               >
-                Next
+                {isMobile ? "→" : "Next"}
               </button>
             </div>
             <div className="card-info">
@@ -880,7 +888,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
         })}
       </div>
 
-      {showModalAndSelectedCard && renderModal()}
+      {showModalAndSelectedCard && <CardModal />}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirmation && (

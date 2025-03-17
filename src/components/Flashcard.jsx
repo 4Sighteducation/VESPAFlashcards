@@ -333,6 +333,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const cardRef = useRef(null);
   
   // Apply card styles based on card data
@@ -457,8 +458,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   // Check if card has additional information
   const hasAdditionalInfo = card.additionalInfo || card.detailedAnswer;
   
-  // Special class for modal view
-  const cardClass = `flashcard ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''} ${preview ? 'preview-card' : ''} ${isInModal ? 'modal-card' : ''}`;
+  // Special class for modal view and fullscreen
+  const cardClass = `flashcard ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''} ${preview ? 'preview-card' : ''} ${isInModal ? 'modal-card' : ''} ${isFullscreen ? 'fullscreen' : ''}`;
   
   // In the component, add a useEffect to set CSS variables based on card colors
   useEffect(() => {
@@ -476,6 +477,12 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
       document.documentElement.style.setProperty('--card-text-color', textColor);
     }
   }, [card.cardColor]);
+  
+  // Toggle fullscreen mode
+  const toggleFullscreen = (e) => {
+    e.stopPropagation(); // Prevent card flip
+    setIsFullscreen(!isFullscreen);
+  };
   
   return (
     <>
@@ -663,6 +670,17 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
           </div>
         </div>,
         document.body
+      )}
+      
+      {/* Add fullscreen toggle button for mobile */}
+      {!isInModal && (
+        <button 
+          className="fullscreen-toggle" 
+          onClick={toggleFullscreen}
+          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        >
+          {isFullscreen ? "⤓" : "⤢"}
+        </button>
       )}
     </>
   );
