@@ -282,18 +282,19 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.85);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1100;
-  padding: clamp(5px, 3vw, 20px);
+  padding: 10px;
 }
 
 .card-modal-content {
-  background-color: #fff;
-  width: min(95%, 900px);
-  max-height: 95vh;
+  background-color: #f8f8f8;
+  width: 95%;
+  max-width: 800px;
+  max-height: 90vh;
   border-radius: 12px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
   position: relative;
@@ -302,31 +303,11 @@
   overflow: hidden;
 }
 
-/* Apply landscape mode layout */
+/* Landscape layout for card modal */
 .card-modal-content.landscape-mode {
   flex-direction: row;
-  width: 95vw;
-  max-width: none;
+  width: 95%;
   height: 90vh;
-}
-
-.card-modal-content.landscape-mode .card-modal-card-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-  width: 70%;
-  padding: 15px;
-  overflow: hidden;
-  position: relative;
-}
-
-.card-modal-content.landscape-mode .card-modal-actions {
-  width: 30%;
-  justify-content: center;
-  padding: 10px;
-  flex-shrink: 0;
-  align-self: center;
 }
 
 .card-modal-card-container {
@@ -334,30 +315,31 @@
   justify-content: center;
   align-items: center;
   flex: 1;
-  padding: 15px;
-  overflow: hidden;
+  padding: 20px;
+  position: relative;
 }
 
-.card-modal-card-container .flashcard {
-  box-shadow: none;
-  max-height: 100%;
-  width: 100%;
-  margin: 0;
-  max-width: 600px;
+.landscape-mode .card-modal-card-container {
+  width: 70%;
+  overflow: hidden;
+  padding: 15px;
 }
 
 .card-modal-actions {
-  padding: clamp(10px, 3vw, 20px);
+  padding: 15px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* Side controls for landscape mode */
-.card-modal-actions.side-controls {
+.landscape-mode .card-modal-actions {
   width: 30%;
+  border-top: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
   justify-content: center;
-  padding: 20px;
+  padding: 10px;
 }
 
 .nav-buttons {
@@ -368,69 +350,103 @@
   width: 100%;
 }
 
+.landscape-mode .nav-buttons {
+  flex-direction: column;
+  gap: 15px;
+}
+
 .nav-button {
-  flex: 1;
-  padding: clamp(8px, 2vw, 12px);
-  background-color: #06206e;
+  background-color: #079baa;
   color: white;
   border: none;
   border-radius: 5px;
+  padding: 8px 15px;
+  font-size: 14px;
   cursor: pointer;
-  font-size: clamp(0.9rem, 2.5vw, 1rem);
-  transition: all 0.2s;
-}
-
-.nav-button:hover:not(:disabled) {
-  background-color: #0a338f;
-  transform: translateY(-2px);
-}
-
-.nav-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-.close-modal-button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  border: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  cursor: pointer;
-  z-index: 10;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  min-width: 80px;
+  transition: all 0.2s;
+}
+
+.landscape-mode .nav-button {
+  width: 100%;
+  padding: 10px;
+}
+
+.nav-button:hover:not(:disabled) {
+  background-color: #068998;
+}
+
+.nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .card-info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 0 8px;
   text-align: center;
-  flex: 0 1 auto;
+  margin: 0 5px;
 }
 
-.card-counter {
-  font-weight: bold;
-  font-size: 0.9rem;
+.landscape-mode .card-info {
+  margin: 10px 0;
+  order: -1;
 }
 
-.topic-info {
-  font-style: italic;
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 60%;
+.swipe-indicator {
+  position: absolute;
+  bottom: 15px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+  pointer-events: none;
+  animation: fadeInOut 3s infinite;
+}
+
+.landscape-mode .swipe-indicator {
+  display: none;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* Make sure navigation buttons are properly positioned on mobile in portrait */
+@media (max-width: 768px) {
+  .card-modal-content {
+    max-height: 95vh;
+  }
+  
+  .card-modal-card-container {
+    padding: 15px;
+  }
+  
+  .card-modal-actions {
+    padding: 10px;
+  }
+  
+  .nav-button {
+    min-width: 60px;
+    padding: 6px 10px;
+  }
+}
+
+/* Ensure proper modal positioning in landscape */
+@media (orientation: landscape) and (max-height: 500px) {
+  .card-modal-content {
+    height: 95vh;
+  }
+  
+  .card-modal-card-container {
+    padding: 10px;
+  }
 }
 
 /* Mobile optimizations */
@@ -947,4 +963,104 @@ html {
   flex: 1;
   overflow: hidden;
   height: 100%;
+}
+
+/* Fix for mobile viewport height issue */
+#root, body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.flashcard-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: calc(100vh - 80px); /* Account for header */
+  width: 100%;
+  overflow: hidden;
+}
+
+.bank-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+.subjects-accordion {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: auto;
+  flex: 1;
+  overflow: auto;
+  min-height: calc(100vh - 200px); /* Ensure it takes up available space */
+}
+
+.topic-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: auto;
+  overflow: hidden;
+}
+
+.topic-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  padding: 15px;
+  overflow-y: auto;
+  min-height: 300px;
+  max-height: none;
+  flex: 1;
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 768px) {
+  .flashcard-list {
+    min-height: calc(100vh - 60px);
+  }
+  
+  .subjects-accordion {
+    min-height: calc(100vh - 150px);
+  }
+  
+  .topic-cards {
+    min-height: 400px;
+  }
+}
+
+.close-modal-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.close-modal-button:hover {
+  background: rgba(0, 0, 0, 0.8);
 }

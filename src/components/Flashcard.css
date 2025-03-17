@@ -123,19 +123,14 @@
 
 /* Question title styling - make it much larger and more prominent */
 .question-title {
-  margin-bottom: clamp(5px, 2vh, 15px);
-  padding: clamp(5px, 2vw, 10px);
-  background-color: rgba(240, 240, 240, 0.5);
+  font-size: 18px;
+  max-height: 30%;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  padding: 5px 8px;
   border-radius: 5px;
-  font-size: clamp(1.2rem, 4vw, 1.5rem);
-  line-height: 1.5;
-  font-weight: 600;
-  flex: 0 0 auto;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  width: 100%;
-  text-align: center;
-  border: none;
+  background-color: rgba(255, 255, 255, 0.15);
+  box-sizing: border-box;
 }
 
 .question-title .scaled-text {
@@ -148,17 +143,19 @@
   justify-content: center;
 }
 
+/* Scale questions based on content length */
+.question-title.very-long {
+  font-size: 16px;
+}
+
+.question-title.extremely-long {
+  font-size: 14px;
+}
+
 /* For modal view, ensure larger text in questions */
 .modal-card .question-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 15px;
-  color: #333;
-  padding: 10px;
-  border-radius: 5px;
-  background-color: rgba(240, 240, 240, 0.5);
-  text-align: center;
-  flex: 0 0 auto;
+  font-size: 20px;
+  max-height: 40%;
 }
 
 .modal-card .question-title .scaled-text {
@@ -170,14 +167,11 @@
 
 /* Make options smaller to accommodate larger question */
 .modal-card .options-container {
-  padding: 5px;
-  margin-top: 10px;
-  flex: 1;
-  overflow-y: auto;
+  max-height: 50%;
 }
 
 .modal-card .options-container li {
-  font-size: 0.95rem;
+  font-size: 16px;
   padding: 6px 8px;
   margin-bottom: 6px;
 }
@@ -186,14 +180,13 @@
 .options-container {
   display: block !important;
   visibility: visible !important;
-  margin-top: 10px;
   overflow-y: auto;
-  max-height: 40%;
-  width: 100%;
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
-  padding: 8px;
+  max-height: 50%;
   box-sizing: border-box;
+  padding: 8px;
+  margin-top: 10px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
 }
 
 .options-container ol {
@@ -760,7 +753,7 @@
   align-items: center;
   padding: 8px 10px;
   margin-bottom: 8px;
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.25);
   border-radius: 4px;
   overflow-wrap: break-word;
   word-break: break-word;

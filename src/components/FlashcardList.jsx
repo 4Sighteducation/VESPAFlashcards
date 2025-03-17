@@ -547,20 +547,24 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     const [touchStartY, setTouchStartY] = useState(null);
     const [touchMoved, setTouchMoved] = useState(false);
     const touchTimeout = useRef(null);
+    const swipeEnabled = useRef(true);
     
     // Required minimum distance between touchStart and touchEnd to be detected as swipe
     const minSwipeDistance = 50;
     
     const onTouchStart = (e) => {
+      // Reset swipe enabled state
+      swipeEnabled.current = true;
+      
       // Don't process touch events on buttons or interactive elements
       if (e.target.closest('button') || 
           e.target.closest('.delete-button') || 
           e.target.closest('.info-button') || 
           e.target.closest('.color-edit-button') ||
           e.target.closest('.close-modal-button') ||
-          e.target.closest('.flashcard-flip-area') ||
           e.target.closest('.flashcard-buttons')) {
-        console.log("Touch on interactive element ignored for swipe detection");
+        console.log("Touch on interactive element, disabling swipe");
+        swipeEnabled.current = false;
         return;
       }
       
@@ -576,55 +580,30 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     };
     
     const onTouchMove = (e) => {
-      // Don't interfere with vertical scrolling or if we didn't start tracking touch
-      if (!touchStart) {
-        return;
-      }
-      
-      // Check again if we're on an interactive element
-      if (e.target.closest('button') || 
-          e.target.closest('.flashcard-buttons')) {
-        // Reset touch tracking to prevent swipe detection
-        setTouchStart(null);
-        setTouchEnd(null);
-        setTouchMoved(false);
-        return;
-      }
-      
-      setTouchEnd(e.targetTouches[0].clientX);
+      // Skip if swipe is disabled for this touch gesture
+      if (!swipeEnabled.current || !touchStart) return;
       
       // Calculate both X and Y distances
-      const distanceX = Math.abs(e.targetTouches[0].clientX - touchStart);
-      const distanceY = Math.abs(e.targetTouches[0].clientY - touchStartY);
+      const currentX = e.targetTouches[0].clientX;
+      const currentY = e.targetTouches[0].clientY;
+      const distanceX = Math.abs(currentX - touchStart);
+      const distanceY = Math.abs(currentY - touchStartY);
       
-      // If we've moved significantly in any direction, mark as moved
-      if (distanceX > 10 || distanceY > 10) {
-        setTouchMoved(true);
-      }
-      
-      // If moving more vertically than horizontally, don't handle (allow scrolling)
-      if (distanceY > distanceX) {
-        // Reset touch tracking for swipe
-        setTouchStart(null);
-        setTouchEnd(null);
-        setTouchMoved(false);
+      // Check if moving more vertically than horizontally
+      if (distanceY > distanceX * 1.5) {
+        // This is a vertical scroll - disable swipe for this touch
+        swipeEnabled.current = false;
         return;
       }
+      
+      // Update for horizontal movement
+      setTouchEnd(currentX);
+      setTouchMoved(distanceX > 10);
     };
     
     const onTouchEnd = (e) => {
-      // Only process if we had a valid touchstart and touchend
-      if (!touchStart || !touchEnd) return;
-      
-      // Don't interfere with buttons or taps that didn't move much
-      if (!touchMoved) return;
-      
-      // Check final target to make sure we're not on an interactive element
-      if (e.target.closest('button') || 
-          e.target.closest('.flashcard-buttons')) {
-        console.log("Touch ended on interactive element, canceling swipe");
-        return;
-      }
+      // Skip if swipe is disabled or no valid touch data
+      if (!swipeEnabled.current || !touchStart || !touchEnd || !touchMoved) return;
       
       const distance = touchStart - touchEnd;
       const isLeftSwipe = distance > minSwipeDistance;
@@ -638,11 +617,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       } else if (isRightSwipe && currentIndex > 0) {
         handlePrevCard();
       }
-      
-      // Reset touch tracking
-      setTouchStart(null);
-      setTouchEnd(null);
-      setTouchMoved(false);
     };
 
     // Get topic information for display - ensure we never display "null"
@@ -662,7 +636,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     return (
       <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
         <div 
-          className={`card-modal-content ${isLandscape && isMobile ? 'landscape-mode' : ''}`} 
+          className={`card-modal-content ${isLandscape ? 'landscape-mode' : ''}`} 
           onClick={(e) => e.stopPropagation()}
         >
           <button 
@@ -693,7 +667,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
             />
           </div>
           
-          <div className={`card-modal-actions ${isLandscape && isMobile ? 'side-controls' : ''}`}>
+          <div className={`card-modal-actions ${isLandscape ? 'landscape-actions' : ''}`}>
             <div className="nav-buttons">
               <button 
                 onClick={handlePrevCard} 
@@ -702,12 +676,14 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
               >
                 {isMobile ? "←" : "Previous"}
               </button>
+              
               <div className="card-info">
                 <div className="card-counter">
                   {currentIndex + 1} of {totalCards}
                 </div>
                 <div className="topic-info">{topicInfo}</div>
               </div>
+              
               <button 
                 onClick={handleNextCard} 
                 disabled={currentIndex >= totalCards - 1}

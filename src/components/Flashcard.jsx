@@ -191,8 +191,25 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
     "#a0522d", "#783f04", "#b45f06", "#8d6e63", "#a67c52"
   ];
   
-  // Determine if this is a multiple choice card
-  const isMultipleChoice = card.questionType === 'multiple_choice' && Array.isArray(card.options);
+  // Helper function to determine appropriate font size based on content length
+  const getQuestionClassByLength = (text) => {
+    if (!text) return '';
+    
+    const length = text.length;
+    
+    if (length > 300) {
+      return 'extremely-long';
+    } else if (length > 150) {
+      return 'very-long';
+    }
+    
+    return '';
+  };
+
+  // Determine if we have options for this card
+  const isMultipleChoice = Boolean(card.options && Array.isArray(card.options) && card.options.length > 0);
+  const questionText = card.front || card.question || '';
+  const questionLengthClass = getQuestionClassByLength(questionText);
   
   // Check if card has additional information
   const hasAdditionalInfo = card.additionalInfo || card.detailedAnswer;
@@ -316,15 +333,9 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             )}
             {isMultipleChoice ? (
               <>
-                <ScaledText 
-                  className="question-title" 
-                  maxFontSize={isInModal ? 32 : 24} 
-                  minFontSize={isInModal ? 14 : 12}
-                  isInModal={isInModal}
-                  isQuestion={true}
-                >
-                  {card.front || card.question || "No question available"}
-                </ScaledText>
+                <div className={`question-title ${questionLengthClass}`} style={{ color: textColor }}>
+                  {questionText || "No question available"}
+                </div>
                 <div style={{ 
                   flex: 1, 
                   overflow: 'auto', 
@@ -337,18 +348,13 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 </div>
               </>
             ) : (
-              <ScaledText 
-                maxFontSize={isInModal ? 32 : 24} 
-                minFontSize={isInModal ? 14 : 12}
-                isInModal={isInModal}
-                isQuestion={true}
-              >
-                {typeof card.front === 'string' || typeof card.question === 'string' ? (
-                  <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question available" }} />
+              <div className={`question-title ${questionLengthClass}`} style={{ color: textColor }}>
+                {typeof questionText === 'string' ? (
+                  <div dangerouslySetInnerHTML={{ __html: questionText || "No question available" }} />
                 ) : (
                   <div>No question available</div>
                 )}
-              </ScaledText>
+              </div>
             )}
           </div>
           
