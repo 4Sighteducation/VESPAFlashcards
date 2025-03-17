@@ -1394,6 +1394,12 @@ Use this format for different question types:
       window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
       console.log("Triggered save after adding card to bank");
     }
+    
+    // Explicitly trigger a save to ensure card is saved to field_2979
+    if (window.parent && window.parent.postMessage) {
+      window.parent.postMessage({ type: "SAVE_DATA" }, "*");
+      console.log("Explicitly triggered SAVE_DATA to ensure card is saved to field_2979");
+    }
   };
 
   // Add all cards to the bank
@@ -1511,12 +1517,16 @@ Use this format for different question types:
       setHierarchicalTopics(topics.map(topic => ({ topic })));
       setTopicListSaved(false);
       
-      // Show options explanation modal after topics are generated successfully
+      // First ensure we're not showing the options explanation modal
+      setShowOptionsExplanationModal(false);
+      
+      // Then show options explanation modal after topics are generated successfully
       if (topics.length > 0) {
-        // Ensure we're displaying the options explanation modal
+        // Use a slightly longer delay to ensure the topic modal is fully rendered first
         setTimeout(() => {
           setShowOptionsExplanationModal(true);
-        }, 500); // Small delay to ensure UI is updated
+          console.log("Showing options explanation modal");
+        }, 800);
       }
     } catch (err) {
       setError(err.message);

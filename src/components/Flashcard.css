@@ -1,7 +1,7 @@
 .flashcard {
   width: 100%;
   max-width: 450px;
-  height: 270px;
+  height: 300px;
   margin: 10px;
   position: relative;
   perspective: 1000px;
@@ -146,22 +146,36 @@
 
 /* For modal view, ensure larger text in questions */
 .modal-card .question-title {
-  min-height: 100px;
-  padding: 10px 15px;
-  height: 35%;
-  margin-bottom: 10px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #333;
+  padding: 10px;
+  border-radius: 5px;
+  background-color: rgba(240, 240, 240, 0.5);
+  text-align: center;
+  flex: 0 0 auto;
 }
 
 .modal-card .question-title .scaled-text {
-  font-size: 16px !important; /* Force larger font in modal */
+  font-size: 1.4rem;
+  line-height: 1.4;
+  font-weight: 600;
+  padding: 0;
+}
+
+/* Make options smaller to accommodate larger question */
+.modal-card .options-container {
+  padding: 5px;
+  margin-top: 10px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .modal-card .options-container li {
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  font-size: 16px; /* More consistent font size */
-  background-color: rgba(255, 255, 255, 0.9); /* Even higher contrast in modal view */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  font-size: 0.95rem;
+  padding: 6px 8px;
+  margin-bottom: 6px;
 }
 
 /* Options container for multiple choice */
@@ -1149,66 +1163,58 @@
 /* Card modal flashcard styling */
 .card-modal-card-container .flashcard {
   width: 100%;
-  max-width: 500px;
-  height: 400px;
+  max-width: 800px;
+  height: auto;
+  min-height: 450px;
   margin: 0 auto;
-  background-color: white;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  perspective: 1000px;
-  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
   overflow: hidden;
-}
-
-.card-modal-card-container .flashcard .flashcard-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transition: transform 0.6s;
-  transform-style: preserve-3d;
-  background-color: white;
+  transform: none !important;
+  transition: none;
 }
 
 .card-modal-card-container .flashcard .flashcard-front,
 .card-modal-card-container .flashcard .flashcard-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
   padding: 20px;
-  box-sizing: border-box;
+  height: auto;
+  min-height: 450px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: auto;
-  background-color: white;
-  color: #333;
 }
 
-.card-modal-card-container .flashcard .scaled-text {
-  width: 100%;
-  height: auto;
+/* Increase question size in modal view */
+.card-modal-card-container .flashcard .question-title {
+  font-size: 1.8rem;
+  line-height: 1.4;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: rgba(240, 240, 240, 0.5);
+  border-radius: 8px;
   text-align: center;
-  overflow: visible;
-  padding: 10px;
-  font-size: 18px !important;
-  line-height: 1.5;
-  color: #333;
 }
 
-.card-modal-card-container .flashcard .text-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: visible;
-  background-color: white;
-  color: #333;
+.card-modal-card-container .flashcard .question-title .scaled-text {
+  font-size: 1.6rem !important;
+  line-height: 1.4;
+  font-weight: 600;
 }
 
-.card-modal-card-container .flashcard.flipped .flashcard-inner {
-  transform: rotateY(180deg);
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .card-modal-card-container .flashcard .question-title {
+    font-size: 1.5rem;
+    padding: 12px;
+  }
+  
+  .card-modal-card-container .flashcard .question-title .scaled-text {
+    font-size: 1.4rem !important;
+  }
+  
+  .card-modal-card-container .options-container li {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
 }
 
 /* Improved styling for the modal multiple choice options */
