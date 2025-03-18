@@ -158,6 +158,13 @@ const TopicListModal = ({
           
           console.log("Parsed topics:", filteredTopics);
           setTopics(filteredTopics);
+          
+          // Update metadata with the filtered topics count
+          setListMetadata(prev => ({
+            ...prev,
+            created: new Date().toISOString(),
+            topicCount: filteredTopics.length
+          }));
         } else {
           console.error("Unexpected topics format:", parsedTopics);
           setError("Invalid response format. Please try again.");
@@ -165,13 +172,6 @@ const TopicListModal = ({
       } else {
         setError("No response from AI. Please try again.");
       }
-      
-      // Update metadata
-      setListMetadata(prev => ({
-        ...prev,
-        created: new Date().toISOString(),
-        topicCount: parsedTopics.length
-      }));
     } catch (error) {
       console.error("Error generating topic list:", error);
       setError("Failed to generate topic list. Please try again.");
