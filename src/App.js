@@ -316,6 +316,22 @@ function App() {
         // Get user email for the connection fields
         const userEmail = userInfo.email || auth.email || "";
         
+        // Get topic lists if they exist
+        let topicLists = [];
+        try {
+          if (auth.field_3011) {
+            const existingTopicLists = typeof auth.field_3011 === 'string'
+              ? JSON.parse(auth.field_3011)
+              : auth.field_3011;
+            
+            if (Array.isArray(existingTopicLists)) {
+              topicLists = existingTopicLists;
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing existing topic lists from auth:", error);
+        }
+        
         // Prepare additional fields for Object_102
         const additionalFields = {
           field_3029: userInfo.name || "",                  // User Name
@@ -328,7 +344,9 @@ function App() {
           field_73: userRole,                               // User Role
           // Ensure both field_2979 and field_2986 are populated for compatibility
           field_2979: JSON.stringify(sanitizeForJSON(cardsToSave)),          // Legacy cards field (main Card Bank)
-          field_2986: JSON.stringify(sanitizeForJSON(cardsToSave))           // New cards field (might be used in some versions)
+          field_2986: JSON.stringify(sanitizeForJSON(cardsToSave)),          // New cards field (might be used in some versions)
+          // Add topic lists explicitly
+          field_3011: JSON.stringify(sanitizeForJSON(topicLists))           // Topic lists field
         };
         
         console.log("Saving to Knack with additional fields:", additionalFields);
@@ -1331,6 +1349,30 @@ function App() {
               };
             }
             
+            // Process field_3011 (topic lists) if it exists
+            if (event.data.data?.field_3011) {
+              try {
+                console.log("Topic lists found in field_3011:", event.data.data.field_3011);
+                
+                // Check field_3011 type and process accordingly
+                if (typeof event.data.data.field_3011 === 'string') {
+                  const topicLists = JSON.parse(event.data.data.field_3011);
+                  
+                  if (Array.isArray(topicLists) && topicLists.length > 0) {
+                    console.log("Successfully parsed topic lists:", topicLists);
+                    // Process topic lists
+                    processTopicLists(topicLists);
+                  }
+                } else if (Array.isArray(event.data.data.field_3011)) {
+                  // If it's already an array, process it directly
+                  console.log("field_3011 is already an array:", event.data.data.field_3011);
+                  processTopicLists(event.data.data.field_3011);
+                }
+              } catch (e) {
+                console.error("Error processing topic lists from field_3011:", e);
+              }
+            }
+            
             // Set auth with combined user and student data
             setAuth({
               ...event.data.data,
@@ -1578,6 +1620,11 @@ function App() {
   // Handle opening the topic list modal
   const handleViewTopicList = useCallback((subject, examBoard, examType) => {
     console.log("Opening topic list for:", subject, examBoard, examType);
+    console.log("Auth data:", auth ? { 
+      id: auth.id, 
+      hasField3011: !!auth.field_3011,
+      field3011Type: auth.field_3011 ? typeof auth.field_3011 : 'undefined'
+    } : 'No auth data');
     
     setTopicListSubject(subject);
     setTopicListExamBoard(examBoard || "AQA");
@@ -1589,32 +1636,75 @@ function App() {
     // First check if we have auth and field_3011 data
     try {
       if (auth && auth.field_3011) {
-        const topicLists = typeof auth.field_3011 === 'string' 
-          ? JSON.parse(auth.field_3011)
-          : auth.field_3011;
+        // Parse the topic lists from field_3011
+        let topicLists;
+        
+        if (typeof auth.field_3011 === 'string') {
+          try {
+            topicLists = JSON.parse(auth.field_3011);
+            console.log("Successfully parsed topic lists from string:", topicLists);
+          } catch (parseError) {
+            console.error("Error parsing field_3011 JSON string:", parseError);
+            topicLists = [];
+          }
+        } else if (Array.isArray(auth.field_3011)) {
+          topicLists = auth.field_3011;
+          console.log("Using field_3011 as array directly:", topicLists);
+        } else if (typeof auth.field_3011 === 'object') {
+          topicLists = auth.field_3011;
+          console.log("Using field_3011 as object:", topicLists);
+        } else {
+          console.error("Unexpected field_3011 type:", typeof auth.field_3011);
+          topicLists = [];
+        }
+        
+        // Make sure topicLists is an array
+        if (!Array.isArray(topicLists)) {
+          console.error("Topic lists is not an array after parsing:", topicLists);
+          topicLists = [];
+        }
         
         console.log("Parsed topic lists from field_3011:", topicLists);
+        console.log("Looking for topic list with subject:", subject);
         
-        if (Array.isArray(topicLists)) {
+        if (topicLists.length > 0) {
           // Find the topic list for this subject with matching exam board if specified
           const subjectTopicList = topicLists.find(list => 
-            (list.subject === subject || list.name?.toLowerCase() === subject.toLowerCase()) && 
+            (list && (
+              (list.subject === subject) || 
+              (list.name && list.name.toLowerCase() === subject.toLowerCase())
+            )) && 
             (!examBoard || list.examBoard === examBoard)
           );
           
-          if (subjectTopicList && (Array.isArray(subjectTopicList.topics) || typeof subjectTopicList.topics === 'object')) {
-            console.log("Found existing topic list in field_3011:", subjectTopicList);
-            existingTopics = subjectTopicList.topics;
+          console.log("Found matching topic list:", subjectTopicList);
+          
+          if (subjectTopicList && subjectTopicList.topics) {
+            console.log("Using topics from found topic list:", subjectTopicList.topics);
+            
+            // Extract topics from the topic list
+            if (Array.isArray(subjectTopicList.topics)) {
+              existingTopics = subjectTopicList.topics;
+            } else if (typeof subjectTopicList.topics === 'object') {
+              existingTopics = [subjectTopicList.topics];
+            } else {
+              console.error("Unexpected topics format:", subjectTopicList.topics);
+              existingTopics = [];
+            }
             
             // Also update userTopics state for future reference
             setUserTopics(prev => ({
               ...prev,
-              [subject]: subjectTopicList.topics
+              [subject]: existingTopics
             }));
           } else {
             console.log("No matching topic list found in field_3011 for:", subject, examBoard);
           }
+        } else {
+          console.log("No topic lists found in field_3011");
         }
+      } else {
+        console.log("No field_3011 in auth data");
       }
     } catch (error) {
       console.error("Error finding existing topic list in field_3011:", error);
@@ -1874,7 +1964,10 @@ function App() {
       // First load existing topic lists if available
       if (auth && auth.field_3011) {
         try {
-          const existingLists = JSON.parse(auth.field_3011);
+          const existingLists = typeof auth.field_3011 === 'string'
+            ? JSON.parse(auth.field_3011)
+            : auth.field_3011;
+            
           if (Array.isArray(existingLists)) {
             allTopicLists = [...existingLists];
           }
@@ -1956,6 +2049,15 @@ function App() {
           if (!response.ok) {
             throw new Error(`Failed to save topic lists: ${response.status}`);
           }
+          
+          // Update auth state with new field_3011 data
+          setAuth(prevAuth => ({
+            ...prevAuth,
+            field_3011: JSON.stringify(allTopicLists)
+          }));
+          
+          // Process topic lists into userTopics structure
+          processTopicLists(allTopicLists);
           
           showStatus("All topic lists generated and saved successfully!", 3000);
         } catch (error) {
@@ -2109,6 +2211,15 @@ function App() {
           console.error("Error saving topic list to Knack:", await response.text());
           showStatus("Error saving topic list", 3000, "error");
         } else {
+          // Update auth state with new field_3011 data so it's available for future requests
+          setAuth(prevAuth => ({
+            ...prevAuth,
+            field_3011: JSON.stringify(field3011Data)
+          }));
+          
+          // Also update the local copy of topic lists
+          processTopicLists(field3011Data);
+          
           showStatus("Topic list saved to your account!", 3000);
           
           // Update subject card to show it has a topic list
@@ -2131,7 +2242,7 @@ function App() {
     } else {
       showStatus("Topic list saved locally!", 3000);
     }
-  }, [auth, recordId, userTopics, showStatus]);
+  }, [auth, recordId, userTopics, showStatus, KNACK_APP_ID, KNACK_API_KEY, processTopicLists]);
 
   // Handle saving AI-generated cards
   const handleSaveAICards = useCallback((generatedCards) => {
