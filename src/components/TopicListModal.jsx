@@ -361,6 +361,8 @@ const TopicListModal = ({
   const handleSaveTopics = async () => {
     if (topics.length === 0) return;
     
+    console.log("Before saving, topics:", topics);
+    
     // Format topic list for saving
     const topicListData = {
       id: `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
@@ -371,16 +373,17 @@ const TopicListModal = ({
       topics: topics.map(topic => {
         // Preserve existing topic object structure if it already exists
         if (typeof topic === 'object' && topic !== null) {
-          // Make sure it has a 'topic' property for consistency
+          // Make sure it has a 'topic' property and priority for consistency
           return {
             ...topic,
-            topic: topic.topic || topic.name || String(topic)
+            topic: topic.topic || topic.name || String(topic),
+            priority: topic.priority !== undefined ? topic.priority : 1 // Default to priority 1 if missing
           };
         }
         // Convert string topics to objects with topic property and default priority
         return { 
           topic: String(topic),
-          priority: 0 // Default priority
+          priority: 1 // Default priority
         };
       }),
       created: new Date().toISOString(),
@@ -388,6 +391,15 @@ const TopicListModal = ({
     };
     
     console.log("Saving topic list with priorities:", topicListData);
+    
+    // Log the first few topics with their priorities
+    console.log("Sample topics being saved:", 
+      topicListData.topics.slice(0, 5).map(t => ({
+        topic: t.topic, 
+        priority: t.priority
+      }))
+    );
+    
     onTopicListSave(topicListData, subject);
     onClose();
   };
@@ -511,14 +523,45 @@ const TopicListModal = ({
   // Handle saving priorities
   const handleSavePriorities = (prioritizedTopics) => {
     console.log("Saving prioritized topics:", prioritizedTopics);
-    // Update the topics state with new priorities
-    setTopics(prioritizedTopics);
+    
+    // Check that we have valid priority data
+    const validPriorities = prioritizedTopics.every(topic => 
+      typeof topic === 'object' && 
+      topic !== null && 
+      topic.priority !== undefined &&
+      topic.topic !== undefined
+    );
+    
+    if (!validPriorities) {
+      console.error("Invalid topic priority data detected:", prioritizedTopics);
+      // Try to fix the data if possible
+      const fixedTopics = prioritizedTopics.map(topic => {
+        if (typeof topic === 'string') {
+          return { topic: topic, priority: 1 };
+        } else if (typeof topic === 'object' && topic !== null) {
+          return {
+            ...topic,
+            topic: topic.topic || topic.name || String(topic),
+            priority: topic.priority !== undefined ? topic.priority : 1
+          };
+        } else {
+          return { topic: String(topic), priority: 1 };
+        }
+      });
+      console.log("Fixed topic priorities:", fixedTopics);
+      setTopics(fixedTopics);
+    } else {
+      // Update the topics state with new priorities
+      setTopics(prioritizedTopics);
+    }
     
     // Close the prioritization modal
     setShowPrioritizationModal(false);
     
-    // Show a message that priorities were saved
-    // (You can add a toast/notification system here if desired)
+    // Log the state after updating for debugging
+    setTimeout(() => {
+      console.log("Topics after priority update:", topics);
+    }, 100);
   };
   
   // Button to generate cards for a topic

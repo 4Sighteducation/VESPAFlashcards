@@ -869,37 +869,66 @@ function App() {
       if (topics && topics.length > 0) {
         const key = `${subject}-${examBoard}-${examType}`;
         
+        console.log(`Processing topic list for ${key}:`, topics.slice(0, 3));
+        
         // Ensure we preserve any existing priorities
         if (updatedUserTopics[key]) {
+          console.log(`Merging with existing topics for ${key}`, updatedUserTopics[key].slice(0, 3));
+          
           // Merge existing topics with new ones, preserving priorities
           const existingTopicsMap = {};
           updatedUserTopics[key].forEach(existingTopic => {
-            existingTopicsMap[existingTopic.topic || existingTopic.name] = existingTopic;
+            if (typeof existingTopic === 'object' && existingTopic !== null) {
+              existingTopicsMap[existingTopic.topic || existingTopic.name || ''] = existingTopic;
+            }
           });
           
           updatedUserTopics[key] = topics.map(topic => {
-            const topicName = topic.topic || topic.name;
+            // Handle both string and object topics
+            const processedTopic = typeof topic === 'string' 
+              ? { topic: topic } 
+              : topic;
+              
+            const topicName = processedTopic.topic || processedTopic.name || '';
+            
             if (existingTopicsMap[topicName]) {
               // Preserve priority if it exists
-              return {
-                ...topic,
+              const result = {
+                ...processedTopic,
+                topic: topicName, // Ensure topic property exists
                 priority: existingTopicsMap[topicName].priority !== undefined ? 
                   existingTopicsMap[topicName].priority : 
-                  topic.priority !== undefined ? topic.priority : 0
+                  processedTopic.priority !== undefined ? processedTopic.priority : 1
               };
+              return result;
             }
+            
             return {
-              ...topic,
-              priority: topic.priority !== undefined ? topic.priority : 0
+              ...processedTopic,
+              topic: topicName, // Ensure topic property exists
+              priority: processedTopic.priority !== undefined ? processedTopic.priority : 1 // Default priority is 1
             };
           });
         } else {
           // New topic list - ensure each topic has a default priority if not set
-          updatedUserTopics[key] = topics.map(topic => ({
-            ...topic,
-            priority: topic.priority !== undefined ? topic.priority : 0 // Default priority is 0 (lowest)
-          }));
+          updatedUserTopics[key] = topics.map(topic => {
+            // Handle both string and object topics
+            if (typeof topic === 'string') {
+              return {
+                topic: topic,
+                priority: 1 // Default priority is 1
+              };
+            }
+            
+            return {
+              ...topic,
+              topic: topic.topic || topic.name || String(topic), // Ensure topic property exists
+              priority: topic.priority !== undefined ? topic.priority : 1 // Default priority is 1
+            };
+          });
         }
+
+        console.log(`Final topics for ${key}:`, updatedUserTopics[key].slice(0, 3));
 
         // Mark this subject's template card as having a topic list
         const templateCardIndex = updatedCards.findIndex(
@@ -950,10 +979,22 @@ function App() {
       }
       
       // Make sure priorities are included when saving
-      const topicsWithPriorities = topics.map(topic => ({
-        ...topic,
-        priority: topic.priority !== undefined ? topic.priority : 0 // Ensure priority exists
-      }));
+      const topicsWithPriorities = topics.map(topic => {
+        // Preserve existing topic object structure if it already exists
+        if (typeof topic === 'object' && topic !== null) {
+          // Make sure it has a 'topic' property for consistency
+          return {
+            ...topic,
+            topic: topic.topic || topic.name || String(topic),
+            priority: topic.priority !== undefined ? topic.priority : 1  // Default to 1 instead of 0
+          };
+        }
+        // Convert string topics to objects with topic property and default priority
+        return { 
+          topic: String(topic),
+          priority: 1  // Default to 1 instead of 0
+        };
+      });
 
       // Find if we already have a topic list for this subject
       const existingIndex = existingTopicLists.findIndex(
@@ -972,7 +1013,9 @@ function App() {
           subject,
           examBoard,
           examType,
-          topics: topicsWithPriorities
+          topics: topicsWithPriorities,
+          created: new Date().toISOString(),
+          userId: auth.id
         });
       }
 
@@ -980,9 +1023,11 @@ function App() {
       const knackParams = {
         object_key: "object_4",
         record_data: {
-          "field_75": sanitizeForJSON(existingTopicLists)
+          "field_3011": JSON.stringify(sanitizeForJSON(existingTopicLists))
         }
       };
+
+      console.log("Saving topic lists to field_3011:", JSON.stringify(existingTopicLists).substring(0, 100) + "...");
 
       const response = await fetch(
         `https://api.knack.com/v1/objects/object_4/records/${userId}`,
@@ -998,7 +1043,7 @@ function App() {
       );
 
       const data = await response.json();
-      console.log("Topic lists saved:", data);
+      console.log("Topic lists saved successfully:", data);
 
       // Update local state - both topicLists state and userTopics
       setTopicLists(existingTopicLists);
