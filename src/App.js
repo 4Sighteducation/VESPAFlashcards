@@ -247,6 +247,48 @@ function App() {
     }
   }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics]);
 
+  // Helper function to prevent circular references in JSON
+  const sanitizeForJSON = (obj) => {
+    // Create a new object for the sanitized version
+    if (!obj) return obj;
+    
+    if (typeof obj !== 'object' || obj === null) {
+      return obj;
+    }
+    
+    // Handle arrays
+    if (Array.isArray(obj)) {
+      return obj.map(item => sanitizeForJSON(item));
+    }
+    
+    // Handle objects
+    const cleanObj = {};
+    for (const [key, value] of Object.entries(obj)) {
+      // Skip DOM elements and React internals
+      if (
+        key.startsWith('__react') || 
+        key.startsWith('_react') || 
+        (typeof value === 'object' && value !== null && (
+          value instanceof Element || 
+          value instanceof Node ||
+          value instanceof Window ||
+          value instanceof Event ||
+          (value.constructor && (
+            value.constructor.name === 'SyntheticEvent' ||
+            value.constructor.name.includes('React')
+          ))
+        ))
+      ) {
+        continue;
+      }
+      
+      // Recursively sanitize nested objects
+      cleanObj[key] = sanitizeForJSON(value);
+    }
+    
+    return cleanObj;
+  };
+
   // Save data to Knack - depends on saveToLocalStorage and showStatus
   const saveData = useCallback((cards = null) => {
     if (!auth) return;
@@ -285,8 +327,8 @@ function App() {
           field_548: userInfo.yearGroup || "",              // Year Group
           field_73: userRole,                               // User Role
           // Ensure both field_2979 and field_2986 are populated for compatibility
-          field_2979: JSON.stringify(cardsToSave),          // Legacy cards field (main Card Bank)
-          field_2986: JSON.stringify(cardsToSave)           // New cards field (might be used in some versions)
+          field_2979: JSON.stringify(sanitizeForJSON(cardsToSave)),          // Legacy cards field (main Card Bank)
+          field_2986: JSON.stringify(sanitizeForJSON(cardsToSave))           // New cards field (might be used in some versions)
         };
         
         console.log("Saving to Knack with additional fields:", additionalFields);
@@ -296,10 +338,10 @@ function App() {
             type: "SAVE_DATA",
             data: {
               recordId: recordId,
-              cards: cardsToSave,
-              colorMapping: subjectColorMapping,
-              spacedRepetition: spacedRepetitionData,
-              userTopics: userTopics,
+              cards: sanitizeForJSON(cardsToSave),
+              colorMapping: sanitizeForJSON(subjectColorMapping),
+              spacedRepetition: sanitizeForJSON(spacedRepetitionData),
+              userTopics: sanitizeForJSON(userTopics),
               additionalFields: additionalFields
             },
           },

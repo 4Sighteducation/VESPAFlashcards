@@ -78,12 +78,20 @@ const TopicListModal = ({
         ...prev,
         topicCount: formattedTopics.length
       }));
-    } else {
-      // Generate new topics
-      console.log("Generating new topics");
+    } else if (regenerate) {
+      // Only generate new topics if regenerate flag is true
+      console.log("Regenerating topics due to regenerate flag");
       generateTopics();
+    } else {
+      // If no existing topics and not regenerating, just set empty topics array
+      console.log("No existing topics and not regenerating, showing empty list");
+      setTopics([]);
+      setListMetadata(prev => ({
+        ...prev,
+        topicCount: 0
+      }));
     }
-  }, [hasExistingTopics, existingTopics, regenerate]);
+  }, [hasExistingTopics, existingTopics, regenerate, subject, examBoard, examType]);
 
   // Organize topics into categories
   const categorizeTopics = () => {
