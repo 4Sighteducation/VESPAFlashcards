@@ -144,6 +144,9 @@ function App() {
   const [generatingTopics, setGeneratingTopics] = useState(false);
   const [topicGenerationProgress, setTopicGenerationProgress] = useState({ current: 0, total: 0 });
   const [currentGeneratingSubject, setCurrentGeneratingSubject] = useState(null);
+  
+  // Force update helper for triggering re-renders
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   // User information - enhanced with additional student data
   const getUserInfo = useCallback(() => {
@@ -1983,6 +1986,9 @@ function App() {
     // Close the AI generator
     setAiCardGeneratorOpen(false);
     
+    // Update forceUpdate to ensure we get a fresh AICardGenerator next time
+    setForceUpdate(prev => prev + 1);
+    
     // Save the cards to storage
     const updatedCards = [...allCards, ...newCards];
     saveData(updatedCards);
@@ -1992,6 +1998,17 @@ function App() {
     
     return newCards;
   }, [allCards, calculateNextReviewDate, saveData, showStatus, subjectColorMapping, updateSpacedRepetitionData]);
+
+  // Load data when auth changes
+  useEffect(() => {
+    if (auth && auth.id) {
+      console.log("Auth detected, loading data from Knack");
+      loadDataFromKnack();
+    } else if (!loading) { // Only load from localStorage if we're not in initial loading state
+      console.log("No auth, loading from localStorage");
+      loadFromLocalStorage();
+    }
+  }, [auth, loading, loadDataFromKnack, loadFromLocalStorage]);
 
   // Show loading state
   if (loading) {
@@ -2008,17 +2025,6 @@ function App() {
       </div>
     );
   }
-
-  // Load data when auth changes
-  useEffect(() => {
-    if (auth && auth.id) {
-      console.log("Auth detected, loading data from Knack");
-      loadDataFromKnack();
-    } else if (!loading) { // Only load from localStorage if we're not in initial loading state
-      console.log("No auth, loading from localStorage");
-      loadFromLocalStorage();
-    }
-  }, [auth, loading, loadDataFromKnack, loadFromLocalStorage]);
 
   return (
     <div className="app-container">
