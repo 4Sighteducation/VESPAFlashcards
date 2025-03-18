@@ -15,6 +15,7 @@ import TopicListModal from './components/TopicListModal';
 import SubjectSelectionWizard from './components/SubjectSelectionWizard';
 import TopicGenerationModal from './components/TopicGenerationModal';
 import { generateTopicPrompt } from './prompts/topicListPrompt';
+import HighPriorityTopicsModal from './components/HighPriorityTopicsModal';
 
 // API Keys and constants
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
@@ -123,6 +124,7 @@ function App() {
 
   // User-specific topics
   const [userTopics, setUserTopics] = useState({});
+  const [topicLists, setTopicLists] = useState([]);
 
   // Status messages
   const [statusMessage, setStatusMessage] = useState("");
@@ -847,43 +849,170 @@ function App() {
   }, [auth, KNACK_APP_ID, KNACK_API_KEY, updateSpacedRepetitionData]);
 
   // Process topic lists from Knack or auth data
-  const processTopicLists = useCallback((topicLists) => {
-    if (!topicLists || !Array.isArray(topicLists)) return;
-    
-    console.log("Processing topic lists:", topicLists);
-    
-    // Create updated topics structure
-    const updatedTopics = { ...userTopics };
-    
-    // Process each topic list
-    topicLists.forEach(list => {
-      if (list && list.subject && list.topics) {
-        const subjectName = list.subject;
+  const processTopicLists = useCallback((topicListsData) => {
+    console.log("Processing topic lists:", topicListsData);
+    if (!topicListsData || !Array.isArray(topicListsData) || topicListsData.length === 0) {
+      console.log("No topic lists to process");
+      return;
+    }
+
+    // For each topic list, store topics in userTopics
+    const updatedUserTopics = { ...userTopics };
+    const updatedCards = [...allCards];
+
+    topicListsData.forEach(topicList => {
+      const { subject, examBoard, examType, topics } = topicList;
+      if (topics && topics.length > 0) {
+        const key = `${subject}-${examBoard}-${examType}`;
         
-        // Ensure topics is an array
-        const topics = Array.isArray(list.topics) ? list.topics : [list.topics];
-        
-        // Store topics in userTopics state
-        updatedTopics[subjectName] = topics;
-        
-        // Mark the subject's template card as having a topic list
-        setAllCards(prevCards => 
-          prevCards.map(card => {
-            if (card.subject === subjectName && card.template) {
+        // Ensure we preserve any existing priorities
+        if (updatedUserTopics[key]) {
+          // Merge existing topics with new ones, preserving priorities
+          const existingTopicsMap = {};
+          updatedUserTopics[key].forEach(existingTopic => {
+            existingTopicsMap[existingTopic.topic || existingTopic.name] = existingTopic;
+          });
+          
+          updatedUserTopics[key] = topics.map(topic => {
+            const topicName = topic.topic || topic.name;
+            if (existingTopicsMap[topicName]) {
+              // Preserve priority if it exists
               return {
-                ...card,
-                hasTopicList: true
+                ...topic,
+                priority: existingTopicsMap[topicName].priority !== undefined ? 
+                  existingTopicsMap[topicName].priority : 
+                  topic.priority !== undefined ? topic.priority : 0
               };
             }
-            return card;
-          })
+            return {
+              ...topic,
+              priority: topic.priority !== undefined ? topic.priority : 0
+            };
+          });
+        } else {
+          // New topic list - ensure each topic has a default priority if not set
+          updatedUserTopics[key] = topics.map(topic => ({
+            ...topic,
+            priority: topic.priority !== undefined ? topic.priority : 0 // Default priority is 0 (lowest)
+          }));
+        }
+
+        // Mark this subject's template card as having a topic list
+        const templateCardIndex = updatedCards.findIndex(
+          card => card.subject === subject && card.examBoard === examBoard && card.examType === examType && card.template
         );
+        if (templateCardIndex >= 0) {
+          updatedCards[templateCardIndex] = {
+            ...updatedCards[templateCardIndex],
+            hasTopicList: true
+          };
+        }
       }
     });
-    
-    // Update state
-    setUserTopics(updatedTopics);
-  }, [userTopics]);
+
+    setUserTopics(updatedUserTopics);
+    setAllCards(updatedCards);
+  }, [userTopics, allCards]);
+
+  // Save topic lists with priority information
+  const saveTopicLists = useCallback(async (subjectData, topics) => {
+    console.log("Saving topic lists for:", subjectData);
+    const { subject, examBoard, examType } = subjectData;
+
+    if (!userAuth) {
+      console.log("No user auth, cannot save topic lists");
+      return false;
+    }
+
+    try {
+      const userId = userAuth.userData.id;
+      const topicListKey = `${subject}-${examBoard}-${examType}`;
+      
+      // Get existing topic lists from auth data
+      let existingTopicLists = [];
+      
+      try {
+        if (userAuth.field_3011) {
+          const parsedLists = typeof userAuth.field_3011 === 'string' 
+            ? JSON.parse(userAuth.field_3011) 
+            : userAuth.field_3011;
+          
+          if (Array.isArray(parsedLists)) {
+            existingTopicLists = parsedLists;
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing existing topic lists:", error);
+      }
+      
+      // Make sure priorities are included when saving
+      const topicsWithPriorities = topics.map(topic => ({
+        ...topic,
+        priority: topic.priority !== undefined ? topic.priority : 0 // Ensure priority exists
+      }));
+
+      // Find if we already have a topic list for this subject
+      const existingIndex = existingTopicLists.findIndex(
+        tl => tl.subject === subject && tl.examBoard === examBoard && tl.examType === examType
+      );
+
+      if (existingIndex >= 0) {
+        // Update existing topic list
+        existingTopicLists[existingIndex] = {
+          ...existingTopicLists[existingIndex],
+          topics: topicsWithPriorities
+        };
+      } else {
+        // Add new topic list
+        existingTopicLists.push({
+          subject,
+          examBoard,
+          examType,
+          topics: topicsWithPriorities
+        });
+      }
+
+      // Save updated topic lists to Knack
+      const knackParams = {
+        object_key: "object_4",
+        record_data: {
+          "field_75": sanitizeForJSON(existingTopicLists)
+        }
+      };
+
+      const response = await fetch(
+        `https://api.knack.com/v1/objects/object_4/records/${userId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Knack-Application-Id": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY
+          },
+          body: JSON.stringify(knackParams)
+        }
+      );
+
+      const data = await response.json();
+      console.log("Topic lists saved:", data);
+
+      // Update local state - both topicLists state and userTopics
+      setTopicLists(existingTopicLists);
+      
+      // Update userTopics
+      setUserTopics(prevTopics => ({
+        ...prevTopics,
+        [topicListKey]: topicsWithPriorities
+      }));
+
+      showStatus("Topic lists saved successfully!");
+      return true;
+    } catch (error) {
+      console.error("Error saving topic lists:", error);
+      showStatus("Error saving topic lists");
+      return false;
+    }
+  }, [userAuth, topicLists, sanitizeForJSON, showStatus]);
 
   // Functions for card operations - defined after their dependencies
   // Add a new card
@@ -2332,6 +2461,31 @@ function App() {
     );
   }
 
+  // Add this with the other handler functions
+  const handlePrioritizeSubject = (subjectData) => {
+    console.log("Opening prioritization for subject:", subjectData);
+    
+    // Find the card ID for this subject
+    const subjectCard = allCards.find(card => 
+      card.subject === subjectData.subject && 
+      card.examBoard === subjectData.examBoard && 
+      card.examType === subjectData.examType && 
+      card.template
+    );
+    
+    if (subjectCard) {
+      setSelectedCardId(subjectCard.id);
+      // Set a flag to open prioritization directly
+      setPrioritizeDirectly(true);
+      setTopicListModalOpen(true);
+    } else {
+      console.error("Could not find template card for subject:", subjectData);
+    }
+  };
+
+  // Add this state variable with other state variables
+  const [prioritizeDirectly, setPrioritizeDirectly] = useState(false);
+
   return (
     <div className="app-container">
       {loading ? (
@@ -2339,16 +2493,17 @@ function App() {
       ) : (
         <>
           <Header
-            userInfo={getUserInfo()}
+            onViewChange={handleViewChange}
             currentView={view}
-            onViewChange={setView}
+            onCreateCard={() => setCardCreationModalOpen(true)}
+            onPrintAll={() => setPrintModalOpen(true)}
+            onSelectBox={setCurrentBox}
+            currentBox={currentBox}
+            spacedRepetitionData={spacedRepetitionData}
+            userInfo={getUserInfo()}
+            onViewHighPriorityTopics={() => setHighPriorityModalOpen(true)}
             onSave={saveData}
             isSaving={isSaving}
-            onPrintAll={handlePrintAllCards}
-            onCreateCard={() => setCardCreationModalOpen(true)}
-            currentBox={currentBox}
-            onSelectBox={setCurrentBox}
-            spacedRepetitionData={spacedRepetitionData}
           />
           
           {/* Temporarily hiding UserProfile */}
@@ -2365,15 +2520,23 @@ function App() {
 
           {/* Topic List Modal */}
           {topicListModalOpen && (
-            <TopicListModal 
-              subject={topicListSubject}
-              examBoard={topicListExamBoard}
-              examType={topicListExamType}
-              onClose={() => setTopicListModalOpen(false)}
-              userId={auth?.id}
-              onTopicListSave={handleSaveTopicList}
-              existingTopics={existingTopicListData?.topics || []}
-              auth={auth}
+            <TopicListModal
+              subject={selectedCard.subject}
+              examBoard={selectedCard.examBoard}
+              examType={selectedCard.examType}
+              onClose={() => {
+                setTopicListModalOpen(false);
+                setPrioritizeDirectly(false); // Reset the flag when closing
+              }}
+              userId={userAuth?.userData?.id}
+              onTopicListSave={(topics) => saveTopicLists({
+                subject: selectedCard.subject,
+                examBoard: selectedCard.examBoard,
+                examType: selectedCard.examType
+              }, topics)}
+              existingTopics={userTopics[`${selectedCard.subject}-${selectedCard.examBoard}-${selectedCard.examType}`] || []}
+              auth={userAuth}
+              openPrioritization={prioritizeDirectly}
             />
           )}
 
@@ -2523,6 +2686,16 @@ function App() {
                 key={`ai-generator-${selectedSubject}-${selectedTopic}-${forceUpdate}`}
               />
             </div>
+          )}
+          
+          {/* High Priority Topics Modal */}
+          {highPriorityModalOpen && (
+            <HighPriorityTopicsModal
+              onClose={() => setHighPriorityModalOpen(false)}
+              userTopics={userTopics}
+              allCards={allCards}
+              onPrioritizeSubject={handlePrioritizeSubject}
+            />
           )}
         </>
       )}

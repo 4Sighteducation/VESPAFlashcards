@@ -12,7 +12,9 @@ const Header = ({
   // New props for spaced repetition
   currentBox = 1,
   onSelectBox = () => {},
-  spacedRepetitionData = {}
+  spacedRepetitionData = {},
+  // New prop for high priority topics
+  onViewHighPriorityTopics = () => {}
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -121,6 +123,15 @@ const Header = ({
             >
               <span className="button-icon">🖨️</span>
               Print
+            </button>
+            
+            {/* High Priority Topics Button */}
+            <button
+              className="nav-button priority-topics-btn"
+              onClick={() => handleNavClick(onViewHighPriorityTopics)}
+            >
+              <span className="button-icon">⭐</span>
+              Priorities
             </button>
             
             <button

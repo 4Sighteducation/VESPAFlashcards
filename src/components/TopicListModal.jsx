@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./TopicListModal.css";
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
 import LoadingSpinner from "./LoadingSpinner";
+import TopicPrioritizationModal from "./TopicPrioritizationModal";
 
 // API keys - using environment variables
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY;
@@ -79,7 +80,8 @@ const TopicListModal = ({
   userId,
   onTopicListSave,
   existingTopics,
-  auth
+  auth,
+  openPrioritization = false
 }) => {
   const [topics, setTopics] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,6 +97,8 @@ const TopicListModal = ({
   const [showExplainer, setShowExplainer] = useState(false);
   const [mainTopicForCustom, setMainTopicForCustom] = useState("");
   const [availableMainTopics, setAvailableMainTopics] = useState([]);
+  const [showPrioritizationModal, setShowPrioritizationModal] = useState(false);
+  const [showRegenerateWarning, setShowRegenerateWarning] = useState(false);
   
   // Check if we have existing topics
   const hasExistingTopics = existingTopics && 
@@ -364,12 +368,26 @@ const TopicListModal = ({
       examBoard,
       examType,
       subject,
-      topics: topics.map(topic => ({ topic })),
+      topics: topics.map(topic => {
+        // Preserve existing topic object structure if it already exists
+        if (typeof topic === 'object' && topic !== null) {
+          // Make sure it has a 'topic' property for consistency
+          return {
+            ...topic,
+            topic: topic.topic || topic.name || String(topic)
+          };
+        }
+        // Convert string topics to objects with topic property and default priority
+        return { 
+          topic: String(topic),
+          priority: 0 // Default priority
+        };
+      }),
       created: new Date().toISOString(),
       userId: auth?.id || userId
     };
     
-    console.log("Saving topic list:", topicListData);
+    console.log("Saving topic list with priorities:", topicListData);
     onTopicListSave(topicListData, subject);
     onClose();
   };
@@ -484,16 +502,62 @@ const TopicListModal = ({
     setShowDeleteConfirmation(false);
   };
   
-  // Handle the "Prioritise Topics" button (placeholder)
+  // Handle the "Prioritise Topics" button
   const handlePrioritiseTopics = () => {
-    console.log("Prioritise Topics clicked - functionality to be implemented");
-    // This will be implemented later
+    console.log("Opening topic prioritization modal");
+    setShowPrioritizationModal(true);
+  };
+  
+  // Handle saving priorities
+  const handleSavePriorities = (prioritizedTopics) => {
+    console.log("Saving prioritized topics:", prioritizedTopics);
+    // Update the topics state with new priorities
+    setTopics(prioritizedTopics);
+    
+    // Close the prioritization modal
+    setShowPrioritizationModal(false);
+    
+    // Show a message that priorities were saved
+    // (You can add a toast/notification system here if desired)
   };
   
   // Button to generate cards for a topic
   const handleGenerateCardsAction = () => {
     // Show topic selection interface for generating cards
     setShowTopicsList(true);
+  };
+
+  // Handle regenerate button click
+  const handleRegenerateClick = () => {
+    // Check if any topics have priority data
+    const hasPriorityData = topics.some(topic => 
+      typeof topic === 'object' && topic.priority !== undefined
+    );
+    
+    if (hasPriorityData) {
+      // Show warning if there's priority data to lose
+      setShowRegenerateWarning(true);
+    } else {
+      // If no priority data, just regenerate
+      proceedWithRegeneration();
+    }
+  };
+  
+  // Confirm regeneration after warning
+  const confirmRegeneration = () => {
+    setShowRegenerateWarning(false);
+    proceedWithRegeneration();
+  };
+  
+  // Cancel regeneration
+  const cancelRegeneration = () => {
+    setShowRegenerateWarning(false);
+  };
+  
+  // Common function to handle the actual regeneration
+  const proceedWithRegeneration = () => {
+    setRegenerate(true);
+    generateTopics();
   };
 
   // Render the category-based list of topics
@@ -533,6 +597,14 @@ const TopicListModal = ({
       </div>
     ));
   };
+
+  // Effect to automatically open prioritization modal if requested
+  useEffect(() => {
+    if (openPrioritization && topics.length > 0) {
+      console.log("Auto-opening prioritization modal for:", subject);
+      setShowPrioritizationModal(true);
+    }
+  }, [openPrioritization, topics, subject]);
 
   return (
     <div className="topic-list-modal-overlay" onClick={handleOverlayClick}>
@@ -621,10 +693,7 @@ const TopicListModal = ({
                 </button>
                 <button 
                   className="action-button regenerate-button"
-                  onClick={() => {
-                    setRegenerate(true);
-                    generateTopics();
-                  }}
+                  onClick={handleRegenerateClick}
                 >
                   <span className="button-icon">🔄</span> Regenerate All Topics
                 </button>
@@ -668,10 +737,7 @@ const TopicListModal = ({
                 </button>
                 <button 
                   className="action-button regenerate-button"
-                  onClick={() => {
-                    setRegenerate(true);
-                    generateTopics();
-                  }}
+                  onClick={handleRegenerateClick}
                 >
                   <span className="button-icon">🔄</span> Regenerate List
                 </button>
@@ -687,12 +753,40 @@ const TopicListModal = ({
         </div>
       </div>
       
+      {/* Topic Prioritization Modal */}
+      {showPrioritizationModal && (
+        <TopicPrioritizationModal
+          subject={subject}
+          examBoard={examBoard}
+          examType={examType}
+          topics={topics}
+          onClose={() => setShowPrioritizationModal(false)}
+          onSavePriorities={handleSavePriorities}
+          userId={userId}
+        />
+      )}
+      
       {/* Topics Explainer Modal */}
       {showExplainer && (
         <TopicsExplainer 
           onClose={handleCloseExplainer}
           onNeverShowAgain={handleNeverShowAgain}
         />
+      )}
+      
+      {/* Add Regenerate Warning confirmation */}
+      {showRegenerateWarning && (
+        <div className="topic-confirmation">
+          <h3>⚠️ Warning: Priority Data Will Be Lost</h3>
+          <p>Regenerating topics will create a completely new list and <strong>all your topic priority settings will be lost</strong>.</p>
+          <p>Are you sure you want to continue?</p>
+          <div className="confirmation-buttons">
+            <button className="cancel-button" onClick={cancelRegeneration}>Cancel</button>
+            <button className="confirm-button delete-confirm" onClick={confirmRegeneration}>
+              Yes, Regenerate Topics
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
