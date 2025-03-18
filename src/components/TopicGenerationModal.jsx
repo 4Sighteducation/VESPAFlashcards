@@ -3,13 +3,17 @@ import "./TopicGenerationModal.css";
 import LoadingSpinner from "./LoadingSpinner";
 
 const TopicGenerationModal = ({ 
+  open,
   onClose, 
-  onGenerateAll, 
+  onGenerate,
   subjects, 
   isGenerating = false,
   progress = { current: 0, total: 0 },
   currentSubject = null
 }) => {
+  // If not open, don't render anything
+  if (!open) return null;
+  
   // Calculate progress percentage
   const progressPercentage = progress.total > 0 
     ? Math.round((progress.current / progress.total) * 100) 
@@ -56,7 +60,7 @@ const TopicGenerationModal = ({
               </button>
               <button 
                 className="generate-button"
-                onClick={onGenerateAll}
+                onClick={onGenerate}
               >
                 Yes, generate for all subjects
               </button>

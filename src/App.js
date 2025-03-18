@@ -2331,7 +2331,15 @@ function App() {
           {renderSubjectWizard()}
           
           {/* Topic Generation Modal */}
-          {renderTopicGenerationModal()}
+          <TopicGenerationModal 
+            open={topicGenerationModalOpen}
+            subjects={subjectsToGenerateTopics}
+            onClose={() => setTopicGenerationModalOpen(false)}
+            onGenerate={handleGenerateTopicLists}
+            isGenerating={generatingTopics}
+            progress={topicGenerationProgress}
+            currentSubject={currentGeneratingSubject}
+          />
 
           {/* Modal overlay for AICardGenerator component */}
           {showAICardGenerator && (
