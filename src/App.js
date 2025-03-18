@@ -649,6 +649,108 @@ function App() {
     }
   }, [auth, loadFromLocalStorage]);
 
+  // Load data from Knack when user is authenticated
+  const loadDataFromKnack = useCallback(async () => {
+    if (!auth || !auth.id) return;
+    
+    try {
+      setLoadingMessage("Loading your data...");
+      
+      // Fetch record data
+      const response = await fetch(`https://api.knack.com/v1/objects/object_5/records/${auth.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Knack-Application-Id': KNACK_APP_ID,
+          'X-Knack-REST-API-Key': KNACK_API_KEY
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Loaded data from Knack:", data);
+      
+      // Check if we have field_124 (flashcards)
+      if (data?.record?.field_124) {
+        try {
+          const cards = safeParseJSON(data.record.field_124);
+          if (Array.isArray(cards) && cards.length > 0) {
+            console.log(`Loaded ${cards.length} cards from Knack`);
+            setAllCards(cards);
+          }
+        } catch (e) {
+          console.error("Failed to parse cards data:", e);
+        }
+      }
+      
+      // Check if we have field_3011 (topic lists)
+      if (data?.record?.field_3011) {
+        try {
+          const topicLists = safeParseJSON(data.record.field_3011);
+          console.log("Loaded topic lists from Knack:", topicLists);
+          
+          // Update auth object with topic lists
+          setAuth(prevAuth => ({
+            ...prevAuth,
+            field_3011: data.record.field_3011
+          }));
+        } catch (e) {
+          console.error("Failed to parse topic lists data:", e);
+        }
+      } else if (data?.record?.field_2979) {
+        // Fall back to field_2979 for backward compatibility
+        try {
+          const topicLists = safeParseJSON(data.record.field_2979);
+          console.log("Loaded topic lists from field_2979:", topicLists);
+          
+          // Update auth object with topic lists
+          setAuth(prevAuth => ({
+            ...prevAuth,
+            field_2979: data.record.field_2979,
+            field_3011: data.record.field_2979 // Copy to field_3011 for future use
+          }));
+        } catch (e) {
+          console.error("Failed to parse topic lists data from field_2979:", e);
+        }
+      }
+      
+      // Check if we have color mappings
+      if (data?.record?.field_165) {
+        try {
+          const colorMap = safeParseJSON(data.record.field_165);
+          if (colorMap && typeof colorMap === 'object') {
+            console.log("Loaded color mappings from Knack:", colorMap);
+            setSubjectColorMapping(colorMap);
+          }
+        } catch (e) {
+          console.error("Failed to parse color mappings:", e);
+        }
+      }
+      
+      // Check if we have spaced repetition data
+      if (data?.record?.field_166) {
+        try {
+          const spaced = safeParseJSON(data.record.field_166);
+          if (spaced && typeof spaced === 'object') {
+            console.log("Loaded spaced repetition data from Knack:", spaced);
+            setSpacedRepetitionData(spaced);
+          }
+        } catch (e) {
+          console.error("Failed to parse spaced repetition data:", e);
+        }
+      }
+      
+    } catch (error) {
+      console.error("Error loading data from Knack:", error);
+      setError(`Failed to load your data: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [auth, KNACK_APP_ID, KNACK_API_KEY, safeParseJSON]);
+
   // Functions for card operations - defined after their dependencies
   // Add a new card
   const addCard = useCallback(
@@ -1731,142 +1833,122 @@ function App() {
   // Handle saving a topic list
   const handleSaveTopicList = useCallback(async (topicListData, subject) => {
     console.log("Saving topic list:", topicListData);
-    
-    // Check if this is a request to create cards
-    if (topicListData.createCards) {
-      // Show fun message
-      showStatus("Great choice! Let's create some flashcards!", 2000);
+
+    // If this is a createCards request, launch AI card generator
+    if (topicListData.createCards === true) {
+      console.log("Creating cards for selected topic:", topicListData.topic);
+      
+      // Pass all the required metadata to the AI card generator
+      setCurrentAIGeneratorSubject(subject);
+      setCurrentAIGeneratorTopic(topicListData.topic);
+      setCurrentAIGeneratorExamBoard(topicListData.examBoard);
+      setCurrentAIGeneratorExamType(topicListData.examType);
       
       // After a delay, open the AI card generator
       setTimeout(() => {
-        // Pass all the required metadata to the AI card generator
-        setCurrentAIGeneratorSubject(subject);
-        setCurrentAIGeneratorTopic(topicListData.topic);
-        setCurrentAIGeneratorExamBoard(topicListData.examBoard);
-        setCurrentAIGeneratorExamType(topicListData.examType);
         setAiCardGeneratorOpen(true);
       }, 500);
       
       return;
     }
-    
-    // Otherwise, this is a normal topic list save
-    try {
-      // First, try to save the topic list to userTopics state
-      if (subject && topicListData.topics) {
-        setUserTopics(prev => ({
-          ...prev,
-          [subject]: topicListData.topics
-        }));
-      }
+
+    // If we have auth and userId, save to Knack
+    if (auth && auth.id) {
+      console.log("Auth object when saving topic list:", auth);
+      console.log("Field_3011:", auth.field_3011);
+      console.log("Field_2979:", auth.field_2979);
       
-      // If we have auth and userId, save to Knack
-      if (auth && auth.id) {
-        console.log("Auth object when saving topic list:", auth);
-        console.log("Field_3011:", auth.field_3011);
-        console.log("Field_2979:", auth.field_2979);
-        
-        // Try to get existing topic lists
-        let existingLists = [];
-        try {
-          // Check both possible fields
-          if (auth.field_3011) {
-            existingLists = JSON.parse(auth.field_3011);
-            if (!Array.isArray(existingLists)) {
-              existingLists = [];
-            }
-            console.log("Found existing lists in field_3011:", existingLists);
-          } else if (auth.field_2979) {
-            // Try the other field if the first one is empty
-            existingLists = JSON.parse(auth.field_2979);
-            if (!Array.isArray(existingLists)) {
-              existingLists = [];
-            }
-            console.log("Found existing lists in field_2979:", existingLists);
+      // Try to get existing topic lists
+      let existingLists = [];
+      try {
+        // Check both possible fields
+        if (auth.field_3011) {
+          existingLists = JSON.parse(auth.field_3011);
+          if (!Array.isArray(existingLists)) {
+            existingLists = [];
           }
-        } catch (e) {
-          console.error("Error parsing existing topic lists:", e);
-        }
-        
-        // Check if we already have a topic list for this subject
-        const existingIndex = existingLists.findIndex(list => 
-          list.subject === subject || (list.name && list.name.toLowerCase() === subject.toLowerCase())
-        );
-        
-        if (existingIndex >= 0) {
-          // Update existing topic list
-          existingLists[existingIndex] = {
-            ...existingLists[existingIndex],
-            ...topicListData,
-            topics: topicListData.topics,
-            lastUpdated: new Date().toISOString()
-          };
-        } else {
-          // Add new topic list
-          existingLists.push({
-            ...topicListData,
-            lastUpdated: new Date().toISOString()
-          });
-        }
-        
-        // Save to Knack - try both fields to ensure compatibility
-        try {
-          console.log("Saving to Knack field_3011:", JSON.stringify(existingLists));
-          
-          // Create request body with both fields
-          const requestBody = {
-            field_3011: JSON.stringify(existingLists),
-            field_2979: JSON.stringify(existingLists)  // Save to both fields for backward compatibility
-          };
-          
-          const response = await fetch(`https://api.knack.com/v1/objects/object_5/records/${auth.id}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Knack-Application-Id": KNACK_APP_ID,
-              "X-Knack-REST-API-Key": KNACK_API_KEY
-            },
-            body: JSON.stringify(requestBody)
-          });
-          
-          console.log("Knack API response status:", response.status);
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Knack API error response:", errorText);
-            throw new Error(`Failed to save topic list: ${response.status}`);
+          console.log("Found existing lists in field_3011:", existingLists);
+        } else if (auth.field_2979) {
+          // Try the other field if the first one is empty
+          existingLists = JSON.parse(auth.field_2979);
+          if (!Array.isArray(existingLists)) {
+            existingLists = [];
           }
-          
-          // Also try updating auth object locally
-          setAuth(prevAuth => ({
-            ...prevAuth,
-            field_3011: JSON.stringify(existingLists),
-            field_2979: JSON.stringify(existingLists)
-          }));
-          
-          // Show success message
-          showStatus("Topic list saved successfully!", 3000);
-          
-          // Update subject card to show it has a topic list
-          setAllCards(prevCards => 
-            prevCards.map(card => {
-              if (card.subject === subject && card.template) {
-                return {
-                  ...card,
-                  hasTopicList: true
-                };
-              }
-              return card;
-            })
-          );
-        } catch (error) {
-          console.error("Error saving topic list to Knack:", error);
-          showStatus("Failed to save topic list. Please try again.", 3000);
+          console.log("Found existing lists in field_2979:", existingLists);
         }
+      } catch (e) {
+        console.error("Error parsing existing topic lists:", e);
+        existingLists = [];
       }
-    } catch (error) {
-      console.error("Error in handleSaveTopicList:", error);
-      showStatus("Failed to save topic list. Please try again.", 3000);
+
+      // Check if we already have a topic list for this subject
+      const existingIndex = existingLists.findIndex(list => list.subject === subject);
+      
+      // Update or add the topic list
+      if (existingIndex !== -1) {
+        // Update existing topic list
+        existingLists[existingIndex] = {
+          ...existingLists[existingIndex],
+          ...topicListData,
+          topics: topicListData.topics,
+          lastUpdated: new Date().toISOString()
+        };
+      } else {
+        // Add new topic list
+        existingLists.push({
+          ...topicListData,
+          lastUpdated: new Date().toISOString()
+        });
+      }
+
+      // Update the auth object with the new topic lists
+      const updatedFields = {
+        field_3011: JSON.stringify(existingLists),
+        field_2979: JSON.stringify(existingLists) // Also update field_2979 for backward compatibility
+      };
+
+      setIsSaving(true);
+      
+      try {
+        // Update the Knack record
+        const response = await fetch(`https://api.knack.com/v1/objects/object_1/records/${auth.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Knack-Application-Id': KNACK_APP_ID,
+            'X-Knack-REST-API-Key': KNACK_API_KEY
+          },
+          body: JSON.stringify(updatedFields)
+        });
+        
+        console.log("Knack API response status:", response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Knack API error response:", errorText);
+          throw new Error(`Failed to save topic list: ${response.status}`);
+        }
+        
+        // Also try updating auth object locally
+        setAuth(prevAuth => ({
+          ...prevAuth,
+          field_3011: JSON.stringify(existingLists),
+          field_2979: JSON.stringify(existingLists)
+        }));
+        
+        // Show success message
+        showStatus("Topic list saved successfully!", 3000);
+        
+        return existingLists;
+      } catch (error) {
+        console.error("Error saving topic list to Knack:", error);
+        showStatus("Error saving topic list. Please try again.", 5000);
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      // Not authenticated - just show success message
+      showStatus("Topic list saved locally!", 3000);
     }
   }, [auth, KNACK_API_KEY, KNACK_APP_ID, showStatus]);
 
@@ -1884,21 +1966,32 @@ function App() {
       ...card,
       id: `card-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       timestamp: new Date().toISOString(),
-      subjectColor: subjectColorMapping[card.subject] || "#e6194b"
+      box: 1, // Start in box 1 for spaced repetition
+      boxNum: 1, // For backward compatibility
+      last_reviewed: new Date().toISOString(),
+      next_review: calculateNextReviewDate(1),
+      subjectColor: subjectColorMapping[card.subject] || "#e6194b",
+      cardColor: subjectColorMapping[card.subject] || "#e6194b"
     }));
     
     // Add the new cards to the card bank
     setAllCards(prevCards => [...prevCards, ...newCards]);
     
     // Show a success message
-    showStatus(`Added ${newCards.length} new flashcards!`, 3000);
+    showStatus(`Added ${newCards.length} new flashcards to Box 1!`, 3000);
     
     // Close the AI generator
     setAiCardGeneratorOpen(false);
     
     // Save the cards to storage
-    saveData([...allCards, ...newCards]);
-  }, [allCards, saveData, showStatus, subjectColorMapping]);
+    const updatedCards = [...allCards, ...newCards];
+    saveData(updatedCards);
+    
+    // Update spaced repetition data
+    updateSpacedRepetitionData(updatedCards);
+    
+    return newCards;
+  }, [allCards, calculateNextReviewDate, saveData, showStatus, subjectColorMapping, updateSpacedRepetitionData]);
 
   // Show loading state
   if (loading) {
@@ -1915,6 +2008,17 @@ function App() {
       </div>
     );
   }
+
+  // Load data when auth changes
+  useEffect(() => {
+    if (auth && auth.id) {
+      console.log("Auth detected, loading data from Knack");
+      loadDataFromKnack();
+    } else if (!loading) { // Only load from localStorage if we're not in initial loading state
+      console.log("No auth, loading from localStorage");
+      loadFromLocalStorage();
+    }
+  }, [auth, loading, loadDataFromKnack, loadFromLocalStorage]);
 
   return (
     <div className="app-container">
@@ -1949,15 +2053,14 @@ function App() {
 
           {/* Topic List Modal */}
           {topicListModalOpen && (
-            <TopicListModal
+            <TopicListModal 
+              subject={topicListSubject}
               examBoard={topicListExamBoard}
               examType={topicListExamType}
-              subject={topicListSubject}
               onClose={() => setTopicListModalOpen(false)}
-              knackAppId={KNACK_APP_ID}
               userId={auth?.id}
               onTopicListSave={handleSaveTopicList}
-              existingTopics={existingTopicListData}
+              existingTopics={existingTopicListData?.topics?.map(t => t.topic || t) || []}
               auth={auth}
             />
           )}
@@ -2056,16 +2159,16 @@ function App() {
           )}
 
           {view === "aiGenerator" && (
-            <AICardGenerator
-              onClose={() => setAiCardGeneratorOpen(false)}
-              onSaveCards={handleSaveAICards}
-              initialSubject={currentAIGeneratorSubject}
-              initialTopic={currentAIGeneratorTopic}
-              initialExamBoard={currentAIGeneratorExamBoard}
-              initialExamType={currentAIGeneratorExamType}
-              auth={auth}
-              userId={auth?.id}
-            />
+            <div className="ai-card-generator-view">
+              {/* Note: The AICardGenerator is now rendered in an overlay */}
+              <p className="info-text">The AI Card Generator will open in an overlay. You can also access it by selecting a topic from your topic lists.</p>
+              <button 
+                className="primary-button" 
+                onClick={() => setAiCardGeneratorOpen(true)}
+              >
+                Open AI Card Generator
+              </button>
+            </div>
           )}
 
           {view === "spacedRepetition" && (
@@ -2084,6 +2187,23 @@ function App() {
           
           {/* Topic Generation Modal */}
           {renderTopicGenerationModal()}
+
+          {/* Modal overlay for AICardGenerator component */}
+          {aiCardGeneratorOpen && (
+            <div className="ai-card-generator-overlay">
+              <AICardGenerator
+                onClose={() => setAiCardGeneratorOpen(false)}
+                onSaveCards={handleSaveAICards}
+                initialSubject={currentAIGeneratorSubject}
+                initialTopic={currentAIGeneratorTopic}
+                initialExamBoard={currentAIGeneratorExamBoard}
+                initialExamType={currentAIGeneratorExamType}
+                auth={auth}
+                userId={auth?.id}
+                key={`ai-generator-${currentAIGeneratorSubject}-${currentAIGeneratorTopic}-${forceUpdate}`}
+              />
+            </div>
+          )}
         </>
       )}
     </div>
