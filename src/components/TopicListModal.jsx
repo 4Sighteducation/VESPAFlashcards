@@ -257,46 +257,54 @@ const TopicListModal = ({
   
   const categorizedTopics = categorizeTopics();
 
+  // Generate topics from OpenAI
   const generateTopics = async () => {
     setIsLoading(true);
     setError(null);
-
+    
     try {
-      console.log(`Generating topic list for ${subject} (${examBoard} ${examType})`);
+      console.log(`Generating topics for ${subject} (${examBoard} ${examType})`);
       
-      // Generate the prompt
-      const prompt = generateTopicPrompt(subject, examBoard, examType);
+      // Prepare the API request body
+      const requestBody = {
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "You are a teacher creating a comprehensive list of topics for a subject syllabus."
+          },
+          {
+            role: "user",
+            content: `Create a comprehensive list of 20-30 specific topics for ${subject} for the ${examBoard} ${examType} syllabus. 
+            Format the response as a JSON array of strings only, with each string being a specific topic.
+            Ensure topics are specific and descriptive (e.g. "The Cardiovascular System" rather than just "Body Systems").
+            Organize the topics into a logical progression for learning.`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 800
+      };
       
-      // Call OpenAI API
+      // Define headers for API request
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      };
+      
+      // Make the API request
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [
-            {
-              role: "user",
-              content: prompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 2000
-        })
+        headers: headers,
+        body: JSON.stringify(requestBody)
       });
       
-      // Check for errors
+      // Check for HTTP errors
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("OpenAI API error:", errorText);
-        throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       // Parse the response
       const result = await response.json();
-      console.log("OpenAI response:", result);
       
       if (result.choices && result.choices.length > 0) {
         const content = result.choices[0].message.content;
@@ -342,16 +350,21 @@ const TopicListModal = ({
             created: new Date().toISOString(),
             topicCount: filteredTopics.length
           }));
+          
+          return Promise.resolve(filteredTopics); // Return a promise to support chaining
         } else {
           console.error("Unexpected topics format:", parsedTopics);
           setError("Invalid response format. Please try again.");
+          return Promise.reject("Invalid response format");
         }
       } else {
         setError("No response from AI. Please try again.");
+        return Promise.reject("No response from AI");
       }
     } catch (error) {
       console.error("Error generating topic list:", error);
       setError("Failed to generate topic list. Please try again.");
+      return Promise.reject(error);
     } finally {
       setIsLoading(false);
     }
@@ -600,7 +613,20 @@ const TopicListModal = ({
   // Common function to handle the actual regeneration
   const proceedWithRegeneration = () => {
     setRegenerate(true);
-    generateTopics();
+    generateTopics()
+      .then(() => {
+        // Auto-save after generation completes - but only if not in view topics mode
+        if (!showTopicsList) {
+          // Add a short delay to ensure topics state is updated
+          setTimeout(() => {
+            console.log("Auto-saving after regeneration");
+            handleSaveTopics();
+          }, 500);
+        }
+      })
+      .catch(err => {
+        console.error("Error in regeneration:", err);
+      });
   };
 
   // Render the category-based list of topics
