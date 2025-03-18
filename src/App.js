@@ -1702,15 +1702,21 @@ function App() {
     );
   };
 
+  // Handle generating topic lists for selected subjects
+  const handleGenerateTopicLists = async () => {
+    if (subjectsToGenerateTopics.length > 0) {
+      await generateAllTopicLists(subjectsToGenerateTopics);
+    }
+  };
+
   // Render topic generation modal
   const renderTopicGenerationModal = () => {
-    if (!topicGenerationModalOpen) return null;
-    
     return (
-      <TopicGenerationModal
-        onClose={() => setTopicGenerationModalOpen(false)}
-        onGenerateAll={handleGenerateAllTopics}
+      <TopicGenerationModal 
+        open={topicGenerationModalOpen}
         subjects={subjectsToGenerateTopics}
+        onClose={() => setTopicGenerationModalOpen(false)}
+        onGenerate={handleGenerateTopicLists}
         isGenerating={generatingTopics}
         progress={topicGenerationProgress}
         currentSubject={currentGeneratingSubject}
@@ -1718,67 +1724,28 @@ function App() {
     );
   };
 
-  // Handle generating topics for all subjects
-  const handleGenerateAllTopics = async () => {
-    if (subjectsToGenerateTopics.length === 0) return;
-    
-    // Set up for topic generation
-    setGeneratingTopics(true);
-    setTopicGenerationProgress({ current: 0, total: subjectsToGenerateTopics.length });
-    
-    // Process each subject one at a time with delay between each
-    for (let i = 0; i < subjectsToGenerateTopics.length; i++) {
-      const subject = subjectsToGenerateTopics[i];
-      setCurrentGeneratingSubject(subject.name);
-      
-      // Generate topic list for this subject
-      try {
-        await generateTopicListForSubject(subject);
-        
-        // Update progress
-        setTopicGenerationProgress(prev => ({
-          ...prev,
-          current: prev.current + 1
-        }));
-        
-        // Small delay between subjects to avoid rate limiting
-        if (i < subjectsToGenerateTopics.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-      } catch (error) {
-        console.error(`Error generating topics for ${subject.name}:`, error);
-        // Continue with next subject even if one fails
-      }
-    }
-    
-    // Done with all subjects
-    setGeneratingTopics(false);
-    setTopicGenerationModalOpen(false);
-    setCurrentGeneratingSubject(null);
-    showStatus("Topic lists generated successfully!", 5000);
-  };
-
   // Generate topic list for a single subject
-  const generateTopicListForSubject = async (subject) => {
-    const { name, examBoard, examType } = subject;
-    
-    // Generate the topic list using the API
+  const generateTopicListForSubject = async (name, examBoard, examType) => {
     try {
-      // Create the prompt for topic list generation
-      const prompt = generateTopicPrompt(name, examBoard, examType);
+      console.log(`Generating topic list for ${name} (${examBoard} ${examType})`);
+      setLoadingMessage(`Generating topic list for ${name}...`);
       
-      // Make API call to generate topics
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
+      const prompt = `You are a curriculum expert who creates topic lists for ${examBoard} ${examType} ${name}. 
+      Create a comprehensive list of topics that should be studied for this subject.
+      Format each topic as a clear, specific area of study.
+      Return ONLY the list of topics as a JSON array of strings, with no additional text or explanation.`;
+      
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.REACT_APP_OPENAI_KEY}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_KEY}`
         },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo", // Or gpt-4 if available
+          model: 'gpt-3.5-turbo',
           messages: [
-            { role: "system", content: "You are an expert curriculum designer for educational content." },
-            { role: "user", content: prompt }
+            { role: 'system', content: 'You are a curriculum expert who creates topic lists for subjects.' },
+            { role: 'user', content: prompt }
           ],
           temperature: 0.7,
           max_tokens: 1000
@@ -1792,7 +1759,7 @@ function App() {
       const data = await response.json();
       const topicListText = data.choices[0].message.content;
       
-      // Parse the topic list response
+      // Parse the topic list
       let topics = [];
       try {
         // Try to parse as JSON first
@@ -1822,72 +1789,92 @@ function App() {
           .filter(topic => topic.length > 0);
       }
       
-      // Save the topic list
-      if (topics.length > 0) {
-        // Format topics for storage in field_3011
-        const topicListObj = {
-          id: `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
-          name: name.toLowerCase(),
-          examBoard: examBoard,
-          examType: examType,
-          subject: name,
-          topics: topics.map(topic => ({ topic })),
-          created: new Date().toISOString(),
-          userId: auth?.id || ""
-        };
-        
-        // Save topic list to user topics
-        setUserTopics(prev => ({
-          ...prev,
-          [name]: topics.map(topic => ({ topic }))
-        }));
-        
-        // Store in field_3011 format
-        let field3011Data = [];
+      // Clean up the topics to remove any JSON formatting artifacts
+      topics = topics
+        .filter(topic => typeof topic === 'string' && 
+                         topic.trim() !== '[' && 
+                         topic.trim() !== ']' &&
+                         topic.trim() !== '```json' && 
+                         topic.trim() !== '```' &&
+                         !topic.includes('```'))
+        .map(topic => {
+          // Remove quotes and commas that might be leftover from JSON
+          return topic.replace(/^["'](.*)["'],?$/, '$1')
+                      .replace(/["'](.*)["'],?$/, '$1')
+                      .replace(/,$/, '')
+                      .trim();
+        });
+      
+      console.log("Generated topics:", topics);
+      
+      return topics;
+    } catch (error) {
+      console.error(`Error generating topic list for ${name}:`, error);
+      throw error;
+    }
+  };
+
+  // Generate topic lists for multiple subjects
+  const generateAllTopicLists = async (subjects) => {
+    setGeneratingTopics(true);
+    setTopicGenerationProgress({ current: 0, total: subjects.length });
+    
+    // Create an array to hold all topic lists
+    let allTopicLists = [];
+    
+    try {
+      // First load existing topic lists if available
+      if (auth && auth.field_3011) {
         try {
-          // Try to parse existing data if any
-          if (auth && auth.field_3011) {
-            const existingData = JSON.parse(auth.field_3011);
-            if (Array.isArray(existingData)) {
-              field3011Data = existingData;
-            }
+          const existingLists = JSON.parse(auth.field_3011);
+          if (Array.isArray(existingLists)) {
+            allTopicLists = [...existingLists];
           }
-        } catch (e) {
-          console.error("Error parsing existing topic lists:", e);
+        } catch (error) {
+          console.error("Error parsing existing topic lists:", error);
         }
+      }
+      
+      // Process each subject one by one
+      for (let i = 0; i < subjects.length; i++) {
+        const subject = subjects[i];
+        setCurrentGeneratingSubject(subject.name);
+        setTopicGenerationProgress({ current: i + 1, total: subjects.length });
         
-        // Add the new topic list
-        field3011Data.push(topicListObj);
-        
-        // Save to Knack if we have auth
-        if (auth && auth.id) {
-          try {
-            console.log("Saving to Knack:", JSON.stringify(field3011Data));
-            const response = await fetch(`https://api.knack.com/v1/objects/object_102/records/${recordId}`, {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Knack-Application-Id": KNACK_APP_ID,
-                "X-Knack-REST-API-Key": KNACK_API_KEY
-              },
-              body: JSON.stringify({
-                field_3011: JSON.stringify(field3011Data)
-              })
-            });
+        try {
+          // Check if this subject already has a topic list in allTopicLists
+          const existingIndex = allTopicLists.findIndex(list => 
+            list.subject === subject.name && list.examBoard === subject.examBoard
+          );
+          
+          // Generate topic list for this subject
+          const topicList = await generateTopicListForSubject(subject.name, subject.examBoard, subject.examType);
+          
+          if (topicList && topicList.length > 0) {
+            // Create a topic list object
+            const topicListObj = {
+              id: `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
+              name: subject.name.toLowerCase(),
+              examBoard: subject.examBoard,
+              examType: subject.examType,
+              subject: subject.name,
+              topics: topicList.map(topic => ({ topic })),
+              created: new Date().toISOString(),
+              userId: auth?.id || ""
+            };
             
-            console.log("Knack API response status:", response.status);
-            
-            if (!response.ok) {
-              throw new Error(`Failed to save topic list: ${response.status}`);
+            if (existingIndex >= 0) {
+              // Update existing entry
+              allTopicLists[existingIndex] = topicListObj;
+            } else {
+              // Add new entry
+              allTopicLists.push(topicListObj);
             }
-            
-            // Show success message
-            showStatus("Topic list saved successfully!", 3000);
             
             // Update subject card to show it has a topic list
             setAllCards(prevCards => 
               prevCards.map(card => {
-                if (card.subject === name && card.template) {
+                if (card.subject === subject.name && card.template) {
                   return {
                     ...card,
                     hasTopicList: true
@@ -1896,17 +1883,45 @@ function App() {
                 return card;
               })
             );
-          } catch (error) {
-            console.error("Error saving topic list to Knack:", error);
-            showStatus("Failed to save topic list. Please try again.", 3000);
           }
+        } catch (error) {
+          console.error(`Error generating topic list for ${subject.name}:`, error);
         }
       }
       
-      return topics;
+      // Save all topic lists to Knack
+      if (auth && recordId && allTopicLists.length > 0) {
+        try {
+          console.log("Saving all topic lists to Knack:", JSON.stringify(allTopicLists));
+          const response = await fetch(`https://api.knack.com/v1/objects/object_102/records/${recordId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Knack-Application-Id": KNACK_APP_ID,
+              "X-Knack-REST-API-Key": KNACK_API_KEY
+            },
+            body: JSON.stringify({
+              field_3011: JSON.stringify(allTopicLists)
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to save topic lists: ${response.status}`);
+          }
+          
+          showStatus("All topic lists generated and saved successfully!", 3000);
+        } catch (error) {
+          console.error("Error saving topic lists to Knack:", error);
+          showStatus("Error saving topic lists. Some lists might not be saved.", 3000, "error");
+        }
+      }
     } catch (error) {
-      console.error(`Error generating topic list for ${name}:`, error);
-      throw error;
+      console.error("Error in overall topic list generation:", error);
+      showStatus("Error generating topic lists", 3000, "error");
+    } finally {
+      setGeneratingTopics(false);
+      setTopicGenerationModalOpen(false);
+      setCurrentGeneratingSubject(null);
     }
   };
 

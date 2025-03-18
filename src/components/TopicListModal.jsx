@@ -33,7 +33,12 @@ const TopicListModal = ({
   const [error, setError] = useState(null);
   const [regenerate, setRegenerate] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState(null);
-  const [showTopicButtons, setShowTopicButtons] = useState(false);
+  const [showTopicsList, setShowTopicsList] = useState(false);
+  const [showCardGeneration, setShowCardGeneration] = useState(false);
+  const [newCustomTopic, setNewCustomTopic] = useState("");
+  const [showAddTopicForm, setShowAddTopicForm] = useState(false);
+  const [topicToDelete, setTopicToDelete] = useState(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   
   // Check if we have existing topics
   const hasExistingTopics = existingTopics && 
@@ -79,6 +84,63 @@ const TopicListModal = ({
       generateTopics();
     }
   }, [hasExistingTopics, existingTopics, regenerate]);
+
+  // Organize topics into categories
+  const categorizeTopics = () => {
+    const categorized = {};
+    
+    topics.forEach(topic => {
+      // Try to extract main category from topic
+      const parts = topic.split(':');
+      
+      if (parts.length > 1) {
+        // If topic has format "Category: Subtopic"
+        const category = parts[0].trim();
+        const subtopic = parts[1].trim();
+        
+        if (!categorized[category]) {
+          categorized[category] = [];
+        }
+        
+        categorized[category].push(subtopic);
+      } else {
+        // For topics without clear category format
+        // Check if topic contains common category keywords
+        const mainCategories = [
+          "Introduction", "Foundations", "Basics", 
+          "Advanced", "Practical", "Theory",
+          "Application", "Analysis", "Physical", "Organic", "Inorganic"
+        ];
+        
+        let foundCategory = false;
+        
+        for (const category of mainCategories) {
+          if (topic.includes(category)) {
+            if (!categorized[category]) {
+              categorized[category] = [];
+            }
+            
+            categorized[category].push(topic);
+            foundCategory = true;
+            break;
+          }
+        }
+        
+        // If no category found, put in "Other Topics"
+        if (!foundCategory) {
+          if (!categorized["Other Topics"]) {
+            categorized["Other Topics"] = [];
+          }
+          
+          categorized["Other Topics"].push(topic);
+        }
+      }
+    });
+    
+    return categorized;
+  };
+  
+  const categorizedTopics = categorizeTopics();
 
   const generateTopics = async () => {
     setIsLoading(true);
@@ -202,9 +264,9 @@ const TopicListModal = ({
   };
   
   // Handle selecting a topic to create cards
-  const handleCreateCards = (topic) => {
-    console.log("Selected topic for card creation:", topic);
+  const handleSelectTopicForCards = (topic) => {
     setSelectedTopic(topic);
+    setShowCardGeneration(true);
   };
   
   // Confirm card creation
@@ -223,11 +285,67 @@ const TopicListModal = ({
   // Cancel card creation
   const cancelCreateCards = () => {
     setSelectedTopic(null);
+    setShowCardGeneration(false);
   };
   
-  // Handle showing the topic selection view
-  const handleShowTopicButtons = () => {
-    setShowTopicButtons(true);
+  // Handle the "View Topics" button
+  const handleViewTopics = () => {
+    setShowTopicsList(true);
+  };
+  
+  // Handle "Back to Summary" button
+  const handleBackToSummary = () => {
+    setShowTopicsList(false);
+    setShowAddTopicForm(false);
+  };
+  
+  // Handle "Add Topic" button
+  const handleAddTopic = () => {
+    setShowAddTopicForm(true);
+  };
+  
+  // Handle submitting the new topic form
+  const handleSubmitNewTopic = () => {
+    if (newCustomTopic.trim()) {
+      setTopics([...topics, newCustomTopic.trim()]);
+      setNewCustomTopic("");
+      setShowAddTopicForm(false);
+      
+      // Update metadata
+      setListMetadata(prev => ({
+        ...prev,
+        topicCount: prev.topicCount + 1
+      }));
+    }
+  };
+  
+  // Handle "Delete Topic" confirmation
+  const handleDeleteTopicConfirmation = (topic) => {
+    setTopicToDelete(topic);
+    setShowDeleteConfirmation(true);
+  };
+  
+  // Confirm delete topic
+  const confirmDeleteTopic = () => {
+    if (topicToDelete) {
+      const newTopics = topics.filter(topic => topic !== topicToDelete);
+      setTopics(newTopics);
+      
+      // Update metadata
+      setListMetadata(prev => ({
+        ...prev,
+        topicCount: prev.topicCount - 1
+      }));
+      
+      setTopicToDelete(null);
+      setShowDeleteConfirmation(false);
+    }
+  };
+  
+  // Cancel delete topic
+  const cancelDeleteTopic = () => {
+    setTopicToDelete(null);
+    setShowDeleteConfirmation(false);
   };
   
   // Handle the "Prioritise Topics" button (placeholder)
@@ -236,18 +354,42 @@ const TopicListModal = ({
     // This will be implemented later
   };
   
-  // Button to view all topics
-  const handleViewAllTopics = () => {
-    setShowTopicButtons(true);
+  // Button to generate cards for a topic
+  const handleGenerateCardsAction = () => {
+    // Show topic selection interface for generating cards
+    setShowTopicsList(true);
   };
 
-  // Button to generate cards for a topic
-  const handleGenerateCards = () => {
-    if (selectedTopic) {
-      confirmCreateCards();
-    } else {
-      alert("Please select a topic first");
-    }
+  // Render the category-based list of topics
+  const renderCategorizedTopics = () => {
+    return Object.entries(categorizedTopics).map(([category, subtopics]) => (
+      <div key={category} className="topic-category">
+        <h4 className="category-title">{category}</h4>
+        <ul className="category-topics">
+          {subtopics.map((topic, index) => (
+            <li key={`${category}-${index}`} className="topic-item view-only">
+              <span className="topic-name">{topic}</span>
+              <div className="topic-actions">
+                <button
+                  className="topic-action-button generate-button"
+                  onClick={() => handleSelectTopicForCards(topic)}
+                  title="Generate cards for this topic"
+                >
+                  <span role="img" aria-label="Generate">⚡</span>
+                </button>
+                <button
+                  className="topic-action-button delete-button"
+                  onClick={() => handleDeleteTopicConfirmation(topic)}
+                  title="Delete this topic"
+                >
+                  <span role="img" aria-label="Delete">❌</span>
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ));
   };
 
   return (
@@ -263,7 +405,7 @@ const TopicListModal = ({
           
           {isLoading ? (
             <LoadingSpinner message="Generating topic list..." />
-          ) : selectedTopic ? (
+          ) : showCardGeneration && selectedTopic ? (
             <div className="topic-confirmation">
               <h3>Create Cards for Topic</h3>
               <p>Generate flashcards for: <strong>{selectedTopic}</strong></p>
@@ -272,40 +414,63 @@ const TopicListModal = ({
                 <button className="confirm-button" onClick={confirmCreateCards}>Generate Cards</button>
               </div>
             </div>
-          ) : showTopicButtons ? (
-            <>
-              <div className="topics-container">
-                <ul className="topics-list">
-                  {topics.map((topic, index) => (
-                    <li 
-                      key={index} 
-                      className="topic-item"
-                      onClick={() => handleCreateCards(topic)}
-                    >
-                      <span className="topic-name">{topic}</span>
-                    </li>
-                  ))}
-                </ul>
+          ) : showDeleteConfirmation && topicToDelete ? (
+            <div className="topic-confirmation">
+              <h3>Delete Topic</h3>
+              <p>Are you sure you want to delete: <strong>{topicToDelete}</strong>?</p>
+              <div className="confirmation-buttons">
+                <button className="cancel-button" onClick={cancelDeleteTopic}>Cancel</button>
+                <button className="confirm-button delete-confirm" onClick={confirmDeleteTopic}>Delete Topic</button>
+              </div>
+            </div>
+          ) : showAddTopicForm ? (
+            <div className="add-topic-form">
+              <h3>Add New Topic</h3>
+              <div className="form-group">
+                <input
+                  type="text"
+                  value={newCustomTopic}
+                  onChange={(e) => setNewCustomTopic(e.target.value)}
+                  placeholder="Enter a new topic..."
+                  className="topic-input"
+                />
+              </div>
+              <div className="form-actions">
+                <button className="cancel-button" onClick={() => setShowAddTopicForm(false)}>Cancel</button>
+                <button className="confirm-button" onClick={handleSubmitNewTopic}>Add Topic</button>
+              </div>
+            </div>
+          ) : showTopicsList ? (
+            <div className="topics-view">
+              <div className="topics-view-header">
+                <h3>All Topics ({topics.length})</h3>
+                <button className="back-button" onClick={handleBackToSummary}>
+                  &larr; Back to Summary
+                </button>
               </div>
               
-              <div className="modal-actions">
-                <button 
-                  className="modal-button save-button"
-                  onClick={handleSaveTopics}
-                >
-                  Save Topic List
+              <div className="topics-container categorized">
+                {renderCategorizedTopics()}
+              </div>
+              
+              <div className="topics-actions">
+                <button className="action-button add-topic-button" onClick={handleAddTopic}>
+                  Add Custom Topic
                 </button>
                 <button 
-                  className="modal-button regenerate-button"
+                  className="action-button regenerate-button"
                   onClick={() => {
                     setRegenerate(true);
                     generateTopics();
                   }}
                 >
-                  Regenerate Topics
+                  Regenerate All Topics
+                </button>
+                <button className="action-button save-button" onClick={handleSaveTopics}>
+                  Save Changes
                 </button>
               </div>
-            </>
+            </div>
           ) : (
             <div className="topic-list-metadata">
               <h3>Current Topic List</h3>
@@ -332,30 +497,16 @@ const TopicListModal = ({
                 </div>
               </div>
               
-              <div className="topic-list-preview">
-                <h4>Topics</h4>
-                <div className="topics-preview">
-                  {topics.slice(0, 5).map((topic, index) => (
-                    <div key={index} className="topic-preview-item">{topic}</div>
-                  ))}
-                  {topics.length > 5 && (
-                    <div className="topic-preview-more">
-                      + {topics.length - 5} more topics...
-                    </div>
-                  )}
-                </div>
-              </div>
-              
               <div className="topic-list-actions">
                 <button 
                   className="action-button view-all-button"
-                  onClick={handleViewAllTopics}
+                  onClick={handleViewTopics}
                 >
-                  View All Topics
+                  View Topics
                 </button>
                 <button 
                   className="action-button generate-cards-button"
-                  onClick={handleShowTopicButtons}
+                  onClick={handleGenerateCardsAction}
                 >
                   Generate Cards
                 </button>
