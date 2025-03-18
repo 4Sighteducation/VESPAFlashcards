@@ -371,7 +371,7 @@ const TopicListModal = ({
   };
   
   // Save topic list
-  const handleSaveTopics = async () => {
+  const handleSaveTopics = async (shouldClose = true) => {
     if (topics.length === 0) return;
     
     console.log("Before saving, topics:", topics);
@@ -414,7 +414,11 @@ const TopicListModal = ({
     );
     
     onTopicListSave(topicListData, subject);
-    onClose();
+    
+    // Only close the modal if shouldClose is true
+    if (shouldClose) {
+      onClose();
+    }
   };
   
   // Handle selecting a topic to create cards
@@ -614,14 +618,20 @@ const TopicListModal = ({
   const proceedWithRegeneration = () => {
     setRegenerate(true);
     generateTopics()
-      .then(() => {
-        // Auto-save after generation completes - but only if not in view topics mode
+      .then((newTopics) => {
+        console.log("Regeneration complete, topics:", newTopics.length);
+        
+        // If we're in the "Regenerate List" view (not in topics list view),
+        // we should auto-save, but NOT close the modal
         if (!showTopicsList) {
-          // Add a short delay to ensure topics state is updated
+          console.log("Auto-saving after regeneration");
+          // Minor delay to ensure state is updated
           setTimeout(() => {
-            console.log("Auto-saving after regeneration");
-            handleSaveTopics();
+            handleSaveTopics(false); // Pass false to indicate we should not close the modal
           }, 500);
+        } else {
+          console.log("In topics list view - user will need to manually save");
+          // In topics list view, user will manually save with the Save Changes button
         }
       })
       .catch(err => {
@@ -766,7 +776,7 @@ const TopicListModal = ({
                 >
                   <span className="button-icon">🔄</span> Regenerate All Topics
                 </button>
-                <button className="action-button save-button" onClick={handleSaveTopics}>
+                <button className="action-button save-button" onClick={() => handleSaveTopics()}>
                   <span className="button-icon">💾</span> Save Changes
                 </button>
               </div>
