@@ -80,6 +80,10 @@ function App() {
   const [error, setError] = useState(null);
   const [recordId, setRecordId] = useState(null);
 
+  // Priority features state
+  const [highPriorityModalOpen, setHighPriorityModalOpen] = useState(false);
+  const [prioritizeDirectly, setPrioritizeDirectly] = useState(false);
+
   // App view state
   const [view, setView] = useState("cardBank"); // cardBank, createCard, spacedRepetition
 
@@ -919,23 +923,23 @@ function App() {
     console.log("Saving topic lists for:", subjectData);
     const { subject, examBoard, examType } = subjectData;
 
-    if (!userAuth) {
+    if (!auth) {
       console.log("No user auth, cannot save topic lists");
       return false;
     }
 
     try {
-      const userId = userAuth.userData.id;
+      const userId = auth.id;
       const topicListKey = `${subject}-${examBoard}-${examType}`;
       
       // Get existing topic lists from auth data
       let existingTopicLists = [];
       
       try {
-        if (userAuth.field_3011) {
-          const parsedLists = typeof userAuth.field_3011 === 'string' 
-            ? JSON.parse(userAuth.field_3011) 
-            : userAuth.field_3011;
+        if (auth.field_3011) {
+          const parsedLists = typeof auth.field_3011 === 'string' 
+            ? JSON.parse(auth.field_3011) 
+            : auth.field_3011;
           
           if (Array.isArray(parsedLists)) {
             existingTopicLists = parsedLists;
@@ -1012,7 +1016,7 @@ function App() {
       showStatus("Error saving topic lists");
       return false;
     }
-  }, [userAuth, topicLists, sanitizeForJSON, showStatus]);
+  }, [auth, topicLists, sanitizeForJSON, showStatus]);
 
   // Functions for card operations - defined after their dependencies
   // Add a new card
@@ -2461,30 +2465,32 @@ function App() {
     );
   }
 
-  // Add this with the other handler functions
+  // Replace the handlePrioritizeSubject function with a version that works with the existing app structure
   const handlePrioritizeSubject = (subjectData) => {
     console.log("Opening prioritization for subject:", subjectData);
     
-    // Find the card ID for this subject
-    const subjectCard = allCards.find(card => 
-      card.subject === subjectData.subject && 
-      card.examBoard === subjectData.examBoard && 
-      card.examType === subjectData.examType && 
-      card.template
-    );
+    // Set the subject, exam board, and exam type directly
+    setTopicListSubject(subjectData.subject);
+    setTopicListExamBoard(subjectData.examBoard);
+    setTopicListExamType(subjectData.examType);
     
-    if (subjectCard) {
-      setSelectedCardId(subjectCard.id);
-      // Set a flag to open prioritization directly
-      setPrioritizeDirectly(true);
-      setTopicListModalOpen(true);
-    } else {
-      console.error("Could not find template card for subject:", subjectData);
-    }
+    // Set the flag to open prioritization directly
+    setPrioritizeDirectly(true);
+    
+    // Open the topic list modal
+    setTopicListModalOpen(true);
   };
 
-  // Add this state variable with other state variables
-  const [prioritizeDirectly, setPrioritizeDirectly] = useState(false);
+
+  {/* High Priority Topics Modal */}
+  {highPriorityModalOpen && (
+    <HighPriorityTopicsModal
+      onClose={() => setHighPriorityModalOpen(false)}
+      userTopics={userTopics}
+      allCards={allCards}
+      onPrioritizeSubject={handlePrioritizeSubject}
+    />
+  )}
 
   return (
     <div className="app-container">
@@ -2493,7 +2499,7 @@ function App() {
       ) : (
         <>
           <Header
-            onViewChange={handleViewChange}
+            onViewChange={setView}
             currentView={view}
             onCreateCard={() => setCardCreationModalOpen(true)}
             onPrintAll={() => setPrintModalOpen(true)}
@@ -2521,22 +2527,27 @@ function App() {
           {/* Topic List Modal */}
           {topicListModalOpen && (
             <TopicListModal
-              subject={selectedCard.subject}
-              examBoard={selectedCard.examBoard}
-              examType={selectedCard.examType}
+              subject={topicListSubject}
+              examBoard={topicListExamBoard}
+              examType={topicListExamType}
               onClose={() => {
                 setTopicListModalOpen(false);
                 setPrioritizeDirectly(false); // Reset the flag when closing
               }}
-              userId={userAuth?.userData?.id}
-              onTopicListSave={(topics) => saveTopicLists({
-                subject: selectedCard.subject,
-                examBoard: selectedCard.examBoard,
-                examType: selectedCard.examType
-              }, topics)}
-              existingTopics={userTopics[`${selectedCard.subject}-${selectedCard.examBoard}-${selectedCard.examType}`] || []}
-              auth={userAuth}
+              userId={auth?.id}
+              onTopicListSave={handleSaveTopicList}
+              existingTopics={existingTopicListData?.topics || []}
+              auth={auth}
               openPrioritization={prioritizeDirectly}
+            />
+          )}
+          {/* High Priority Topics Modal */}
+          {highPriorityModalOpen && (
+            <HighPriorityTopicsModal
+              onClose={() => setHighPriorityModalOpen(false)}
+              userTopics={userTopics}
+              allCards={allCards}
+              onPrioritizeSubject={handlePrioritizeSubject}
             />
           )}
 
