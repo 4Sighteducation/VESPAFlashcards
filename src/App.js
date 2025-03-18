@@ -350,8 +350,12 @@ function App() {
           field_73: userRole,                               // User Role
           // Ensure both field_2979 and field_2986 are populated for compatibility
           field_2979: JSON.stringify(sanitizeForJSON(cardsToSave)),          // Legacy cards field (main Card Bank)
-          field_2986: JSON.stringify(sanitizeForJSON(cardsToSave)),          // New cards field (might be used in some versions)
-          // Add topic lists explicitly
+          field_2986: JSON.stringify(sanitizeForJSON(spacedRepetitionData.box1 || [])),  // Box 1
+          field_2987: JSON.stringify(sanitizeForJSON(spacedRepetitionData.box2 || [])),  // Box 2
+          field_2988: JSON.stringify(sanitizeForJSON(spacedRepetitionData.box3 || [])),  // Box 3
+          field_2989: JSON.stringify(sanitizeForJSON(spacedRepetitionData.box4 || [])),  // Box 4
+          field_2990: JSON.stringify(sanitizeForJSON(spacedRepetitionData.box5 || [])),  // Box 5
+          // Explicitly include topic lists
           field_3011: JSON.stringify(sanitizeForJSON(topicLists))           // Topic lists field
         };
         
@@ -366,7 +370,8 @@ function App() {
               colorMapping: sanitizeForJSON(subjectColorMapping),
               spacedRepetition: sanitizeForJSON(spacedRepetitionData),
               userTopics: sanitizeForJSON(userTopics),
-              additionalFields: additionalFields
+              additionalFields: additionalFields,
+              topicLists: sanitizeForJSON(topicLists)  // Explicitly include topic lists in the main data
             },
           },
           "*"
@@ -798,21 +803,74 @@ function App() {
         } catch (e) {
           console.error("Failed to parse topic lists data:", e);
         }
+      } else if (data?.record?.field_3011_raw) {
+        // Try the raw field version if the processed field is missing
+        try {
+          let rawData = data.record.field_3011_raw;
+          console.log("Found field_3011_raw, attempting to parse:", rawData);
+          
+          let topicLists;
+          if (typeof rawData === 'string') {
+            topicLists = JSON.parse(rawData);
+          } else {
+            topicLists = rawData;
+          }
+          
+          if (Array.isArray(topicLists) && topicLists.length > 0) {
+            console.log("Successfully parsed topic lists from raw field:", topicLists);
+            
+            // Update auth object with topic lists
+            setAuth(prevAuth => ({
+              ...prevAuth,
+              field_3011: JSON.stringify(topicLists)
+            }));
+            
+            // Process topic lists
+            processTopicLists(topicLists);
+          }
+        } catch (e) {
+          console.error("Failed to parse topic lists data from raw field:", e);
+        }
       } else if (data?.record?.field_2979) {
         // Fall back to field_2979 for backward compatibility
         try {
-          const topicLists = safeParseJSON(data.record.field_2979);
-          console.log("Loaded topic lists from field_2979:", topicLists);
+          const parsedCards = safeParseJSON(data.record.field_2979);
           
-          // Update auth object with topic lists
-          setAuth(prevAuth => ({
-            ...prevAuth,
-            field_2979: data.record.field_2979,
-            field_3011: data.record.field_2979 // Copy to field_3011 for future use
-          }));
-          
-          // Process topic lists into userTopics structure
-          processTopicLists(topicLists);
+          // Check if any of the cards have hasTopicList set to true
+          const hasTopicListSubjects = parsedCards
+            .filter(card => card.hasTopicList && card.template)
+            .map(card => ({
+              subject: card.subject,
+              examBoard: card.examBoard || card.exam_board,
+              examType: card.examType || card.exam_type
+            }));
+            
+          if (hasTopicListSubjects.length > 0) {
+            console.log("Found subjects with topic lists flag:", hasTopicListSubjects);
+            
+            // Generate topic lists for these subjects
+            generateTopicListsForSubjects(hasTopicListSubjects)
+              .then(generatedLists => {
+                if (generatedLists && generatedLists.length > 0) {
+                  console.log("Generated topic lists:", generatedLists);
+                  
+                  // Update auth with the newly generated lists
+                  setAuth(prevAuth => ({
+                    ...prevAuth,
+                    field_3011: JSON.stringify(generatedLists)
+                  }));
+                  
+                  // Process the newly generated topic lists
+                  processTopicLists(generatedLists);
+                  
+                  // Save the generated lists to Knack
+                  saveGeneratedLists(generatedLists);
+                }
+              })
+              .catch(error => {
+                console.error("Error generating topic lists:", error);
+              });
+          }
         } catch (e) {
           console.error("Failed to parse topic lists data from field_2979:", e);
         }
@@ -1559,6 +1617,49 @@ function App() {
                 }
               } catch (e) {
                 console.error("Error processing topic lists from field_3011:", e);
+              }
+            } else if (event.data.data?.userData?.topicLists) {
+              // Alternative source of topic lists from userData
+              try {
+                console.log("Topic lists found in userData.topicLists");
+                const topicLists = event.data.data.userData.topicLists;
+                
+                if (Array.isArray(topicLists) && topicLists.length > 0) {
+                  console.log("Using topic lists from userData:", topicLists);
+                  processTopicLists(topicLists);
+                  
+                  // Also update auth object to include field_3011 for future use
+                  event.data.data.field_3011 = JSON.stringify(topicLists);
+                }
+              } catch (e) {
+                console.error("Error processing topic lists from userData:", e);
+              }
+            } else {
+              console.log("No topic lists found in response. Checking for raw field_3011 in response");
+              // Look for field_3011_raw in case Knack is returning the raw field value
+              if (event.data.data?.field_3011_raw) {
+                try {
+                  let rawData = event.data.data.field_3011_raw;
+                  console.log("Found field_3011_raw, attempting to parse:", rawData);
+                  
+                  // Try to parse the raw data
+                  let topicLists;
+                  if (typeof rawData === 'string') {
+                    topicLists = JSON.parse(rawData);
+                  } else {
+                    topicLists = rawData;
+                  }
+                  
+                  if (Array.isArray(topicLists) && topicLists.length > 0) {
+                    console.log("Successfully parsed topic lists from raw field:", topicLists);
+                    processTopicLists(topicLists);
+                    
+                    // Update field_3011 in the auth data
+                    event.data.data.field_3011 = JSON.stringify(topicLists);
+                  }
+                } catch (e) {
+                  console.error("Error processing field_3011_raw:", e);
+                }
               }
             }
             
@@ -2526,6 +2627,79 @@ function App() {
     setTopicListModalOpen(true);
   };
 
+  // Save generated topic lists to Knack
+  const saveGeneratedLists = async (topicLists) => {
+    if (!auth || !recordId || !topicLists || !Array.isArray(topicLists) || topicLists.length === 0) {
+      console.log("Cannot save generated lists - missing required data");
+      return;
+    }
+    
+    try {
+      console.log("Saving generated topic lists to Knack:", topicLists);
+      
+      // Update Knack record with the topic lists in field_3011
+      const response = await fetch(`https://api.knack.com/v1/objects/object_102/records/${recordId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Knack-Application-Id': KNACK_APP_ID,
+          'X-Knack-REST-API-Key': KNACK_API_KEY
+        },
+        body: JSON.stringify({
+          field_3011: JSON.stringify(sanitizeForJSON(topicLists))
+        })
+      });
+      
+      if (!response.ok) {
+        console.error("Failed to save generated topic lists:", await response.text());
+        return false;
+      }
+      
+      console.log("Successfully saved generated topic lists to Knack");
+      return true;
+    } catch (error) {
+      console.error("Error saving generated topic lists:", error);
+      return false;
+    }
+  };
+
+  // Generate topic lists for multiple subjects based on their metadata
+  const generateTopicListsForSubjects = async (subjects) => {
+    if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
+      console.log("No subjects provided for topic list generation");
+      return [];
+    }
+    
+    console.log("Generating topic lists for subjects:", subjects);
+    const generatedLists = [];
+    
+    try {
+      // Process each subject
+      for (const subjectData of subjects) {
+        const { subject, examBoard, examType } = subjectData;
+        
+        // Skip if missing required data
+        if (!subject) continue;
+        
+        // Generate topic list using existing function
+        try {
+          const topicList = await generateTopicListForSubject(subject, examBoard, examType);
+          
+          if (topicList && topicList.topics && topicList.topics.length > 0) {
+            console.log(`Generated topic list for ${subject}:`, topicList);
+            generatedLists.push(topicList);
+          }
+        } catch (error) {
+          console.error(`Error generating topic list for ${subject}:`, error);
+        }
+      }
+      
+      return generatedLists;
+    } catch (error) {
+      console.error("Error in generateTopicListsForSubjects:", error);
+      return [];
+    }
+  };
 
   {/* High Priority Topics Modal */}
   {highPriorityModalOpen && (
