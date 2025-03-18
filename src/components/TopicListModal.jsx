@@ -8,6 +8,16 @@ const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY;
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY;
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY;
 
+// Helper function to format date
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
 const TopicListModal = ({ 
   subject, 
   examBoard, 
@@ -36,7 +46,7 @@ const TopicListModal = ({
     subject: subject,
     examBoard: examBoard,
     examType: examType,
-    topicCount: 0
+    topicCount: existingTopics?.length || 0
   });
 
   // Handle clicking outside the modal to close it
@@ -73,14 +83,14 @@ const TopicListModal = ({
   const generateTopics = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      console.log("Generating topics for:", { subject, examBoard, examType });
+      console.log(`Generating topic list for ${subject} (${examBoard} ${examType})`);
       
-      // Generate topics using the OpenAI API
+      // Generate the prompt
       const prompt = generateTopicPrompt(subject, examBoard, examType);
       
-      // Make the API call to ChatGPT
+      // Call OpenAI API
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -88,73 +98,75 @@ const TopicListModal = ({
           'Authorization': `Bearer ${OPENAI_API_KEY}`
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+          model: "gpt-3.5-turbo",
           messages: [
-            { role: 'system', content: 'You are a curriculum expert who creates topic lists for subjects.' },
-            { role: 'user', content: prompt }
+            {
+              role: "user",
+              content: prompt
+            }
           ],
           temperature: 0.7,
-          max_tokens: 1000
+          max_tokens: 2000
         })
       });
       
+      // Check for errors
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error("OpenAI API error:", errorText);
+        throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
       }
       
-      const data = await response.json();
-      const topicListText = data.choices[0].message.content;
+      // Parse the response
+      const result = await response.json();
+      console.log("OpenAI response:", result);
       
-      // Parse the topic list
-      let parsedTopics = [];
-      try {
-        // Try to parse as JSON first
-        if (topicListText.includes('[') && topicListText.includes(']')) {
-          const jsonMatch = topicListText.match(/\[([\s\S]*)\]/);
+      if (result.choices && result.choices.length > 0) {
+        const content = result.choices[0].message.content;
+        
+        // Parse the JSON content
+        let parsedTopics = [];
+        try {
+          // Try to extract JSON from the response
+          const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || 
+                           content.match(/```\s*([\s\S]*?)\s*```/) ||
+                           content.match(/\[\s*".*"\s*\]/);
+          
           if (jsonMatch) {
-            const jsonStr = `[${jsonMatch[1]}]`;
-            parsedTopics = JSON.parse(jsonStr.replace(/'/g, '"'));
+            // Try to parse the extracted JSON
+            parsedTopics = JSON.parse(jsonMatch[1]);
+          } else {
+            // If no JSON format found, try to parse the whole response
+            parsedTopics = JSON.parse(content);
+          }
+        } catch (jsonError) {
+          console.error("Error parsing JSON from OpenAI response:", jsonError);
+          
+          // Fallback: Extract topics using regex
+          const topicMatches = content.match(/"([^"]+)"/g) || content.match(/- ([^,\n]+)/g);
+          if (topicMatches) {
+            parsedTopics = topicMatches.map(match => match.replace(/["'-\s]+/g, '').trim());
           }
         }
         
-        // If JSON parsing failed, extract topics line by line
-        if (!parsedTopics.length) {
-          parsedTopics = topicListText
-            .split('\n')
-            .filter(line => line.trim())
-            .map(line => line.replace(/^\d+\.\s*/, '').trim())
-            .filter(topic => topic.length > 0);
+        // Set topics state
+        if (Array.isArray(parsedTopics)) {
+          // Filter out empty topics
+          const filteredTopics = parsedTopics.filter(topic => 
+            topic && typeof topic === 'string' && topic.trim().length > 0
+          );
+          
+          console.log("Parsed topics:", filteredTopics);
+          setTopics(filteredTopics);
+        } else {
+          console.error("Unexpected topics format:", parsedTopics);
+          setError("Invalid response format. Please try again.");
         }
-      } catch (parseError) {
-        console.error("Error parsing topic list:", parseError);
-        // Fallback to simple line splitting
-        parsedTopics = topicListText
-          .split('\n')
-          .filter(line => line.trim())
-          .map(line => line.replace(/^\d+\.\s*/, '').trim())
-          .filter(topic => topic.length > 0);
+      } else {
+        setError("No response from AI. Please try again.");
       }
       
-      // Clean up the topics to remove any JSON formatting artifacts
-      parsedTopics = parsedTopics
-        .filter(topic => typeof topic === 'string' && 
-                         topic.trim() !== '[' && 
-                         topic.trim() !== ']' &&
-                         topic.trim() !== '```json' && 
-                         topic.trim() !== '```' &&
-                         !topic.includes('```'))
-        .map(topic => {
-          // Remove quotes and commas that might be leftover from JSON
-          return topic.replace(/^["'](.*)["'],?$/, '$1')
-                      .replace(/["'](.*)["'],?$/, '$1')
-                      .replace(/,$/, '')
-                      .trim();
-        });
-      
-      console.log("Generated topics:", parsedTopics);
-      setTopics(parsedTopics);
-      
-      // Update metadata with new topic count
+      // Update metadata
       setListMetadata(prev => ({
         ...prev,
         created: new Date().toISOString(),
@@ -224,50 +236,40 @@ const TopicListModal = ({
     // This will be implemented later
   };
   
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { 
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // Button to view all topics
+  const handleViewAllTopics = () => {
+    setShowTopicButtons(true);
   };
-  
+
+  // Button to generate cards for a topic
+  const handleGenerateCards = () => {
+    if (selectedTopic) {
+      confirmCreateCards();
+    } else {
+      alert("Please select a topic first");
+    }
+  };
+
   return (
     <div className="topic-list-modal-overlay" onClick={handleOverlayClick}>
-      <div className="topic-list-modal">
+      <div className="topic-list-modal" onClick={e => e.stopPropagation()}>
         <div className="topic-list-header">
           <h2>{subject} Topics</h2>
-          <button 
-            className="close-modal-button" 
-            onClick={onClose}
-            aria-label="Close"
-          >
-            ✕
-          </button>
+          <button className="close-button" onClick={onClose}>&times;</button>
         </div>
         
-        <div className="topic-list-body">
+        <div className="topic-list-content">
+          {error && <div className="error-message">{error}</div>}
+          
           {isLoading ? (
-            <div className="loading-container">
-              <LoadingSpinner />
-              <p>Generating topic list for {subject}...</p>
-            </div>
-          ) : error ? (
-            <div className="error-message">
-              <p>{error}</p>
-              <button onClick={generateTopics}>Try Again</button>
-            </div>
+            <LoadingSpinner message="Generating topic list..." />
           ) : selectedTopic ? (
-            <div className="create-cards-confirmation">
-              <p>Create flashcards for <strong>{selectedTopic}</strong>?</p>
+            <div className="topic-confirmation">
+              <h3>Create Cards for Topic</h3>
+              <p>Generate flashcards for: <strong>{selectedTopic}</strong></p>
               <div className="confirmation-buttons">
-                <button onClick={cancelCreateCards}>Cancel</button>
-                <button onClick={confirmCreateCards} className="confirm-button">
-                  Yes, Create Cards
-                </button>
+                <button className="cancel-button" onClick={cancelCreateCards}>Cancel</button>
+                <button className="confirm-button" onClick={confirmCreateCards}>Generate Cards</button>
               </div>
             </div>
           ) : showTopicButtons ? (
@@ -345,6 +347,12 @@ const TopicListModal = ({
               </div>
               
               <div className="topic-list-actions">
+                <button 
+                  className="action-button view-all-button"
+                  onClick={handleViewAllTopics}
+                >
+                  View All Topics
+                </button>
                 <button 
                   className="action-button generate-cards-button"
                   onClick={handleShowTopicButtons}
