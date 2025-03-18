@@ -23,11 +23,21 @@ const TopicListModal = ({
   const [error, setError] = useState(null);
   const [regenerate, setRegenerate] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState(null);
+  const [showTopicButtons, setShowTopicButtons] = useState(false);
   
   // Check if we have existing topics
   const hasExistingTopics = existingTopics && 
                            Array.isArray(existingTopics) && 
                            existingTopics.length > 0;
+
+  // Meta information about the topic list
+  const [listMetadata, setListMetadata] = useState({
+    created: new Date().toISOString(),
+    subject: subject,
+    examBoard: examBoard,
+    examType: examType,
+    topicCount: 0
+  });
 
   // Handle clicking outside the modal to close it
   const handleOverlayClick = (e) => {
@@ -47,26 +57,19 @@ const TopicListModal = ({
       );
       console.log("Using existing topics:", formattedTopics);
       setTopics(formattedTopics);
+      
+      // Update metadata
+      setListMetadata(prev => ({
+        ...prev,
+        topicCount: formattedTopics.length
+      }));
     } else {
       // Generate new topics
       console.log("Generating new topics");
       generateTopics();
     }
+  }, [hasExistingTopics, existingTopics, regenerate]);
 
-    // Add ESC key handler for closing the modal
-    const handleEscKey = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleEscKey);
-    return () => {
-      window.removeEventListener('keydown', handleEscKey);
-    };
-  }, [subject, examBoard, examType, regenerate, hasExistingTopics, existingTopics, onClose]);
-
-  // Generate topics using OpenAI
   const generateTopics = async () => {
     setIsLoading(true);
     setError(null);
@@ -74,21 +77,21 @@ const TopicListModal = ({
     try {
       console.log("Generating topics for:", { subject, examBoard, examType });
       
-      // Generate the prompt
+      // Generate topics using the OpenAI API
       const prompt = generateTopicPrompt(subject, examBoard, examType);
       
-      // Make API call to OpenAI
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
+      // Make the API call to ChatGPT
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${OPENAI_API_KEY}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
         },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
+          model: 'gpt-3.5-turbo',
           messages: [
-            { role: "system", content: "You are an expert curriculum designer for educational content." },
-            { role: "user", content: prompt }
+            { role: 'system', content: 'You are a curriculum expert who creates topic lists for subjects.' },
+            { role: 'user', content: prompt }
           ],
           temperature: 0.7,
           max_tokens: 1000
@@ -132,8 +135,31 @@ const TopicListModal = ({
           .filter(topic => topic.length > 0);
       }
       
+      // Clean up the topics to remove any JSON formatting artifacts
+      parsedTopics = parsedTopics
+        .filter(topic => typeof topic === 'string' && 
+                         topic.trim() !== '[' && 
+                         topic.trim() !== ']' &&
+                         topic.trim() !== '```json' && 
+                         topic.trim() !== '```' &&
+                         !topic.includes('```'))
+        .map(topic => {
+          // Remove quotes and commas that might be leftover from JSON
+          return topic.replace(/^["'](.*)["'],?$/, '$1')
+                      .replace(/["'](.*)["'],?$/, '$1')
+                      .replace(/,$/, '')
+                      .trim();
+        });
+      
       console.log("Generated topics:", parsedTopics);
       setTopics(parsedTopics);
+      
+      // Update metadata with new topic count
+      setListMetadata(prev => ({
+        ...prev,
+        created: new Date().toISOString(),
+        topicCount: parsedTopics.length
+      }));
     } catch (error) {
       console.error("Error generating topic list:", error);
       setError("Failed to generate topic list. Please try again.");
@@ -187,6 +213,28 @@ const TopicListModal = ({
     setSelectedTopic(null);
   };
   
+  // Handle showing the topic selection view
+  const handleShowTopicButtons = () => {
+    setShowTopicButtons(true);
+  };
+  
+  // Handle the "Prioritise Topics" button (placeholder)
+  const handlePrioritiseTopics = () => {
+    console.log("Prioritise Topics clicked - functionality to be implemented");
+    // This will be implemented later
+  };
+  
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { 
+      day: 'numeric', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  
   return (
     <div className="topic-list-modal-overlay" onClick={handleOverlayClick}>
       <div className="topic-list-modal">
@@ -222,7 +270,7 @@ const TopicListModal = ({
                 </button>
               </div>
             </div>
-          ) : (
+          ) : showTopicButtons ? (
             <>
               <div className="topics-container">
                 <ul className="topics-list">
@@ -256,6 +304,70 @@ const TopicListModal = ({
                 </button>
               </div>
             </>
+          ) : (
+            <div className="topic-list-metadata">
+              <h3>Current Topic List</h3>
+              <div className="metadata-container">
+                <div className="metadata-row">
+                  <span className="metadata-label">Subject:</span>
+                  <span className="metadata-value">{subject}</span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-label">Exam Board:</span>
+                  <span className="metadata-value">{examBoard}</span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-label">Exam Type:</span>
+                  <span className="metadata-value">{examType}</span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-label">Created:</span>
+                  <span className="metadata-value">{formatDate(listMetadata.created)}</span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-label">Topics:</span>
+                  <span className="metadata-value">{listMetadata.topicCount}</span>
+                </div>
+              </div>
+              
+              <div className="topic-list-preview">
+                <h4>Topics</h4>
+                <div className="topics-preview">
+                  {topics.slice(0, 5).map((topic, index) => (
+                    <div key={index} className="topic-preview-item">{topic}</div>
+                  ))}
+                  {topics.length > 5 && (
+                    <div className="topic-preview-more">
+                      + {topics.length - 5} more topics...
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="topic-list-actions">
+                <button 
+                  className="action-button generate-cards-button"
+                  onClick={handleShowTopicButtons}
+                >
+                  Generate Cards
+                </button>
+                <button 
+                  className="action-button regenerate-button"
+                  onClick={() => {
+                    setRegenerate(true);
+                    generateTopics();
+                  }}
+                >
+                  Regenerate List
+                </button>
+                <button 
+                  className="action-button prioritise-button"
+                  onClick={handlePrioritiseTopics}
+                >
+                  Prioritise Topics
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

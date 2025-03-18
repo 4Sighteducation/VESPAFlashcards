@@ -116,7 +116,7 @@ const AICardGenerator = ({
   
   // Progress tracking
   const [completedSteps, setCompletedSteps] = useState(initialTopic ? {
-    1: true, 2: true, 3: true, 4: true
+    1: true, 2: true, 3: true, 4: true, 5: true
   } : {});
 
   // Log initial props for debugging
@@ -1110,6 +1110,19 @@ const AICardGenerator = ({
         setTimeout(() => generateCards(), 100);
         return; // Exit early since we already set the next step
       }
+      
+      // If we are on step 5 with initialTopic, move to step 7 directly
+      if (currentStep === 5 && initialTopic) {
+        // Mark step 6 as completed
+        setCompletedSteps(prev => ({...prev, 6: true}));
+        // Skip step 6 and go straight to generation
+        setIsGenerating(true);
+        setCurrentStep(7);
+        // Generate cards immediately
+        setTimeout(() => generateCards(), 100);
+        return;
+      }
+      
       setCurrentStep(currentStep + 1);
     }
   };
@@ -1123,6 +1136,11 @@ const AICardGenerator = ({
 
   // Validate current step
   const canProceed = () => {
+    // When we have initial topic, ensure steps can proceed
+    if (initialTopic && currentStep <= 5) {
+      return true;
+    }
+    
     switch (currentStep) {
       case 1: // Exam Type
         return !!formData.examType;
@@ -1474,16 +1492,33 @@ Use this format for different question types:
       prev.map(c => c.id === card.id ? {...c, added: true} : c)
     );
     
-    // Show success modal with this card
-    setSuccessModal({
-      show: true,
-      addedCards: [card]
-    });
+    // Don't show success modal, it's causing issues
+    // Instead just add a toast notification
+    const toast = document.createElement('div');
+    toast.className = 'toast-message';
+    toast.innerHTML = '✓ Card added to your bank!';
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.backgroundColor = '#4CAF50';
+    toast.style.color = 'white';
+    toast.style.padding = '12px 20px';
+    toast.style.borderRadius = '4px';
+    toast.style.zIndex = '9999';
+    toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    document.body.appendChild(toast);
     
-    // Auto-hide after 2 seconds
+    // Remove after 2 seconds
     setTimeout(() => {
-      setSuccessModal(prev => ({...prev, show: false}));
+      if (toast.parentNode) {
+        document.body.removeChild(toast);
+      }
     }, 2000);
+    
+    // Use the onSaveCards callback if provided
+    if (onSaveCards) {
+      onSaveCards([card]);
+    }
     
     // Trigger an explicit save operation to prevent data loss on refresh
     if (window.parent && window.parent.postMessage) {
@@ -1585,12 +1620,8 @@ Use this format for different question types:
         // Close any other modals that might be blocking this one
         console.log("Generated topics:", topics);
         
-        // Use a longer delay to ensure the topic modal is fully rendered first
-        setTimeout(() => {
-          // Force the options modal to appear
-          setShowOptionsExplanationModal(true);
-          console.log("Showing options explanation modal");
-        }, 1000);
+        // Don't automatically show the options explanation modal
+        // Just keep the topics modal open for selection
       }
     } catch (err) {
       setError(err.message);
@@ -2262,6 +2293,13 @@ Use this format for different question types:
       </div>
     );
   };
+
+  // When a topic is selected, we want to avoid showing the explanation modal
+  useEffect(() => {
+    if (initialTopic) {
+      setShowOptionsExplanationModal(false);
+    }
+  }, [initialTopic]);
 
   return (
     <div className="ai-card-generator">

@@ -719,4 +719,127 @@ button:disabled {
 
 .regenerate-button:hover {
   background-color: #e5e5e5;
+}
+
+.topic-list-metadata {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.metadata-container {
+  background-color: #f5f7fa;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.metadata-row {
+  display: flex;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eaedf2;
+  padding-bottom: 10px;
+}
+
+.metadata-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.metadata-label {
+  font-weight: 600;
+  width: 120px;
+  color: #4a5568;
+}
+
+.metadata-value {
+  flex: 1;
+  color: #2d3748;
+}
+
+.topic-list-preview {
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.topic-list-preview h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #2d3748;
+  font-size: 16px;
+}
+
+.topics-preview {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.topic-preview-item {
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  background-color: #f5f7fa;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.topic-preview-more {
+  padding: 10px 15px;
+  color: #718096;
+  font-style: italic;
+  text-align: center;
+  font-size: 14px;
+}
+
+.topic-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.action-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.generate-cards-button {
+  background-color: #4299e1;
+  color: white;
+}
+
+.generate-cards-button:hover {
+  background-color: #3182ce;
+}
+
+.regenerate-button {
+  background-color: #edf2f7;
+  color: #2d3748;
+}
+
+.regenerate-button:hover {
+  background-color: #e2e8f0;
+}
+
+.prioritise-button {
+  background-color: #f6ad55;
+  color: white;
+}
+
+.prioritise-button:hover {
+  background-color: #ed8936;
 } 

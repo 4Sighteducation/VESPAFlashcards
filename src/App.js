@@ -248,12 +248,15 @@ function App() {
   }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics]);
 
   // Save data to Knack - depends on saveToLocalStorage and showStatus
-  const saveData = useCallback(() => {
+  const saveData = useCallback((cards = null) => {
     if (!auth) return;
 
     setIsSaving(true);
 
     try {
+      // Use provided cards or the current state
+      const cardsToSave = cards || allCards;
+
       // Send data to parent window for saving to Knack
       if (window.parent !== window) {
         // Get the user info for saving
@@ -280,7 +283,10 @@ function App() {
           // Add additional fields for student-specific data if needed
           field_565: userInfo.tutorGroup || "",             // Group (Tutor Group)
           field_548: userInfo.yearGroup || "",              // Year Group
-          field_73: userRole                                // User Role
+          field_73: userRole,                               // User Role
+          // Ensure both field_2979 and field_2986 are populated for compatibility
+          field_2979: JSON.stringify(cardsToSave),          // Legacy cards field (main Card Bank)
+          field_2986: JSON.stringify(cardsToSave)           // New cards field (might be used in some versions)
         };
         
         console.log("Saving to Knack with additional fields:", additionalFields);
@@ -290,7 +296,7 @@ function App() {
             type: "SAVE_DATA",
             data: {
               recordId: recordId,
-              cards: allCards,
+              cards: cardsToSave,
               colorMapping: subjectColorMapping,
               spacedRepetition: spacedRepetitionData,
               userTopics: userTopics,
@@ -676,17 +682,37 @@ function App() {
       const data = await response.json();
       console.log("Loaded data from Knack:", data);
       
-      // Check if we have field_124 (flashcards)
-      if (data?.record?.field_124) {
+      // Check if we have field_2979 or field_2986 (flashcards)
+      let loadedCards = [];
+      if (data?.record?.field_2979) {
         try {
-          const cards = safeParseJSON(data.record.field_124);
+          const cards = safeParseJSON(data.record.field_2979);
           if (Array.isArray(cards) && cards.length > 0) {
-            console.log(`Loaded ${cards.length} cards from Knack`);
-            setAllCards(cards);
+            console.log(`Loaded ${cards.length} cards from field_2979`);
+            loadedCards = cards;
           }
         } catch (e) {
-          console.error("Failed to parse cards data:", e);
+          console.error("Failed to parse cards data from field_2979:", e);
         }
+      }
+      
+      // Try field_2986 if field_2979 is empty or failed
+      if (loadedCards.length === 0 && data?.record?.field_2986) {
+        try {
+          const cards = safeParseJSON(data.record.field_2986);
+          if (Array.isArray(cards) && cards.length > 0) {
+            console.log(`Loaded ${cards.length} cards from field_2986`);
+            loadedCards = cards;
+          }
+        } catch (e) {
+          console.error("Failed to parse cards data from field_2986:", e);
+        }
+      }
+      
+      // Set the loaded cards if we found any
+      if (loadedCards.length > 0) {
+        setAllCards(loadedCards);
+        updateSpacedRepetitionData(loadedCards);
       }
       
       // Check if we have field_3011 (topic lists)
@@ -700,6 +726,9 @@ function App() {
             ...prevAuth,
             field_3011: data.record.field_3011
           }));
+          
+          // Process topic lists into userTopics structure
+          processTopicLists(topicLists);
         } catch (e) {
           console.error("Failed to parse topic lists data:", e);
         }
@@ -715,15 +744,18 @@ function App() {
             field_2979: data.record.field_2979,
             field_3011: data.record.field_2979 // Copy to field_3011 for future use
           }));
+          
+          // Process topic lists into userTopics structure
+          processTopicLists(topicLists);
         } catch (e) {
           console.error("Failed to parse topic lists data from field_2979:", e);
         }
       }
       
       // Check if we have color mappings
-      if (data?.record?.field_165) {
+      if (data?.record?.field_3000) {
         try {
-          const colorMap = safeParseJSON(data.record.field_165);
+          const colorMap = safeParseJSON(data.record.field_3000);
           if (colorMap && typeof colorMap === 'object') {
             console.log("Loaded color mappings from Knack:", colorMap);
             setSubjectColorMapping(colorMap);
@@ -752,7 +784,35 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [auth, KNACK_APP_ID, KNACK_API_KEY, safeParseJSON]);
+  }, [auth, KNACK_APP_ID, KNACK_API_KEY, updateSpacedRepetitionData]);
+
+  // Process topic lists into userTopics structure
+  const processTopicLists = useCallback((topicLists) => {
+    if (!Array.isArray(topicLists) || topicLists.length === 0) return;
+    
+    const processedTopics = {};
+    
+    topicLists.forEach(list => {
+      if (list && list.subject) {
+        const subject = list.subject;
+        
+        // If this is the first topic list for this subject, initialize the array
+        if (!processedTopics[subject]) {
+          processedTopics[subject] = [];
+        }
+        
+        // Process the topics
+        if (Array.isArray(list.topics)) {
+          // Add all topics from this list
+          processedTopics[subject] = [...processedTopics[subject], ...list.topics];
+        }
+      }
+    });
+    
+    // Update the userTopics state with the processed data
+    setUserTopics(processedTopics);
+    console.log("Processed topic lists into userTopics format:", processedTopics);
+  }, []);
 
   // Functions for card operations - defined after their dependencies
   // Add a new card
@@ -1964,7 +2024,22 @@ function App() {
     }));
     
     // Add the new cards to the card bank
-    setAllCards(prevCards => [...prevCards, ...newCards]);
+    setAllCards(prevCards => {
+      const updatedCards = [...prevCards, ...newCards];
+      
+      // Immediately save to localStorage to prevent data loss on refresh
+      localStorage.setItem('flashcards', JSON.stringify(updatedCards));
+      console.log("Cards saved to localStorage immediately after adding");
+      
+      // Save to Knack if authenticated
+      if (auth && recordId) {
+        // Use the new saveData function that accepts cards parameter
+        saveData(updatedCards); // This will save to Knack
+        console.log("Saving cards to Knack immediately after adding");
+      }
+      
+      return updatedCards;
+    });
     
     // Show a success message
     showStatus(`Added ${newCards.length} new flashcards to Box 1!`, 3000);
@@ -1974,16 +2049,7 @@ function App() {
     
     // Update forceUpdate to ensure we get a fresh AICardGenerator next time
     setForceUpdate(prev => prev + 1);
-    
-    // Save the cards to storage
-    const updatedCards = [...allCards, ...newCards];
-    saveData(updatedCards);
-    
-    // Update spaced repetition data
-    updateSpacedRepetitionData(updatedCards);
-    
-    return newCards;
-  }, [allCards, calculateNextReviewDate, saveData, showStatus, subjectColorMapping, updateSpacedRepetitionData]);
+  }, [allCards, calculateNextReviewDate, saveData, showStatus, subjectColorMapping, auth, recordId]);
 
   // Load data when auth changes
   useEffect(() => {
