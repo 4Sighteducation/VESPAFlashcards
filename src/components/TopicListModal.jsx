@@ -90,50 +90,65 @@ const TopicListModal = ({
     const categorized = {};
     
     topics.forEach(topic => {
-      // Try to extract main category from topic
-      const parts = topic.split(':');
+      // Handle both string topics and object topics
+      const topicText = typeof topic === 'string' ? topic : (topic.topic || '');
       
-      if (parts.length > 1) {
-        // If topic has format "Category: Subtopic"
-        const category = parts[0].trim();
-        const subtopic = parts[1].trim();
+      // Skip empty topics
+      if (!topicText) return;
+      
+      try {
+        // Try to extract main category from topic
+        const parts = topicText.split(':');
         
-        if (!categorized[category]) {
-          categorized[category] = [];
-        }
-        
-        categorized[category].push(subtopic);
-      } else {
-        // For topics without clear category format
-        // Check if topic contains common category keywords
-        const mainCategories = [
-          "Introduction", "Foundations", "Basics", 
-          "Advanced", "Practical", "Theory",
-          "Application", "Analysis", "Physical", "Organic", "Inorganic"
-        ];
-        
-        let foundCategory = false;
-        
-        for (const category of mainCategories) {
-          if (topic.includes(category)) {
-            if (!categorized[category]) {
-              categorized[category] = [];
-            }
-            
-            categorized[category].push(topic);
-            foundCategory = true;
-            break;
-          }
-        }
-        
-        // If no category found, put in "Other Topics"
-        if (!foundCategory) {
-          if (!categorized["Other Topics"]) {
-            categorized["Other Topics"] = [];
+        if (parts.length > 1) {
+          // If topic has format "Category: Subtopic"
+          const category = parts[0].trim();
+          const subtopic = parts[1].trim();
+          
+          if (!categorized[category]) {
+            categorized[category] = [];
           }
           
-          categorized["Other Topics"].push(topic);
+          categorized[category].push(subtopic);
+        } else {
+          // For topics without clear category format
+          // Check if topic contains common category keywords
+          const mainCategories = [
+            "Introduction", "Foundations", "Basics", 
+            "Advanced", "Practical", "Theory",
+            "Application", "Analysis", "Physical", "Organic", "Inorganic"
+          ];
+          
+          let foundCategory = false;
+          
+          for (const category of mainCategories) {
+            if (topicText.includes(category)) {
+              if (!categorized[category]) {
+                categorized[category] = [];
+              }
+              
+              categorized[category].push(topicText);
+              foundCategory = true;
+              break;
+            }
+          }
+          
+          // If no category found, put in "Other Topics"
+          if (!foundCategory) {
+            if (!categorized["Other Topics"]) {
+              categorized["Other Topics"] = [];
+            }
+            
+            categorized["Other Topics"].push(topicText);
+          }
         }
+      } catch (error) {
+        // If any error occurs processing this topic, add it to "Other Topics"
+        console.error("Error processing topic:", topicText, error);
+        if (!categorized["Other Topics"]) {
+          categorized["Other Topics"] = [];
+        }
+        categorized["Other Topics"].push(topicText);
       }
     });
     
@@ -366,27 +381,33 @@ const TopicListModal = ({
       <div key={category} className="topic-category">
         <h4 className="category-title">{category}</h4>
         <ul className="category-topics">
-          {subtopics.map((topic, index) => (
-            <li key={`${category}-${index}`} className="topic-item view-only">
-              <span className="topic-name">{topic}</span>
-              <div className="topic-actions">
-                <button
-                  className="topic-action-button generate-button"
-                  onClick={() => handleSelectTopicForCards(topic)}
-                  title="Generate cards for this topic"
-                >
-                  <span role="img" aria-label="Generate">⚡</span>
-                </button>
-                <button
-                  className="topic-action-button delete-button"
-                  onClick={() => handleDeleteTopicConfirmation(topic)}
-                  title="Delete this topic"
-                >
-                  <span role="img" aria-label="Delete">❌</span>
-                </button>
-              </div>
-            </li>
-          ))}
+          {subtopics.map((topic, index) => {
+            // Handle both string topics and object topics
+            const topicText = typeof topic === 'string' ? topic : (topic.topic || '');
+            if (!topicText) return null;
+            
+            return (
+              <li key={`${category}-${index}`} className="topic-item view-only">
+                <span className="topic-name">{topicText}</span>
+                <div className="topic-actions">
+                  <button
+                    className="topic-action-button generate-button"
+                    onClick={() => handleSelectTopicForCards(topic)}
+                    title="Generate cards for this topic"
+                  >
+                    <span role="img" aria-label="Generate">⚡</span>
+                  </button>
+                  <button
+                    className="topic-action-button delete-button"
+                    onClick={() => handleDeleteTopicConfirmation(topic)}
+                    title="Delete this topic"
+                  >
+                    <span role="img" aria-label="Delete">❌</span>
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </div>
     ));

@@ -11,8 +11,15 @@ const TopicGenerationModal = ({
   progress = { current: 0, total: 0 },
   currentSubject = null
 }) => {
-  // If not open, don't render anything
-  if (!open) return null;
+  // If not open or missing required props, don't render anything
+  if (!open || !subjects || !Array.isArray(subjects) || subjects.length === 0 || !onClose || !onGenerate) {
+    console.log("TopicGenerationModal not rendering because:", { 
+      open, 
+      hasSubjects: !!subjects && Array.isArray(subjects) && subjects.length > 0,
+      hasCallbacks: !!onClose && !!onGenerate
+    });
+    return null;
+  }
   
   // Calculate progress percentage
   const progressPercentage = progress.total > 0 

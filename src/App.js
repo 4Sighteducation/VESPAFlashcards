@@ -1547,7 +1547,10 @@ function App() {
     // First check if we have auth and field_3011 data
     try {
       if (auth && auth.field_3011) {
-        const topicLists = JSON.parse(auth.field_3011);
+        const topicLists = typeof auth.field_3011 === 'string' 
+          ? JSON.parse(auth.field_3011)
+          : auth.field_3011;
+        
         console.log("Parsed topic lists from field_3011:", topicLists);
         
         if (Array.isArray(topicLists)) {
@@ -1557,8 +1560,8 @@ function App() {
             (!examBoard || list.examBoard === examBoard)
           );
           
-          if (subjectTopicList && Array.isArray(subjectTopicList.topics)) {
-            console.log("Found existing topic list:", subjectTopicList);
+          if (subjectTopicList && (Array.isArray(subjectTopicList.topics) || typeof subjectTopicList.topics === 'object')) {
+            console.log("Found existing topic list in field_3011:", subjectTopicList);
             existingTopics = subjectTopicList.topics;
             
             // Also update userTopics state for future reference
@@ -1567,7 +1570,7 @@ function App() {
               [subject]: subjectTopicList.topics
             }));
           } else {
-            console.log("No matching topic list found for:", subject, examBoard);
+            console.log("No matching topic list found in field_3011 for:", subject, examBoard);
           }
         }
       }
@@ -1586,13 +1589,16 @@ function App() {
     // Pass existingTopics to the modal when we open it
     setExistingTopicListData({
       topics: existingTopics || [],
-      examBoard: examBoard,
-      examType: examType,
+      examBoard: examBoard || "AQA",
+      examType: examType || "A-Level",
       subject: subject
     });
     
-    // Open the modal
+    // Open the topic list modal
     setTopicListModalOpen(true);
+    
+    // Ensure the topic generation modal is closed
+    setTopicGenerationModalOpen(false);
   }, [auth, userTopics]);
 
   // Handle selecting a topic from the topic list modal
@@ -1929,29 +1935,32 @@ function App() {
   const handleSaveTopicList = useCallback(async (topicListData, subject) => {
     console.log("Saving topic list:", topicListData);
 
-    // Clean up topics if they contain JSON artifacts
+    // Ensure topics array is properly formatted
+    let formattedTopics = [];
+    
     if (topicListData.topics && Array.isArray(topicListData.topics)) {
-      topicListData.topics = topicListData.topics.map(topicItem => {
-        let topic = typeof topicItem === 'string' ? topicItem : topicItem.topic;
+      // Process each topic - handle both string and object formats
+      formattedTopics = topicListData.topics.map(topicItem => {
+        // If it's already a string, use it directly
+        if (typeof topicItem === 'string') {
+          return { topic: topicItem.trim() };
+        }
         
-        // Remove surrounding quotes if present
-        topic = topic.replace(/^["'](.*)["']$/, '$1');
+        // If it's an object with a topic property, use that
+        if (topicItem && typeof topicItem === 'object' && topicItem.topic) {
+          return { topic: topicItem.topic.trim() };
+        }
         
-        // Remove any trailing commas
-        topic = topic.replace(/,$/, '');
-        
-        // Remove brackets that might be part of JSON structure
-        topic = topic.replace(/^\[|\]$/g, '');
-
-        return typeof topicItem === 'string' ? topic : { ...topicItem, topic };
-      });
-      
-      // Filter out any empty topics or JSON artifacts like '[' or ']'
-      topicListData.topics = topicListData.topics.filter(item => {
-        const topic = typeof item === 'string' ? item : item.topic;
-        return topic && topic.trim() !== '[' && topic.trim() !== ']';
-      });
+        // Return null for invalid items to be filtered out
+        return null;
+      }).filter(item => item !== null); // Remove any null items
     }
+    
+    // Update the topic list data with the formatted topics
+    const cleanedTopicListData = {
+      ...topicListData,
+      topics: formattedTopics
+    };
 
     // If this is a createCards request, launch AI card generator
     if (topicListData.createCards) {
@@ -1979,18 +1988,9 @@ function App() {
     
     // Each subject has an array of topic lists
     if (!updatedUserTopics[subject]) {
-      updatedUserTopics[subject] = [];
-    }
-    
-    // Check if we're updating an existing list or adding a new one
-    const existingListIndex = updatedUserTopics[subject].findIndex(list => list.id === topicListData.id);
-    
-    if (existingListIndex >= 0) {
-      // Update existing list
-      updatedUserTopics[subject][existingListIndex] = topicListData;
+      updatedUserTopics[subject] = formattedTopics;
     } else {
-      // Add new list
-      updatedUserTopics[subject].push(topicListData);
+      updatedUserTopics[subject] = formattedTopics;
     }
     
     // Update state
@@ -2007,7 +2007,10 @@ function App() {
       let field3011Data = [];
       try {
         if (auth.field_3011) {
-          const existingData = JSON.parse(auth.field_3011);
+          const existingData = typeof auth.field_3011 === 'string' 
+            ? JSON.parse(auth.field_3011)
+            : auth.field_3011;
+            
           if (Array.isArray(existingData)) {
             field3011Data = existingData;
           }
@@ -2018,25 +2021,25 @@ function App() {
       
       // Find and update or add the topic list for this subject
       const existingIndex = field3011Data.findIndex(item => 
-        (item.subject === subject || item.name === subject) && item.examBoard === topicListData.examBoard
+        (item.subject === subject || item.name === subject) && item.examBoard === cleanedTopicListData.examBoard
       );
       
       if (existingIndex >= 0) {
         // Update existing entry
         field3011Data[existingIndex] = {
           ...field3011Data[existingIndex],
-          topics: topicListData.topics,
+          topics: formattedTopics,
           updated: new Date().toISOString()
         };
       } else {
         // Add new entry
         field3011Data.push({
-          id: topicListData.id || `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
+          id: cleanedTopicListData.id || `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
           name: subject.toLowerCase(),
-          examBoard: topicListData.examBoard,
-          examType: topicListData.examType,
+          examBoard: cleanedTopicListData.examBoard,
+          examType: cleanedTopicListData.examType,
           subject: subject,
-          topics: topicListData.topics,
+          topics: formattedTopics,
           created: new Date().toISOString(),
           userId: auth?.id
         });
