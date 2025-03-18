@@ -224,48 +224,36 @@ const TopicListModal = ({
             </div>
           ) : (
             <>
-              <div className="topic-list-message">
-                {hasExistingTopics && !regenerate ? (
-                  <div className="success-message">
-                    <p>✨ Your topic list is ready! Now for the fun part...</p>
-                    <p>Click on any topic to create flashcards and start your learning journey!</p>
-                  </div>
-                ) : (
-                  <p>Here are some suggested topics for {subject} ({examType}, {examBoard}):</p>
-                )}
+              <div className="topics-container">
+                <ul className="topics-list">
+                  {topics.map((topic, index) => (
+                    <li 
+                      key={index} 
+                      className="topic-item"
+                      onClick={() => handleCreateCards(topic)}
+                    >
+                      <span className="topic-name">{topic}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
               
-              <div className="topic-list-grid">
-                {topics.map((topic, index) => (
-                  <button 
-                    key={index} 
-                    className="topic-button"
-                    onClick={() => handleCreateCards(topic)}
-                  >
-                    {topic}
-                  </button>
-                ))}
-              </div>
-              
-              <div className="topic-list-actions">
-                {!hasExistingTopics && (
-                  <button 
-                    className="save-button"
-                    onClick={handleSaveTopics}
-                    disabled={topics.length === 0}
-                  >
-                    Save Topic List
-                  </button>
-                )}
-                
-                {hasExistingTopics && !regenerate && (
-                  <button 
-                    className="regenerate-button"
-                    onClick={() => setRegenerate(true)}
-                  >
-                    Regenerate Topics
-                  </button>
-                )}
+              <div className="modal-actions">
+                <button 
+                  className="modal-button save-button"
+                  onClick={handleSaveTopics}
+                >
+                  Save Topic List
+                </button>
+                <button 
+                  className="modal-button regenerate-button"
+                  onClick={() => {
+                    setRegenerate(true);
+                    generateTopics();
+                  }}
+                >
+                  Regenerate Topics
+                </button>
               </div>
             </>
           )}
