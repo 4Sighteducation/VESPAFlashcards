@@ -253,13 +253,25 @@ function App() {
     }
   }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics]);
 
-  // Helper function to prevent circular references in JSON
+  // Function to sanitize objects for JSON serialization
   const sanitizeForJSON = (obj) => {
-    // Create a new object for the sanitized version
-    if (!obj) return obj;
-    
-    if (typeof obj !== 'object' || obj === null) {
+    if (obj === null || obj === undefined) {
       return obj;
+    }
+
+    // Handle simple types that are safe for JSON
+    if (typeof obj !== 'object' && typeof obj !== 'function') {
+      return obj;
+    }
+
+    // Don't try to sanitize functions
+    if (typeof obj === 'function') {
+      return null; // Convert functions to null
+    }
+    
+    // Handle Date objects
+    if (obj instanceof Date) {
+      return obj.toISOString();
     }
     
     // Handle arrays
@@ -268,31 +280,39 @@ function App() {
     }
     
     // Handle objects
-    const cleanObj = {};
-    for (const [key, value] of Object.entries(obj)) {
-      // Skip DOM elements and React internals
-      if (
-        key.startsWith('__react') || 
-        key.startsWith('_react') || 
-        (typeof value === 'object' && value !== null && (
-          value instanceof Element || 
-          value instanceof Node ||
-          value instanceof Window ||
-          value instanceof Event ||
-          (value.constructor && (
-            value.constructor.name === 'SyntheticEvent' ||
-            value.constructor.name.includes('React')
-          ))
-        ))
-      ) {
-        continue;
+    if (typeof obj === 'object') {
+      // Skip React synthetic events, DOM nodes, and other non-serializable objects
+      if (obj.nativeEvent || obj.target || obj.currentTarget || obj.view || obj._reactName) {
+        console.warn("Skipping non-serializable React event object", typeof obj);
+        return null;
       }
       
-      // Recursively sanitize nested objects
-      cleanObj[key] = sanitizeForJSON(value);
+      // Handle plain objects
+      const sanitized = {};
+      for (const [key, value] of Object.entries(obj)) {
+        // Skip non-serializable properties and functions
+        if (typeof value === 'function') {
+          continue;
+        }
+        
+        // Skip special React or DOM properties
+        if (key.startsWith('_') || key === 'nativeEvent' || key === 'target' || key === 'currentTarget' || key === 'view') {
+          continue;
+        }
+        
+        sanitized[key] = sanitizeForJSON(value);
+      }
+      return sanitized;
     }
     
-    return cleanObj;
+    // Fallback for any other case
+    try {
+      // Try to convert to string
+      return String(obj);
+    } catch (e) {
+      console.warn("Unable to sanitize object for JSON", e);
+      return null;
+    }
   };
 
   // Save data to Knack - depends on saveToLocalStorage and showStatus
@@ -338,6 +358,13 @@ function App() {
           console.error("Error parsing existing topic lists from auth:", error);
         }
         
+        // Safely sanitize all data to ensure it can be serialized for postMessage
+        const sanitizedCards = sanitizeForJSON(cardsToSave);
+        const sanitizedColorMapping = sanitizeForJSON(subjectColorMapping);
+        const sanitizedSpacedRep = sanitizeForJSON(spacedRepetitionData);
+        const sanitizedUserTopics = sanitizeForJSON(userTopics);
+        const sanitizedTopicLists = sanitizeForJSON(topicLists);
+        
         // Prepare additional fields for Object_102
         const additionalFields = {
           field_3029: userInfo.name || "",                  // User Name
@@ -349,52 +376,71 @@ function App() {
           field_548: userInfo.yearGroup || "",              // Year Group
           field_73: userRole,                               // User Role
           // Ensure both field_2979 and field_2986 are populated for compatibility
-          field_2979: JSON.stringify(sanitizeForJSON(cardsToSave)),          // Legacy cards field (main Card Bank)
-          field_2986: JSON.stringify(sanitizeForJSON(spacedRepetitionData.box1 || [])),  // Box 1
-          field_2987: JSON.stringify(sanitizeForJSON(spacedRepetitionData.box2 || [])),  // Box 2
-          field_2988: JSON.stringify(sanitizeForJSON(spacedRepetitionData.box3 || [])),  // Box 3
-          field_2989: JSON.stringify(sanitizeForJSON(spacedRepetitionData.box4 || [])),  // Box 4
-          field_2990: JSON.stringify(sanitizeForJSON(spacedRepetitionData.box5 || [])),  // Box 5
+          field_2979: JSON.stringify(sanitizedCards),       // Legacy cards field (main Card Bank)
+          field_2986: JSON.stringify(sanitizedSpacedRep.box1 || []),  // Box 1
+          field_2987: JSON.stringify(sanitizedSpacedRep.box2 || []),  // Box 2
+          field_2988: JSON.stringify(sanitizedSpacedRep.box3 || []),  // Box 3
+          field_2989: JSON.stringify(sanitizedSpacedRep.box4 || []),  // Box 4
+          field_2990: JSON.stringify(sanitizedSpacedRep.box5 || []),  // Box 5
           // Explicitly include topic lists
-          field_3011: JSON.stringify(sanitizeForJSON(topicLists))           // Topic lists field
+          field_3011: JSON.stringify(sanitizedTopicLists)   // Topic lists field
         };
         
         console.log("Saving to Knack with additional fields:", additionalFields);
         
-        window.parent.postMessage(
-          {
+        try {
+          // Convert to JSON and back to ensure it's fully serializable
+          const safePayload = JSON.parse(JSON.stringify({
             type: "SAVE_DATA",
             data: {
               recordId: recordId,
-              cards: sanitizeForJSON(cardsToSave),
-              colorMapping: sanitizeForJSON(subjectColorMapping),
-              spacedRepetition: sanitizeForJSON(spacedRepetitionData),
-              userTopics: sanitizeForJSON(userTopics),
+              cards: sanitizedCards,
+              colorMapping: sanitizedColorMapping,
+              spacedRepetition: sanitizedSpacedRep,
+              userTopics: sanitizedUserTopics,
               additionalFields: additionalFields,
-              topicLists: sanitizeForJSON(topicLists)  // Explicitly include topic lists in the main data
-            },
-          },
-          "*"
-        );
-
-        console.log("Saving data with additional user fields to Knack Object_102");
-        showStatus("Saving your flashcards...");
+              topicLists: sanitizedTopicLists
+            }
+          }));
+          
+          window.parent.postMessage(safePayload, "*");
+          console.log("Saving data with additional user fields to Knack Object_102");
+          showStatus("Saving your flashcards...");
+        } catch (e) {
+          console.error("Error saving data:", e);
+          
+          // Try one more time with minimal data to avoid serialization issues
+          try {
+            const minimalPayload = {
+              type: "SAVE_DATA",
+              data: {
+                recordId: recordId,
+                cards: JSON.parse(JSON.stringify(sanitizedCards)),
+                additionalFields: {
+                  field_2979: JSON.stringify(sanitizedCards),
+                  field_3011: JSON.stringify(sanitizedTopicLists)
+                }
+              }
+            };
+            
+            window.parent.postMessage(minimalPayload, "*");
+            showStatus("Saving your flashcards (simplified)...");
+          } catch (fallbackError) {
+            console.error("Final fallback error saving data:", fallbackError);
+            showStatus("Error saving your flashcards. Changes are saved locally only.", 3000, "error");
+          }
+        }
       }
       
       // Always save to localStorage as fallback
       saveToLocalStorage();
-      
-      // If we're in standalone mode, mark as saved
-      if (window.parent === window) {
-        setIsSaving(false);
-        showStatus("Saved successfully!");
-      }
-    } catch (error) {
-      console.error("Error saving data:", error);
+    } catch (e) {
+      console.error("Error in saveData:", e);
+      showStatus("Error saving data", 3000, "error");
+    } finally {
       setIsSaving(false);
-      showStatus("Error saving data");
     }
-  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, showStatus, saveToLocalStorage, recordId, getUserInfo]);
+  }, [auth, recordId, allCards, sanitizeForJSON, subjectColorMapping, spacedRepetitionData, userTopics, saveToLocalStorage, showStatus, getUserInfo, cleanHtmlTags]);
 
   // Generate a random vibrant color
   const getRandomColor = useCallback(() => {
@@ -2368,149 +2414,142 @@ function App() {
   // Handle saving a topic list
   const handleSaveTopicList = useCallback(async (topicListData, subject) => {
     console.log("Saving topic list:", topicListData);
-
-    // Ensure topics array is properly formatted
-    let formattedTopics = [];
     
-    if (topicListData.topics && Array.isArray(topicListData.topics)) {
-      // Process each topic - handle both string and object formats
-      formattedTopics = topicListData.topics.map(topicItem => {
-        // If it's already a string, use it directly
-        if (typeof topicItem === 'string') {
-          return { topic: topicItem.trim() };
-        }
-        
-        // If it's an object with a topic property, use that
-        if (topicItem && typeof topicItem === 'object' && topicItem.topic) {
-          return { topic: topicItem.topic.trim() };
-        }
-        
-        // Return null for invalid items to be filtered out
-        return null;
-      }).filter(item => item !== null); // Remove any null items
+    // Make sure we have valid data
+    if (!topicListData?.topics || !subject) {
+      console.error("Missing required topic list data or subject");
+      showStatus("Error: Missing topic list data", 3000, "error");
+      return false;
     }
     
-    // Update the topic list data with the formatted topics
-    const cleanedTopicListData = {
-      ...topicListData,
-      topics: formattedTopics
-    };
-
-    // If this is a createCards request, launch AI card generator
-    if (topicListData.createCards) {
-      console.log("Create cards requested for topic:", topicListData.topic);
+    try {
+      // Ensure we have the needed exam board and type
+      const examBoard = topicListData.examBoard;
+      const examType = topicListData.examType;
       
-      // Set the selected subject and topic
-      setSelectedTopic(typeof topicListData.topic === 'string' ? topicListData.topic : topicListData.topic.topic);
-      setSelectedSubject(subject);
-      
-      // Set the exam board and exam type from the topic list data
-      setCurrentAIGeneratorExamBoard(topicListData.examBoard);
-      setCurrentAIGeneratorExamType(topicListData.examType);
-      setCurrentAIGeneratorSubject(subject);
-      setCurrentAIGeneratorTopic(typeof topicListData.topic === 'string' ? topicListData.topic : topicListData.topic.topic);
-      
-      // Open the AI card generator
-      setShowAICardGenerator(true);
-      
-      // Return early - no need to save to Knack yet
-      return;
-    }
-
-    // If this is a normal save (not createCards)
-    const updatedUserTopics = { ...userTopics };
-    
-    // Each subject has an array of topic lists
-    if (!updatedUserTopics[subject]) {
-      updatedUserTopics[subject] = formattedTopics;
-    } else {
-      updatedUserTopics[subject] = formattedTopics;
-    }
-    
-    // Update state
-    setUserTopics(updatedUserTopics);
-    
-    // Save to localStorage
-    localStorage.setItem('userTopics', JSON.stringify(updatedUserTopics));
-    
-    // Only save to Knack if we have auth
-    if (auth && recordId) {
-      console.log("Auth object when saving topic list:", auth);
-      
-      // Get existing field_3011 data first to avoid overwriting other subjects
-      let field3011Data = [];
-      try {
-        if (auth.field_3011) {
-          const existingData = typeof auth.field_3011 === 'string' 
-            ? JSON.parse(auth.field_3011)
-            : auth.field_3011;
-            
-          if (Array.isArray(existingData)) {
-            field3011Data = existingData;
-          }
-        }
-      } catch (error) {
-        console.error("Error parsing existing field_3011 data:", error);
+      if (!examBoard || !examType) {
+        console.error("Missing exam board or type in topic list data");
+        showStatus("Error: Topic list is missing exam information", 3000, "error");
+        return false;
       }
       
-      // Find and update or add the topic list for this subject
-      const existingIndex = field3011Data.findIndex(item => 
-        (item.subject === subject || item.name === subject) && item.examBoard === cleanedTopicListData.examBoard
-      );
+      // Format the topics into a consistent structure
+      const formattedTopics = topicListData.topics.map(topic => {
+        if (typeof topic === 'string') {
+          return { topic: topic };
+        } else if (typeof topic === 'object' && topic !== null) {
+          // Make sure we have a 'topic' property
+          return {
+            ...topic,
+            topic: topic.topic || topic.name || String(topic)
+          };
+        }
+        return { topic: String(topic) };
+      });
       
-      if (existingIndex >= 0) {
-        // Update existing entry
-        field3011Data[existingIndex] = {
-          ...field3011Data[existingIndex],
-          topics: formattedTopics,
-          updated: new Date().toISOString()
-        };
-      } else {
-        // Add new entry
-        field3011Data.push({
-          id: cleanedTopicListData.id || `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
+      // Update local state for this subject
+      const topicKey = `${subject}-${examBoard}-${examType}`;
+      
+      // Update the userTopics state
+      setUserTopics(prevTopics => ({
+        ...prevTopics,
+        [topicKey]: formattedTopics
+      }));
+      
+      // Only save to Knack if we have auth
+      if (auth && recordId) {
+        console.log("Auth object when saving topic list:", auth);
+        
+        // Get existing field_3011 data to preserve other subject topic lists
+        let allTopicLists = [];
+        try {
+          if (auth.field_3011) {
+            const existingData = typeof auth.field_3011 === 'string' 
+              ? JSON.parse(auth.field_3011)
+              : auth.field_3011;
+              
+            if (Array.isArray(existingData)) {
+              allTopicLists = existingData;
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing existing field_3011 data:", error);
+        }
+        
+        // Log the existing topic lists for debugging
+        console.log("Existing topic lists before update:", allTopicLists);
+        
+        // Find the specific topic list to update based on subject, exam board, and exam type
+        const existingIndex = allTopicLists.findIndex(item => 
+          (item.subject === subject || item.name.toLowerCase() === subject.toLowerCase()) && 
+          item.examBoard === examBoard &&
+          item.examType === examType
+        );
+        
+        console.log(`Looking for topic list match: subject=${subject}, examBoard=${examBoard}, examType=${examType}. Found at index: ${existingIndex}`);
+        
+        // Create the new topic list entry
+        const newTopicList = {
+          id: existingIndex >= 0 ? allTopicLists[existingIndex].id : `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
           name: subject.toLowerCase(),
-          examBoard: cleanedTopicListData.examBoard,
-          examType: cleanedTopicListData.examType,
+          examBoard: examBoard,
+          examType: examType,
           subject: subject,
           topics: formattedTopics,
-          created: new Date().toISOString(),
+          updated: new Date().toISOString(),
+          created: existingIndex >= 0 ? allTopicLists[existingIndex].created : new Date().toISOString(),
           userId: auth?.id
-        });
-      }
-      
-      console.log("Saving to Knack field_3011:", JSON.stringify(field3011Data));
-      
-      try {
-        // Update the Knack record
-        const response = await fetch(`https://api.knack.com/v1/objects/object_102/records/${recordId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Knack-Application-Id': KNACK_APP_ID,
-            'X-Knack-REST-API-Key': KNACK_API_KEY
-          },
-          body: JSON.stringify({
-            field_3011: JSON.stringify(field3011Data)
-          })
-        });
+        };
         
-        console.log("Knack API response status:", response.status);
-        
-        if (!response.ok) {
-          console.error("Error saving topic list to Knack:", await response.text());
-          showStatus("Error saving topic list", 3000, "error");
+        // Either update the existing entry or add a new one
+        if (existingIndex >= 0) {
+          console.log(`Updating existing topic list at index ${existingIndex}`);
+          allTopicLists[existingIndex] = newTopicList;
         } else {
+          console.log("Adding new topic list");
+          allTopicLists.push(newTopicList);
+        }
+        
+        console.log("Updated topic lists array:", allTopicLists);
+        
+        // Save the updated topic lists to Knack
+        try {
+          // Convert to JSON string
+          const topicListsJson = JSON.stringify(allTopicLists);
+          
+          console.log("Saving to Knack field_3011. Data length:", topicListsJson.length);
+          
+          // Update the Knack record with ONLY the field_3011 data
+          const response = await fetch(`https://api.knack.com/v1/objects/object_102/records/${recordId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Knack-Application-Id': KNACK_APP_ID,
+              'X-Knack-REST-API-Key': KNACK_API_KEY
+            },
+            body: JSON.stringify({
+              field_3011: topicListsJson
+            })
+          });
+          
+          console.log("Knack API response status:", response.status);
+          
+          if (!response.ok) {
+            console.error("Error saving topic list to Knack:", await response.text());
+            showStatus("Error saving topic list", 3000, "error");
+            return false;
+          }
+          
           // Update auth state with new field_3011 data so it's available for future requests
           setAuth(prevAuth => ({
             ...prevAuth,
-            field_3011: JSON.stringify(field3011Data)
+            field_3011: topicListsJson
           }));
           
           // Also update the local copy of topic lists
-          processTopicLists(field3011Data);
+          processTopicLists(allTopicLists);
           
-          showStatus("Topic list saved to your account!", 3000);
+          showStatus("Topic list saved successfully!", 3000);
           
           // Update subject card to show it has a topic list
           setAllCards(prevCards => 
@@ -2524,13 +2563,22 @@ function App() {
               return card;
             })
           );
+          
+          return true;
+          
+        } catch (error) {
+          console.error("Error saving topic list:", error);
+          showStatus("Error saving topic list", 3000, "error");
+          return false;
         }
-      } catch (error) {
-        console.error("Error saving topic list:", error);
-        showStatus("Error saving topic list", 3000, "error");
+      } else {
+        showStatus("Topic list saved locally!", 3000);
+        return true;
       }
-    } else {
-      showStatus("Topic list saved locally!", 3000);
+    } catch (error) {
+      console.error("Error handling topic list save:", error);
+      showStatus("Error saving topic list", 3000, "error");
+      return false;
     }
   }, [auth, recordId, userTopics, showStatus, KNACK_APP_ID, KNACK_API_KEY, processTopicLists]);
 
