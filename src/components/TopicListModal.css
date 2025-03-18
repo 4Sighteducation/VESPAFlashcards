@@ -451,4 +451,168 @@
   .action-button {
     width: 100%;
   }
+}
+
+/* Add styles for the button icons */
+.button-icon {
+  margin-right: 6px;
+  font-size: 1.1em;
+}
+
+.topic-action-icon {
+  font-size: 1.1em;
+  display: inline-block;
+  margin: 0 3px;
+}
+
+/* Topics Explainer Modal */
+.topics-explainer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.topics-explainer-content {
+  background-color: white;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.explainer-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8f9fa;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.explainer-header h2 {
+  margin: 0;
+  color: #3a3a3a;
+  font-size: 1.5rem;
+}
+
+.explainer-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.explainer-intro {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+  color: #555;
+}
+
+.explainer-section {
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #eee;
+}
+
+.explainer-section:last-child {
+  border-bottom: none;
+}
+
+.explainer-section h3 {
+  font-size: 1.2rem;
+  color: #333;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.explainer-icon {
+  margin-right: 8px;
+  font-size: 1.2em;
+}
+
+.explainer-section p {
+  margin: 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+.explainer-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  background-color: #f8f9fa;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.never-show-again {
+  background: transparent;
+  border: none;
+  color: #888;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.got-it-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.got-it-button:hover {
+  background-color: #0069d9;
+}
+
+/* Form group for adding topic with category */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #555;
+}
+
+.main-topic-select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+
+/* Make action buttons more uniform */
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Adjust the topic actions to align icons */
+.topic-actions {
+  display: flex;
+  align-items: center;
 } 

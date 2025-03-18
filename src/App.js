@@ -846,33 +846,44 @@ function App() {
     }
   }, [auth, KNACK_APP_ID, KNACK_API_KEY, updateSpacedRepetitionData]);
 
-  // Process topic lists into userTopics structure
+  // Process topic lists from Knack or auth data
   const processTopicLists = useCallback((topicLists) => {
-    if (!Array.isArray(topicLists) || topicLists.length === 0) return;
+    if (!topicLists || !Array.isArray(topicLists)) return;
     
-    const processedTopics = {};
+    console.log("Processing topic lists:", topicLists);
     
+    // Create updated topics structure
+    const updatedTopics = { ...userTopics };
+    
+    // Process each topic list
     topicLists.forEach(list => {
-      if (list && list.subject) {
-        const subject = list.subject;
+      if (list && list.subject && list.topics) {
+        const subjectName = list.subject;
         
-        // If this is the first topic list for this subject, initialize the array
-        if (!processedTopics[subject]) {
-          processedTopics[subject] = [];
-        }
+        // Ensure topics is an array
+        const topics = Array.isArray(list.topics) ? list.topics : [list.topics];
         
-        // Process the topics
-        if (Array.isArray(list.topics)) {
-          // Add all topics from this list
-          processedTopics[subject] = [...processedTopics[subject], ...list.topics];
-        }
+        // Store topics in userTopics state
+        updatedTopics[subjectName] = topics;
+        
+        // Mark the subject's template card as having a topic list
+        setAllCards(prevCards => 
+          prevCards.map(card => {
+            if (card.subject === subjectName && card.template) {
+              return {
+                ...card,
+                hasTopicList: true
+              };
+            }
+            return card;
+          })
+        );
       }
     });
     
-    // Update the userTopics state with the processed data
-    setUserTopics(processedTopics);
-    console.log("Processed topic lists into userTopics format:", processedTopics);
-  }, []);
+    // Update state
+    setUserTopics(updatedTopics);
+  }, [userTopics]);
 
   // Functions for card operations - defined after their dependencies
   // Add a new card

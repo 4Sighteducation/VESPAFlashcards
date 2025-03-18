@@ -18,6 +18,59 @@ const formatDate = (dateString) => {
   });
 };
 
+// Explainer modal component
+const TopicsExplainer = ({ onClose, onNeverShowAgain }) => {
+  return (
+    <div className="topics-explainer-overlay">
+      <div className="topics-explainer-content">
+        <div className="explainer-header">
+          <h2>✨ Welcome to Topic Lists! ✨</h2>
+          <button className="close-button" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="explainer-body">
+          <p className="explainer-intro">Here's your quick guide to working with topic lists:</p>
+          
+          <div className="explainer-section">
+            <h3><span className="explainer-icon">📋</span> View & Organize</h3>
+            <p>Browse through AI-generated topics for your subject. Topics are organized by category to make studying easier!</p>
+          </div>
+          
+          <div className="explainer-section">
+            <h3><span className="explainer-icon">⚡</span> Generate Flashcards</h3>
+            <p>Click the lightning icon <span className="topic-action-icon">⚡</span> next to any topic to create AI-generated flashcards specifically for that topic.</p>
+          </div>
+          
+          <div className="explainer-section">
+            <h3><span className="explainer-icon">❌</span> Remove Topics</h3>
+            <p>Don't need a topic? Click the delete icon <span className="topic-action-icon">❌</span> to remove it from your list.</p>
+          </div>
+          
+          <div className="explainer-section">
+            <h3><span className="explainer-icon">➕</span> Add Your Own</h3>
+            <p>Click "Add Custom Topic" to create your own topics for anything that's missing.</p>
+          </div>
+          
+          <div className="explainer-section">
+            <h3><span className="explainer-icon">🔄</span> Refresh</h3>
+            <p>Need fresh ideas? "Regenerate" will create brand new topic suggestions for you.</p>
+          </div>
+          
+          <div className="explainer-section">
+            <h3><span className="explainer-icon">💾</span> Save Your Work</h3>
+            <p>Don't forget to click "Save Changes" when you're done to keep your customized topic list!</p>
+          </div>
+        </div>
+        
+        <div className="explainer-footer">
+          <button className="never-show-again" onClick={onNeverShowAgain}>Don't show again</button>
+          <button className="got-it-button" onClick={onClose}>Got it!</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TopicListModal = ({ 
   subject, 
   examBoard, 
@@ -39,6 +92,9 @@ const TopicListModal = ({
   const [showAddTopicForm, setShowAddTopicForm] = useState(false);
   const [topicToDelete, setTopicToDelete] = useState(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showExplainer, setShowExplainer] = useState(false);
+  const [mainTopicForCustom, setMainTopicForCustom] = useState("");
+  const [availableMainTopics, setAvailableMainTopics] = useState([]);
   
   // Check if we have existing topics
   const hasExistingTopics = existingTopics && 
@@ -54,6 +110,16 @@ const TopicListModal = ({
     topicCount: existingTopics?.length || 0
   });
 
+  // Check if explainer should be shown
+  useEffect(() => {
+    // Check localStorage for user preference
+    const explainerSetting = localStorage.getItem(`topicsExplainer_${userId || 'local'}`);
+    if (explainerSetting !== 'hide') {
+      // Only initialize, actual display happens on handleViewTopics
+      setShowExplainer(false);
+    }
+  }, [userId]);
+
   // Handle clicking outside the modal to close it
   const handleOverlayClick = (e) => {
     // Only close if the overlay itself was clicked (not its children)
@@ -61,6 +127,28 @@ const TopicListModal = ({
       onClose();
     }
   };
+
+  // Update available main topics when topics change
+  useEffect(() => {
+    if (topics && topics.length > 0) {
+      // Extract main topics from existing topics
+      const mainTopicSet = new Set();
+      
+      topics.forEach(topic => {
+        const topicText = typeof topic === 'string' ? topic : (topic.topic || '');
+        if (!topicText) return;
+        
+        // Check if it has a main category (contains colon)
+        const colonIndex = topicText.indexOf(':');
+        if (colonIndex > 0) {
+          const mainTopic = topicText.substring(0, colonIndex).trim();
+          mainTopicSet.add(mainTopic);
+        }
+      });
+      
+      setAvailableMainTopics(Array.from(mainTopicSet));
+    }
+  }, [topics]);
 
   useEffect(() => {
     console.log("TopicListModal mounted with:", { subject, examBoard, examType, existingTopics });
@@ -314,6 +402,23 @@ const TopicListModal = ({
   // Handle the "View Topics" button
   const handleViewTopics = () => {
     setShowTopicsList(true);
+    
+    // Check if explainer should be shown
+    const explainerSetting = localStorage.getItem(`topicsExplainer_${userId || 'local'}`);
+    if (explainerSetting !== 'hide') {
+      setShowExplainer(true);
+    }
+  };
+  
+  // Handle closing the explainer
+  const handleCloseExplainer = () => {
+    setShowExplainer(false);
+  };
+  
+  // Handle "never show again"
+  const handleNeverShowAgain = () => {
+    localStorage.setItem(`topicsExplainer_${userId || 'local'}`, 'hide');
+    setShowExplainer(false);
   };
   
   // Handle "Back to Summary" button
@@ -330,8 +435,16 @@ const TopicListModal = ({
   // Handle submitting the new topic form
   const handleSubmitNewTopic = () => {
     if (newCustomTopic.trim()) {
-      setTopics([...topics, newCustomTopic.trim()]);
+      let newTopicText = newCustomTopic.trim();
+      
+      // If a main topic is selected, format as "MainTopic: SubTopic"
+      if (mainTopicForCustom) {
+        newTopicText = `${mainTopicForCustom}: ${newTopicText}`;
+      }
+      
+      setTopics([...topics, newTopicText]);
       setNewCustomTopic("");
+      setMainTopicForCustom("");
       setShowAddTopicForm(false);
       
       // Update metadata
@@ -455,18 +568,38 @@ const TopicListModal = ({
           ) : showAddTopicForm ? (
             <div className="add-topic-form">
               <h3>Add New Topic</h3>
+              
+              {availableMainTopics.length > 0 && (
+                <div className="form-group">
+                  <label htmlFor="main-topic-select">Assign to a Main Topic (Optional):</label>
+                  <select
+                    id="main-topic-select"
+                    value={mainTopicForCustom}
+                    onChange={(e) => setMainTopicForCustom(e.target.value)}
+                    className="main-topic-select"
+                  >
+                    <option value="">-- None (Create standalone topic) --</option>
+                    {availableMainTopics.map((topic, index) => (
+                      <option key={index} value={topic}>{topic}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
               <div className="form-group">
                 <input
                   type="text"
                   value={newCustomTopic}
                   onChange={(e) => setNewCustomTopic(e.target.value)}
-                  placeholder="Enter a new topic..."
+                  placeholder={mainTopicForCustom ? "Enter a subtopic..." : "Enter a new topic..."}
                   className="topic-input"
                 />
               </div>
               <div className="form-actions">
                 <button className="cancel-button" onClick={() => setShowAddTopicForm(false)}>Cancel</button>
-                <button className="confirm-button" onClick={handleSubmitNewTopic}>Add Topic</button>
+                <button className="confirm-button" onClick={handleSubmitNewTopic}>
+                  <span className="button-icon">➕</span> Add Topic
+                </button>
               </div>
             </div>
           ) : showTopicsList ? (
@@ -484,7 +617,7 @@ const TopicListModal = ({
               
               <div className="topics-actions">
                 <button className="action-button add-topic-button" onClick={handleAddTopic}>
-                  Add Custom Topic
+                  <span className="button-icon">➕</span> Add Custom Topic
                 </button>
                 <button 
                   className="action-button regenerate-button"
@@ -493,10 +626,10 @@ const TopicListModal = ({
                     generateTopics();
                   }}
                 >
-                  Regenerate All Topics
+                  <span className="button-icon">🔄</span> Regenerate All Topics
                 </button>
                 <button className="action-button save-button" onClick={handleSaveTopics}>
-                  Save Changes
+                  <span className="button-icon">💾</span> Save Changes
                 </button>
               </div>
             </div>
@@ -531,13 +664,7 @@ const TopicListModal = ({
                   className="action-button view-all-button"
                   onClick={handleViewTopics}
                 >
-                  View Topics
-                </button>
-                <button 
-                  className="action-button generate-cards-button"
-                  onClick={handleGenerateCardsAction}
-                >
-                  Generate Cards
+                  <span className="button-icon">📋</span> View Topics / Generate Flashcards
                 </button>
                 <button 
                   className="action-button regenerate-button"
@@ -546,19 +673,27 @@ const TopicListModal = ({
                     generateTopics();
                   }}
                 >
-                  Regenerate List
+                  <span className="button-icon">🔄</span> Regenerate List
                 </button>
                 <button 
                   className="action-button prioritise-button"
                   onClick={handlePrioritiseTopics}
                 >
-                  Prioritise Topics
+                  <span className="button-icon">⭐</span> Prioritise Topics
                 </button>
               </div>
             </div>
           )}
         </div>
       </div>
+      
+      {/* Topics Explainer Modal */}
+      {showExplainer && (
+        <TopicsExplainer 
+          onClose={handleCloseExplainer}
+          onNeverShowAgain={handleNeverShowAgain}
+        />
+      )}
     </div>
   );
 };
