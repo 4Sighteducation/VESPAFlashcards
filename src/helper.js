@@ -198,3 +198,55 @@ export const needsReview = (card) => {
     default: return true;
   }
 };
+
+/**
+ * Calculates the next review date based on the box number
+ * @param {number} boxNumber - The box number (1-5)
+ * @returns {string} - ISO date string for the next review
+ */
+export const calculateNextReviewDate = (boxNumber) => {
+  const now = new Date();
+  
+  // Calculate days to add based on box
+  let daysToAdd;
+  switch (boxNumber) {
+    case 1: daysToAdd = 1; break;
+    case 2: daysToAdd = 2; break;
+    case 3: daysToAdd = 3; break;
+    case 4: daysToAdd = 7; break;
+    case 5: daysToAdd = 30; break; // Box 5 cards are reviewed monthly as a fallback
+    default: daysToAdd = 1;
+  }
+  
+  // Add days to current date
+  const nextDate = new Date(now);
+  nextDate.setDate(nextDate.getDate() + daysToAdd);
+  
+  return nextDate.toISOString();
+};
+
+/**
+ * Check if a card is due for review based on its last review date and box
+ * @param {Object} card - Card object with box and next_review properties
+ * @returns {boolean} - True if card is due for review
+ */
+export const isCardDueForReview = (card) => {
+  if (!card) return false;
+  
+  // If card doesn't have a next_review date, it's new and should be reviewed
+  if (!card.next_review) return true;
+  
+  // If card is in box 5, check monthly
+  if (card.box === 5) {
+    const lastReviewDate = new Date(card.last_reviewed || card.next_review);
+    const now = new Date();
+    const diffDays = Math.floor((now - lastReviewDate) / (1000 * 60 * 60 * 24));
+    return diffDays >= 30;
+  }
+  
+  // Compare the next review date with current date
+  const nextReviewDate = new Date(card.next_review);
+  const now = new Date();
+  
+  return now >= nextReviewDate;
+};
