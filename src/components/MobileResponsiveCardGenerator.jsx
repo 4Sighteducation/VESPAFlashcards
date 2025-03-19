@@ -294,30 +294,56 @@ const MobileResponsiveCardGenerator = ({
     }
   };
 
-  // Add all generated cards to the bank
+  // Handle adding all cards and closing
   const handleAddAllCards = () => {
-    if (!generatedCards.length) return;
+    const unadded = generatedCards.filter(card => !card.added);
     
-    console.log("Adding all cards to bank:", generatedCards);
+    if (unadded.length === 0) {
+      return; // No cards to add
+    }
     
-    // Process the card data for the card bank
-    const cardsToAdd = generatedCards.map((card, index) => ({
-      ...card,
-      id: card.id || `card-${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${index}`,
-      topic: topic,
-      subject: subject,
-      examType: topicData.examType || examType,
-      examBoard: topicData.examBoard || examBoard,
-      timestamp: new Date().toISOString(),
-      subjectColor: subjectColor || card.cardColor || "#06206e",
-      cardColor: card.cardColor || subjectColor || "#06206e",
-      boxNum: 1
-    }));
+    // Process the cards with correct metadata
+    const cardsToAdd = unadded.map(card => {
+      // Generate a valid topic color based on subject color
+      const topicColor = generateTopicColor(subjectColor);
+      
+      // Ensure topic is never "General"
+      const cardTopic = topic === "General" ? `${subject} - General` : topic;
+      
+      return {
+        ...card,
+        subject,
+        topic: cardTopic,
+        subjectColor: subjectColor,
+        cardColor: topicColor, // Use the generated topic color
+        // Add metadata for consistency
+        exam_board: examBoard,
+        exam_type: examType,
+        examBoard,
+        examType,
+        courseType: examType,
+        board: examBoard,
+        boxNum: 1, // Start in box 1 for spaced repetition
+        meta: {
+          exam_board: examBoard,
+          exam_type: examType,
+          examBoard,
+          examType
+        },
+        metadata: {
+          exam_board: examBoard,
+          exam_type: examType,
+          examBoard,
+          examType,
+          subject
+        }
+      };
+    });
     
     // Create a version formatted for Knack
     const knackFormatted = cardsToAdd.map(card => ({
-      question: card.question,
-      answer: card.answer,
+      question: card.front || "",
+      answer: card.back || "",
       topic: card.topic,
       subject: card.subject,
       examBoard: card.examBoard,
@@ -327,9 +353,12 @@ const MobileResponsiveCardGenerator = ({
       subjectColor: card.subjectColor,
       cardColor: card.cardColor,
       id: card.id,
-      metadata: card.metadata,
-      boxNum: 1,
-      timestamp: card.timestamp
+      metadata: {
+        examBoard: card.examBoard,
+        examType: card.examType,
+        subject: card.subject
+      },
+      boxNum: 1
     }));
     
     // JSON string for Knack field_2979 and field_2986
@@ -341,25 +370,44 @@ const MobileResponsiveCardGenerator = ({
     
     // Use the onSaveCards prop for saving the cards
     if (onSaveCards) {
-      // Add the Knack-specific fields to all cards in the batch to ensure they're properly saved
-      const enhancedCards = cardsToAdd.map(card => ({
-        ...card,
-        knackField2979: knackField2979,
-        knackField2986: knackField2986,
-        appendToKnack: true // Flag to append, not replace
-      }));
+      // Add the Knack-specific fields to every card in the batch to ensure they're properly saved
+      const enhancedCards = cardsToAdd.map(card => {
+        // Format each card's question and answer for direct storage
+        const formattedCard = {
+          ...card,
+          // Convert front/back to question/answer
+          question: card.front || "",
+          answer: card.back || "",
+          knackField2979: knackField2979,
+          knackField2986: knackField2986,
+          appendToKnack: true
+        };
+        return formattedCard;
+      });
       
       console.log("Calling onSaveCards with enhanced cards:", enhancedCards);
       onSaveCards(enhancedCards);
     } else if (onAddCard) {
       // Backward compatibility - add cards one by one
-      cardsToAdd.forEach((card, index) => {
-        // Add Knack fields to all cards
+      cardsToAdd.forEach(card => {
+        // Format for consistent structure
+        card.question = card.front || "";
+        card.answer = card.back || "";
         card.knackField2979 = knackField2979;
         card.knackField2986 = knackField2986;
-        card.appendToKnack = true; // Flag to append, not replace
+        card.appendToKnack = true;
         onAddCard(card);
       });
+    }
+    
+    // Trigger immediate save operations
+    if (window.parent && window.parent.postMessage) {
+      window.parent.postMessage({
+        type: "TRIGGER_SAVE",
+        knackField2979,
+        knackField2986,
+        appendToKnack: true
+      }, "*");
     }
     
     // Show success toast
@@ -384,16 +432,6 @@ const MobileResponsiveCardGenerator = ({
       }
       onClose();
     }, 2000);
-    
-    // Trigger save operations
-    if (window.parent && window.parent.postMessage) {
-      window.parent.postMessage({
-        type: "TRIGGER_SAVE",
-        knackField2979,
-        knackField2986,
-        appendToKnack: true // New flag to indicate appending
-      }, "*");
-    }
   };
 
   const handleRegenerateCards = () => {
@@ -563,22 +601,13 @@ const MobileResponsiveCardGenerator = ({
       subjectColor: subjectColor,
       topic: cardTopic, // Use the non-"General" topic
       boxNum: 1, // Start in box 1 for spaced repetition
+      // Convert front/back to question/answer for consistency
+      question: card.front || "",
+      answer: card.back || "",
       // Ensure all required metadata is present
-      exam_board: examBoard,
-      exam_type: examType,
       examBoard,
       examType,
-      courseType: examType,
-      board: examBoard,
-      meta: {
-        exam_board: examBoard,
-        exam_type: examType,
-        examBoard,
-        examType
-      },
       metadata: {
-        exam_board: examBoard,
-        exam_type: examType,
         examBoard,
         examType,
         subject
@@ -588,22 +617,17 @@ const MobileResponsiveCardGenerator = ({
     // Create Knack-specific JSON for field_2979 and field_2986
     const knackFormatted = [{
       id: enhancedCard.id,
-      question: enhancedCard.front || "",
-      answer: enhancedCard.back || "",
+      question: enhancedCard.question,
+      answer: enhancedCard.answer,
       subject: enhancedCard.subject,
       topic: enhancedCard.topic,
       cardColor: enhancedCard.cardColor,
       subjectColor: enhancedCard.subjectColor,
-      exam_board: enhancedCard.exam_board,
-      exam_type: enhancedCard.exam_type,
       examBoard: enhancedCard.examBoard,
       examType: enhancedCard.examType,
-      courseType: enhancedCard.courseType,
-      board: enhancedCard.board,
-      meta: enhancedCard.meta,
-      metadata: enhancedCard.metadata,
-      boxNum: 1,
-      timestamp: enhancedCard.timestamp
+      boxNum: enhancedCard.boxNum,
+      timestamp: enhancedCard.timestamp,
+      metadata: enhancedCard.metadata
     }];
     
     // Create JSON strings for Knack fields
@@ -655,7 +679,7 @@ const MobileResponsiveCardGenerator = ({
         type: "TRIGGER_SAVE",
         knackField2979: enhancedCard.knackField2979,
         knackField2986: enhancedCard.knackField2986,
-        appendToKnack: true // New flag to indicate appending
+        appendToKnack: true
       }, "*");
     }
   };

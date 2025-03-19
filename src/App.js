@@ -388,11 +388,42 @@ function App() {
           field_73: userRole,                               // User Role
           // Ensure both field_2979 and field_2986 are populated for compatibility
           field_2979: JSON.stringify(sanitizedCards),       // Legacy cards field (main Card Bank)
-          field_2986: JSON.stringify(sanitizedSpacedRep.box1 || []),  // Box 1
-          field_2987: JSON.stringify(sanitizedSpacedRep.box2 || []),  // Box 2
-          field_2988: JSON.stringify(sanitizedSpacedRep.box3 || []),  // Box 3
-          field_2989: JSON.stringify(sanitizedSpacedRep.box4 || []),  // Box 4
-          field_2990: JSON.stringify(sanitizedSpacedRep.box5 || []),  // Box 5
+          // Store only card IDs and review dates in spaced repetition boxes
+          field_2986: JSON.stringify((sanitizedSpacedRep.box1 || []).map(item => 
+            item ? { 
+              cardId: item.cardId, 
+              lastReviewed: item.lastReviewed, 
+              nextReviewDate: item.nextReviewDate 
+            } : null
+          ).filter(Boolean)),  // Box 1
+          field_2987: JSON.stringify((sanitizedSpacedRep.box2 || []).map(item => 
+            item ? { 
+              cardId: item.cardId, 
+              lastReviewed: item.lastReviewed, 
+              nextReviewDate: item.nextReviewDate 
+            } : null
+          ).filter(Boolean)),  // Box 2
+          field_2988: JSON.stringify((sanitizedSpacedRep.box3 || []).map(item => 
+            item ? { 
+              cardId: item.cardId, 
+              lastReviewed: item.lastReviewed, 
+              nextReviewDate: item.nextReviewDate 
+            } : null
+          ).filter(Boolean)),  // Box 3
+          field_2989: JSON.stringify((sanitizedSpacedRep.box4 || []).map(item => 
+            item ? { 
+              cardId: item.cardId, 
+              lastReviewed: item.lastReviewed, 
+              nextReviewDate: item.nextReviewDate 
+            } : null
+          ).filter(Boolean)),  // Box 4
+          field_2990: JSON.stringify((sanitizedSpacedRep.box5 || []).map(item => 
+            item ? { 
+              cardId: item.cardId, 
+              lastReviewed: item.lastReviewed, 
+              nextReviewDate: item.nextReviewDate 
+            } : null
+          ).filter(Boolean)),  // Box 5
           // Explicitly include topic lists
           field_3011: JSON.stringify(sanitizedTopicLists)   // Topic lists field
         };
@@ -422,6 +453,17 @@ function App() {
           
           // Try one more time with minimal data to avoid serialization issues
           try {
+            // Create minimal box data with only required fields
+            const createMinimalBoxData = (box) => {
+              return (box || [])
+                .filter(Boolean)
+                .map(item => ({
+                  cardId: item.cardId,
+                  lastReviewed: item.lastReviewed,
+                  nextReviewDate: item.nextReviewDate
+                }));
+            };
+            
             const minimalPayload = {
               type: "SAVE_DATA",
               data: {
@@ -429,6 +471,11 @@ function App() {
                 cards: JSON.parse(JSON.stringify(sanitizedCards)),
                 additionalFields: {
                   field_2979: JSON.stringify(sanitizedCards),
+                  field_2986: JSON.stringify(createMinimalBoxData(sanitizedSpacedRep.box1)),
+                  field_2987: JSON.stringify(createMinimalBoxData(sanitizedSpacedRep.box2)),
+                  field_2988: JSON.stringify(createMinimalBoxData(sanitizedSpacedRep.box3)),
+                  field_2989: JSON.stringify(createMinimalBoxData(sanitizedSpacedRep.box4)),
+                  field_2990: JSON.stringify(createMinimalBoxData(sanitizedSpacedRep.box5)),
                   field_3011: JSON.stringify(sanitizedTopicLists)
                 }
               }
@@ -959,6 +1006,97 @@ function App() {
         }
       }
       
+      // Load spaced repetition boxes directly from fields 2986-2990
+      try {
+        const box1 = data?.record?.field_2986 ? safeParseJSON(data.record.field_2986) : [];
+        const box2 = data?.record?.field_2987 ? safeParseJSON(data.record.field_2987) : [];
+        const box3 = data?.record?.field_2988 ? safeParseJSON(data.record.field_2988) : [];
+        const box4 = data?.record?.field_2989 ? safeParseJSON(data.record.field_2989) : [];
+        const box5 = data?.record?.field_2990 ? safeParseJSON(data.record.field_2990) : [];
+        
+        // Check if we have any box data
+        if (box1.length > 0 || box2.length > 0 || box3.length > 0 || box4.length > 0 || box5.length > 0) {
+          console.log("Found spaced repetition box data in Knack fields");
+          
+          // Ensure each box entry has proper format with cardId
+          const processBoxEntries = (entries) => entries.map(entry => {
+            // If entry is just a string (card ID), convert to proper format
+            if (typeof entry === 'string') {
+              return {
+                cardId: entry,
+                lastReviewed: new Date().toISOString(),
+                nextReviewDate: new Date().toISOString()
+              };
+            }
+            // If entry is an object with id but no cardId (full card object), extract id
+            else if (typeof entry === 'object' && entry !== null) {
+              if (entry.id && !entry.cardId) {
+                return {
+                  cardId: entry.id,
+                  lastReviewed: entry.lastReviewed || new Date().toISOString(),
+                  nextReviewDate: entry.nextReviewDate || new Date().toISOString()
+                };
+              }
+              // Return as is if it has cardId
+              else if (entry.cardId) {
+                return entry;
+              }
+            }
+            // Fall back to null for invalid entries
+            return null;
+          }).filter(Boolean); // Remove any null entries
+          
+          // Create spaced repetition data structure
+          const spacedRepData = {
+            box1: processBoxEntries(box1),
+            box2: processBoxEntries(box2),
+            box3: processBoxEntries(box3),
+            box4: processBoxEntries(box4),
+            box5: processBoxEntries(box5)
+          };
+          
+          console.log("Processed spaced repetition data:", spacedRepData);
+          setSpacedRepetitionData(spacedRepData);
+          
+          // Also update the boxNum property on cards
+          if (loadedCards.length > 0) {
+            const cardBoxMap = new Map();
+            
+            // Map card IDs to their box numbers
+            [1, 2, 3, 4, 5].forEach(boxNum => {
+              spacedRepData[`box${boxNum}`].forEach(entry => {
+                if (entry.cardId) {
+                  cardBoxMap.set(entry.cardId, {
+                    boxNum: boxNum,
+                    lastReviewed: entry.lastReviewed,
+                    nextReviewDate: entry.nextReviewDate
+                  });
+                }
+              });
+            });
+            
+            // Update cards with their box information
+            const updatedCards = loadedCards.map(card => {
+              const boxInfo = cardBoxMap.get(card.id);
+              if (boxInfo) {
+                return {
+                  ...card,
+                  boxNum: boxInfo.boxNum,
+                  lastReviewed: boxInfo.lastReviewed,
+                  nextReviewDate: boxInfo.nextReviewDate
+                };
+              }
+              return card;
+            });
+            
+            // Update the cards
+            setAllCards(updatedCards);
+          }
+        }
+      } catch (e) {
+        console.error("Error processing spaced repetition box data:", e);
+      }
+      
     } catch (error) {
       console.error("Error loading data from Knack:", error);
       setError(`Failed to load your data: ${error.message}`);
@@ -1252,7 +1390,7 @@ function App() {
         
         // Handle Knack-specific fields if present
         if (card.knackField2979 || card.knackField2986) {
-          console.log("Card has Knack-specific fields, triggering save to Knack");
+          console.log("Card has Knack-specific fields, triggering save");
           
           // Trigger save to Knack if needed
           if (window.parent && window.parent.postMessage) {
@@ -1264,7 +1402,6 @@ function App() {
             }, "*");
           }
         } else {
-          console.log("Card does not have Knack fields, saving locally only");
           // Standard save after updating state
           requestAnimationFrame(() => {
             saveData();
@@ -2016,46 +2153,31 @@ function App() {
       if (event.data && event.data.type === "TRIGGER_SAVE") {
         console.log("Explicit save request received");
         
-        // Check if we need to append cards rather than replace them
-        if (event.data.appendToKnack && event.data.knackField2979) {
-          console.log("Appending cards to existing cards in field_2979");
-          try {
-            // Parse the existing cards
-            const existingCards = auth && auth.field_2979 
-              ? JSON.parse(typeof auth.field_2979 === 'string' ? auth.field_2979 : '[]') 
-              : [];
-            
-            // Parse the new cards to append
-            const newCards = JSON.parse(event.data.knackField2979);
-            
-            // Combine the cards, ensuring no duplicates by ID
-            const cardIds = new Set(existingCards.map(c => c.id));
-            const combinedCards = [
-              ...existingCards,
-              ...newCards.filter(c => !cardIds.has(c.id))
-            ];
-            
-            // Set the updated cards in state
-            setAllCards(combinedCards);
-            
-            // Save the combined cards
-            saveData(combinedCards);
-            console.log(`Successfully appended ${newCards.length} cards. Total cards now: ${combinedCards.length}`);
-            return; // Exit after handling append
-          } catch (err) {
-            console.error("Error appending cards:", err);
-            // Fall back to regular save
-          }
+        // Check if we have Knack field data
+        if (event.data.knackField2979 && event.data.knackField2986) {
+          // Use our utility function to save to Knack
+          saveCardsToKnack(
+            event.data.knackField2979,
+            event.data.knackField2986,
+            event.data.appendToKnack || false
+          ).then(success => {
+            if (success) {
+              console.log("Cards saved successfully via TRIGGER_SAVE");
+            } else {
+              console.error("Failed to save cards via TRIGGER_SAVE");
+            }
+          });
+        } else {
+          // Regular save if no Knack fields provided
+          console.log("No Knack field data in TRIGGER_SAVE, using regular save");
+          saveData();
         }
-        
-        // Regular save (no append or append failed)
-        saveData();
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [saveData, showStatus]);
+  }, [saveData, showStatus, saveCardsToKnack]);
 
   // Handle opening the topic list modal
   const handleViewTopicList = useCallback((subject, examBoard, examType) => {
@@ -2431,7 +2553,7 @@ function App() {
           // Generate topic list for this subject
           const topicList = await generateTopicListForSubject(subject.name, subject.examBoard, subject.examType);
           
-          if (topicList && topicList.length > 0) {
+          if (topicList && topicList.topics && topicList.topics.length > 0) {
             // Create a topic list object
             const topicListObj = {
               id: `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
@@ -2515,41 +2637,175 @@ function App() {
     }
   };
 
+  // Utility function to save cards directly to Knack
+  const saveCardsToKnack = useCallback(async (knackField2979, knackField2986, append = true) => {
+    if (!recordId) {
+      console.error("No record ID available for saving to Knack");
+      return false;
+    }
+    
+    try {
+      console.log("Saving cards to Knack with record ID:", recordId);
+      
+      // If we're appending and have auth data, merge the cards first
+      let finalKnackField2979 = knackField2979;
+      
+      // For field_2986, we need to extract just the card IDs for spaced repetition
+      // Parse the cards to get their IDs
+      let cardsForBox1 = [];
+      
+      try {
+        // Parse the cards from field_2979
+        const allCards = JSON.parse(knackField2979);
+        
+        // Create minimal box 1 entries with card IDs
+        cardsForBox1 = allCards.map(card => ({
+          cardId: card.id,
+          lastReviewed: card.lastReviewed || new Date().toISOString(),
+          nextReviewDate: card.nextReviewDate || new Date().toISOString()
+        }));
+        
+        console.log(`Created ${cardsForBox1.length} card references for Box 1`);
+      } catch (err) {
+        console.error("Error processing cards for box 1:", err);
+        // Try to use the original field_2986 data
+        try {
+          cardsForBox1 = JSON.parse(knackField2986);
+        } catch (parseErr) {
+          console.error("Could not parse field_2986:", parseErr);
+          cardsForBox1 = [];
+        }
+      }
+      
+      // Create the box 1 JSON - ensure it contains only card references
+      const finalKnackField2986 = JSON.stringify(cardsForBox1);
+      
+      // Handle appending to existing cards in field_2979
+      if (append && auth && auth.field_2979) {
+        try {
+          // Parse the existing cards
+          const existingCards = JSON.parse(typeof auth.field_2979 === 'string' ? auth.field_2979 : '[]');
+          
+          // Parse the new cards to append
+          const newCards = JSON.parse(knackField2979);
+          
+          console.log(`Appending ${newCards.length} cards to ${existingCards.length} existing cards`);
+          
+          // Combine the cards, ensuring no duplicates by ID
+          const cardIds = new Set(existingCards.map(c => c.id));
+          const combinedCards = [
+            ...existingCards,
+            ...newCards.filter(c => !cardIds.has(c.id))
+          ];
+          
+          // Generate updated JSON for Knack field_2979
+          finalKnackField2979 = JSON.stringify(combinedCards);
+          
+          console.log(`Combined ${combinedCards.length} cards for Knack`);
+        } catch (err) {
+          console.error("Error merging cards for append:", err);
+          // Fall back to just sending the new cards
+        }
+      }
+      
+      // Make the API request to Knack
+      const response = await fetch(`https://api.knack.com/v1/objects/object_102/records/${recordId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Knack-Application-Id': KNACK_APP_ID,
+          'X-Knack-REST-API-Key': KNACK_API_KEY
+        },
+        body: JSON.stringify({
+          field_2979: finalKnackField2979,
+          field_2986: finalKnackField2986,
+          // Initialize other boxes as empty if missing
+          field_2987: auth?.field_2987 || "[]",
+          field_2988: auth?.field_2988 || "[]",
+          field_2989: auth?.field_2989 || "[]",
+          field_2990: auth?.field_2990 || "[]"
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Successfully saved cards to Knack:", data);
+      
+      // Update auth state with new field data
+      setAuth(prevAuth => ({
+        ...prevAuth,
+        field_2979: finalKnackField2979,
+        field_2986: finalKnackField2986,
+        field_2987: auth?.field_2987 || "[]",
+        field_2988: auth?.field_2988 || "[]",
+        field_2989: auth?.field_2989 || "[]",
+        field_2990: auth?.field_2990 || "[]"
+      }));
+      
+      // Show success message
+      showStatus("Cards saved successfully!", 3000);
+      return true;
+    } catch (error) {
+      console.error("Error saving cards to Knack:", error);
+      showStatus("Error saving cards", 3000, "error");
+      return false;
+    }
+  }, [recordId, auth, KNACK_APP_ID, KNACK_API_KEY, showStatus]);
+
   // Handle saving a topic list
   const handleSaveTopicList = useCallback(async (topicListData, subject) => {
     console.log("Saving topic list:", topicListData);
     
-    // Check if we need to create cards
-    if (topicListData.createCards && topicListData.cards && topicListData.cards.length > 0) {
-      console.log("Creating cards from topic list flow:", topicListData.cards);
+    // Check if we need to create cards and save to Knack fields
+    if (topicListData.createCards) {
+      console.log("Creating cards from topic list flow...");
       
-      // Process each card to ensure it has all required fields
-      const processedCards = topicListData.cards.map(card => {
-        // Make sure the card has required fields
-        const enhancedCard = {
-          ...card,
-          subject: topicListData.subject || subject,
-          examBoard: topicListData.examBoard,
-          examType: topicListData.examType,
-          topic: topicListData.topic || card.topic,
-          id: card.id || `card-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          timestamp: card.timestamp || new Date().toISOString(),
-          boxNum: card.boxNum || 1
-        };
+      // Check if we have Knack field data directly in the request
+      if (topicListData.knackField2979 || topicListData.knackField2986) {
+        console.log("Direct Knack field data found in request");
         
-        // Add card to collection
-        handleAddCard(enhancedCard);
-        return enhancedCard;
-      });
+        // Save directly to Knack using our utility function
+        const saveSuccess = await saveCardsToKnack(
+          topicListData.knackField2979, 
+          topicListData.knackField2986, 
+          topicListData.appendToKnack || true
+        );
+        
+        if (saveSuccess) {
+          console.log("Cards saved successfully to Knack");
+        } else {
+          console.error("Failed to save cards to Knack");
+        }
+      }
+      // If we have specific card data but no Knack fields
+      else if (topicListData.cards && topicListData.cards.length > 0) {
+        console.log("Processing cards from topic list:", topicListData.cards.length);
+        
+        // Process each card and add to collection
+        topicListData.cards.forEach(card => {
+          handleAddCard(card);
+        });
+        
+        showStatus(`Added ${topicListData.cards.length} cards to your collection!`, 3000);
+      }
+      // Backward compatibility - generate cards
+      else {
+        console.log("No card data found, using createCards flag only");
+        // This branch is for backward compatibility with the original flow
+        // Do nothing here as this case should be handled elsewhere
+      }
       
-      showStatus(`Added ${processedCards.length} cards to your collection!`, 3000);
-      
-      // If we have the createCards flag but no topic list to save, exit early
+      // If we're only saving cards and not topic list, return early
       if (!topicListData.topics) {
         return true;
       }
     }
     
+    // Handle standard topic list saving (below this point is unchanged)
     // Make sure we have valid data
     if (!topicListData?.topics || !subject) {
       console.error("Missing required topic list data or subject");

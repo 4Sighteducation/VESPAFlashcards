@@ -668,25 +668,28 @@ const TopicListModal = ({
                     onAddCard={confirmCreateCards}
                     onSaveCards={(cards) => {
                       console.log("TopicCardGeneratorButton onSaveCards received cards:", cards);
-                      // Pass the cards to the parent component for saving
+                      
+                      // Pass the cards to the parent component for saving to Knack
                       if (cards && cards.length > 0) {
-                        // Make sure the subject, examBoard, and examType are set correctly
-                        const enhancedCards = cards.map(card => ({
-                          ...card,
-                          subject: subject,
-                          examBoard: examBoard,
-                          examType: examType
-                        }));
+                        // Make sure the first card has the Knack field data
+                        const cardWithKnackData = cards.find(card => card.knackField2979 && card.knackField2986);
                         
-                        // Pass createCards flag and the cards data to parent
-                        onTopicListSave({
-                          topic: fullTopicText,
-                          subject,
-                          examBoard,
-                          examType,
-                          createCards: true,
-                          cards: enhancedCards
-                        }, subject);
+                        if (cardWithKnackData) {
+                          console.log("Found card with Knack data, passing to parent for saving");
+                          // Pass createCards flag and the Knack field data
+                          onTopicListSave({
+                            topic: fullTopicText,
+                            subject,
+                            examBoard,
+                            examType,
+                            createCards: true,
+                            knackField2979: cardWithKnackData.knackField2979,
+                            knackField2986: cardWithKnackData.knackField2986,
+                            appendToKnack: true
+                          }, subject);
+                        } else {
+                          console.error("No card with Knack data found!");
+                        }
                       }
                       
                       // Also save the topic list
