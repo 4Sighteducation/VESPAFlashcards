@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FaBolt } from 'react-icons/fa';
 import MobileResponsiveCardGenerator from './MobileResponsiveCardGenerator';
 import './TopicCardGeneratorButton.css';
 
@@ -23,12 +24,12 @@ const TopicCardGeneratorButton = ({
   const [showGenerator, setShowGenerator] = useState(false);
   
   // Open the card generator
-  const handleOpenGenerator = () => {
+  const openGenerator = () => {
     setShowGenerator(true);
   };
   
   // Close the card generator
-  const handleCloseGenerator = () => {
+  const closeGenerator = () => {
     setShowGenerator(false);
   };
   
@@ -37,34 +38,32 @@ const TopicCardGeneratorButton = ({
     topic,
     subject,
     examBoard,
-    examType
+    examType,
+    subjectColor
   };
   
   return (
-    <>
+    <div className="topic-card-generator-wrapper">
       <button 
         className="topic-card-generator-button"
-        onClick={handleOpenGenerator}
-        title="Generate flashcards for this topic"
+        onClick={openGenerator}
+        style={{ backgroundColor: subjectColor || '#06206e' }}
       >
-        <span className="generator-icon">⚡</span>
-        <span className="generator-text">Generate Cards</span>
+        <FaBolt className="generator-icon" />
+        <span>Generate Cards</span>
       </button>
       
       {showGenerator && (
-        <div className="mobile-generator-modal">
-          <MobileResponsiveCardGenerator
-            topicData={topicData}
-            subjectColor={subjectColor}
-            onAddCard={onAddCard}
-            onSaveCards={onSaveCards}
-            onClose={handleCloseGenerator}
-            auth={auth}
-            userId={userId}
-          />
-        </div>
+        <MobileResponsiveCardGenerator
+          topicData={topicData}
+          onClose={closeGenerator}
+          onAddCard={onAddCard}
+          onSaveCards={onSaveCards}
+          auth={auth}
+          userId={userId}
+        />
       )}
-    </>
+    </div>
   );
 };
 

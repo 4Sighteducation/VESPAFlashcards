@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import "./MobileResponsiveCardGenerator.css";
 import Flashcard from './Flashcard';
+import LoadingSpinner from "./LoadingSpinner";
 
 // Constants for question types
 const QUESTION_TYPES = [
-  { value: "multiple_choice", label: "Multiple Choice" },
-  { value: "short_answer", label: "Short Answer" },
-  { value: "essay", label: "Essay Style" },
-  { value: "acronym", label: "Acronym" }
+  { id: "multiple-choice", label: "Multiple Choice", description: "Questions with several possible answers" },
+  { id: "essay", label: "Essay Style", description: "Open-ended questions requiring longer responses" },
+  { id: "short-answer", label: "Short Answer", description: "Brief, focused questions with concise answers" },
+  { id: "acronym", label: "ACRONYM", description: "Memory aids using the first letter of keywords" }
 ];
 
 // Color palette for cards
@@ -48,7 +49,7 @@ const MobileResponsiveCardGenerator = ({
   // Form data state - simpler than the full AICardGenerator
   const [formData, setFormData] = useState({
     numCards: 5,
-    questionType: "multiple_choice",
+    questionType: "multiple-choice",
     subjectColor: subjectColor || BRIGHT_COLORS[0]
   });
 
@@ -178,24 +179,24 @@ Use this format for different question types:
 `;
         
         // Add format based on question type
-        if (formData.questionType === "multiple_choice") {
+        if (formData.questionType === "multiple-choice") {
           prompt += `[
   {
     "subject": "${subject}",
     "topic": "${topic}",
-    "questionType": "multiple_choice",
+    "questionType": "multiple-choice",
     "question": "Clear, focused question based on the curriculum",
     "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
     "correctAnswer": "The correct option exactly as written in options array",
     "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
   }
 ]`;
-        } else if (formData.questionType === "short_answer") {
+        } else if (formData.questionType === "short-answer") {
           prompt += `[
   {
     "subject": "${subject}",
     "topic": "${topic}",
-    "questionType": "short_answer",
+    "questionType": "short-answer",
     "question": "Clear, focused question from the curriculum",
     "keyPoints": ["Key point 1", "Key point 2", "Key point 3"],
     "detailedAnswer": "Complete and thorough explanation with all necessary information"
@@ -287,7 +288,7 @@ Use this format for different question types:
             front: `Acronym: ${card.acronym}`,
             back: `Explanation: ${card.explanation}`
           };
-        } else if (formData.questionType === "multiple_choice") {
+        } else if (formData.questionType === "multiple-choice") {
           // Clean all options and correct answer of any existing prefixes
           const cleanedOptions = card.options.map(option => 
             option.replace(/^[a-d]\)\s*/i, '').trim()
@@ -329,7 +330,7 @@ Use this format for different question types:
             front: card.question,
             back: `Correct Answer: ${letter}) ${correctAnswer}` // Format with letter prefix
           };
-        } else if (formData.questionType === "short_answer" || formData.questionType === "essay") {
+        } else if (formData.questionType === "short-answer" || formData.questionType === "essay") {
           // Create key points as bullet points if they exist
           const keyPointsHtml = card.keyPoints && card.keyPoints.length > 0
             ? card.keyPoints.map(point => `• ${point}`).join("<br/>")
@@ -538,16 +539,16 @@ Use this format for different question types:
           <label>Question Type:</label>
           <div className="mobile-question-types">
             {QUESTION_TYPES.map(type => (
-              <div key={type.value} className="mobile-question-type">
+              <div key={type.id} className="mobile-question-type">
                 <input
                   type="radio"
-                  id={`question-type-${type.value}`}
+                  id={`question-type-${type.id}`}
                   name="questionType"
-                  value={type.value}
-                  checked={formData.questionType === type.value}
+                  value={type.id}
+                  checked={formData.questionType === type.id}
                   onChange={handleChange}
                 />
-                <label htmlFor={`question-type-${type.value}`}>
+                <label htmlFor={`question-type-${type.id}`}>
                   {type.label}
                 </label>
               </div>
@@ -571,10 +572,9 @@ Use this format for different question types:
         )}
         
         {isGenerating ? (
-          <div className="loading-indicator">
-            <div className="spinner"></div>
+          <div className="loading-container">
+            <LoadingSpinner size="medium" />
             <p>Creating {formData.numCards} flashcards for {examBoard} {examType} {subject}...</p>
-            <p className="loading-subtext">Our AI is analyzing the curriculum and crafting questions for "{topic}"</p>
           </div>
         ) : generatedCards.length > 0 ? (
           <>
@@ -596,8 +596,8 @@ Use this format for different question types:
                 >
                   <div className="mobile-card-header">
                     <span className="card-type">
-                      {card.questionType === "multiple_choice" ? "Multiple Choice" : 
-                       card.questionType === "short_answer" ? "Short Answer" : 
+                      {card.questionType === "multiple-choice" ? "Multiple Choice" : 
+                       card.questionType === "short-answer" ? "Short Answer" : 
                        card.questionType === "essay" ? "Essay" : "Acronym"}
                     </span>
                     

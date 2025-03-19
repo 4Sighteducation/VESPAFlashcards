@@ -1,27 +1,31 @@
 /* TopicCardGeneratorButton.css */
 
+.topic-card-generator-wrapper {
+  margin: 10px 0;
+  display: inline-block;
+}
+
 .topic-card-generator-button {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
   background-color: #06206e;
   color: white;
   border: none;
-  border-radius: 5px;
-  padding: 8px 12px;
-  font-size: 0.9rem;
+  border-radius: 6px;
   font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  margin: 5px 0;
 }
 
 .topic-card-generator-button:hover {
-  background-color: #051a5e;
-  transform: translateY(-1px);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  filter: brightness(110%);
 }
 
 .topic-card-generator-button:active {
@@ -30,8 +34,28 @@
 }
 
 .generator-icon {
-  margin-right: 8px;
-  font-size: 1rem;
+  font-size: 1.1rem;
+}
+
+/* Mobile responsive adjustments */
+@media screen and (max-width: 640px) {
+  .topic-card-generator-button {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    width: 100%;
+  }
+}
+
+/* Very small devices */
+@media screen and (max-width: 320px) {
+  .topic-card-generator-button {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+  
+  .generator-icon {
+    font-size: 1rem;
+  }
 }
 
 /* Modal styles */
