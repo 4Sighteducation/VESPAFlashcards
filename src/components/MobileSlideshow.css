@@ -1,0 +1,409 @@
+/* Base layer - overlay that sits on top of everything */
+.mobile-slideshow-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Content container with transition for swipe effect */
+.mobile-slideshow-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.3s ease;
+  position: relative;
+}
+
+/* Only apply transition to non-swiping state to avoid lag */
+.mobile-slideshow-content.swiping {
+  transition: none;
+}
+
+/* Card container with responsive sizing */
+.mobile-slideshow-card-container {
+  width: 100%;
+  max-width: 95vw;
+  height: 70vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* Controls container that can fade in/out */
+.mobile-slideshow-controls {
+  position: absolute;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.mobile-slideshow-controls.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Close button positioned at the top right */
+.close-slideshow-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 40px;
+  height: 40px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 11;
+}
+
+.close-slideshow-button:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Card info at the bottom of the screen */
+.card-info {
+  position: absolute;
+  bottom: 80px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 10px;
+  border-radius: 8px;
+  margin: 0 15px;
+}
+
+.card-counter {
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.topic-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  text-align: center;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Navigation buttons at the bottom */
+.navigation-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 15px;
+}
+
+.nav-button {
+  padding: 12px 20px;
+  background-color: rgba(7, 155, 170, 0.9);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  touch-action: manipulation;
+}
+
+.nav-button:disabled {
+  background-color: rgba(120, 120, 120, 0.5);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: not-allowed;
+}
+
+.nav-button:not(:disabled):hover {
+  background-color: rgba(6, 132, 146, 0.9);
+}
+
+.nav-button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+/* Swipe indicators to show available swipe directions */
+.swipe-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.3s, background-color 0.3s;
+  z-index: 5;
+}
+
+.swipe-indicator.left {
+  left: 5px;
+}
+
+.swipe-indicator.right {
+  right: 5px;
+}
+
+.swipe-indicator.active {
+  opacity: 0.3;
+}
+
+.swipe-indicator .arrow {
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.swipe-indicator.active:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  opacity: 0.8;
+}
+
+/* No cards message */
+.no-cards-message {
+  background-color: white;
+  padding: 25px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 300px;
+}
+
+.no-cards-message h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.no-cards-message p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* Specific adjustments for portrait orientation */
+.mobile-slideshow-overlay.portrait .mobile-slideshow-card-container {
+  height: 65vh;
+}
+
+/* Specific adjustments for landscape orientation */
+.mobile-slideshow-overlay.landscape {
+  flex-direction: row;
+}
+
+.mobile-slideshow-overlay.landscape .mobile-slideshow-card-container {
+  height: 85vh;
+  max-width: 85vw;
+}
+
+.mobile-slideshow-overlay.landscape .card-info {
+  bottom: 20px;
+  width: auto;
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.mobile-slideshow-overlay.landscape .navigation-controls {
+  flex-direction: column;
+  bottom: auto;
+  top: 50%;
+  right: 15px;
+  left: auto;
+  transform: translateY(-50%);
+  gap: 15px;
+  padding: 0;
+}
+
+/* Media queries for various device sizes */
+/* Small mobile devices (portrait) */
+@media (max-width: 480px) {
+  .mobile-slideshow-card-container {
+    height: 60vh;
+  }
+  
+  .card-info {
+    bottom: 70px;
+    padding: 8px;
+  }
+  
+  .card-counter {
+    font-size: 14px;
+  }
+  
+  .topic-info {
+    font-size: 12px;
+  }
+  
+  .navigation-controls {
+    bottom: 15px;
+  }
+  
+  .nav-button {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+  
+  .close-slideshow-button {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+}
+
+/* Landscape phones */
+@media (max-height: 480px) and (orientation: landscape) {
+  .mobile-slideshow-overlay.landscape .mobile-slideshow-card-container {
+    height: 75vh;
+  }
+  
+  .mobile-slideshow-overlay.landscape .navigation-controls {
+    right: 10px;
+    gap: 10px;
+  }
+  
+  .mobile-slideshow-overlay.landscape .nav-button {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .mobile-slideshow-overlay.landscape .card-info {
+    bottom: 10px;
+    padding: 5px 8px;
+  }
+}
+
+/* Tablets (portrait) */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .mobile-slideshow-card-container {
+    max-width: 80vw;
+    height: 60vh;
+  }
+  
+  .card-info {
+    width: 60%;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Tablets (landscape) */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  .mobile-slideshow-overlay.landscape .mobile-slideshow-card-container {
+    max-width: 70vw;
+  }
+  
+  .mobile-slideshow-overlay.landscape .navigation-controls {
+    right: 30px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1025px) {
+  .mobile-slideshow-card-container {
+    max-width: 70vw;
+    height: 70vh;
+  }
+  
+  .card-info {
+    width: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 100px;
+  }
+  
+  .navigation-controls {
+    width: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Animation for swipe indicators */
+@keyframes pulse {
+  0% { opacity: 0.2; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.2; }
+}
+
+.swipe-indicator.active {
+  animation: pulse 2s infinite;
+}
+
+/* Fix for iOS Safari to prevent bounce scroll */
+html, body {
+  overscroll-behavior-y: contain;
+}
+
+.mobile-slideshow-overlay {
+  overscroll-behavior: contain;
+}
+
+/* Override Flashcard styles to ensure better display in slideshow */
+.mobile-slideshow-card-container .flashcard {
+  transform: none !important;
+}
+
+.mobile-slideshow-card-container .flashcard .flashcard-front,
+.mobile-slideshow-card-container .flashcard .flashcard-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.mobile-slideshow-card-container .flashcard .question-title {
+  font-size: clamp(1.2rem, 4vw, 1.8rem);
+  margin-bottom: 15px;
+}
+
+.mobile-slideshow-card-container .flashcard .options-container {
+  margin-top: 15px;
+}
+
+.mobile-slideshow-card-container .flashcard .options-container li {
+  font-size: clamp(0.9rem, 3vw, 1.2rem);
+  margin-bottom: 8px;
+} 

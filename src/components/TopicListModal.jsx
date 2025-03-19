@@ -3,6 +3,7 @@ import "./TopicListModal.css";
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
 import LoadingSpinner from "./LoadingSpinner";
 import TopicPrioritizationModal from "./TopicPrioritizationModal";
+import TopicCardGeneratorButton from "./TopicCardGeneratorButton";
 
 // API keys - using environment variables
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY;
@@ -423,7 +424,9 @@ const TopicListModal = ({
   
   // Handle selecting a topic to create cards
   const handleSelectTopicForCards = (topic) => {
-    setSelectedTopic(topic);
+    // When called from the legacy button (if still present somewhere)
+    const topicText = typeof topic === 'string' ? topic : (topic.topic || '');
+    setSelectedTopic(topicText);
     setShowCardGeneration(true);
   };
   
@@ -650,17 +653,26 @@ const TopicListModal = ({
             const topicText = typeof topic === 'string' ? topic : (topic.topic || '');
             if (!topicText) return null;
             
+            // Get the full topic text (with category if it's a subtopic)
+            const fullTopicText = `${category}: ${topicText}`;
+            
             return (
               <li key={`${category}-${index}`} className="topic-item view-only">
                 <span className="topic-name">{topicText}</span>
                 <div className="topic-actions">
-                  <button
-                    className="topic-action-button generate-button"
-                    onClick={() => handleSelectTopicForCards(topic)}
-                    title="Generate cards for this topic"
-                  >
-                    <span role="img" aria-label="Generate">⚡</span>
-                  </button>
+                  <TopicCardGeneratorButton 
+                    topic={fullTopicText}
+                    subject={subject}
+                    examBoard={examBoard}
+                    examType={examType}
+                    onAddCard={confirmCreateCards}
+                    onSaveCards={() => {
+                      handleSaveTopics(false);
+                    }}
+                    subjectColor="#06206e"
+                    auth={auth}
+                    userId={userId}
+                  />
                   <button
                     className="topic-action-button delete-button"
                     onClick={() => handleDeleteTopicConfirmation(topic)}

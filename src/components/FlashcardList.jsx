@@ -6,6 +6,7 @@ import "./FlashcardList.css";
 import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes } from 'react-icons/fa';
 import ColorEditor from "./ColorEditor";
 import { getContrastColor } from '../helper';
+import MobileSlideshow from "./MobileSlideshow";
 
 // ScrollManager component to handle scrolling to elements
 const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRefs }) => {
@@ -86,9 +87,11 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [cardsToPrint, setCardsToPrint] = useState([]);
   const [printTitle, setPrintTitle] = useState("");
-  const [showModalAndSelectedCard, setShowModalAndSelectedCard] = useState(null);
+  const [showModalAndSelectedCard, setShowModalAndSelectedCard] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(null);
+  const [showMobileSlideshow, setShowMobileSlideshow] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   
   // Add refs for scrolling to subjects and topics
   const subjectRefs = useRef({});
@@ -101,6 +104,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // Add new state for color editor
   const [colorEditorOpen, setColorEditorOpen] = useState(false);
   const [selectedSubjectForColor, setSelectedSubjectForColor] = useState(null);
+  const [selectedSubjectColor, setSelectedSubjectColor] = useState('#ffffff');
   
   // Add new state for mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState({});
@@ -121,9 +125,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-  
-  // Check if we're on a mobile device
-  const isMobile = window.innerWidth <= 768;
   
   // Toggle mobile menu for a subject
   const toggleMobileMenu = (subject, e) => {
@@ -393,98 +394,26 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     openPrintModal(groupedCards[subject][topic], `${subject} - ${topic}`);
   };
 
+  // Handle card click
   const handleCardClick = (card) => {
     // No longer automatically show slideshow on click
     // We'll use a dedicated button for this instead
   };
 
-  // Add the missing function to handle showing modal and setting selected card
+  // Function to handle showing modal and selected card
   const handleSetShowModalAndSelectedCard = (card) => {
     setSelectedCard(card);
-    setShowModalAndSelectedCard(true);
-  };
-
-  // Modified function to start slideshow for a subject or topic
-  const startSlideshow = (subject, topic, e) => {
-    if (e) e.stopPropagation(); // Prevent toggling the expansion
-
-    let slideshowCards = [];
     
-    if (topic) {
-      // Topic-level slideshow: Use cards from this specific topic
-      slideshowCards = groupedCards[subject][topic];
+    if (isMobile) {
+      // Use mobile slideshow on mobile devices
+      setShowMobileSlideshow(true);
     } else {
-      // Subject-level slideshow: Flatten all cards from all topics in this subject
-      const allTopics = Object.keys(groupedCards[subject] || {});
-      slideshowCards = allTopics.reduce((allCards, currentTopic) => {
-        return allCards.concat(groupedCards[subject][currentTopic] || []);
-      }, []);
-    }
-    
-    // Start slideshow if we have cards
-    if (slideshowCards && slideshowCards.length > 0) {
-      handleSetShowModalAndSelectedCard(slideshowCards[0]);
+      // Use traditional modal on desktop
+      setShowModalAndSelectedCard(true);
     }
   };
 
-  const renderCards = (cards, subject, topic, subjectColor) => {
-    const topicKey = `${subject}-${topic}`;
-    const isVisible = expandedTopics[topicKey];
-
-    // Function to create a slightly lighter version of the subject color for cards
-    const getCardColor = (baseColor) => {
-      if (!baseColor) return '#3cb44b'; // Default card color
-      
-      // Create a slightly lighter version (30% lighter)
-      const lightenColor = (color, percent) => {
-        // Remove the # if present
-        let hex = color.replace('#', '');
-        
-        // Convert to RGB
-        let r = parseInt(hex.substring(0, 2), 16);
-        let g = parseInt(hex.substring(2, 4), 16);
-        let b = parseInt(hex.substring(4, 6), 16);
-        
-        // Lighten
-        r = Math.min(255, Math.floor(r + (255 - r) * percent));
-        g = Math.min(255, Math.floor(g + (255 - g) * percent));
-        b = Math.min(255, Math.floor(b + (255 - b) * percent));
-        
-        // Convert back to hex
-        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-      };
-      
-      return lightenColor(baseColor, 0.3); // 30% lighter version
-    };
-
-    return (
-      <div className="topic-cards" style={{ display: isVisible ? 'flex' : 'none' }}>
-        {cards && cards.length > 0 ? (
-          cards.map((card) => {
-            // Apply the topic's color to cards without a specific color
-            const cardWithColor = {
-              ...card,
-              cardColor: card.cardColor || card.baseColor || getCardColor(subjectColor)
-            };
-            
-            return (
-              <Flashcard
-                key={card.id}
-                card={cardWithColor}
-                onDelete={() => onDeleteCard(card.id)}
-                onFlip={(card, isFlipped) => console.log(`Card flipped: ${isFlipped}`)}
-                onUpdateCard={onUpdateCard}
-              />
-            );
-          })
-        ) : (
-          <div className="no-cards-message">No cards in this topic</div>
-        )}
-      </div>
-    );
-  };
-
-  // CardModal component: Update for better responsiveness
+  // Traditional card modal for desktop
   const CardModal = () => {
     // Determine the current subject from selectedCard
     const currentSubject = selectedCard ? selectedCard.metadata?.subject || selectedCard.subject || "Unknown Subject" : "";
@@ -497,64 +426,33 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       : selectedCard?.topic || selectedCard?.metadata?.topic || "Unknown Topic";
 
     // Get all cards from the current subject or topic
-    let modalCards = [];
-    
-    if (currentSubject && groupedCards[currentSubject]) {
-      // Subject-level slideshow
-      if (Object.keys(groupedCards[currentSubject]).length > 0) {
-        // Get all cards from all topics in this subject
-        modalCards = Object.keys(groupedCards[currentSubject]).flatMap(
-          topic => groupedCards[currentSubject][topic]
-        );
-      }
-    }
-
-    // CRITICAL: Make sure modalCards is never empty if we have a selectedCard
-    if (modalCards.length === 0 && selectedCard) {
-      console.log("Using fallback single card mode");
-      modalCards = [selectedCard];
-    }
-
-    // Ensure selectedCard is included in modalCards
-    if (selectedCard && !modalCards.some(c => c.id === selectedCard.id)) {
-      modalCards.push(selectedCard);
-    }
+    const modalCards = getAllCardsForModal();
 
     // Find the index of the current card in the array
-    const currentIndex = modalCards.findIndex(c => c.id === selectedCard.id);
+    const currentIndex = getCurrentCardIndex();
     const totalCards = modalCards.length;
     
-    console.log(`CardModal debug - cards: ${totalCards}, currentIndex: ${currentIndex}, subject: ${currentSubject}, topic: ${currentTopic}`);
+    // Format the topic info display
+    const topicInfo = currentSubject && currentTopic ? `${currentSubject} - ${currentTopic}` : (selectedCard?.subject || '');
+    
+    // Get the card's background color and text color for styling
+    const cardBgColor = selectedCard?.cardColor || '#ffffff';
+    const cardTextColor = getContrastColor(cardBgColor);
 
     // Handler functions for navigation
     const handlePrevCard = (e) => {
-      e.stopPropagation(); // Stop the event from propagating
-      console.log("Navigating to previous card");
+      e.stopPropagation();
       if (currentIndex > 0) {
         setSelectedCard(modalCards[currentIndex - 1]);
       }
     };
     
     const handleNextCard = (e) => {
-      e.stopPropagation(); // Stop the event from propagating
-      console.log("Navigating to next card");
-      if (currentIndex < totalCards - 1) {
+      e.stopPropagation();
+      if (currentIndex < modalCards.length - 1) {
         setSelectedCard(modalCards[currentIndex + 1]);
       }
     };
-
-    // Get topic information for display - ensure we never display "null"
-    const topicInfo = currentTopic && currentTopic !== "Unknown Topic"
-      ? `${currentSubject} | ${currentTopic}`
-      : currentSubject;
-
-    // Responsive layout variables
-    const isMobile = window.innerWidth <= 768;
-    const isLandscape = window.innerWidth > window.innerHeight;
-
-    // Safely determine card color accounting for missing properties
-    const cardBgColor = selectedCard?.cardColor || '#3cb44b';
-    const cardTextColor = getContrastColor(cardBgColor);
 
     return (
       <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
@@ -601,7 +499,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
                 disabled={currentIndex <= 0}
                 className="nav-button prev"
               >
-                {isMobile ? "← Previous" : "Previous Card"}
+                Previous Card
               </button>
               
               <button 
@@ -609,7 +507,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
                 disabled={currentIndex >= totalCards - 1}
                 className="nav-button next"
               >
-                {isMobile ? "Next →" : "Next Card"}
+                Next Card
               </button>
             </div>
           </div>
@@ -617,6 +515,39 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       </div>
     );
   };
+
+  // Helper function to get all cards for the modal based on the selected card
+  function getAllCardsForModal() {
+    if (!selectedCard) return [];
+    
+    const currentSubject = selectedCard.metadata?.subject || selectedCard.subject || "Unknown Subject";
+    
+    if (currentSubject && groupedCards[currentSubject]) {
+      // Subject-level slideshow
+      if (Object.keys(groupedCards[currentSubject]).length > 0) {
+        // Get all cards from all topics in this subject
+        const allCards = Object.keys(groupedCards[currentSubject]).flatMap(
+          topic => groupedCards[currentSubject][topic]
+        );
+        
+        // If we have cards and the selected card isn't in the array, add it
+        if (allCards.length > 0 && !allCards.some(c => c.id === selectedCard.id)) {
+          allCards.push(selectedCard);
+        }
+        
+        return allCards;
+      }
+    }
+    
+    // Fallback to just the selected card
+    return [selectedCard];
+  }
+  
+  // Helper function to get the current card index in the modal cards array
+  function getCurrentCardIndex() {
+    const allCards = getAllCardsForModal();
+    return allCards.findIndex(c => c.id === selectedCard.id);
+  }
 
   // Function to delete all cards in a topic
   const deleteTopicCards = (subject, topic) => {
@@ -868,6 +799,44 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     closeColorEditor();
   };
 
+  // Function to render cards in a topic
+  const renderCards = (topicCards, subject, topic, subjectColor) => {
+    const topicKey = `${subject}-${topic}`;
+    const isTopicExpanded = expandedTopics[topicKey];
+    
+    if (!isTopicExpanded) return null;
+    
+    return (
+      <div className="cards-container">
+        {topicCards.map(card => (
+          <div 
+            key={card.id} 
+            className="card-wrapper"
+            onClick={() => handleSetShowModalAndSelectedCard(card)}
+          >
+            <Flashcard 
+              card={card} 
+              onDelete={() => onDeleteCard(card.id)}
+              onFlip={(card, isFlipped) => console.log(`Card flipped: ${isFlipped}`)}
+              onUpdateCard={onUpdateCard}
+              showButtons={false}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Check for mobile device on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Render the accordion structure with subjects and topics
   return (
     <div className="flashcard-list">
@@ -1024,48 +993,51 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
         })}
       </div>
 
-      {showModalAndSelectedCard && <CardModal />}
-
-      {/* Delete Confirmation Modal */}
+      {/* Show traditional card modal for desktop */}
+      {showModalAndSelectedCard && !isMobile && selectedCard && <CardModal />}
+      
+      {/* Show mobile slideshow for mobile devices */}
+      {showMobileSlideshow && isMobile && selectedCard && (
+        <MobileSlideshow
+          cards={getAllCardsForModal()}
+          initialCardIndex={getCurrentCardIndex()}
+          onClose={() => setShowMobileSlideshow(false)}
+          onDeleteCard={onDeleteCard}
+          onUpdateCard={onUpdateCard}
+        />
+      )}
+      
+      {/* Print modal */}
+      {printModalOpen && cardsToPrint.length > 0 && (
+        <PrintModal
+          cards={cardsToPrint}
+          title={printTitle}
+          onClose={() => setPrintModalOpen(false)}
+        />
+      )}
+      
+      {/* Color editor modal */}
+      {colorEditorOpen && selectedSubjectForColor && (
+        <ColorEditor
+          initialColor={selectedSubjectColor}
+          onSave={(color, applyToAll) => handleColorChange(color, applyToAll)}
+          onCancel={closeColorEditor}
+          showApplyToAll={true}
+        />
+      )}
+      
+      {/* Delete confirmation */}
       {showDeleteConfirmation && (
         <div className="delete-confirm-overlay">
           <div className="delete-confirm-modal">
-            <h3>Confirm Deletion</h3>
-            <p>
-              {showDeleteConfirmation.type === 'subject' 
-                ? `Are you sure you want to delete all ${showDeleteConfirmation.count} cards in ${showDeleteConfirmation.subject}?` 
-                : `Are you sure you want to delete all ${showDeleteConfirmation.count} cards in ${showDeleteConfirmation.topic}?`}
-            </p>
+            <h3>{showDeleteConfirmation.type === 'subject' ? `Are you sure you want to delete all ${showDeleteConfirmation.count} cards in ${showDeleteConfirmation.subject}?` : `Are you sure you want to delete all ${showDeleteConfirmation.count} cards in ${showDeleteConfirmation.topic}?`}</h3>
             <p>This action cannot be undone.</p>
             <div className="delete-confirm-actions">
-              <button 
-                className="cancel-btn"
-                onClick={() => setShowDeleteConfirmation(null)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="confirm-btn"
-                onClick={showDeleteConfirmation.onConfirm}
-              >
-                Delete
-              </button>
+              <button className="cancel-btn" onClick={() => setShowDeleteConfirmation(null)}>Cancel</button>
+              <button className="confirm-btn" onClick={showDeleteConfirmation.onConfirm}>Delete</button>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Add the color editor modal */}
-      {colorEditorOpen && selectedSubjectForColor && (
-        <ColorEditor
-          subject={selectedSubjectForColor}
-          subjectColor={
-            cards.find(card => (card.subject || "General") === selectedSubjectForColor)?.cardColor ||
-            "#007bff"
-          }
-          onClose={closeColorEditor}
-          onSelectColor={handleColorChange}
-        />
       )}
     </div>
   );

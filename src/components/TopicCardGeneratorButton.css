@@ -1,0 +1,92 @@
+/* TopicCardGeneratorButton.css */
+
+.topic-card-generator-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #06206e;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  margin: 5px 0;
+}
+
+.topic-card-generator-button:hover {
+  background-color: #051a5e;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.topic-card-generator-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.generator-icon {
+  margin-right: 8px;
+  font-size: 1rem;
+}
+
+/* Modal styles */
+.mobile-generator-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Media queries for responsive design */
+@media (max-width: 480px) {
+  .topic-card-generator-button {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+  
+  .generator-icon {
+    margin-right: 6px;
+    font-size: 0.9rem;
+  }
+  
+  .mobile-generator-modal {
+    padding: 0;
+  }
+}
+
+/* For small screens, adapt button to be more compact */
+@media (max-width: 360px) {
+  .topic-card-generator-button {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+  }
+}
+
+/* For larger screens, make button look nicer */
+@media (min-width: 768px) {
+  .topic-card-generator-button {
+    padding: 10px 16px;
+    font-size: 1rem;
+  }
+  
+  .generator-icon {
+    font-size: 1.1rem;
+  }
+} 
