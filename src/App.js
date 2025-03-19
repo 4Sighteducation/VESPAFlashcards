@@ -1252,7 +1252,7 @@ function App() {
         
         // Handle Knack-specific fields if present
         if (card.knackField2979 || card.knackField2986) {
-          console.log("Card has Knack-specific fields, triggering save");
+          console.log("Card has Knack-specific fields, triggering save to Knack");
           
           // Trigger save to Knack if needed
           if (window.parent && window.parent.postMessage) {
@@ -1264,6 +1264,7 @@ function App() {
             }, "*");
           }
         } else {
+          console.log("Card does not have Knack fields, saving locally only");
           // Standard save after updating state
           requestAnimationFrame(() => {
             saveData();
@@ -2517,6 +2518,37 @@ function App() {
   // Handle saving a topic list
   const handleSaveTopicList = useCallback(async (topicListData, subject) => {
     console.log("Saving topic list:", topicListData);
+    
+    // Check if we need to create cards
+    if (topicListData.createCards && topicListData.cards && topicListData.cards.length > 0) {
+      console.log("Creating cards from topic list flow:", topicListData.cards);
+      
+      // Process each card to ensure it has all required fields
+      const processedCards = topicListData.cards.map(card => {
+        // Make sure the card has required fields
+        const enhancedCard = {
+          ...card,
+          subject: topicListData.subject || subject,
+          examBoard: topicListData.examBoard,
+          examType: topicListData.examType,
+          topic: topicListData.topic || card.topic,
+          id: card.id || `card-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          timestamp: card.timestamp || new Date().toISOString(),
+          boxNum: card.boxNum || 1
+        };
+        
+        // Add card to collection
+        handleAddCard(enhancedCard);
+        return enhancedCard;
+      });
+      
+      showStatus(`Added ${processedCards.length} cards to your collection!`, 3000);
+      
+      // If we have the createCards flag but no topic list to save, exit early
+      if (!topicListData.topics) {
+        return true;
+      }
+    }
     
     // Make sure we have valid data
     if (!topicListData?.topics || !subject) {

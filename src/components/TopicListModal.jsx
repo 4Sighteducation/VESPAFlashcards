@@ -666,7 +666,30 @@ const TopicListModal = ({
                     examBoard={examBoard}
                     examType={examType}
                     onAddCard={confirmCreateCards}
-                    onSaveCards={() => {
+                    onSaveCards={(cards) => {
+                      console.log("TopicCardGeneratorButton onSaveCards received cards:", cards);
+                      // Pass the cards to the parent component for saving
+                      if (cards && cards.length > 0) {
+                        // Make sure the subject, examBoard, and examType are set correctly
+                        const enhancedCards = cards.map(card => ({
+                          ...card,
+                          subject: subject,
+                          examBoard: examBoard,
+                          examType: examType
+                        }));
+                        
+                        // Pass createCards flag and the cards data to parent
+                        onTopicListSave({
+                          topic: fullTopicText,
+                          subject,
+                          examBoard,
+                          examType,
+                          createCards: true,
+                          cards: enhancedCards
+                        }, subject);
+                      }
+                      
+                      // Also save the topic list
                       handleSaveTopics(false);
                     }}
                     subjectColor="#06206e"

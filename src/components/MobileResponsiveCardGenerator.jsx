@@ -294,79 +294,39 @@ const MobileResponsiveCardGenerator = ({
     }
   };
 
-  // Handle adding all cards and closing
+  // Add all generated cards to the bank
   const handleAddAllCards = () => {
-    const unadded = generatedCards.filter(card => !card.added);
+    if (!generatedCards.length) return;
     
-    if (unadded.length === 0) {
-      return; // No cards to add
-    }
+    console.log("Adding all cards to bank:", generatedCards);
     
-    // Process the cards with correct metadata
-    const cardsToAdd = unadded.map(card => {
-      // Generate a valid topic color based on subject color
-      const topicColor = generateTopicColor(subjectColor);
-      
-      // Ensure topic is never "General"
-      const cardTopic = topic === "General" ? `${subject} - General` : topic;
-      
-      return {
-        ...card,
-        subject,
-        topic: cardTopic,
-        subjectColor: subjectColor,
-        cardColor: topicColor, // Use the generated topic color
-        // Add metadata for consistency
-        exam_board: examBoard,
-        exam_type: examType,
-        examBoard,
-        examType,
-        courseType: examType,
-        board: examBoard,
-        boxNum: 1, // Start in box 1 for spaced repetition
-        meta: {
-          exam_board: examBoard,
-          exam_type: examType,
-          examBoard,
-          examType
-        },
-        metadata: {
-          exam_board: examBoard,
-          exam_type: examType,
-          examBoard,
-          examType,
-          subject
-        }
-      };
-    });
+    // Process the card data for the card bank
+    const cardsToAdd = generatedCards.map((card, index) => ({
+      ...card,
+      id: card.id || `card-${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${index}`,
+      topic: topic,
+      subject: subject,
+      examType: topicData.examType || examType,
+      examBoard: topicData.examBoard || examBoard,
+      timestamp: new Date().toISOString(),
+      subjectColor: subjectColor || card.cardColor || "#06206e",
+      cardColor: card.cardColor || subjectColor || "#06206e",
+      boxNum: 1
+    }));
     
-    // APPEND cards to existing ones, not replace them
-    if (window.parent && window.parent.postMessage) {
-      window.parent.postMessage({
-        type: "APPEND_CARDS",
-        cardsToAppend: cardsToAdd
-      }, "*");
-    }
-    
-    // Mark all cards as added
-    setGeneratedCards(prev => prev.map(c => ({...c, added: true})));
-    
-    // Create Knack-specific JSON for field_2979
+    // Create a version formatted for Knack
     const knackFormatted = cardsToAdd.map(card => ({
-      id: card.id,
-      question: card.front || "",
-      answer: card.back || "",
-      subject: card.subject,
+      question: card.question,
+      answer: card.answer,
       topic: card.topic,
-      cardColor: card.cardColor,
-      subjectColor: card.subjectColor,
-      exam_board: card.exam_board,
-      exam_type: card.exam_type,
+      subject: card.subject,
       examBoard: card.examBoard,
       examType: card.examType,
-      courseType: card.courseType,
-      board: card.board,
-      meta: card.meta,
+      questionType: card.questionType || questionType,
+      timestamp: card.timestamp,
+      subjectColor: card.subjectColor,
+      cardColor: card.cardColor,
+      id: card.id,
       metadata: card.metadata,
       boxNum: 1,
       timestamp: card.timestamp
@@ -381,23 +341,23 @@ const MobileResponsiveCardGenerator = ({
     
     // Use the onSaveCards prop for saving the cards
     if (onSaveCards) {
-      // Add the Knack-specific fields to the first card in the batch
-      const enhancedCards = [...cardsToAdd];
-      if (enhancedCards.length > 0) {
-        enhancedCards[0].knackField2979 = knackField2979;
-        enhancedCards[0].knackField2986 = knackField2986;
-        enhancedCards[0].appendToKnack = true; // Flag to append, not replace
-      }
+      // Add the Knack-specific fields to all cards in the batch to ensure they're properly saved
+      const enhancedCards = cardsToAdd.map(card => ({
+        ...card,
+        knackField2979: knackField2979,
+        knackField2986: knackField2986,
+        appendToKnack: true // Flag to append, not replace
+      }));
+      
+      console.log("Calling onSaveCards with enhanced cards:", enhancedCards);
       onSaveCards(enhancedCards);
     } else if (onAddCard) {
       // Backward compatibility - add cards one by one
       cardsToAdd.forEach((card, index) => {
-        // Add Knack fields to the first card only
-        if (index === 0) {
-          card.knackField2979 = knackField2979;
-          card.knackField2986 = knackField2986;
-          card.appendToKnack = true; // Flag to append, not replace
-        }
+        // Add Knack fields to all cards
+        card.knackField2979 = knackField2979;
+        card.knackField2986 = knackField2986;
+        card.appendToKnack = true; // Flag to append, not replace
         onAddCard(card);
       });
     }
