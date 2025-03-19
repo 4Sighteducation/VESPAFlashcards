@@ -2110,11 +2110,13 @@ function App() {
     openPrintModal(cardsToDisplay, "All Flashcards");
   };
 
+  // Refs
+  const saveToKnackRef = useRef(null);
+
   // Effect to listen for messages from the parent window
   useEffect(() => {
-    // Create a ref to the latest saveCardsToKnack function to avoid circular dependencies
-    const saveToKnackRef = useRef(null);
-    saveToKnackRef.current = saveCardsToKnack; // This gets the current (non-useCallback) function
+    // Update the ref to point to the latest saveCardsToKnack function
+    saveToKnackRef.current = saveCardsToKnack;
     
     const handleMessage = (event) => {
       try {
