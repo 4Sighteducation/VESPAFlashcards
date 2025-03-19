@@ -140,7 +140,7 @@ const MobileResponsiveCardGenerator = ({
   // Replace the getApiKey function with this simpler version
   const getApiKey = () => {
     // In production, just use the environment variable or auth key
-    return process.env.REACT_APP_OPENAI_API_KEY || (auth && auth.openaiKey);
+    return process.env.REACT_APP_OPENAI_KEY || (auth && auth.openaiKey);
   };
 
   // Remove the saveApiKey function completely by replacing it with a no-op
@@ -157,7 +157,7 @@ const MobileResponsiveCardGenerator = ({
     
     try {
       // Get API key from props or environment
-      const apiKey = process.env.REACT_APP_OPENAI_API_KEY || (auth && auth.openaiKey);
+      const apiKey = process.env.REACT_APP_OPENAI_KEY || (auth && auth.openaiKey);
       
       if (!apiKey) {
         throw new Error("No OpenAI API key available. Please configure an API key.");
