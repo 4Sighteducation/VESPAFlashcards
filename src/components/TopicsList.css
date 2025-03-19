@@ -55,13 +55,28 @@
 
 .topic-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  position: relative;
+  gap: 10px;
+}
+
+.topic-main-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
   position: relative;
 }
 
+.topic-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 120px;
+}
+
 .expand-icon {
-  position: absolute;
-  right: 10px;
+  margin-left: 10px;
   font-size: 0.8rem;
   cursor: pointer;
   transition: transform 0.2s;
@@ -88,9 +103,44 @@
   border-left: 1px dashed #ccc;
 }
 
+.subtopic-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+
 .topic-button.subtopic {
   font-size: 0.9rem;
   padding: 6px 10px;
+  flex: 1;
+}
+
+/* Style for the generate cards button in topics list */
+.topic-action-buttons .topic-card-generator-button,
+.subtopic-item .topic-card-generator-button {
+  max-width: 130px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* Hide the generate cards text on small screens, just show icon */
+@media (max-width: 768px) {
+  .topic-action-buttons .topic-card-generator-button span,
+  .subtopic-item .topic-card-generator-button span {
+    display: none;
+  }
+  
+  .topic-action-buttons .topic-card-generator-button,
+  .subtopic-item .topic-card-generator-button {
+    max-width: 40px;
+    padding: 6px;
+  }
+  
+  .topic-action-buttons {
+    min-width: 50px;
+  }
 }
 
 /* Scrollbar styling */

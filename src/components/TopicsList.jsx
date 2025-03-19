@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
 import "./TopicsList.css";
+import TopicCardGeneratorButton from './TopicCardGeneratorButton';
 
 const TopicsList = ({
   topics,
   selectedTopic,
   onSelectTopic,
   getColorForTopic,
-  updateTopics
+  updateTopics,
+  onGenerateCards,
+  examBoard,
+  examType,
+  subject
 }) => {
   // State for tracking expanded topics
   const [expandedTopics, setExpandedTopics] = useState({});
@@ -120,23 +125,38 @@ const TopicsList = ({
           return (
             <div key={topicKey} className="topic-accordion">
               <div className="topic-header">
-                <button
-                  className={`topic-button ${isSelected ? "active" : ""}`}
-                  onClick={() => onSelectTopic(topicKey)}
-                  style={{
-                    backgroundColor: isSelected ? bgColor : "#f5f5f5",
-                    color: isSelected ? getContrastColor(bgColor) : "#333"
-                  }}
-                >
-                  {topic.name}
-                </button>
-                
-                {hasSubtopics && (
-                  <div
-                    className={`expand-icon ${isExpanded ? "expanded" : ""}`}
-                    onClick={(e) => toggleTopicExpansion(topicKey, e)}
+                <div className="topic-main-content">
+                  <button
+                    className={`topic-button ${isSelected ? "active" : ""}`}
+                    onClick={() => onSelectTopic(topicKey)}
+                    style={{
+                      backgroundColor: isSelected ? bgColor : "#f5f5f5",
+                      color: isSelected ? getContrastColor(bgColor) : "#333"
+                    }}
                   >
-                    {isExpanded ? "−" : "+"}
+                    {topic.name}
+                  </button>
+                  
+                  {hasSubtopics && (
+                    <div
+                      className={`expand-icon ${isExpanded ? "expanded" : ""}`}
+                      onClick={(e) => toggleTopicExpansion(topicKey, e)}
+                    >
+                      {isExpanded ? "−" : "+"}
+                    </div>
+                  )}
+                </div>
+                
+                {onGenerateCards && (
+                  <div className="topic-action-buttons">
+                    <TopicCardGeneratorButton 
+                      topic={topicKey}
+                      subject={subject}
+                      examBoard={examBoard}
+                      examType={examType}
+                      subjectColor={bgColor}
+                      onAddCard={(card) => onGenerateCards(card)}
+                    />
                   </div>
                 )}
               </div>
@@ -149,17 +169,29 @@ const TopicsList = ({
                     const subtopicBgColor = getColorForTopic(subtopic.fullName);
                     
                     return (
-                      <button
-                        key={subtopic.fullName}
-                        className={`topic-button subtopic ${isSubtopicSelected ? "active" : ""}`}
-                        onClick={() => onSelectTopic(subtopic.fullName)}
-                        style={{
-                          backgroundColor: isSubtopicSelected ? subtopicBgColor : "#f5f5f5",
-                          color: isSubtopicSelected ? getContrastColor(subtopicBgColor) : "#333"
-                        }}
-                      >
-                        {subtopic.name}
-                      </button>
+                      <div key={subtopic.fullName} className="subtopic-item">
+                        <button
+                          className={`topic-button subtopic ${isSubtopicSelected ? "active" : ""}`}
+                          onClick={() => onSelectTopic(subtopic.fullName)}
+                          style={{
+                            backgroundColor: isSubtopicSelected ? subtopicBgColor : "#f5f5f5",
+                            color: isSubtopicSelected ? getContrastColor(subtopicBgColor) : "#333"
+                          }}
+                        >
+                          {subtopic.name}
+                        </button>
+                        
+                        {onGenerateCards && (
+                          <TopicCardGeneratorButton 
+                            topic={subtopic.fullName}
+                            subject={subject}
+                            examBoard={examBoard}
+                            examType={examType}
+                            subjectColor={subtopicBgColor}
+                            onAddCard={(card) => onGenerateCards(card)}
+                          />
+                        )}
+                      </div>
                     );
                   })}
                 </div>
