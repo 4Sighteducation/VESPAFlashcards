@@ -1180,42 +1180,100 @@ function App() {
 
   // Functions for card operations - defined after their dependencies
   // Add a new card
-  const addCard = useCallback(
+  const handleAddCard = useCallback(
     (card) => {
-      // Ensure the card has a boxNum of 1 for spaced repetition
-      const cardWithSpacedRep = {
-        ...card,
-        boxNum: 1,
-        nextReviewDate: new Date().toISOString() // Set to today so it's immediately reviewable
-      };
-
-      setAllCards((prevCards) => {
-        const newCards = [...prevCards, cardWithSpacedRep];
-        return newCards;
-      });
+      console.log("Adding new card:", card);
+    
+      // Skip if no card data
+      if (!card) return;
       
-      // Update spaced repetition data separately to ensure it's added to box1
-      setSpacedRepetitionData((prevData) => {
-        const newData = { ...prevData };
-        // Add the card to box1
-        newData.box1.push({
-          cardId: cardWithSpacedRep.id,
-          lastReviewed: new Date().toISOString(),
-          nextReviewDate: new Date().toISOString() // Reviewable immediately
+      try {
+        // Make sure the card has a topic that's not just "General"
+        if (card.topic === "General" && card.subject) {
+          card.topic = `${card.subject} - General`;
+        }
+        
+        // Generate a timestamp if not present
+        if (!card.timestamp) {
+          card.timestamp = new Date().toISOString();
+        }
+        
+        // Generate an ID if not present
+        if (!card.id) {
+          card.id = `card-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        }
+        
+        // Add boxNum for spaced repetition if not set
+        if (!card.boxNum) {
+          card.boxNum = 1;
+        }
+        
+        // Check if we already have this card by ID
+        setAllCards(prevCards => {
+          const existingCardIndex = prevCards.findIndex(c => c.id === card.id);
+          
+          // If card exists, update it
+          if (existingCardIndex >= 0) {
+            const updatedCards = [...prevCards];
+            updatedCards[existingCardIndex] = card;
+            return updatedCards;
+          }
+          
+          // Otherwise add the new card
+          return [...prevCards, card];
         });
-        return newData;
-      });
-      
-      // Update color mapping if needed
-      if (card.subject && card.cardColor) {
-        updateColorMapping(card.subject, card.topic, card.cardColor);
+        
+        // Add to relevant box in spaced repetition
+        if (card.boxNum >= 1 && card.boxNum <= 5) {
+          const boxKey = `box${card.boxNum}`;
+          
+          setSpacedRepetitionData(prevData => {
+            // Create a copy of the current box
+            const updatedBox = [...(prevData[boxKey] || [])];
+            
+            // Check if the card is already in this box
+            const existingIndex = updatedBox.findIndex(c => c.id === card.id);
+            
+            if (existingIndex >= 0) {
+              // Update the existing card
+              updatedBox[existingIndex] = card;
+            } else {
+              // Add the new card
+              updatedBox.push(card);
+            }
+            
+            // Return updated state
+            return {
+              ...prevData,
+              [boxKey]: updatedBox
+            };
+          });
+        }
+        
+        // Handle Knack-specific fields if present
+        if (card.knackField2979 || card.knackField2986) {
+          console.log("Card has Knack-specific fields, triggering save");
+          
+          // Trigger save to Knack if needed
+          if (window.parent && window.parent.postMessage) {
+            window.parent.postMessage({
+              type: "TRIGGER_SAVE",
+              knackField2979: card.knackField2979,
+              knackField2986: card.knackField2986,
+              appendToKnack: card.appendToKnack || false
+            }, "*");
+          }
+        } else {
+          // Standard save after updating state
+          requestAnimationFrame(() => {
+            saveData();
+          });
+        }
+      } catch (e) {
+        console.error("Error adding card:", e);
       }
-      
-      // Save the changes after state updates have completed
-      setTimeout(() => saveData(), 100);
-      showStatus("Card added successfully!");
     },
-    [updateColorMapping, saveData, showStatus]
+    [saveData]
   );
 
   // Delete a card
@@ -2803,100 +2861,6 @@ function App() {
       onPrioritizeSubject={handlePrioritizeSubject}
     />
   )}
-
-  // Handle adding a new card to the collection
-  const handleAddCard = useCallback((card) => {
-    console.log("Adding new card:", card);
-    
-    // Skip if no card data
-    if (!card) return;
-    
-    try {
-      // Make sure the card has a topic that's not just "General"
-      if (card.topic === "General" && card.subject) {
-        card.topic = `${card.subject} - General`;
-      }
-      
-      // Generate a timestamp if not present
-      if (!card.timestamp) {
-        card.timestamp = new Date().toISOString();
-      }
-      
-      // Generate an ID if not present
-      if (!card.id) {
-        card.id = `card-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      }
-      
-      // Add boxNum for spaced repetition if not set
-      if (!card.boxNum) {
-        card.boxNum = 1;
-      }
-      
-      // Check if we already have this card by ID
-      setAllCards(prevCards => {
-        const existingCardIndex = prevCards.findIndex(c => c.id === card.id);
-        
-        // If card exists, update it
-        if (existingCardIndex >= 0) {
-          const updatedCards = [...prevCards];
-          updatedCards[existingCardIndex] = card;
-          return updatedCards;
-        }
-        
-        // Otherwise add the new card
-        return [...prevCards, card];
-      });
-      
-      // Add to relevant box in spaced repetition
-      if (card.boxNum >= 1 && card.boxNum <= 5) {
-        const boxKey = `box${card.boxNum}`;
-        
-        setSpacedRepetitionData(prevData => {
-          // Create a copy of the current box
-          const updatedBox = [...(prevData[boxKey] || [])];
-          
-          // Check if the card is already in this box
-          const existingIndex = updatedBox.findIndex(c => c.id === card.id);
-          
-          if (existingIndex >= 0) {
-            // Update the existing card
-            updatedBox[existingIndex] = card;
-          } else {
-            // Add the new card
-            updatedBox.push(card);
-          }
-          
-          // Return updated state
-          return {
-            ...prevData,
-            [boxKey]: updatedBox
-          };
-        });
-      }
-      
-      // Handle Knack-specific fields if present
-      if (card.knackField2979 || card.knackField2986) {
-        console.log("Card has Knack-specific fields, triggering save");
-        
-        // Trigger save to Knack if needed
-        if (window.parent && window.parent.postMessage) {
-          window.parent.postMessage({
-            type: "TRIGGER_SAVE",
-            knackField2979: card.knackField2979,
-            knackField2986: card.knackField2986,
-            appendToKnack: card.appendToKnack || false
-          }, "*");
-        }
-      } else {
-        // Standard save after updating state
-        requestAnimationFrame(() => {
-          saveData();
-        });
-      }
-    } catch (e) {
-      console.error("Error adding card:", e);
-    }
-  }, [saveData]);
 
   return (
     <div className="app-container">
