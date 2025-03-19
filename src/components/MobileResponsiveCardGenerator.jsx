@@ -175,6 +175,7 @@ const MobileResponsiveCardGenerator = ({
       - front: The question or prompt
       - back: The answer or explanation
       - options: For multiple-choice questions only, include 4 options with one correct answer
+      - detailedAnswer: Additional detailed information and explanation about the topic
       
       Return the cards in a JSON array.`;
       
@@ -235,6 +236,8 @@ const MobileResponsiveCardGenerator = ({
           front: card.front,
           back: card.back,
           options: card.options,
+          detailedAnswer: card.detailedAnswer || "",
+          additionalInfo: card.detailedAnswer || "", // For compatibility with both field names
           subject,
           topic,
           examBoard,
@@ -324,6 +327,8 @@ const MobileResponsiveCardGenerator = ({
         courseType: examType,
         board: examBoard,
         boxNum: 1, // Start in box 1 for spaced repetition
+        detailedAnswer: card.detailedAnswer || "",
+        additionalInfo: card.detailedAnswer || "", // For compatibility with both field names
         meta: {
           exam_board: examBoard,
           exam_type: examType,
@@ -344,6 +349,10 @@ const MobileResponsiveCardGenerator = ({
     const knackFormatted = cardsToAdd.map(card => ({
       question: card.front || "",
       answer: card.back || "",
+      // Include options for multiple-choice questions
+      options: card.options || [],
+      detailedAnswer: card.detailedAnswer || "",
+      additionalInfo: card.detailedAnswer || "", // For compatibility with both field names
       topic: card.topic,
       subject: card.subject,
       examBoard: card.examBoard,
@@ -378,6 +387,8 @@ const MobileResponsiveCardGenerator = ({
           // Convert front/back to question/answer
           question: card.front || "",
           answer: card.back || "",
+          // Add options for multiple-choice questions
+          options: card.options || [],
           knackField2979: knackField2979,
           knackField2986: knackField2986,
           appendToKnack: true
@@ -393,6 +404,8 @@ const MobileResponsiveCardGenerator = ({
         // Format for consistent structure
         card.question = card.front || "";
         card.answer = card.back || "";
+        // Include options for multiple-choice questions
+        card.options = card.options || [];
         card.knackField2979 = knackField2979;
         card.knackField2986 = knackField2986;
         card.appendToKnack = true;
@@ -551,6 +564,12 @@ const MobileResponsiveCardGenerator = ({
                     <div className="card-answer">
                       <strong>Answer:</strong> {card.back}
                     </div>
+                    
+                    {card.detailedAnswer && (
+                      <div className="has-info-icon" title="Card has additional information">
+                        <span className="info-available">ℹ️</span>
+                      </div>
+                    )}
                   </div>
                   
                   <button 
@@ -604,6 +623,11 @@ const MobileResponsiveCardGenerator = ({
       // Convert front/back to question/answer for consistency
       question: card.front || "",
       answer: card.back || "",
+      // Include options for multiple-choice questions
+      options: card.options || [],
+      // Include additional information
+      detailedAnswer: card.detailedAnswer || "",
+      additionalInfo: card.detailedAnswer || "", // For compatibility with both field names
       // Ensure all required metadata is present
       examBoard,
       examType,
@@ -619,6 +643,9 @@ const MobileResponsiveCardGenerator = ({
       id: enhancedCard.id,
       question: enhancedCard.question,
       answer: enhancedCard.answer,
+      options: enhancedCard.options || [],
+      detailedAnswer: enhancedCard.detailedAnswer || "",
+      additionalInfo: enhancedCard.detailedAnswer || "", // For compatibility with both field names
       subject: enhancedCard.subject,
       topic: enhancedCard.topic,
       cardColor: enhancedCard.cardColor,

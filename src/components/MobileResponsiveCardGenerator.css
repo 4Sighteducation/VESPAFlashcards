@@ -114,6 +114,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  position: relative;
 }
 
 .loading-container {
@@ -197,6 +198,7 @@
   flex-direction: column;
   gap: 12px;
   overflow: auto;
+  position: relative;
 }
 
 .card-question {
@@ -1001,4 +1003,24 @@
   .mobile-cards-container {
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   }
+}
+
+/* Add styles for info icon */
+.has-info-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.info-available {
+  cursor: pointer;
 } 
