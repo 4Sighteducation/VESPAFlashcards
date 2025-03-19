@@ -323,7 +323,18 @@ function App() {
 
     try {
       // Use provided cards or the current state
-      const cardsToSave = cards || allCards;
+      let cardsToSave = cards || allCards;
+      
+      // Sanitize card topics - avoid using "General" topic directly
+      cardsToSave = cardsToSave.map(card => {
+        if (card.topic === "General" && card.subject) {
+          return {
+            ...card,
+            topic: `${card.subject} - General`
+          };
+        }
+        return card;
+      });
 
       // Send data to parent window for saving to Knack
       if (window.parent !== window) {
@@ -1945,6 +1956,40 @@ function App() {
       // Handle explicit save request from AICardGenerator
       if (event.data && event.data.type === "TRIGGER_SAVE") {
         console.log("Explicit save request received");
+        
+        // Check if we need to append cards rather than replace them
+        if (event.data.appendToKnack && event.data.knackField2979) {
+          console.log("Appending cards to existing cards in field_2979");
+          try {
+            // Parse the existing cards
+            const existingCards = auth && auth.field_2979 
+              ? JSON.parse(typeof auth.field_2979 === 'string' ? auth.field_2979 : '[]') 
+              : [];
+            
+            // Parse the new cards to append
+            const newCards = JSON.parse(event.data.knackField2979);
+            
+            // Combine the cards, ensuring no duplicates by ID
+            const cardIds = new Set(existingCards.map(c => c.id));
+            const combinedCards = [
+              ...existingCards,
+              ...newCards.filter(c => !cardIds.has(c.id))
+            ];
+            
+            // Set the updated cards in state
+            setAllCards(combinedCards);
+            
+            // Save the combined cards
+            saveData(combinedCards);
+            console.log(`Successfully appended ${newCards.length} cards. Total cards now: ${combinedCards.length}`);
+            return; // Exit after handling append
+          } catch (err) {
+            console.error("Error appending cards:", err);
+            // Fall back to regular save
+          }
+        }
+        
+        // Regular save (no append or append failed)
         saveData();
       }
     };
@@ -2759,6 +2804,100 @@ function App() {
     />
   )}
 
+  // Handle adding a new card to the collection
+  const handleAddCard = useCallback((card) => {
+    console.log("Adding new card:", card);
+    
+    // Skip if no card data
+    if (!card) return;
+    
+    try {
+      // Make sure the card has a topic that's not just "General"
+      if (card.topic === "General" && card.subject) {
+        card.topic = `${card.subject} - General`;
+      }
+      
+      // Generate a timestamp if not present
+      if (!card.timestamp) {
+        card.timestamp = new Date().toISOString();
+      }
+      
+      // Generate an ID if not present
+      if (!card.id) {
+        card.id = `card-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      }
+      
+      // Add boxNum for spaced repetition if not set
+      if (!card.boxNum) {
+        card.boxNum = 1;
+      }
+      
+      // Check if we already have this card by ID
+      setAllCards(prevCards => {
+        const existingCardIndex = prevCards.findIndex(c => c.id === card.id);
+        
+        // If card exists, update it
+        if (existingCardIndex >= 0) {
+          const updatedCards = [...prevCards];
+          updatedCards[existingCardIndex] = card;
+          return updatedCards;
+        }
+        
+        // Otherwise add the new card
+        return [...prevCards, card];
+      });
+      
+      // Add to relevant box in spaced repetition
+      if (card.boxNum >= 1 && card.boxNum <= 5) {
+        const boxKey = `box${card.boxNum}`;
+        
+        setSpacedRepetitionData(prevData => {
+          // Create a copy of the current box
+          const updatedBox = [...(prevData[boxKey] || [])];
+          
+          // Check if the card is already in this box
+          const existingIndex = updatedBox.findIndex(c => c.id === card.id);
+          
+          if (existingIndex >= 0) {
+            // Update the existing card
+            updatedBox[existingIndex] = card;
+          } else {
+            // Add the new card
+            updatedBox.push(card);
+          }
+          
+          // Return updated state
+          return {
+            ...prevData,
+            [boxKey]: updatedBox
+          };
+        });
+      }
+      
+      // Handle Knack-specific fields if present
+      if (card.knackField2979 || card.knackField2986) {
+        console.log("Card has Knack-specific fields, triggering save");
+        
+        // Trigger save to Knack if needed
+        if (window.parent && window.parent.postMessage) {
+          window.parent.postMessage({
+            type: "TRIGGER_SAVE",
+            knackField2979: card.knackField2979,
+            knackField2986: card.knackField2986,
+            appendToKnack: card.appendToKnack || false
+          }, "*");
+        }
+      } else {
+        // Standard save after updating state
+        requestAnimationFrame(() => {
+          saveData();
+        });
+      }
+    } catch (e) {
+      console.error("Error adding card:", e);
+    }
+  }, [saveData]);
+
   return (
     <div className="app-container">
       {loading ? (
@@ -2899,7 +3038,7 @@ function App() {
           {view === "manualCreate" && (
             <div className="create-card-container">
               <CardCreator
-                onAddCard={addCard}
+                onAddCard={handleAddCard}
                 onCancel={() => setView("cardBank")}
                 subjects={getSubjects()}
                 getTopicsForSubject={getUserTopicsForSubject}
@@ -2952,16 +3091,16 @@ function App() {
           {/* Modal overlay for AICardGenerator component */}
           {showAICardGenerator && (
             <div className="ai-card-generator-overlay">
-              <AICardGenerator
-                onClose={() => setShowAICardGenerator(false)}
-                onSaveCards={handleSaveAICards}
-                initialSubject={selectedSubject}
-                initialTopic={selectedTopic}
-                initialExamBoard={topicListExamBoard}
-                initialExamType={topicListExamType}
+              <AICardGenerator 
+                onClose={() => setView("cardBank")}
+                onAddCard={handleAddCard}
+                onSaveCards={(cards) => {
+                  cards.forEach(card => handleAddCard(card));
+                  saveData();
+                }}
+                subjects={getSubjects()}
                 auth={auth}
                 userId={auth?.id}
-                key={`ai-generator-${selectedSubject}-${selectedTopic}-${forceUpdate}`}
               />
             </div>
           )}

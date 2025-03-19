@@ -307,10 +307,13 @@ const MobileResponsiveCardGenerator = ({
       // Generate a valid topic color based on subject color
       const topicColor = generateTopicColor(subjectColor);
       
+      // Ensure topic is never "General"
+      const cardTopic = topic === "General" ? `${subject} - General` : topic;
+      
       return {
         ...card,
         subject,
-        topic,
+        topic: cardTopic,
         subjectColor: subjectColor,
         cardColor: topicColor, // Use the generated topic color
         // Add metadata for consistency
@@ -337,6 +340,17 @@ const MobileResponsiveCardGenerator = ({
       };
     });
     
+    // APPEND cards to existing ones, not replace them
+    if (window.parent && window.parent.postMessage) {
+      window.parent.postMessage({
+        type: "APPEND_CARDS",
+        cardsToAppend: cardsToAdd
+      }, "*");
+    }
+    
+    // Mark all cards as added
+    setGeneratedCards(prev => prev.map(c => ({...c, added: true})));
+    
     // Create Knack-specific JSON for field_2979
     const knackFormatted = cardsToAdd.map(card => ({
       id: card.id,
@@ -358,10 +372,8 @@ const MobileResponsiveCardGenerator = ({
       timestamp: card.timestamp
     }));
     
-    // JSON string for Knack field_2979
+    // JSON string for Knack field_2979 and field_2986
     const knackField2979 = JSON.stringify(knackFormatted);
-    
-    // JSON string for Knack field_2986 (Box 1 for spaced repetition)
     const knackField2986 = JSON.stringify(knackFormatted);
     
     console.log("Sending to Knack - field_2979:", knackField2979);
@@ -374,6 +386,7 @@ const MobileResponsiveCardGenerator = ({
       if (enhancedCards.length > 0) {
         enhancedCards[0].knackField2979 = knackField2979;
         enhancedCards[0].knackField2986 = knackField2986;
+        enhancedCards[0].appendToKnack = true; // Flag to append, not replace
       }
       onSaveCards(enhancedCards);
     } else if (onAddCard) {
@@ -383,13 +396,11 @@ const MobileResponsiveCardGenerator = ({
         if (index === 0) {
           card.knackField2979 = knackField2979;
           card.knackField2986 = knackField2986;
+          card.appendToKnack = true; // Flag to append, not replace
         }
         onAddCard(card);
       });
     }
-    
-    // Mark all cards as added
-    setGeneratedCards(prev => prev.map(c => ({...c, added: true})));
     
     // Show success toast
     const toast = document.createElement('div');
@@ -419,7 +430,8 @@ const MobileResponsiveCardGenerator = ({
       window.parent.postMessage({
         type: "TRIGGER_SAVE",
         knackField2979,
-        knackField2986
+        knackField2986,
+        appendToKnack: true // New flag to indicate appending
       }, "*");
     }
   };
@@ -581,11 +593,15 @@ const MobileResponsiveCardGenerator = ({
     // Generate a valid topic color based on subject color
     const topicColor = generateTopicColor(subjectColor);
     
+    // Ensure topic is never "General"
+    const cardTopic = topic === "General" ? `${subject} - General` : topic;
+    
     // Create an enhanced card with proper metadata
     const enhancedCard = {
       ...card,
       cardColor: topicColor,
       subjectColor: subjectColor,
+      topic: cardTopic, // Use the non-"General" topic
       boxNum: 1, // Start in box 1 for spaced repetition
       // Ensure all required metadata is present
       exam_board: examBoard,
@@ -633,6 +649,7 @@ const MobileResponsiveCardGenerator = ({
     // Create JSON strings for Knack fields
     enhancedCard.knackField2979 = JSON.stringify(knackFormatted);
     enhancedCard.knackField2986 = JSON.stringify(knackFormatted);
+    enhancedCard.appendToKnack = true; // Flag to append, not replace
     
     // Log the data being sent
     console.log("Adding single card to Knack:", enhancedCard);
@@ -677,7 +694,8 @@ const MobileResponsiveCardGenerator = ({
       window.parent.postMessage({ 
         type: "TRIGGER_SAVE",
         knackField2979: enhancedCard.knackField2979,
-        knackField2986: enhancedCard.knackField2986
+        knackField2986: enhancedCard.knackField2986,
+        appendToKnack: true // New flag to indicate appending
       }, "*");
     }
   };
