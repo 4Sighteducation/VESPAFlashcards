@@ -21,6 +21,15 @@ import HighPriorityTopicsModal from './components/HighPriorityTopicsModal';
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 
+// Debug log for API keys
+console.log("Application starting with:", { 
+  appIdEnv: process.env.REACT_APP_KNACK_APP_KEY ? "Defined" : "Undefined",
+  apiKeyEnv: process.env.REACT_APP_KNACK_API_KEY ? "Defined" : "Undefined",
+  appId: KNACK_APP_ID,
+  // Don't log the full API key for security reasons
+  apiKeyDefined: !!KNACK_API_KEY
+});
+
 // Box descriptions
 const BOX_DESCRIPTIONS = {
   1: "New cards start here. Review these daily. When answered correctly, they move to Box 2; otherwise they stay here.",
@@ -73,12 +82,15 @@ const cleanHtmlTags = (str) => {
 };
 
 function App() {
+  // Debug loading state
+  console.log("App component initializing");
+
   // Authentication and user state
   const [auth, setAuth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Initializing...");
   const [error, setError] = useState(null);
-  const [recordId, setRecordId] = useState(null);
+  const [recordId, setRecordId] = useState("");
 
   // Priority features state
   const [highPriorityModalOpen, setHighPriorityModalOpen] = useState(false);
@@ -2100,84 +2112,101 @@ function App() {
 
   // Effect to listen for messages from the parent window
   useEffect(() => {
+    // Create a ref to the latest saveCardsToKnack function to avoid circular dependencies
+    const saveToKnackRef = useRef(null);
+    saveToKnackRef.current = saveCardsToKnack; // This gets the current (non-useCallback) function
+    
     const handleMessage = (event) => {
-      // Handle data from Knack
-      if (event.data && event.data.type === "KNACK_DATA") {
-        console.log("Received data from Knack:", event.data);
-        
-        // Set the record ID for saving
-        if (event.data.recordId) {
-          setRecordId(event.data.recordId);
+      try {
+        // Handle data from Knack
+        if (event.data && event.data.type === "KNACK_DATA") {
+          console.log("Received data from Knack:", event.data);
+          
+          // Set the record ID for saving
+          if (event.data.recordId) {
+            setRecordId(event.data.recordId);
+          }
+          
+          // Set authentication status
+          if (event.data.auth) {
+            setAuth(event.data.auth);
+          }
+          
+          // Load cards if available
+          if (event.data.cards && Array.isArray(event.data.cards)) {
+            setAllCards(event.data.cards);
+            console.log(`Loaded ${event.data.cards.length} cards from Knack`);
+          }
+          
+          // Load color mapping if available
+          if (event.data.colorMapping) {
+            setSubjectColorMapping(event.data.colorMapping);
+            console.log("Loaded color mapping from Knack");
+          }
+          
+          // Load spaced repetition data if available
+          if (event.data.spacedRepetition) {
+            setSpacedRepetitionData(event.data.spacedRepetition);
+            console.log("Loaded spaced repetition data from Knack");
+          }
+          
+          // Load user topics if available
+          if (event.data.userTopics) {
+            setUserTopics(event.data.userTopics);
+            console.log("Loaded user topics from Knack");
+          }
+          
+          setLoading(false);
         }
         
-        // Set authentication status
-        if (event.data.auth) {
-          setAuth(event.data.auth);
+        // Handle save confirmation
+        if (event.data && event.data.type === "SAVE_CONFIRMATION") {
+          console.log("Save confirmation received:", event.data);
+          setIsSaving(false);
+          showStatus("Saved successfully!");
         }
         
-        // Load cards if available
-        if (event.data.cards && Array.isArray(event.data.cards)) {
-          setAllCards(event.data.cards);
-          console.log(`Loaded ${event.data.cards.length} cards from Knack`);
-        }
-        
-        // Load color mapping if available
-        if (event.data.colorMapping) {
-          setSubjectColorMapping(event.data.colorMapping);
-          console.log("Loaded color mapping from Knack");
-        }
-        
-        // Load spaced repetition data if available
-        if (event.data.spacedRepetition) {
-          setSpacedRepetitionData(event.data.spacedRepetition);
-          console.log("Loaded spaced repetition data from Knack");
-        }
-        
-        // Load user topics if available
-        if (event.data.userTopics) {
-          setUserTopics(event.data.userTopics);
-          console.log("Loaded user topics from Knack");
-        }
-        
-        setLoading(false);
-      }
-      
-      // Handle save confirmation
-      if (event.data && event.data.type === "SAVE_CONFIRMATION") {
-        console.log("Save confirmation received:", event.data);
-        setIsSaving(false);
-        showStatus("Saved successfully!");
-      }
-      
-      // Handle explicit save request from AICardGenerator
-      if (event.data && event.data.type === "TRIGGER_SAVE") {
-        console.log("Explicit save request received");
-        
-        // Check if we have Knack field data
-        if (event.data.knackField2979 && event.data.knackField2986) {
-          // Use our utility function to save to Knack
-          saveCardsToKnack(
-            event.data.knackField2979,
-            event.data.knackField2986,
-            event.data.appendToKnack || false
-          ).then(success => {
-            if (success) {
-              console.log("Cards saved successfully via TRIGGER_SAVE");
+        // Handle explicit save request from AICardGenerator
+        if (event.data && event.data.type === "TRIGGER_SAVE") {
+          console.log("Explicit save request received");
+          
+          // Check if we have Knack field data
+          if (event.data.knackField2979 && event.data.knackField2986) {
+            // Use the ref to access the latest saveCardsToKnack function
+            if (saveToKnackRef.current) {
+              saveToKnackRef.current(
+                event.data.knackField2979,
+                event.data.knackField2986,
+                event.data.appendToKnack || false
+              ).then(success => {
+                if (success) {
+                  console.log("Cards saved successfully via TRIGGER_SAVE");
+                } else {
+                  console.error("Failed to save cards via TRIGGER_SAVE");
+                }
+              }).catch(error => {
+                console.error("Error in saveCardsToKnack:", error);
+                // Fallback to regular save
+                saveData();
+              });
             } else {
-              console.error("Failed to save cards via TRIGGER_SAVE");
+              console.error("saveCardsToKnack function not available");
+              saveData();
             }
-          });
-        } else {
-          // Regular save if no Knack fields provided
-          console.log("No Knack field data in TRIGGER_SAVE, using regular save");
-          saveData();
+          } else {
+            // Regular save if no Knack fields provided
+            console.log("No Knack field data in TRIGGER_SAVE, using regular save");
+            saveData();
+          }
         }
+      } catch (error) {
+        console.error("Error handling message:", error);
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [saveData, showStatus, saveCardsToKnack]);
+  }, [saveData, showStatus]);
 
   // Handle opening the topic list modal
   const handleViewTopicList = useCallback((subject, examBoard, examType) => {
@@ -2637,18 +2666,26 @@ function App() {
     }
   };
 
-  // Utility function to save cards directly to Knack
-  const saveCardsToKnack = useCallback(async (knackField2979, knackField2986, append = true) => {
-    if (!recordId) {
+  // Utility function to save cards directly to Knack - not using useCallback to avoid circular dependencies
+  const saveCardsToKnack = async (knackField2979, knackField2986, append = true) => {
+    // Get current auth and recordId values from state directly
+    const currentAuth = auth;
+    const currentRecordId = recordId;
+    
+    // Get API keys from the current component scope
+    const currentKnackAppId = process.env.REACT_APP_KNACK_APP_KEY;
+    const currentKnackApiKey = process.env.REACT_APP_KNACK_API_KEY;
+    
+    // Access showStatus from current scope
+    const displayStatus = showStatus;
+    
+    if (!currentRecordId) {
       console.error("No record ID available for saving to Knack");
       return false;
     }
     
     try {
-      console.log("Saving cards to Knack with record ID:", recordId);
-      
-      // If we're appending and have auth data, merge the cards first
-      let finalKnackField2979 = knackField2979;
+      console.log("Saving cards to Knack with record ID:", currentRecordId);
       
       // For field_2986, we need to extract just the card IDs for spaced repetition
       // Parse the cards to get their IDs
@@ -2681,10 +2718,11 @@ function App() {
       const finalKnackField2986 = JSON.stringify(cardsForBox1);
       
       // Handle appending to existing cards in field_2979
-      if (append && auth && auth.field_2979) {
+      let finalKnackField2979 = knackField2979;
+      if (append && currentAuth && currentAuth.field_2979) {
         try {
           // Parse the existing cards
-          const existingCards = JSON.parse(typeof auth.field_2979 === 'string' ? auth.field_2979 : '[]');
+          const existingCards = JSON.parse(typeof currentAuth.field_2979 === 'string' ? currentAuth.field_2979 : '[]');
           
           // Parse the new cards to append
           const newCards = JSON.parse(knackField2979);
@@ -2709,21 +2747,21 @@ function App() {
       }
       
       // Make the API request to Knack
-      const response = await fetch(`https://api.knack.com/v1/objects/object_102/records/${recordId}`, {
+      const response = await fetch(`https://api.knack.com/v1/objects/object_102/records/${currentRecordId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-Knack-Application-Id': KNACK_APP_ID,
-          'X-Knack-REST-API-Key': KNACK_API_KEY
+          'X-Knack-Application-Id': currentKnackAppId,
+          'X-Knack-REST-API-Key': currentKnackApiKey
         },
         body: JSON.stringify({
           field_2979: finalKnackField2979,
           field_2986: finalKnackField2986,
           // Initialize other boxes as empty if missing
-          field_2987: auth?.field_2987 || "[]",
-          field_2988: auth?.field_2988 || "[]",
-          field_2989: auth?.field_2989 || "[]",
-          field_2990: auth?.field_2990 || "[]"
+          field_2987: currentAuth?.field_2987 || "[]",
+          field_2988: currentAuth?.field_2988 || "[]",
+          field_2989: currentAuth?.field_2989 || "[]",
+          field_2990: currentAuth?.field_2990 || "[]"
         })
       });
       
@@ -2740,21 +2778,21 @@ function App() {
         ...prevAuth,
         field_2979: finalKnackField2979,
         field_2986: finalKnackField2986,
-        field_2987: auth?.field_2987 || "[]",
-        field_2988: auth?.field_2988 || "[]",
-        field_2989: auth?.field_2989 || "[]",
-        field_2990: auth?.field_2990 || "[]"
+        field_2987: currentAuth?.field_2987 || "[]",
+        field_2988: currentAuth?.field_2988 || "[]",
+        field_2989: currentAuth?.field_2989 || "[]",
+        field_2990: currentAuth?.field_2990 || "[]"
       }));
       
       // Show success message
-      showStatus("Cards saved successfully!", 3000);
+      displayStatus("Cards saved successfully!", 3000);
       return true;
     } catch (error) {
       console.error("Error saving cards to Knack:", error);
-      showStatus("Error saving cards", 3000, "error");
+      displayStatus("Error saving cards", 3000, "error");
       return false;
     }
-  }, [recordId, auth, KNACK_APP_ID, KNACK_API_KEY, showStatus]);
+  };
 
   // Handle saving a topic list
   const handleSaveTopicList = useCallback(async (topicListData, subject) => {
@@ -2768,17 +2806,21 @@ function App() {
       if (topicListData.knackField2979 || topicListData.knackField2986) {
         console.log("Direct Knack field data found in request");
         
-        // Save directly to Knack using our utility function
-        const saveSuccess = await saveCardsToKnack(
-          topicListData.knackField2979, 
-          topicListData.knackField2986, 
-          topicListData.appendToKnack || true
-        );
-        
-        if (saveSuccess) {
-          console.log("Cards saved successfully to Knack");
-        } else {
-          console.error("Failed to save cards to Knack");
+        // Call saveCardsToKnack directly (now it's not a callback)
+        try {
+          const saveSuccess = await saveCardsToKnack(
+            topicListData.knackField2979, 
+            topicListData.knackField2986, 
+            topicListData.appendToKnack || true
+          );
+          
+          if (saveSuccess) {
+            console.log("Cards saved successfully to Knack");
+          } else {
+            console.error("Failed to save cards to Knack");
+          }
+        } catch (error) {
+          console.error("Error saving cards to Knack:", error);
         }
       }
       // If we have specific card data but no Knack fields
@@ -2971,7 +3013,7 @@ function App() {
       showStatus("Error saving topic list", 3000, "error");
       return false;
     }
-  }, [auth, recordId, userTopics, showStatus, KNACK_APP_ID, KNACK_API_KEY, processTopicLists]);
+  }, [auth, recordId, userTopics, showStatus, KNACK_APP_ID, KNACK_API_KEY, processTopicLists, saveCardsToKnack]);
 
   // Handle saving AI-generated cards
   const handleSaveAICards = useCallback((generatedCards) => {
