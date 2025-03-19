@@ -38,6 +38,13 @@ const MobileResponsiveCardGenerator = ({
   auth,
   userId
 }) => {
+  const [loading, setLoading] = useState(false);
+  const [generatedCards, setGeneratedCards] = useState([]);
+  const [error, setError] = useState(null);
+  const [numCards, setNumCards] = useState(5);
+  const [questionType, setQuestionType] = useState("multiple-choice");
+  const [viewMode, setViewMode] = useState("options"); // 'options' or 'results'
+
   // Extract metadata from topicData
   const {
     topic = "",
@@ -55,17 +62,17 @@ const MobileResponsiveCardGenerator = ({
 
   // Processing states
   const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState(null);
   const [step, setStep] = useState(1); // 1: Parameters, 2: Generation/Results
-
-  // Results states
-  const [generatedCards, setGeneratedCards] = useState([]);
 
   // Success modal state
   const [successModal, setSuccessModal] = useState({
     show: false,
     addedCards: []
   });
+
+  // Add these state variables at line 28 after the viewMode state
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [checkingApiKey, setCheckingApiKey] = useState(false);
 
   // Validation
   useEffect(() => {
@@ -134,239 +141,544 @@ const MobileResponsiveCardGenerator = ({
     return text.replace(/```json\s*/g, "").replace(/```/g, "").trim();
   };
 
+  // Safely get the API key with proper fallbacks
+  const getApiKey = () => {
+    // First try environment variable
+    if (process.env.REACT_APP_OPENAI_API_KEY) {
+      return process.env.REACT_APP_OPENAI_API_KEY;
+    }
+    
+    // Then try auth object
+    if (auth && auth.openaiKey) {
+      return auth.openaiKey;
+    }
+    
+    // Finally check for local storage (testing environment)
+    const localKey = localStorage.getItem('tempOpenAIKey');
+    if (localKey) {
+      return localKey;
+    }
+    
+    // No key available
+    return null;
+  };
+
+  // Save temporary API key to localStorage for testing
+  const saveApiKey = (key) => {
+    if (key && key.trim()) {
+      localStorage.setItem('tempOpenAIKey', key.trim());
+      setApiKeyInput('');
+      setError(null);
+      return true;
+    }
+    return false;
+  };
+
   // Generate cards using OpenAI API
   const generateCards = async () => {
-    if (!topic || !subject || !examBoard || !examType) {
-      setError("Missing required topic data. Please select a valid topic.");
-      return;
-    }
-
-    setIsGenerating(true);
+    setLoading(true);
+    setGeneratedCards([]);
     setError(null);
     
     try {
-      console.log("Generating cards with metadata:", {
-        topic,
-        subject,
-        examBoard,
-        examType,
-        numCards: formData.numCards,
-        questionType: formData.questionType
-      });
-
-      // Create prompt based on question type and other parameters
-      let prompt;
+      // Check for API key first
+      const apiKey = getApiKey();
       
-      if (formData.questionType === "acronym") {
-        prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). Generate ${formData.numCards} exam-style flashcards for ${examBoard} ${examType} ${subject} with focus on ${topic}. Create a useful acronym from some essential course knowledge. Be creative and playful. Format exactly as: [{"acronym": "Your acronym", "explanation": "Detailed explanation here"}]`;
-      } else {
-        // Determine complexity based on exam type
-        let complexityInstruction;
-        if (examType === "A-Level") {
-          complexityInstruction = "Make these appropriate for A-Level students (age 16-18). Questions should be challenging and involve deeper thinking. Include sufficient detail in answers and use appropriate technical language.";
-        } else { // GCSE
-          complexityInstruction = "Make these appropriate for GCSE students (age 14-16). Questions should be clear but still challenging. Explanations should be thorough but accessible.";
-        }
-        
-        // Base prompt
-        prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). 
-Generate ${formData.numCards} high-quality ${examBoard} ${examType} ${subject} flashcards for the specific topic "${topic}".
-${complexityInstruction}
-
-Before generating questions, scrape the latest ${examBoard} ${examType} ${subject} specification to ensure the content matches the current curriculum exactly.
-
-Use this format for different question types:
-`;
-        
-        // Add format based on question type
-        if (formData.questionType === "multiple-choice") {
-          prompt += `[
-  {
-    "subject": "${subject}",
-    "topic": "${topic}",
-    "questionType": "multiple-choice",
-    "question": "Clear, focused question based on the curriculum",
-    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-    "correctAnswer": "The correct option exactly as written in options array",
-    "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
-  }
-]`;
-        } else if (formData.questionType === "short-answer") {
-          prompt += `[
-  {
-    "subject": "${subject}",
-    "topic": "${topic}",
-    "questionType": "short-answer",
-    "question": "Clear, focused question from the curriculum",
-    "keyPoints": ["Key point 1", "Key point 2", "Key point 3"],
-    "detailedAnswer": "Complete and thorough explanation with all necessary information"
-  }
-]`;
-        } else if (formData.questionType === "essay") {
-          prompt += `[
-  {
-    "subject": "${subject}",
-    "topic": "${topic}",
-    "questionType": "essay",
-    "question": "Thought-provoking essay question matching the curriculum",
-    "keyPoints": ["Important point 1", "Important point 2", "Important point 3", "Important point 4"],
-    "detailedAnswer": "Structured essay plan with introduction, key arguments, and conclusion guidance"
-  }
-]`;
-        }
+      if (!apiKey) {
+        throw new Error("API key is required. Please enter an OpenAI API key.");
       }
       
-      console.log("Generating cards with prompt:", prompt);
+      // Switch to results view immediately
+      setViewMode("results");
       
-      // Make the API call to OpenAI
+      // Create prompt based on question type and other parameters
+      const prompt = `Generate ${numCards} flashcards for ${subject} - ${topic} (${examBoard} ${examType}).
+      
+      Question type: ${questionType}
+      
+      Format each card as a JSON object with these fields:
+      - front: The question or prompt
+      - back: The answer or explanation
+      - options: For multiple-choice questions only, include 4 options with one correct answer
+      
+      Return the cards in a JSON array.`;
+      
+      // Make API call
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o",
+          model: "gpt-3.5-turbo",
           messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
           max_tokens: 2000,
-          temperature: 0.7
-        })
+        }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("OpenAI API error:", errorData);
+        
+        // Handle API key errors specifically
+        if (response.status === 401) {
+          throw new Error("Invalid API key. Please check your OpenAI API key and try again.");
+        } else {
+          throw new Error(errorData.error?.message || "Failed to generate cards. API error.");
+        }
+      }
       
       const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error?.message || "Error calling OpenAI API");
-      }
-      
-      // Parse the response
-      const content = data.choices[0].message.content;
-      console.log("Raw AI response:", content);
-      
-      const cleanedContent = cleanOpenAIResponse(content);
-      
+      // Process the response
+      const cardsText = data.choices[0].message.content;
       let cards;
+      
       try {
-        cards = JSON.parse(cleanedContent);
+        // Try to parse as JSON directly
+        cards = JSON.parse(cardsText);
       } catch (e) {
-        console.error("Error parsing AI response:", e);
-        throw new Error("Failed to parse AI response. Please try again.");
+        // If direct parsing fails, try to extract JSON portion
+        const jsonMatch = cardsText.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          cards = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("Failed to parse API response");
+        }
       }
       
-      if (!Array.isArray(cards) || cards.length === 0) {
-        throw new Error("Invalid response format from AI. Please try again.");
+      // Validate and process cards
+      if (!Array.isArray(cards)) {
+        throw new Error("API did not return an array of cards");
       }
       
-      // Process the generated cards
+      // Process cards
       const processedCards = cards.map((card, index) => {
-        // Generate a unique ID
-        const id = `card_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
+        // Generate unique ID
+        const id = `card-${Date.now()}-${index}`;
         
-        // Ensure card color is valid - use a default if no color is available
-        const ensuredCardColor = formData.subjectColor || "#3cb44b";
+        // Generate a topic color
+        const topicColor = generateTopicColor(subjectColor);
         
-        // Add standard fields
-        const baseCard = {
+        return {
           id,
+          front: card.front,
+          back: card.back,
+          options: card.options,
           subject,
           topic,
-          examType,
           examBoard,
-          questionType: formData.questionType,
-          cardColor: ensuredCardColor,
-          baseColor: ensuredCardColor,
+          examType,
+          questionType,
+          cardColor: topicColor,
+          subjectColor: subjectColor || "#06206e",
           timestamp: new Date().toISOString(),
-          boxNum: 1, // Start in box 1
+          boxNum: 1, // Start in box 1 for spaced repetition
+          meta: {
+            examBoard,
+            examType
+          },
+          metadata: {
+            examBoard,
+            examType,
+            subject
+          }
         };
-        
-        // Process specific question types
-        if (formData.questionType === "acronym") {
-          return {
-            ...baseCard,
-            acronym: card.acronym,
-            explanation: card.explanation,
-            front: `Acronym: ${card.acronym}`,
-            back: `Explanation: ${card.explanation}`
-          };
-        } else if (formData.questionType === "multiple-choice") {
-          // Clean all options and correct answer of any existing prefixes
-          const cleanedOptions = card.options.map(option => 
-            option.replace(/^[a-d]\)\s*/i, '').trim()
-          );
-          
-          let correctAnswer = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
-          
-          // Find the index of the correct answer in the options
-          let correctIndex = cleanedOptions.findIndex(option => 
-            option.toLowerCase() === correctAnswer.toLowerCase()
-          );
-          
-          // If match not found, try a more flexible comparison
-          if (correctIndex === -1) {
-            correctIndex = cleanedOptions.findIndex(option => 
-              option.toLowerCase().includes(correctAnswer.toLowerCase()) || 
-              correctAnswer.toLowerCase().includes(option.toLowerCase())
-            );
-          }
-          
-          // If still not found, default to the first option
-          if (correctIndex === -1) {
-            console.warn("Could not match correct answer to an option, defaulting to first option");
-            correctIndex = 0;
-            correctAnswer = cleanedOptions[0];
-          }
-          
-          // Get the letter for this index (a, b, c, d)
-          const letter = String.fromCharCode(97 + correctIndex);
-          
-          return {
-            ...baseCard,
-            question: card.question,
-            options: cleanedOptions, // Use the cleaned options
-            correctAnswer: correctAnswer, // Use the cleaned correct answer
-            correctIndex: correctIndex, // Store the index for future reference
-            detailedAnswer: card.detailedAnswer,
-            additionalInfo: card.detailedAnswer, // Add to additionalInfo field for info modal
-            front: card.question,
-            back: `Correct Answer: ${letter}) ${correctAnswer}` // Format with letter prefix
-          };
-        } else if (formData.questionType === "short-answer" || formData.questionType === "essay") {
-          // Create key points as bullet points if they exist
-          const keyPointsHtml = card.keyPoints && card.keyPoints.length > 0
-            ? card.keyPoints.map(point => `• ${point}`).join("<br/>")
-            : "";
-            
-          return {
-            ...baseCard,
-            question: card.question,
-            keyPoints: card.keyPoints || [],
-            detailedAnswer: card.detailedAnswer,
-            additionalInfo: card.detailedAnswer, // Add to additionalInfo field for info modal
-            front: card.question,
-            back: keyPointsHtml // Only show key points, not detailed answer
-          };
-        } else {
-          return {
-            ...baseCard,
-            front: card.front || card.question,
-            back: card.back || card.answer
-          };
-        }
       });
-
-      setGeneratedCards(processedCards);
       
-    } catch (error) {
-      console.error("Error generating cards:", error);
-      setError(`Error: ${error.message}`);
+      setGeneratedCards(processedCards);
+    } catch (err) {
+      console.error("Error generating cards:", err);
+      setError(err.message || "Failed to generate cards");
+      
+      // If there's an API key issue, go back to options view
+      if (err.message.includes("API key")) {
+        setViewMode("options");
+      }
     } finally {
-      setIsGenerating(false);
+      setLoading(false);
     }
   };
 
+  // Ensure colors are properly assigned - generate a shade of the subject color for the topic
+  const generateTopicColor = (subjectColor) => {
+    if (!subjectColor) return "#06206e"; // Default blue if no subject color
+    
+    try {
+      // Remove any '#' prefix
+      const hex = subjectColor.replace('#', '');
+      
+      // Convert to RGB
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 2), 16);
+      const b = parseInt(hex.substring(4, 2), 16);
+      
+      // Create a slightly lighter/darker shade
+      const variation = Math.random() > 0.5 ? 0.85 : 1.15; // 15% lighter or darker
+      
+      // Apply variation and ensure values are in 0-255 range
+      const newR = Math.min(255, Math.max(0, Math.floor(r * variation)));
+      const newG = Math.min(255, Math.max(0, Math.floor(g * variation)));
+      const newB = Math.min(255, Math.max(0, Math.floor(b * variation)));
+      
+      // Convert back to hex
+      return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+    } catch (e) {
+      console.error("Error generating topic color:", e);
+      return subjectColor; // Fall back to subject color
+    }
+  };
+
+  // Handle adding all cards and closing
+  const handleAddAllCards = () => {
+    const unadded = generatedCards.filter(card => !card.added);
+    
+    if (unadded.length === 0) {
+      return; // No cards to add
+    }
+    
+    // Process the cards with correct metadata
+    const cardsToAdd = unadded.map(card => {
+      // Generate a valid topic color based on subject color
+      const topicColor = generateTopicColor(subjectColor);
+      
+      return {
+        ...card,
+        subject,
+        topic,
+        subjectColor: subjectColor,
+        cardColor: topicColor, // Use the generated topic color
+        // Add metadata for consistency
+        exam_board: examBoard,
+        exam_type: examType,
+        examBoard,
+        examType,
+        courseType: examType,
+        board: examBoard,
+        boxNum: 1, // Start in box 1 for spaced repetition
+        meta: {
+          exam_board: examBoard,
+          exam_type: examType,
+          examBoard,
+          examType
+        },
+        metadata: {
+          exam_board: examBoard,
+          exam_type: examType,
+          examBoard,
+          examType,
+          subject
+        }
+      };
+    });
+    
+    // Create Knack-specific JSON for field_2979
+    const knackFormatted = cardsToAdd.map(card => ({
+      id: card.id,
+      question: card.front || "",
+      answer: card.back || "",
+      subject: card.subject,
+      topic: card.topic,
+      cardColor: card.cardColor,
+      subjectColor: card.subjectColor,
+      exam_board: card.exam_board,
+      exam_type: card.exam_type,
+      examBoard: card.examBoard,
+      examType: card.examType,
+      courseType: card.courseType,
+      board: card.board,
+      meta: card.meta,
+      metadata: card.metadata,
+      boxNum: 1,
+      timestamp: card.timestamp
+    }));
+    
+    // JSON string for Knack field_2979
+    const knackField2979 = JSON.stringify(knackFormatted);
+    
+    // JSON string for Knack field_2986 (Box 1 for spaced repetition)
+    const knackField2986 = JSON.stringify(knackFormatted);
+    
+    console.log("Sending to Knack - field_2979:", knackField2979);
+    console.log("Sending to Knack - field_2986:", knackField2986);
+    
+    // Use the onSaveCards prop for saving the cards
+    if (onSaveCards) {
+      // Add the Knack-specific fields to the first card in the batch
+      const enhancedCards = [...cardsToAdd];
+      if (enhancedCards.length > 0) {
+        enhancedCards[0].knackField2979 = knackField2979;
+        enhancedCards[0].knackField2986 = knackField2986;
+      }
+      onSaveCards(enhancedCards);
+    } else if (onAddCard) {
+      // Backward compatibility - add cards one by one
+      cardsToAdd.forEach((card, index) => {
+        // Add Knack fields to the first card only
+        if (index === 0) {
+          card.knackField2979 = knackField2979;
+          card.knackField2986 = knackField2986;
+        }
+        onAddCard(card);
+      });
+    }
+    
+    // Mark all cards as added
+    setGeneratedCards(prev => prev.map(c => ({...c, added: true})));
+    
+    // Show success toast
+    const toast = document.createElement('div');
+    toast.className = 'toast-message success-toast';
+    toast.innerHTML = `✓ ${cardsToAdd.length} cards added to bank!`;
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.backgroundColor = '#4CAF50';
+    toast.style.color = 'white';
+    toast.style.padding = '12px 20px';
+    toast.style.borderRadius = '4px';
+    toast.style.zIndex = '9999';
+    toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    document.body.appendChild(toast);
+    
+    // Remove after 2 seconds and close modal
+    setTimeout(() => {
+      if (toast.parentNode) {
+        document.body.removeChild(toast);
+      }
+      onClose();
+    }, 2000);
+    
+    // Trigger save operations
+    if (window.parent && window.parent.postMessage) {
+      window.parent.postMessage({
+        type: "TRIGGER_SAVE",
+        knackField2979,
+        knackField2986
+      }, "*");
+    }
+  };
+
+  const handleRegenerateCards = () => {
+    setViewMode("options");
+    setGeneratedCards([]);
+  };
+
+  // Render the options view
+  const renderOptionsView = () => (
+    <>
+      <div className="generator-header">
+        <h2>{topic}</h2>
+        <button className="close-button" onClick={onClose}>×</button>
+      </div>
+      
+      <div className="generator-options">
+        <div className="option-group">
+          <label htmlFor="numCards">Number of Cards:</label>
+          <select 
+            id="numCards" 
+            value={numCards} 
+            onChange={e => setNumCards(parseInt(e.target.value))}
+          >
+            {[...Array(20)].map((_, i) => (
+              <option key={i+1} value={i+1}>{i+1}</option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="option-group">
+          <label htmlFor="questionType">Question Type:</label>
+          <select 
+            id="questionType" 
+            value={questionType} 
+            onChange={e => setQuestionType(e.target.value)}
+          >
+            {QUESTION_TYPES.map(type => (
+              <option key={type.id} value={type.id}>{type.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
+      <div className="generator-content">
+        <div className="mobile-question-types">
+          {QUESTION_TYPES.map(type => (
+            <div key={type.id} className="mobile-question-type">
+              <input
+                type="radio"
+                id={`question-type-${type.id}`}
+                name="questionType"
+                value={type.id}
+                checked={questionType === type.id}
+                onChange={e => setQuestionType(e.target.value)}
+              />
+              <label htmlFor={`question-type-${type.id}`}>
+                {type.label}
+              </label>
+            </div>
+          ))}
+        </div>
+        
+        <button 
+          className="generate-button"
+          onClick={generateCards}
+          disabled={!topic || !subject || error}
+        >
+          Generate {numCards} Cards
+        </button>
+      </div>
+      
+      {renderApiKeyInput()}
+    </>
+  );
+  
+  // Render the results view
+  const renderResultsView = () => (
+    <>
+      <div className="generator-header">
+        <h2>
+          {topic} - {generatedCards.length} Cards
+        </h2>
+        <button className="close-button" onClick={onClose}>×</button>
+      </div>
+      
+      <div className="generator-content">
+        {loading ? (
+          <div className="loading-container">
+            <LoadingSpinner size="medium" />
+            <p>Generating {numCards} cards for {topic}...</p>
+          </div>
+        ) : error ? (
+          <div className="error-message">
+            <p>{error}</p>
+            <button onClick={() => setViewMode("options")}>Go Back</button>
+          </div>
+        ) : (
+          <div className="generated-cards-container">
+            <div className="cards-grid">
+              {generatedCards.map((card, index) => (
+                <div 
+                  key={card.id} 
+                  className={`generated-card ${card.added ? 'added' : ''}`}
+                  style={{ backgroundColor: card.cardColor }}
+                >
+                  <div className="card-content">
+                    <div className="card-question">{card.front}</div>
+                    
+                    {card.options && (
+                      <div className="card-options">
+                        <ol type="a" className={card.options.length > 2 ? 'small-font-options' : ''}>
+                          {card.options.map((option, i) => (
+                            <li key={i}>{option}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                    
+                    <div className="card-answer">
+                      <strong>Answer:</strong> {card.back}
+                    </div>
+                  </div>
+                  
+                  <button 
+                    className="add-card-btn"
+                    onClick={() => handleAddCard(card)}
+                    disabled={card.added}
+                  >
+                    {card.added ? 'Added ✓' : 'Add to Bank'}
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="generator-actions">
+              <button 
+                className="regenerate-button"
+                onClick={handleRegenerateCards}
+              >
+                Change Options
+              </button>
+              
+              <button 
+                className="add-all-button"
+                onClick={handleAddAllCards}
+                disabled={generatedCards.length === 0 || generatedCards.every(c => c.added)}
+              >
+                Add All to Bank
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   // Add a single card to the bank
   const handleAddCard = (card) => {
-    onAddCard(card);
+    // Generate a valid topic color based on subject color
+    const topicColor = generateTopicColor(subjectColor);
+    
+    // Create an enhanced card with proper metadata
+    const enhancedCard = {
+      ...card,
+      cardColor: topicColor,
+      subjectColor: subjectColor,
+      boxNum: 1, // Start in box 1 for spaced repetition
+      // Ensure all required metadata is present
+      exam_board: examBoard,
+      exam_type: examType,
+      examBoard,
+      examType,
+      courseType: examType,
+      board: examBoard,
+      meta: {
+        exam_board: examBoard,
+        exam_type: examType,
+        examBoard,
+        examType
+      },
+      metadata: {
+        exam_board: examBoard,
+        exam_type: examType,
+        examBoard,
+        examType,
+        subject
+      }
+    };
+    
+    // Create Knack-specific JSON for field_2979 and field_2986
+    const knackFormatted = [{
+      id: enhancedCard.id,
+      question: enhancedCard.front || "",
+      answer: enhancedCard.back || "",
+      subject: enhancedCard.subject,
+      topic: enhancedCard.topic,
+      cardColor: enhancedCard.cardColor,
+      subjectColor: enhancedCard.subjectColor,
+      exam_board: enhancedCard.exam_board,
+      exam_type: enhancedCard.exam_type,
+      examBoard: enhancedCard.examBoard,
+      examType: enhancedCard.examType,
+      courseType: enhancedCard.courseType,
+      board: enhancedCard.board,
+      meta: enhancedCard.meta,
+      metadata: enhancedCard.metadata,
+      boxNum: 1,
+      timestamp: enhancedCard.timestamp
+    }];
+    
+    // Create JSON strings for Knack fields
+    enhancedCard.knackField2979 = JSON.stringify(knackFormatted);
+    enhancedCard.knackField2986 = JSON.stringify(knackFormatted);
+    
+    // Log the data being sent
+    console.log("Adding single card to Knack:", enhancedCard);
+    
+    // Call the onAddCard callback
+    onAddCard(enhancedCard);
+    
     // Mark card as added in UI
     setGeneratedCards(prev => 
       prev.map(c => c.id === card.id ? {...c, added: true} : c)
@@ -396,301 +708,54 @@ Use this format for different question types:
     
     // Use the onSaveCards callback if provided
     if (onSaveCards) {
-      onSaveCards([card]);
+      onSaveCards([enhancedCard]);
     }
     
     // Trigger save operations if window.parent exists
     if (window.parent && window.parent.postMessage) {
-      window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
-      window.parent.postMessage({ type: "SAVE_DATA" }, "*");
+      window.parent.postMessage({ 
+        type: "TRIGGER_SAVE",
+        knackField2979: enhancedCard.knackField2979,
+        knackField2986: enhancedCard.knackField2986
+      }, "*");
     }
   };
 
-  // Handle adding all cards and closing
-  const handleAddAllCards = () => {
-    const unadded = generatedCards.filter(card => !card.added);
-    
-    if (unadded.length === 0) {
-      return; // No cards to add
-    }
-    
-    // Process the cards with correct metadata
-    const cardsToAdd = unadded.map(card => ({
-      ...card,
-      subject,
-      topic,
-      subjectColor: formData.subjectColor,
-      cardColor: formData.subjectColor,
-      // Add metadata for consistency
-      exam_board: examBoard,
-      exam_type: examType,
-      examBoard,
-      examType,
-      courseType: examType,
-      board: examBoard,
-      meta: {
-        exam_board: examBoard,
-        exam_type: examType,
-        examBoard,
-        examType
-      },
-      metadata: {
-        exam_board: examBoard,
-        exam_type: examType,
-        examBoard,
-        examType,
-        subject
-      }
-    }));
-    
-    // Use the onSaveCards prop for saving the cards
-    if (onSaveCards) {
-      onSaveCards(cardsToAdd);
-    } else if (onAddCard) {
-      // Backward compatibility - add cards one by one
-      cardsToAdd.forEach(card => onAddCard(card));
-    }
-    
-    // Mark all cards as added
-    setGeneratedCards(prev => prev.map(c => ({...c, added: true})));
-    
-    // Show success modal with all added cards
-    setSuccessModal({
-      show: true,
-      addedCards: cardsToAdd
-    });
-    
-    // Auto-hide after 3 seconds and close
-    setTimeout(() => {
-      setSuccessModal(prev => ({...prev, show: false}));
-      onClose();
-    }, 3000);
-    
-    // Trigger save operations
-    if (window.parent && window.parent.postMessage) {
-      window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
-    }
-  };
-
-  // Generate new batch of cards
-  const handleRegenerateCards = () => {
-    setGeneratedCards([]);
-    setIsGenerating(true);
-    generateCards();
-  };
-
-  // Render success modal
-  const renderSuccessModal = () => {
-    if (!successModal.show) return null;
-    
-    return (
-      <div className="success-modal-overlay">
-        <div className="success-modal">
-          <div className="success-icon">✓</div>
-          <h3>{successModal.addedCards.length} {successModal.addedCards.length === 1 ? 'Card' : 'Cards'} Added!</h3>
-          <div className="success-cards">
-            {successModal.addedCards.slice(0, 5).map(card => (
-              <div key={card.id} className="success-card-item" style={{backgroundColor: card.cardColor}}>
-                <span style={{color: getContrastColor(card.cardColor)}}>{card.front.substring(0, 40)}...</span>
-              </div>
-            ))}
-            {successModal.addedCards.length > 5 && (
-              <div className="success-more">+{successModal.addedCards.length - 5} more</div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render parameters step
-  const renderParametersStep = () => {
-    return (
-      <div className="mobile-step">
-        <h2>Generate Cards</h2>
-        <div className="mobile-metadata">
-          <div className="metadata-item">
-            <strong>Topic:</strong> <span>{topic}</span>
-          </div>
-          <div className="metadata-item">
-            <strong>Subject:</strong> <span>{subject}</span>
-          </div>
-          <div className="metadata-item">
-            <strong>Course:</strong> <span>{examBoard} {examType}</span>
-          </div>
-        </div>
-
-        <div className="mobile-form-group">
-          <label htmlFor="numCards">Number of Cards:</label>
-          <input
-            type="number"
-            id="numCards"
-            name="numCards"
-            value={formData.numCards}
-            onChange={handleChange}
-            min="1"
-            max="20"
-            className="mobile-input"
-          />
-          <p className="helper-text">Select between 1 and 20 cards</p>
-        </div>
-
-        <div className="mobile-form-group">
-          <label>Question Type:</label>
-          <div className="mobile-question-types">
-            {QUESTION_TYPES.map(type => (
-              <div key={type.id} className="mobile-question-type">
-                <input
-                  type="radio"
-                  id={`question-type-${type.id}`}
-                  name="questionType"
-                  value={type.id}
-                  checked={formData.questionType === type.id}
-                  onChange={handleChange}
-                />
-                <label htmlFor={`question-type-${type.id}`}>
-                  {type.label}
-                </label>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render card generation/results step
-  const renderResultsStep = () => {
-    return (
-      <div className="mobile-step">
-        <h2>Generated Cards</h2>
-        
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-        
-        {isGenerating ? (
-          <div className="loading-container">
-            <LoadingSpinner size="medium" />
-            <p>Creating {formData.numCards} flashcards for {examBoard} {examType} {subject}...</p>
-          </div>
-        ) : generatedCards.length > 0 ? (
-          <>
-            <div className="mobile-generated-cards-actions">
-              <button className="mobile-secondary-button" onClick={handleRegenerateCards}>
-                <span className="button-icon">🔄</span> Regenerate
-              </button>
-            </div>
-            
-            <div className="mobile-cards-container">
-              {generatedCards.map(card => (
-                <div 
-                  key={card.id} 
-                  className={`mobile-card ${card.added ? 'added' : ''}`}
-                  style={{ 
-                    backgroundColor: card.cardColor,
-                    color: getContrastColor(card.cardColor)
-                  }}
-                >
-                  <div className="mobile-card-header">
-                    <span className="card-type">
-                      {card.questionType === "multiple-choice" ? "Multiple Choice" : 
-                       card.questionType === "short-answer" ? "Short Answer" : 
-                       card.questionType === "essay" ? "Essay" : "Acronym"}
-                    </span>
-                    
-                    <button 
-                      className="mobile-add-btn" 
-                      onClick={() => handleAddCard(card)}
-                      disabled={card.added}
-                    >
-                      {card.added ? "Added ✓" : "Add"}
-                    </button>
-                  </div>
-                  
-                  <Flashcard 
-                    card={card}
-                    preview={true}
-                    style={{
-                      height: 'auto',
-                      minHeight: '180px',
-                      width: '100%',
-                      margin: '0',
-                      boxShadow: 'none',
-                      borderRadius: '0'
-                    }}
-                    showButtons={false}
-                    isInModal={false}
-                  />
-                </div>
-              ))}
-            </div>
-            
-            <div className="mobile-bottom-actions">
-              <button 
-                className="mobile-primary-button"
-                onClick={handleAddAllCards}
-                disabled={generatedCards.every(card => card.added)}
-              >
-                <span className="button-icon">💾</span> Add All Cards
-              </button>
-              <p className="mobile-status-text">
-                {generatedCards.filter(card => card.added).length} of {generatedCards.length} cards added
-              </p>
-            </div>
-          </>
-        ) : (
-          <div className="mobile-empty-state">
-            <p>No cards generated yet.</p>
+  // Add this in the renderOptionsView return after the generate button
+  // Add this to options view to show API key input if needed
+  const renderApiKeyInput = () => {
+    if (!getApiKey()) {
+      return (
+        <div className="api-key-input-container">
+          <h3>OpenAI API Key Required</h3>
+          <p>An API key is required to generate cards. Enter your key below:</p>
+          <div className="api-key-form">
+            <input 
+              type="text" 
+              placeholder="sk-..." 
+              value={apiKeyInput}
+              onChange={(e) => setApiKeyInput(e.target.value)}
+              className="api-key-field"
+            />
             <button 
-              className="mobile-primary-button"
-              onClick={generateCards}
-              disabled={isGenerating}
+              className="save-api-key-btn"
+              onClick={() => saveApiKey(apiKeyInput)}
             >
-              {isGenerating ? "Generating..." : "Generate Cards"}
+              Save Key
             </button>
           </div>
-        )}
-      </div>
-    );
+          <p className="api-key-note">Your key is only stored in your browser and is not sent to our servers.</p>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
-    <div className="mobile-card-generator">
-      <div className="mobile-generator-header">
-        <h1>Generate Cards</h1>
-        <button className="mobile-close-button" onClick={onClose}>&times;</button>
+    <div className="mobile-card-generator-overlay">
+      <div className="mobile-card-generator">
+        {viewMode === "options" ? renderOptionsView() : renderResultsView()}
       </div>
-      
-      <div className="mobile-generator-content">
-        {step === 1 ? renderParametersStep() : renderResultsStep()}
-      </div>
-      
-      <div className="mobile-generator-controls">
-        {step === 2 && (
-          <button 
-            onClick={handlePrevStep} 
-            className="mobile-back-button"
-            disabled={isGenerating}
-          >
-            Back
-          </button>
-        )}
-        
-        {step === 1 && (
-          <button 
-            onClick={handleNextStep} 
-            className="mobile-next-button"
-            disabled={!canProceed() || isGenerating}
-          >
-            Generate Cards
-          </button>
-        )}
-      </div>
-      
-      {renderSuccessModal()}
     </div>
   );
 };

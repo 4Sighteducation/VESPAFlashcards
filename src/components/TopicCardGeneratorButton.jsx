@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { FaBolt } from 'react-icons/fa';
-import MobileResponsiveCardGenerator from './MobileResponsiveCardGenerator';
+import React, { useState, useEffect } from 'react';
 import './TopicCardGeneratorButton.css';
+import MobileResponsiveCardGenerator from './MobileResponsiveCardGenerator';
+import { createPortal } from 'react-dom';
 
 /**
  * TopicCardGeneratorButton
@@ -22,48 +22,101 @@ const TopicCardGeneratorButton = ({
   userId
 }) => {
   const [showGenerator, setShowGenerator] = useState(false);
+  const [modalRoot, setModalRoot] = useState(null);
   
-  // Open the card generator
-  const openGenerator = () => {
+  // Set up the modal root on component mount
+  useEffect(() => {
+    // Create a div for the modal root if it doesn't exist
+    let root = document.getElementById('card-generator-modal-root');
+    if (!root) {
+      root = document.createElement('div');
+      root.id = 'card-generator-modal-root';
+      document.body.appendChild(root);
+    }
+    setModalRoot(root);
+    
+    // Clean up on unmount
+    return () => {
+      // Only remove the root if we created it and it's still in the DOM
+      if (!root.getAttribute('data-persistent') && document.body.contains(root)) {
+        document.body.removeChild(root);
+      }
+    };
+  }, []);
+  
+  // Handler to open the generator
+  const handleOpenGenerator = () => {
     setShowGenerator(true);
+    // Lock body scroll
+    document.body.style.overflow = 'hidden';
   };
   
-  // Close the card generator
-  const closeGenerator = () => {
+  // Handler to close the generator
+  const handleCloseGenerator = () => {
     setShowGenerator(false);
+    // Restore body scroll
+    document.body.style.overflow = '';
   };
   
-  // Prepare topic data for the generator
+  // Prepare the topic data to pass to the generator
   const topicData = {
-    topic,
-    subject,
-    examBoard,
-    examType,
-    subjectColor
+    topic: topic || "",
+    subject: subject || "",
+    examBoard: examBoard || "",
+    examType: examType || "",
+    subjectColor: subjectColor || "#06206e"
   };
   
+  // Generate a contrasting text color based on background color
+  const getContrastColor = (hexColor) => {
+    // Default to white if no color provided
+    if (!hexColor) return "#FFFFFF";
+    
+    // Remove the # if it exists
+    const hex = hexColor.replace('#', '');
+    
+    // Convert hex to RGB
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    
+    // Calculate luminance using sRGB luminance formula
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return white for dark colors, and dark gray for light colors
+    return luminance > 0.5 ? "#333333" : "#FFFFFF";
+  };
+  
+  // Button background and text colors
+  const buttonStyle = {
+    backgroundColor: subjectColor || '#06206e',
+    color: getContrastColor(subjectColor) || '#FFFFFF'
+  };
+
   return (
-    <div className="topic-card-generator-wrapper">
+    <>
       <button 
         className="topic-card-generator-button"
-        onClick={openGenerator}
-        style={{ backgroundColor: subjectColor || '#06206e' }}
+        onClick={handleOpenGenerator}
+        style={buttonStyle}
+        aria-label="Generate flashcards for this topic"
       >
-        <FaBolt className="generator-icon" />
+        <i className="fa fa-magic"></i>
         <span>Generate Cards</span>
       </button>
       
-      {showGenerator && (
+      {showGenerator && modalRoot && createPortal(
         <MobileResponsiveCardGenerator
           topicData={topicData}
-          onClose={closeGenerator}
+          onClose={handleCloseGenerator}
           onAddCard={onAddCard}
           onSaveCards={onSaveCards}
           auth={auth}
           userId={userId}
-        />
+        />,
+        modalRoot
       )}
-    </div>
+    </>
   );
 };
 

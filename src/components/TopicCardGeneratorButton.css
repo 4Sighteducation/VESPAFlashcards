@@ -11,30 +11,72 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 16px;
-  background-color: #06206e;
-  color: white;
   border: none;
   border-radius: 6px;
-  font-weight: 600;
+  background-color: #06206e;
+  color: white;
   font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 180px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
 }
 
 .topic-card-generator-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  filter: brightness(110%);
+  filter: brightness(1.1);
 }
 
 .topic-card-generator-button:active {
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  filter: brightness(0.95);
 }
 
-.generator-icon {
-  font-size: 1.1rem;
+.topic-card-generator-button i {
+  font-size: 1rem;
+}
+
+.topic-card-generator-button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.1), rgba(255,255,255,0));
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.topic-card-generator-button:hover::after {
+  transform: translateX(100%);
+}
+
+/* Responsive styles */
+@media screen and (max-width: 768px) {
+  .topic-card-generator-button {
+    max-width: none;
+    font-size: 0.9rem;
+    padding: 8px 12px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .topic-card-generator-button {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+  
+  .topic-card-generator-button i {
+    font-size: 0.9rem;
+  }
 }
 
 /* Mobile responsive adjustments */
