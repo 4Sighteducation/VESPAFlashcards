@@ -70,10 +70,6 @@ const MobileResponsiveCardGenerator = ({
     addedCards: []
   });
 
-  // Add these state variables at line 28 after the viewMode state
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [checkingApiKey, setCheckingApiKey] = useState(false);
-
   // Validation
   useEffect(() => {
     // Validate that we have the necessary data to generate cards
@@ -141,36 +137,15 @@ const MobileResponsiveCardGenerator = ({
     return text.replace(/```json\s*/g, "").replace(/```/g, "").trim();
   };
 
-  // Safely get the API key with proper fallbacks
+  // Replace the getApiKey function with this simpler version
   const getApiKey = () => {
-    // First try environment variable
-    if (process.env.REACT_APP_OPENAI_API_KEY) {
-      return process.env.REACT_APP_OPENAI_API_KEY;
-    }
-    
-    // Then try auth object
-    if (auth && auth.openaiKey) {
-      return auth.openaiKey;
-    }
-    
-    // Finally check for local storage (testing environment)
-    const localKey = localStorage.getItem('tempOpenAIKey');
-    if (localKey) {
-      return localKey;
-    }
-    
-    // No key available
-    return null;
+    // In production, just use the environment variable or auth key
+    return process.env.REACT_APP_OPENAI_API_KEY || (auth && auth.openaiKey);
   };
 
-  // Save temporary API key to localStorage for testing
-  const saveApiKey = (key) => {
-    if (key && key.trim()) {
-      localStorage.setItem('tempOpenAIKey', key.trim());
-      setApiKeyInput('');
-      setError(null);
-      return true;
-    }
+  // Remove the saveApiKey function completely by replacing it with a no-op
+  const saveApiKey = () => {
+    // No-op in production
     return false;
   };
 
@@ -181,11 +156,11 @@ const MobileResponsiveCardGenerator = ({
     setError(null);
     
     try {
-      // Check for API key first
-      const apiKey = getApiKey();
+      // Get API key from props or environment
+      const apiKey = process.env.REACT_APP_OPENAI_API_KEY || (auth && auth.openaiKey);
       
       if (!apiKey) {
-        throw new Error("API key is required. Please enter an OpenAI API key.");
+        throw new Error("No OpenAI API key available. Please configure an API key.");
       }
       
       // Switch to results view immediately
@@ -218,19 +193,12 @@ const MobileResponsiveCardGenerator = ({
         }),
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("OpenAI API error:", errorData);
-        
-        // Handle API key errors specifically
-        if (response.status === 401) {
-          throw new Error("Invalid API key. Please check your OpenAI API key and try again.");
-        } else {
-          throw new Error(errorData.error?.message || "Failed to generate cards. API error.");
-        }
-      }
-      
       const data = await response.json();
+      
+      if (!response.ok) {
+        console.error("OpenAI API error:", data);
+        throw new Error(data.error?.message || "Failed to generate cards");
+      }
       
       // Process the response
       const cardsText = data.choices[0].message.content;
@@ -292,11 +260,6 @@ const MobileResponsiveCardGenerator = ({
     } catch (err) {
       console.error("Error generating cards:", err);
       setError(err.message || "Failed to generate cards");
-      
-      // If there's an API key issue, go back to options view
-      if (err.message.includes("API key")) {
-        setViewMode("options");
-      }
     } finally {
       setLoading(false);
     }
@@ -529,8 +492,6 @@ const MobileResponsiveCardGenerator = ({
           Generate {numCards} Cards
         </button>
       </div>
-      
-      {renderApiKeyInput()}
     </>
   );
   
@@ -719,36 +680,6 @@ const MobileResponsiveCardGenerator = ({
         knackField2986: enhancedCard.knackField2986
       }, "*");
     }
-  };
-
-  // Add this in the renderOptionsView return after the generate button
-  // Add this to options view to show API key input if needed
-  const renderApiKeyInput = () => {
-    if (!getApiKey()) {
-      return (
-        <div className="api-key-input-container">
-          <h3>OpenAI API Key Required</h3>
-          <p>An API key is required to generate cards. Enter your key below:</p>
-          <div className="api-key-form">
-            <input 
-              type="text" 
-              placeholder="sk-..." 
-              value={apiKeyInput}
-              onChange={(e) => setApiKeyInput(e.target.value)}
-              className="api-key-field"
-            />
-            <button 
-              className="save-api-key-btn"
-              onClick={() => saveApiKey(apiKeyInput)}
-            >
-              Save Key
-            </button>
-          </div>
-          <p className="api-key-note">Your key is only stored in your browser and is not sent to our servers.</p>
-        </div>
-      );
-    }
-    return null;
   };
 
   return (
