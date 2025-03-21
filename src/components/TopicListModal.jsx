@@ -52,6 +52,7 @@ const TopicListModal = ({
   const [lastUpdated, setLastUpdated] = useState(null);
   const [topicCount, setTopicCount] = useState(0);
   const [topics, setTopics] = useState([]);
+  const [groupedTopicsByCategory, setGroupedTopicsByCategory] = useState({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
@@ -67,6 +68,42 @@ const TopicListModal = ({
   useEffect(() => {
     checkSubjectMetadata();
   }, []);
+  
+  // Group topics by category when topics change
+  useEffect(() => {
+    const grouped = groupTopicsByCategory(topics);
+    setGroupedTopicsByCategory(grouped);
+  }, [topics]);
+  
+  // Helper function to group topics by category
+  const groupTopicsByCategory = (topicsList) => {
+    const groups = {};
+    
+    topicsList.forEach(topic => {
+      // Extract category from topic name (before the colon)
+      let category = "General";
+      let name = topic.name;
+      
+      if (topic.name.includes(":")) {
+        const parts = topic.name.split(":");
+        category = parts[0].trim();
+        name = parts[1].trim();
+      }
+      
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      
+      groups[category].push({
+        ...topic,
+        displayName: name,
+        category: category,
+        fullName: topic.name
+      });
+    });
+    
+    return groups;
+  };
 
   // Check if subject metadata exists and load exam board and type
   const checkSubjectMetadata = async () => {
@@ -470,7 +507,7 @@ const TopicListModal = ({
     }
   };
 
-  // Save topic list to Knack
+  // Save topic list to Knack using window messaging system
   const saveTopicList = async () => {
     if (topics.length === 0) {
       setError("No topics to save");
@@ -481,67 +518,72 @@ const TopicListModal = ({
     setError(null);
     
     try {
-      // Check if we're authenticated
+      // Basic validation
       if (!auth || !userId) {
         setError("You must be logged in to save topic lists");
         setIsSaving(false);
         return;
       }
       
-      debugLog("AUTH OBJECT", auth);
-      debugLog("USER ID", userId);
       console.log(`Saving topic list for ${subject} with ${topics.length} topics`);
       
-      // First get the actual record ID for this user in object_102
-      const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
-      debugLog("RECORD SEARCH URL", searchUrl);
+      // Get the record ID from our current user record - first try looking for it
+      let recordId = null;
       
-      try {
-        const searchResponse = await fetch(searchUrl, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY
-          }
-        });
+      // Check if it's already in auth object
+      if (auth.recordId) {
+        recordId = auth.recordId;
+      } else {
+        // We need to find it by searching records
+        console.log("Searching for user record ID...");
+        const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
         
-        if (!searchResponse.ok) {
-          const errorText = await searchResponse.text();
-          console.error("Failed to search for user record:", errorText);
-          setError("Failed to find your data record");
-          setIsSaving(false);
-          return;
-        }
-        
-        const allRecords = await searchResponse.json();
-        debugLog("ALL RECORDS", allRecords);
-        
-        // Find the record matching this user ID
-        let recordId = null;
-        if (allRecords && allRecords.records) {
-          const userRecord = allRecords.records.find(record => {
-            return record.field_2954 === userId || 
-                   (record.field_2958 && record.field_2958 === auth.email);
+        try {
+          const searchResponse = await fetch(searchUrl, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Knack-Application-ID": KNACK_APP_ID,
+              "X-Knack-REST-API-Key": KNACK_API_KEY
+            }
           });
           
-          if (userRecord) {
-            recordId = userRecord.id;
-            console.log("Found matching record ID:", recordId);
+          if (searchResponse.ok) {
+            const allRecords = await searchResponse.json();
+            
+            // Find the record matching this user ID
+            if (allRecords && allRecords.records) {
+              const userRecord = allRecords.records.find(record => {
+                return record.field_2954 === userId || 
+                      (record.field_2958 && record.field_2958 === auth.email);
+              });
+              
+              if (userRecord) {
+                recordId = userRecord.id;
+                console.log("Found matching record ID:", recordId);
+              }
+            }
           }
+        } catch (e) {
+          console.error("Error finding record ID:", e);
         }
-        
-        if (!recordId) {
-          console.error("Could not find a record for this user ID:", userId);
-          setError("Failed to locate your user record");
-          setIsSaving(false);
-          return;
-        }
-        
-        // Now get the current data for this record
-        const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-        debugLog("GET URL", getUrl);
-        
+      }
+      
+      if (!recordId) {
+        console.error("Could not find a record ID for this user");
+        setError("Failed to locate your user record. Please refresh and try again.");
+        setIsSaving(false);
+        return;
+      }
+
+      // Get existing topic lists if available
+      let allTopicLists = [];
+      let subjectMetadata = [];
+      
+      // Get the current data for this record to extract existing topic lists
+      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+      
+      try {
         const getResponse = await fetch(getUrl, {
           method: "GET",
           headers: {
@@ -551,313 +593,126 @@ const TopicListModal = ({
           }
         });
         
-        if (!getResponse.ok) {
-          const errorText = await getResponse.text();
-          console.error("Failed to get existing topic lists:", errorText);
-          setError("Failed to save topic list");
-          setIsSaving(false);
-          return;
-        }
-        
-        const userData = await getResponse.json();
-        debugLog("FETCHED USER DATA", userData);
-      
-        // Parse existing topic lists
-        let allTopicLists = [];
-        if (userData && userData.field_3011) {
-          try {
-            allTopicLists = JSON.parse(userData.field_3011);
-            if (!Array.isArray(allTopicLists)) {
-              console.log("field_3011 is not an array, initializing empty array");
-              allTopicLists = [];
-            }
-          } catch (e) {
-            console.error("Error parsing existing topic lists:", e);
-            allTopicLists = [];
-          }
-        } else {
-          console.log("field_3011 not found in user data, initializing empty array");
-        }
-        
-        debugLog("CURRENT TOPIC LISTS", allTopicLists);
-        
-        // Find if topic list for this subject, exam board, and exam type already exists
-        const existingIndex = allTopicLists.findIndex(list => 
-          list.subject === subject && 
-          list.examBoard === examBoard && 
-          list.examType === examType
-        );
-        
-        // Create new topic list object
-        const newTopicList = {
-          id: existingIndex >= 0 ? allTopicLists[existingIndex].id : generateId('list'),
-          subject,
-          examBoard,
-          examType,
-          topics,
-          lastUpdated: new Date().toISOString()
-        };
-        
-        debugLog("NEW TOPIC LIST TO SAVE", newTopicList);
-        
-        // Update or add the topic list
-        if (existingIndex >= 0) {
-          allTopicLists[existingIndex] = newTopicList;
-        } else {
-          allTopicLists.push(newTopicList);
-        }
-        
-        // Save metadata for this subject
-        let subjectMetadata = [];
-        if (userData && userData.field_3030) {
-          try {
-            subjectMetadata = JSON.parse(userData.field_3030);
-            if (!Array.isArray(subjectMetadata)) {
-              subjectMetadata = [];
-            }
-          } catch (e) {
-            console.error("Error parsing subject metadata:", e);
-            subjectMetadata = [];
-          }
-        }
-        
-        // Find if metadata for this subject already exists
-        const metaIndex = subjectMetadata.findIndex(meta => meta.subject === subject);
-        
-        // Create new metadata object
-        const newMetadata = {
-          subject,
-          examBoard,
-          examType,
-          lastUpdated: new Date().toISOString()
-        };
-        
-        // Update or add the metadata
-        if (metaIndex >= 0) {
-          subjectMetadata[metaIndex] = newMetadata;
-        } else {
-          subjectMetadata.push(newMetadata);
-        }
-        
-        // Extract user information for additional fields
-        const userName = sanitizeField(auth.name || "");
-        const userEmail = sanitizeField(auth.email || "");
-        
-        // For connected fields, check if we have IDs
-        // Tutor connection field
-        let userTutor = null;
-        if (auth.tutor) {
-          // Check if this is an ID or just a string
-          if (typeof auth.tutor === 'object' && auth.tutor.id) {
-            userTutor = auth.tutor.id; // Use ID for connected field
-          } else if (typeof auth.tutor === 'string') {
-            // If it's a string but looks like an ID (e.g. starts with '5' for Knack IDs)
-            if (auth.tutor.match(/^[0-9a-f]{24}$/i)) {
-              userTutor = auth.tutor; // Already an ID
-            } else {
-              userTutor = sanitizeField(auth.tutor); // Regular string, sanitize it
-            }
-          }
-        }
-        
-        // VESPA Customer (school) connection field
-        let userSchool = null;
-        if (auth.school || auth.field_122) {
-          const schoolValue = auth.school || auth.field_122;
-          if (typeof schoolValue === 'object' && schoolValue.id) {
-            userSchool = schoolValue.id; // Use ID for connected field
-          } else if (typeof schoolValue === 'string') {
-            if (schoolValue.match(/^[0-9a-f]{24}$/i)) {
-              userSchool = schoolValue; // Already an ID
-            } else {
-              userSchool = sanitizeField(schoolValue); // Regular string, sanitize it
-            }
-          }
-        }
-        
-        // Handle user role if it's a connected field
-        let userRole = null;
-        if (auth.role) {
-          if (typeof auth.role === 'object' && auth.role.id) {
-            userRole = auth.role.id; // Use ID for connected field
-          } else if (typeof auth.role === 'string') {
-            if (auth.role.match(/^[0-9a-f]{24}$/i)) {
-              userRole = auth.role; // Already an ID
-            } else {
-              userRole = sanitizeField(auth.role); // Regular string, sanitize it
-            }
-          }
-        }
-        
-        const tutorGroup = sanitizeField(auth.tutorGroup || "");
-        const yearGroup = sanitizeField(auth.yearGroup || "");
-        
-        debugLog("EXTRACTED USER INFO", {
-          userName,
-          userEmail,
-          userTutor,
-          userSchool,
-          userRole,
-          tutorGroup,
-          yearGroup
-        });
-        
-        // Prepare the data to save with additional fields
-        const dataToSave = {
-          field_3011: JSON.stringify(allTopicLists),
-          field_3030: JSON.stringify(subjectMetadata)
-        };
-        
-        // Only add user name if it has a value (not a connection field)
-        if (userName) dataToSave.field_3029 = userName;
-        
-        // Only add email as a connection field if it's an actual ID
-        // Otherwise, just use the plain email text for field_2958
-        if (userEmail) {
-          // field_2958 is the plain text email field (not a connection)
-          dataToSave.field_2958 = userEmail;
+        if (getResponse.ok) {
+          const userData = await getResponse.json();
           
-          // field_2956 is the connection field - only add if it's an ID
-          if (typeof userEmail === 'string' && userEmail.match(/^[0-9a-f]{24}$/i)) {
-            dataToSave.field_2956 = userEmail;
-          }
-        }
-        
-        // Only add connected fields if they have valid IDs
-        // VESPA Customer (school) - only add if it's an ID
-        if (userSchool && typeof userSchool === 'string' && userSchool.match(/^[0-9a-f]{24}$/i)) {
-          dataToSave.field_3008 = userSchool;
-        }
-        
-        // Tutor connection - only add if it's an ID
-        if (userTutor && typeof userTutor === 'string' && userTutor.match(/^[0-9a-f]{24}$/i)) {
-          dataToSave.field_3009 = userTutor;
-        }
-        
-        // User Role - only add if it's an ID
-        if (userRole && typeof userRole === 'string' && userRole.match(/^[0-9a-f]{24}$/i)) {
-          dataToSave.field_73 = userRole;
-        }
-        
-        // These fields are not connections, so we can add them as text
-        if (tutorGroup) dataToSave.field_565 = tutorGroup;
-        if (yearGroup) dataToSave.field_548 = yearGroup;
-        
-        // Double check that our JSON is valid for field_3011
-        try {
-          const testParse = JSON.parse(dataToSave.field_3011);
-          if (!Array.isArray(testParse)) {
-            console.warn("field_3011 is not an array after stringification, fixing format");
-            dataToSave.field_3011 = JSON.stringify([]);
-          }
-        } catch (e) {
-          console.error("Invalid JSON for field_3011, using empty array instead:", e);
-          dataToSave.field_3011 = JSON.stringify([]);
-        }
-        
-        // Double check that our JSON is valid for field_3030
-        try {
-          const testParse = JSON.parse(dataToSave.field_3030);
-          if (!Array.isArray(testParse)) {
-            console.warn("field_3030 is not an array after stringification, fixing format");
-            dataToSave.field_3030 = JSON.stringify([]);
-          }
-        } catch (e) {
-          console.error("Invalid JSON for field_3030, using empty array instead:", e);
-          dataToSave.field_3030 = JSON.stringify([]);
-        }
-        
-        debugLog("DATA BEING SENT TO KNACK", dataToSave);
-        console.log("String length of field_3011:", JSON.stringify(allTopicLists).length);
-        
-        // Check if the data is too large
-        if (JSON.stringify(dataToSave).length > 1000000) {
-          console.error("Data payload is too large, may exceed Knack's size limits");
-          setError("Data is too large to save. Try with fewer topics.");
-          setIsSaving(false);
-          return;
-        }
-        
-        // Save to Knack - using the actual record ID, not userId
-        const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-        debugLog("UPDATE URL", updateUrl);
-        
-        const updateResponse = await fetch(updateUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY
-          },
-          body: JSON.stringify(dataToSave)
-        });
-        
-        const responseStatus = updateResponse.status;
-        const responseStatusText = updateResponse.statusText;
-        debugLog("KNACK API RESPONSE STATUS", { status: responseStatus, statusText: responseStatusText });
-        
-        if (!updateResponse.ok) {
-          const errorText = await updateResponse.text();
-          debugLog("KNACK API ERROR", errorText);
-          console.error("Failed to save topic list:", errorText);
-          setError("Failed to save topic list");
-          setIsSaving(false);
-          return;
-        }
-        
-        try {
-          const responseData = await updateResponse.json();
-          debugLog("KNACK API SUCCESS RESPONSE", responseData);
-          
-          // Check if the response indicates no records were updated
-          if (responseData.total_records === 0 || (responseData.records && responseData.records.length === 0)) {
-            console.log("No records were updated. Trying alternative update method...");
-            
-            // Try a POST request as an alternative
-            const createUrl = `https://api.knack.com/v1/objects/object_102/records`;
-            debugLog("TRYING POST URL", createUrl);
-            
-            // For POST, include the record ID in the data
-            const postData = {
-              ...dataToSave,
-              id: recordId
-            };
-            
-            const createResponse = await fetch(createUrl, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Knack-Application-ID": KNACK_APP_ID,
-                "X-Knack-REST-API-Key": KNACK_API_KEY
-              },
-              body: JSON.stringify(postData)
-            });
-            
-            if (!createResponse.ok) {
-              const createErrorText = await createResponse.text();
-              console.error("Alternative update also failed:", createErrorText);
-            } else {
-              const createResponseData = await createResponse.json();
-              debugLog("POST RESPONSE", createResponseData);
-              console.log("Alternative update method succeeded");
+          if (userData && userData.field_3011) {
+            try {
+              const parsed = JSON.parse(userData.field_3011);
+              if (Array.isArray(parsed)) {
+                allTopicLists = parsed;
+              }
+            } catch (e) {
+              console.error("Error parsing existing topic lists:", e);
             }
           }
-        } catch (e) {
-          console.log("Could not parse response JSON, but request was successful");
+          
+          // Also get metadata if available
+          if (userData && userData.field_3030) {
+            try {
+              const parsed = JSON.parse(userData.field_3030);
+              if (Array.isArray(parsed)) {
+                subjectMetadata = parsed;
+              }
+            } catch (e) {
+              console.error("Error parsing subject metadata:", e);
+            }
+          }
         }
-        
-        console.log("Topic list saved successfully to Knack");
-        setTopicListSaved(true);
-        setIsSaving(false);
-        setStep(3); // Move to post-save options
-      } catch (apiError) {
-        debugLog("API ERROR", { message: apiError.message, stack: apiError.stack });
-        console.error("Error with Knack API:", apiError);
-        setError(`API error: ${apiError.message}`);
-        setIsSaving(false);
+      } catch (e) {
+        console.warn("Could not retrieve existing data, will create new");
       }
+      
+      // Find if topic list for this subject, exam board, and exam type already exists
+      const existingIndex = allTopicLists.findIndex(list => 
+        list.subject === subject && 
+        list.examBoard === examBoard && 
+        list.examType === examType
+      );
+      
+      // Create new topic list object
+      const newTopicList = {
+        id: existingIndex >= 0 ? allTopicLists[existingIndex].id : generateId('list'),
+        subject,
+        examBoard,
+        examType,
+        topics,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      // Update or add the topic list
+      let updatedTopicLists = [...allTopicLists];
+      if (existingIndex >= 0) {
+        updatedTopicLists[existingIndex] = newTopicList;
+      } else {
+        updatedTopicLists.push(newTopicList);
+      }
+      
+      // Find if metadata for this subject already exists
+      const metaIndex = subjectMetadata.findIndex(meta => meta.subject === subject);
+      
+      // Create new metadata object
+      const newMetadata = {
+        subject,
+        examBoard,
+        examType,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      // Update or add the metadata
+      let updatedMetadata = [...subjectMetadata];
+      if (metaIndex >= 0) {
+        updatedMetadata[metaIndex] = newMetadata;
+      } else {
+        updatedMetadata.push(newMetadata);
+      }
+      
+      // Use window.parent.postMessage to send data to the parent window
+      console.log("Sending topic list data to parent window via postMessage");
+      
+      // Set up a listener for the response
+      const messageHandler = (event) => {
+        if (event.data && event.data.type === "SAVE_RESULT") {
+          // Remove the event listener once we get a response
+          window.removeEventListener("message", messageHandler);
+          
+          if (event.data.success) {
+            console.log("Topic list saved successfully via postMessage");
+            setTopicListSaved(true);
+            setIsSaving(false);
+            setStep(3); // Move to post-save options
+          } else {
+            console.error("Failed to save topic list via postMessage");
+            setError("Failed to save topic list. Please try again.");
+            setIsSaving(false);
+          }
+        }
+      };
+      
+      // Add the event listener
+      window.addEventListener("message", messageHandler);
+      
+      // Send the message to the parent window
+      window.parent.postMessage({
+        type: "SAVE_DATA",
+        data: {
+          recordId: recordId,
+          topicLists: updatedTopicLists,
+          topicMetadata: updatedMetadata
+        }
+      }, "*");
+      
+      // Set a timeout to handle no response
+      setTimeout(() => {
+        if (isSaving) {
+          window.removeEventListener("message", messageHandler);
+          console.error("No save response received within timeout");
+          setError("Save operation timed out. Please try again.");
+          setIsSaving(false);
+        }
+      }, 10000); // 10-second timeout
+      
     } catch (error) {
-      debugLog("SAVE TOPIC LIST ERROR", { message: error.message, stack: error.stack });
       console.error("Error saving topic list:", error);
       setError(`Failed to save topic list: ${error.message}`);
       setIsSaving(false);
@@ -1122,27 +977,37 @@ const TopicListModal = ({
             
             <div className="topics-container">
               {topics.length > 0 ? (
-                <ul className="topics-list">
-                  {topics.map((topic) => (
-                    <li 
-                      key={topic.id} 
-                      className={`topic-item ${selectedTopic?.id === topic.id ? 'selected' : ''}`}
-                      onClick={() => handleTopicClick(topic)}
-                    >
-                      <span className="topic-name">{topic.name}</span>
-                      
-                      <div className="topic-actions">
-                        <button
-                          className="delete-topic-button"
-                          onClick={(e) => handleDeleteTopic(topic.id, e)}
-                          title="Delete this topic"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </li>
+                <div className="topics-by-category">
+                  {Object.keys(groupedTopicsByCategory).map(category => (
+                    <div key={category} className="topic-category">
+                      <h4 className="category-heading">{category}</h4>
+                      <ul className="topics-list">
+                        {groupedTopicsByCategory[category].map((topic) => (
+                          <li 
+                            key={topic.id} 
+                            className={`topic-item ${selectedTopic?.id === topic.id ? 'selected' : ''}`}
+                            onClick={() => handleTopicClick(topic)}
+                          >
+                            <span className="topic-name">
+                              {/* Only show the part after the colon (if it exists) */}
+                              {topic.displayName}
+                            </span>
+                            
+                            <div className="topic-actions">
+                              <button
+                                className="delete-topic-button"
+                                onClick={(e) => handleDeleteTopic(topic.id, e)}
+                                title="Delete this topic"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ))}
-                </ul>
+                </div>
               ) : (
                 <p className="no-topics-message">No topics available. Click "Regenerate" to create topics.</p>
               )}
