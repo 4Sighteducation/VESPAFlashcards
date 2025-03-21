@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -12,6 +12,13 @@ import AICardGenerator from './components/AICardGenerator';
 import PrintModal from './components/PrintModal';
 import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
 import TopicListModal from './components/TopicListModal';
+import { 
+  addVersionMetadata, 
+  safeParseJSON, 
+  validateCards, 
+  localStorageHelpers, 
+  dataLogger 
+} from './utils/DataUtils';
 
 // API Keys and constants
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
@@ -26,38 +33,8 @@ const BOX_DESCRIPTIONS = {
   5: "Cards here remain indefinitely unless answered incorrectly, which returns them to Box 1."
 };
 
-// Utility function to safely parse JSON
-const safeParseJSON = (jsonString) => {
-  try {
-    // Check if the string is already an object
-    if (typeof jsonString === 'object') return jsonString;
-    
-    // Regular parse attempt
-    return JSON.parse(jsonString);
-  } catch (error) {
-    console.error("Error parsing JSON:", error);
-    
-    // Attempt to fix common JSON syntax errors
-    try {
-      // Replace any invalid characters that might be causing issues
-      const cleanedJson = jsonString
-        .replace(/\t/g, ' ')           // Replace tabs with spaces
-        .replace(/\n/g, ' ')           // Replace newlines with spaces
-        .replace(/\r/g, ' ')           // Replace carriage returns with spaces
-        .replace(/\\"/g, '"')          // Fix escaped quotes
-        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":') // Ensure property names are quoted
-        .replace(/,\s*}/g, '}')        // Remove trailing commas in objects
-        .replace(/,\s*\]/g, ']');      // Remove trailing commas in arrays
-      
-      return JSON.parse(cleanedJson);
-    } catch (secondError) {
-      console.error("Failed to recover corrupted JSON:", secondError);
-      
-      // Last resort: fall back to empty data structure
-      return {};
-    }
-  }
-};
+// Using safeParseJSON from DataUtils instead of local implementation
+
 
 // Helper function to clean HTML tags from strings
 const cleanHtmlTags = (str) => {
@@ -203,16 +180,36 @@ function App() {
     return adjustedHex;
   }, []);
 
-  // Save data to localStorage fallback - dependent on state only
+  // Save data to localStorage fallback - using enhanced version with versioning and backups
   const saveToLocalStorage = useCallback(() => {
+    // Prepare full data object
+    const appData = {
+      cards: allCards,
+      colorMapping: subjectColorMapping,
+      spacedRepetition: spacedRepetitionData,
+      userTopics: userTopics
+    };
+    
     try {
+      // Add version metadata
+      const versionedData = addVersionMetadata(appData);
+      
+      // Log save operation with stats
+      dataLogger.logSave('localStorage', versionedData);
+      
+      // Save with backup using enhanced helpers
+      localStorageHelpers.saveData('flashcards_app', versionedData);
+      
+      // Also save individual components for backward compatibility
       localStorage.setItem('flashcards', JSON.stringify(allCards));
       localStorage.setItem('colorMapping', JSON.stringify(subjectColorMapping));
       localStorage.setItem('spacedRepetition', JSON.stringify(spacedRepetitionData));
       localStorage.setItem('userTopics', JSON.stringify(userTopics));
-      console.log("Saved data to localStorage");
+      
+      console.log("Saved data to localStorage with versioning and backup");
     } catch (error) {
       console.error("Error saving to localStorage:", error);
+      dataLogger.logError('localStorage_save', error);
     }
   }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics]);
 
@@ -568,37 +565,102 @@ function App() {
   );
 
   // Cards and data operations - these depend on the above functions
-  // Load data from localStorage fallback
+  // Load data from localStorage with enhanced error recovery
   const loadFromLocalStorage = useCallback(() => {
     try {
+      // First try to load the new versioned data format
+      const loadResult = localStorageHelpers.loadData('flashcards_app', {
+        cards: [],
+        colorMapping: {},
+        spacedRepetition: {
+          box1: [], box2: [], box3: [], box4: [], box5: []
+        },
+        userTopics: {}
+      });
+      
+      // Log the load operation
+      dataLogger.logLoad('localStorage', loadResult);
+      
+      if (loadResult.success) {
+        // Successfully loaded versioned data
+        const versionedData = loadResult.data;
+        
+        // Update state with all data components
+        if (versionedData.cards && Array.isArray(versionedData.cards)) {
+          setAllCards(versionedData.cards);
+          updateSpacedRepetitionData(versionedData.cards);
+        }
+        
+        if (versionedData.colorMapping) {
+          setSubjectColorMapping(versionedData.colorMapping);
+        }
+        
+        if (versionedData.spacedRepetition) {
+          setSpacedRepetitionData(versionedData.spacedRepetition);
+        }
+        
+        if (versionedData.userTopics) {
+          setUserTopics(versionedData.userTopics);
+        }
+        
+        console.log(`Loaded data from localStorage using ${loadResult.source} source`);
+        showStatus(`Data loaded from ${loadResult.source}`);
+        return;
+      }
+      
+      // If new format failed, try legacy format as fallback
+      console.log("Falling back to legacy localStorage format");
+      
       const savedCards = localStorage.getItem('flashcards');
       const savedColorMapping = localStorage.getItem('colorMapping');
       const savedSpacedRepetition = localStorage.getItem('spacedRepetition');
       const savedUserTopics = localStorage.getItem('userTopics');
       
+      let loadedData = false;
+      
       if (savedCards) {
-        const parsedCards = safeParseJSON(savedCards);
-        setAllCards(parsedCards);
-        updateSpacedRepetitionData(parsedCards);
+        const { valid, cleanedCards } = validateCards(safeParseJSON(savedCards, []));
+        if (valid) {
+          setAllCards(cleanedCards);
+          updateSpacedRepetitionData(cleanedCards);
+          loadedData = true;
+        } else {
+          console.warn("Invalid cards detected, using cleaned cards array");
+          setAllCards(cleanedCards);
+          updateSpacedRepetitionData(cleanedCards);
+          loadedData = true;
+        }
       }
       
       if (savedColorMapping) {
-        setSubjectColorMapping(safeParseJSON(savedColorMapping));
+        setSubjectColorMapping(safeParseJSON(savedColorMapping, {}));
+        loadedData = true;
       }
       
       if (savedSpacedRepetition) {
-        setSpacedRepetitionData(safeParseJSON(savedSpacedRepetition));
+        setSpacedRepetitionData(safeParseJSON(savedSpacedRepetition, {
+          box1: [], box2: [], box3: [], box4: [], box5: []
+        }));
+        loadedData = true;
       }
       
       if (savedUserTopics) {
-        setUserTopics(safeParseJSON(savedUserTopics));
+        setUserTopics(safeParseJSON(savedUserTopics, {}));
+        loadedData = true;
       }
       
-      console.log("Loaded data from localStorage");
+      if (loadedData) {
+        console.log("Loaded data from legacy localStorage format");
+        
+        // Create a backup in the new format for future use
+        setTimeout(() => saveToLocalStorage(), 1000);
+      }
     } catch (error) {
       console.error("Error loading from localStorage:", error);
+      dataLogger.logError('localStorage_load', error);
+      showStatus("Error loading data from local storage");
     }
-  }, [updateSpacedRepetitionData]);
+  }, [updateSpacedRepetitionData, showStatus, saveToLocalStorage]);
 
   // Load data from Knack
   const loadData = useCallback(async () => {
