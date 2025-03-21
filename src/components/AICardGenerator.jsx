@@ -480,142 +480,142 @@ const AICardGenerator = ({
       // Check if we're authenticated or have a user ID
       if (!auth || !userId) {
         console.log("No authentication data or userId, skipping Knack save");
+        setError("You must be logged in to save topic lists");
         return false;
       }
-      
-      debugLog("AUTH OBJECT", auth);
-      debugLog("USER ID", userId);
+
       console.log("Saving topic lists to Knack for user:", userId);
-      
+
       // Safety check to ensure topicLists is a valid array
       if (!Array.isArray(topicLists)) {
         console.error("Topic lists is not an array:", topicLists);
+        setError("Invalid data format: Topic lists must be an array");
         return false;
       }
-      
+
       // First find the actual record ID for this user in object_102
       let recordId = null;
       try {
         const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
-        debugLog("RECORD SEARCH URL", searchUrl);
-        
+        console.log("RECORD SEARCH URL", searchUrl);
+
         const searchResponse = await fetch(searchUrl, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY
+            "X-Knack-REST-API-Key": KNACK_API_KEY,
+            "Authorization": `Bearer ${auth.token}`
           }
         });
-        
+
         if (!searchResponse.ok) {
           const errorText = await searchResponse.text();
           console.error("Failed to search for user record:", errorText);
+          setError("Failed to find user record");
           return false;
         }
-        
+
         const allRecords = await searchResponse.json();
-        
+        console.log("Found matching record ID:", recordId);
+
         // Find the record matching this user ID
         if (allRecords && allRecords.records) {
-          const userRecord = allRecords.records.find(record => {
-            return record.field_2954 === userId || 
-                   (record.field_2958 && record.field_2958 === auth.email);
-          });
-          
+          const userRecord = allRecords.records.find(record => 
+            record.field_2954 === userId || 
+            (record.field_2958 && record.field_2958 === auth.email)
+          );
+
           if (userRecord) {
             recordId = userRecord.id;
             console.log("Found matching record ID:", recordId);
           }
         }
-        
+
         if (!recordId) {
           console.error("Could not find a record for this user ID:", userId);
+          setError("Could not find your user record");
           return false;
         }
       } catch (searchError) {
         console.error("Error searching for user record:", searchError);
+        setError("Error finding user record: " + searchError.message);
         return false;
       }
-      
+
       // Now get existing data to preserve metadata and other fields
       let existingData = null;
       try {
         const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-        debugLog("GET URL", getUrl);
-        
+        console.log("GET URL", getUrl);
+
         const getResponse = await fetch(getUrl, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY
+            "X-Knack-REST-API-Key": KNACK_API_KEY,
+            "Authorization": `Bearer ${auth.token}`
           }
         });
-        
+
         if (getResponse.ok) {
           existingData = await getResponse.json();
           console.log("Successfully fetched existing data");
+        } else {
+          const errorText = await getResponse.text();
+          console.error("Failed to get existing data:", errorText);
+          setError("Failed to get your existing data");
+          return false;
         }
       } catch (e) {
         console.error("Error fetching existing data:", e);
+        setError("Error getting existing data: " + e.message);
+        return false;
       }
-      
-      // Create the message with preserve fields flag
-      const messageData = {
-        type: "SAVE_DATA",
-        data: {
-          recordId: recordId,
-          userId: userId,
-          topicLists: topicLists,
-          topicMetadata: existingData?.field_3030 ? JSON.parse(existingData.field_3030) : [],
-          preserveFields: true,
-          completeData: existingData
-        }
+
+      // Create the update data with field preservation
+      const updateData = {
+        field_3011: JSON.stringify(topicLists),
+        field_2957: new Date().toISOString() // Last saved timestamp
       };
-      
-      // Log detailed info about the save operation
-      debugLog("SAVING TOPIC LISTS TO KNACK", {
-        messageType: messageData.type,
-        recordId: recordId, 
-        topicListsCount: topicLists.length,
-        hasCompleteData: !!existingData,
-        preserveFields: true,
-        timestamp: new Date().toISOString()
+
+      // Preserve existing fields
+      if (existingData) {
+        if (existingData.field_2979) updateData.field_2979 = existingData.field_2979; // Cards
+        if (existingData.field_3030) updateData.field_3030 = existingData.field_3030; // Topic metadata
+        if (existingData.field_2986) updateData.field_2986 = existingData.field_2986; // Box 1
+        if (existingData.field_2987) updateData.field_2987 = existingData.field_2987; // Box 2
+        if (existingData.field_2988) updateData.field_2988 = existingData.field_2988; // Box 3
+        if (existingData.field_2989) updateData.field_2989 = existingData.field_2989; // Box 4
+        if (existingData.field_2990) updateData.field_2990 = existingData.field_2990; // Box 5
+      }
+
+      // Save to Knack directly
+      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+      const updateResponse = await fetch(updateUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY,
+          "Authorization": `Bearer ${auth.token}`
+        },
+        body: JSON.stringify(updateData)
       });
-      
-      // Set up a listener for the response
-      return new Promise((resolve) => {
-        const messageHandler = (event) => {
-          if (event.data && event.data.type === "SAVE_RESULT") {
-            // Remove the event listener once we get a response
-            window.removeEventListener("message", messageHandler);
-            
-            if (event.data.success) {
-              console.log(`[${new Date().toISOString()}] Topic list saved successfully via postMessage`);
-              resolve(true);
-            } else {
-              console.error(`[${new Date().toISOString()}] Failed to save topic list via postMessage`);
-              resolve(false);
-            }
-          }
-        };
-        
-        // Add the event listener
-        window.addEventListener("message", messageHandler);
-        
-        // Send message to parent window
-        window.parent.postMessage(messageData, "*");
-        
-        // Set a timeout to handle no response
-        setTimeout(() => {
-          window.removeEventListener("message", messageHandler);
-          console.error(`[${new Date().toISOString()}] No save response received within timeout period`);
-          resolve(false);
-        }, 10000); // 10-second timeout
-      });
+
+      if (updateResponse.ok) {
+        console.log("Topic lists saved to Knack successfully:", topicLists.length, "lists");
+        return true;
+      } else {
+        const errorData = await updateResponse.json().catch(e => ({ message: "Unknown error" }));
+        console.error("Failed to save topic lists to Knack:", errorData);
+        setError(`Failed to save topic lists: ${errorData.message || "API error"}`);
+        return false;
+      }
     } catch (error) {
       console.error("Error in saveTopicListToKnack:", error);
+      setError(`Error saving topic lists: ${error.message || "Unknown error"}`);
       return false;
     }
   };
@@ -2055,6 +2055,234 @@ Use this format for different question types:
       </div>
     );
   };
+
+  // Add to card bank with field preservation
+  const handleAddToBank = async (cards) => {
+    try {
+      if (!auth || !userId) {
+        setError("You must be logged in to save cards");
+        return false;
+      }
+
+      // First get the record ID
+      let recordId = null;
+      try {
+        const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
+        const searchResponse = await fetch(searchUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Knack-Application-ID": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY,
+            "Authorization": `Bearer ${auth.token}`
+          }
+        });
+
+        if (!searchResponse.ok) {
+          throw new Error("Failed to find user record");
+        }
+
+        const allRecords = await searchResponse.json();
+        const userRecord = allRecords.records.find(record => 
+          record.field_2954 === userId || 
+          (record.field_2958 && record.field_2958 === auth.email)
+        );
+
+        if (userRecord) {
+          recordId = userRecord.id;
+        } else {
+          throw new Error("Could not find your user record");
+        }
+      } catch (error) {
+        console.error("Error finding user record:", error);
+        setError(error.message);
+        return false;
+      }
+
+      // Get existing data
+      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+      const getResponse = await fetch(getUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY,
+          "Authorization": `Bearer ${auth.token}`
+        }
+      });
+
+      if (!getResponse.ok) {
+        throw new Error("Failed to get existing data");
+      }
+
+      const existingData = await getResponse.json();
+      
+      // Merge new cards with existing ones
+      let existingCards = [];
+      try {
+        if (existingData.field_2979) {
+          existingCards = JSON.parse(existingData.field_2979);
+        }
+      } catch (e) {
+        console.error("Error parsing existing cards:", e);
+      }
+
+      // Ensure existingCards is an array
+      if (!Array.isArray(existingCards)) {
+        existingCards = [];
+      }
+
+      // Add new cards
+      const updatedCards = [...existingCards, ...cards];
+
+      // Prepare update data with field preservation
+      const updateData = {
+        field_2979: JSON.stringify(updatedCards),
+        field_2957: new Date().toISOString() // Last saved timestamp
+      };
+
+      // Preserve other fields
+      if (existingData.field_3011) updateData.field_3011 = existingData.field_3011; // Topic lists
+      if (existingData.field_3030) updateData.field_3030 = existingData.field_3030; // Topic metadata
+      if (existingData.field_2986) updateData.field_2986 = existingData.field_2986; // Box 1
+      if (existingData.field_2987) updateData.field_2987 = existingData.field_2987; // Box 2
+      if (existingData.field_2988) updateData.field_2988 = existingData.field_2988; // Box 3
+      if (existingData.field_2989) updateData.field_2989 = existingData.field_2989; // Box 4
+      if (existingData.field_2990) updateData.field_2990 = existingData.field_2990; // Box 5
+
+      // Save to Knack
+      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+      const updateResponse = await fetch(updateUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY,
+          "Authorization": `Bearer ${auth.token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json().catch(() => ({ message: "Unknown error" }));
+        throw new Error(errorData.message || "Failed to save cards");
+      }
+
+      console.log("Cards saved successfully:", cards.length, "new cards");
+      return true;
+    } catch (error) {
+      console.error("Error saving cards:", error);
+      setError(`Failed to save cards: ${error.message}`);
+      return false;
+    }
+  };
+
+  // Autosave function with field preservation
+  const handleAutosave = async () => {
+    try {
+      if (!auth || !userId) {
+        console.log("No authentication data or userId, skipping autosave");
+        return;
+      }
+
+      // Get record ID
+      let recordId = null;
+      const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
+      const searchResponse = await fetch(searchUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY,
+          "Authorization": `Bearer ${auth.token}`
+        }
+      });
+
+      if (!searchResponse.ok) {
+        console.error("Failed to find user record for autosave");
+        return;
+      }
+
+      const allRecords = await searchResponse.json();
+      const userRecord = allRecords.records.find(record => 
+        record.field_2954 === userId || 
+        (record.field_2958 && record.field_2958 === auth.email)
+      );
+
+      if (userRecord) {
+        recordId = userRecord.id;
+      } else {
+        console.error("Could not find user record for autosave");
+        return;
+      }
+
+      // Get existing data
+      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+      const getResponse = await fetch(getUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY,
+          "Authorization": `Bearer ${auth.token}`
+        }
+      });
+
+      if (!getResponse.ok) {
+        console.error("Failed to get existing data for autosave");
+        return;
+      }
+
+      const existingData = await getResponse.json();
+
+      // Prepare update data with field preservation
+      const updateData = {
+        field_2957: new Date().toISOString() // Last saved timestamp
+      };
+
+      // Preserve all existing fields
+      if (existingData.field_2979) updateData.field_2979 = existingData.field_2979; // Cards
+      if (existingData.field_3011) updateData.field_3011 = existingData.field_3011; // Topic lists
+      if (existingData.field_3030) updateData.field_3030 = existingData.field_3030; // Topic metadata
+      if (existingData.field_2986) updateData.field_2986 = existingData.field_2986; // Box 1
+      if (existingData.field_2987) updateData.field_2987 = existingData.field_2987; // Box 2
+      if (existingData.field_2988) updateData.field_2988 = existingData.field_2988; // Box 3
+      if (existingData.field_2989) updateData.field_2989 = existingData.field_2989; // Box 4
+      if (existingData.field_2990) updateData.field_2990 = existingData.field_2990; // Box 5
+
+      // Add any new data that needs to be saved
+      if (savedTopicLists.length > 0) {
+        updateData.field_3011 = JSON.stringify(savedTopicLists);
+      }
+
+      // Save to Knack
+      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+      const updateResponse = await fetch(updateUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY,
+          "Authorization": `Bearer ${auth.token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      if (updateResponse.ok) {
+        console.log("Autosave completed successfully");
+      } else {
+        console.error("Autosave failed:", await updateResponse.text());
+      }
+    } catch (error) {
+      console.error("Error during autosave:", error);
+    }
+  };
+
+  // Set up autosave interval
+  useEffect(() => {
+    const autosaveInterval = setInterval(handleAutosave, 30000); // Autosave every 30 seconds
+    return () => clearInterval(autosaveInterval);
+  }, [auth, userId, savedTopicLists]);
 
   return (
     <div className="ai-card-generator">
