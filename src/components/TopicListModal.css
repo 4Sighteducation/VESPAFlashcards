@@ -14,13 +14,13 @@
 .modal-container {
   width: 90%;
   max-width: 800px;
-  max-height: 85vh;
+  max-height: 90vh;
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
   border: 2px solid #06206e;
 }
 
@@ -65,8 +65,8 @@
 
 .modal-content {
   padding: 20px;
-  overflow-y: auto;
-  max-height: 60vh;
+  overflow-y: visible;
+  max-height: none;
   flex-grow: 1;
 }
 
@@ -428,6 +428,10 @@ button:disabled {
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
+  width: 100%;
+  white-space: nowrap;
+  overflow: visible;
+  display: inline-block;
 }
 
 .view-topics-button {
