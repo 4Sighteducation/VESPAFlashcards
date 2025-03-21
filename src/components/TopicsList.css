@@ -3,6 +3,8 @@
   border-radius: 8px;
   padding: 15px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
 }
 
 .topics-list.empty {
@@ -17,6 +19,10 @@
   color: #06206e;
   border-bottom: 1px solid #e0e0e0;
   padding-bottom: 8px;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 5;
 }
 
 .topics-container {
@@ -27,7 +33,7 @@
 }
 
 .topic-button {
-  padding: 8px 12px;
+  padding: 12px 15px;
   border: none;
   border-radius: 4px;
   text-align: left;
@@ -36,6 +42,12 @@
   background-color: #f5f5f5;
   color: #333;
   flex-grow: 1;
+  font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+  min-height: 48px; /* Minimum touch target size for mobile */
 }
 
 .topic-button:hover {
@@ -50,28 +62,31 @@
 
 /* Accordion styling */
 .topic-accordion {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  width: 100%;
 }
 
 .topic-header {
   display: flex;
   align-items: center;
   position: relative;
+  width: 100%;
 }
 
 .expand-icon {
   position: absolute;
   right: 10px;
-  font-size: 0.8rem;
+  font-size: 1rem;
   cursor: pointer;
   transition: transform 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   background-color: rgba(0, 0, 0, 0.1);
   border-radius: 50%;
+  z-index: 2;
 }
 
 .expand-icon.expanded {
@@ -81,33 +96,100 @@
 .subtopics-container {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   margin-left: 12px;
-  margin-top: 4px;
-  padding-left: 8px;
+  margin-top: 6px;
+  padding-left: 10px;
   border-left: 1px dashed #ccc;
 }
 
 .topic-button.subtopic {
-  font-size: 0.9rem;
-  padding: 6px 10px;
+  font-size: 0.95rem;
+  padding: 10px 12px;
+  min-height: 42px; /* Slightly smaller but still touch-friendly */
 }
 
 /* Scrollbar styling */
-.topics-container::-webkit-scrollbar {
+.topics-container::-webkit-scrollbar,
+.topics-list::-webkit-scrollbar {
   width: 6px;
 }
 
-.topics-container::-webkit-scrollbar-track {
+.topics-container::-webkit-scrollbar-track,
+.topics-list::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 10px;
 }
 
-.topics-container::-webkit-scrollbar-thumb {
+.topics-container::-webkit-scrollbar-thumb,
+.topics-list::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 10px;
 }
 
-.topics-container::-webkit-scrollbar-thumb:hover {
+.topics-container::-webkit-scrollbar-thumb:hover,
+.topics-list::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .topics-list {
+    max-height: 50vh; /* Limit height on mobile */
+    padding: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .topics-list h3 {
+    font-size: 1rem;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+  }
+  
+  .topic-button {
+    padding: 10px 12px;
+    min-height: 42px; /* Maintain touch target size */
+    font-size: 0.9rem;
+  }
+  
+  .expand-icon {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .subtopics-container {
+    padding-left: 8px;
+    margin-left: 8px;
+    gap: 4px;
+  }
+  
+  .topic-button.subtopic {
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .topics-list {
+    padding: 8px;
+    margin-bottom: 10px;
+  }
+  
+  .topic-button {
+    padding: 8px 10px;
+    min-height: 40px;
+    font-size: 0.85rem;
+  }
+  
+  .expand-icon {
+    width: 22px;
+    height: 22px;
+    right: 5px;
+  }
+  
+  .subtopics-container {
+    padding-left: 6px;
+    margin-left: 6px;
+  }
 }

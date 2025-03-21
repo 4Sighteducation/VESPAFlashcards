@@ -1391,14 +1391,21 @@ Use this format for different question types:
     
     // Trigger an explicit save operation to prevent data loss on refresh
     if (window.parent && window.parent.postMessage) {
-      window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
-      console.log("Triggered save after adding card to bank");
-    }
-    
-    // Explicitly trigger a save to ensure card is saved to field_2979
-    if (window.parent && window.parent.postMessage) {
-      window.parent.postMessage({ type: "SAVE_DATA" }, "*");
-      console.log("Explicitly triggered SAVE_DATA to ensure card is saved to field_2979");
+      // Send the specific card data to ensure it gets added to the card bank properly
+      window.parent.postMessage({ 
+        type: "ADD_TO_BANK",
+        data: {
+          cards: [card],
+          recordId: auth?.recordId || window.recordId
+        }
+      }, "*");
+      console.log("Explicitly triggered ADD_TO_BANK to add card to both card bank and Box 1");
+      
+      // Also trigger general save
+      setTimeout(() => {
+        window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
+        console.log("Triggered save after adding card to bank");
+      }, 500);
     }
   };
 
@@ -1429,13 +1436,25 @@ Use this format for different question types:
       setSuccessModal(prev => ({...prev, show: false}));
     }, 3000);
     
-    // Trigger an explicit save operation to ensure cards are saved to the database
-    // This is important to prevent data loss if the user refreshes the page
-    if (window.parent && window.parent.postMessage) {
-      // Send a message to trigger a save operation
+  // Trigger an explicit save operation to ensure cards are saved to the database
+  // This is important to prevent data loss if the user refreshes the page
+  if (window.parent && window.parent.postMessage) {
+    // First explicitly add all cards to the bank
+    window.parent.postMessage({ 
+      type: "ADD_TO_BANK",
+      data: {
+        cards: unadded,
+        recordId: auth?.recordId || window.recordId
+      }
+    }, "*");
+    console.log("Explicitly triggered ADD_TO_BANK for all cards");
+    
+    // Then trigger a general save
+    setTimeout(() => {
       window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
-      console.log("Triggered explicit save after adding all cards");
-    }
+      console.log("Triggered save after adding all cards");
+    }, 500);
+  }
   };
   
   // Modal to show successfully added cards

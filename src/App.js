@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -1484,11 +1484,49 @@ function App() {
         console.log("Explicit save request received");
         saveData();
       }
+
+      // Handle ADD_TO_BANK action from AICardGenerator
+      if (event.data && event.data.type === "ADD_TO_BANK") {
+        console.log("ADD_TO_BANK action received", event.data);
+        try {
+          if (event.data.data && event.data.data.cards && Array.isArray(event.data.data.cards)) {
+            const newCards = event.data.data.cards;
+            
+            // Process each card, preserving all its metadata
+            newCards.forEach(card => {
+              // Ensure all necessary properties are set
+              if (!card.subject) {
+                console.warn("Card missing subject:", card.id);
+                card.subject = "General";
+              }
+              
+              if (!card.topic) {
+                console.warn("Card missing topic:", card.id);
+                card.topic = "General";
+              }
+              
+              // Ensure boxNum and review dates are set
+              card.boxNum = card.boxNum || 1;
+              card.lastReviewed = card.lastReviewed || new Date().toISOString();
+              card.nextReviewDate = card.nextReviewDate || new Date().toISOString();
+              
+              // Add the card to state
+              addCard(card);
+            });
+            
+            console.log(`Successfully added ${newCards.length} cards to bank with topic information preserved`);
+            showStatus(`Added ${newCards.length} cards to your flashcard bank`);
+          }
+        } catch (error) {
+          console.error("Error processing ADD_TO_BANK action:", error);
+          showStatus("Error adding cards to bank");
+        }
+      }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [saveData, showStatus]);
+  }, [saveData, showStatus, addCard]);
 
   // Handle opening the topic list modal for a subject
   const handleViewTopicList = useCallback((subject) => {
