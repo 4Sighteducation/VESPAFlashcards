@@ -1,90 +1,77 @@
-# VESPA Flashcards - Commit and Push Changes
-# This script helps you commit and push the data protection improvements to GitHub
+# Commit and push changes to GitHub (which will trigger Heroku deployment)
+# This script helps commit all your changes with proper messages
 
 # Display header
-Write-Host "===========================================" -ForegroundColor Cyan
-Write-Host "VESPA Flashcards - Commit and Push Changes" -ForegroundColor Cyan
-Write-Host "===========================================" -ForegroundColor Cyan
-Write-Host ""
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host "  VESPA Flashcards Git Commit & Push Utility" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
 
-# Step 1: Verify we're in a git repository
-Write-Host "Step 1: Verifying git repository..." -ForegroundColor Green
-if (-not (Test-Path ".git")) {
-    Write-Host "ERROR: This doesn't appear to be a git repository (.git folder not found)." -ForegroundColor Red
-    Write-Host "Please run this script from the root of your VESPA Flashcards repository." -ForegroundColor Red
+# First check current branch
+$currentBranch = git rev-parse --abbrev-ref HEAD
+Write-Host "Current branch: $currentBranch" -ForegroundColor Yellow
+
+# Show current status
+Write-Host "`nCurrent git status:" -ForegroundColor Yellow
+git status --short
+
+# Get confirmation before proceeding
+$confirm = Read-Host "`nDo you want to commit and push all changes? (Y/N)"
+if ($confirm -ne "Y" -and $confirm -ne "y") {
+    Write-Host "Operation cancelled" -ForegroundColor Red
+    exit
+}
+
+# Stage all changes
+Write-Host "`nStaging all changes..." -ForegroundColor Green
+git add .
+
+# Show what's being committed
+Write-Host "`nChanges to be committed:" -ForegroundColor Yellow
+git status --short
+
+# Get commit message
+$commitMsg = Read-Host "`nEnter commit message"
+if ([string]::IsNullOrWhiteSpace($commitMsg)) {
+    $commitMsg = "Updated flashcard app with bug fixes and improvements"
+}
+
+# Commit changes
+Write-Host "`nCommitting changes with message: '$commitMsg'" -ForegroundColor Green
+git commit -m $commitMsg
+
+# Check if commit was successful
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Commit failed. Please check the error messages above." -ForegroundColor Red
     exit 1
 }
 
-# Step 2: Check status
-Write-Host "Step 2: Checking current changes..." -ForegroundColor Green
-git status
-Write-Host ""
+# Push to GitHub
+Write-Host "`nPushing to GitHub (this will trigger Heroku deployment)..." -ForegroundColor Yellow
+git push origin $currentBranch
 
-# Step 3: Add files to staging
-Write-Host "Step 3: Adding files to staging..." -ForegroundColor Green
-git add src/utils/DataUtils.js
-git add src/App.js
-git add returnToCommit.ps1
-git add commitAndPush.ps1
-Write-Host "Files added to staging." -ForegroundColor Green
-Write-Host ""
-
-# Step 4: Commit the changes
-$commitMessage = "Add data protection and recovery features
-
-- Created DataUtils.js with validation and automatic backup systems
-- Enhanced localStorage functions with versioning and data recovery
-- Updated App.js to use the new data protection features
-- Added utilities to help with repository management"
-
-Write-Host "Step 4: Committing changes with message:" -ForegroundColor Green
-Write-Host $commitMessage -ForegroundColor Yellow
-Write-Host ""
-
-$proceed = Read-Host "Proceed with this commit message? (Y/N)"
-if ($proceed.ToLower() -ne "y") {
-    Write-Host "Please enter your custom commit message (multiple lines, end with a blank line):" -ForegroundColor Yellow
-    $commitMessage = ""
-    $line = " "
-    while ($line -ne "") {
-        $line = Read-Host
-        if ($line -ne "") {
-            $commitMessage = $commitMessage + $line + "`n"
+# Check if push was successful
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Push failed. Please check the error messages above." -ForegroundColor Red
+    Write-Host "You may need to pull changes from the remote repository first." -ForegroundColor Yellow
+    
+    $pullConfirm = Read-Host "Do you want to try pulling changes from remote first? (Y/N)"
+    if ($pullConfirm -eq "Y" -or $pullConfirm -eq "y") {
+        Write-Host "`nPulling latest changes..." -ForegroundColor Yellow
+        git pull origin $currentBranch
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "`nTrying to push again..." -ForegroundColor Yellow
+            git push origin $currentBranch
+        } else {
+            Write-Host "Pull failed. You may need to resolve conflicts manually." -ForegroundColor Red
+            exit 1
         }
     }
-}
-
-git commit -m $commitMessage
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: Failed to commit changes." -ForegroundColor Red
+    
     exit 1
 }
-Write-Host "Changes committed successfully." -ForegroundColor Green
-Write-Host ""
 
-# Step 5: Push to GitHub
-Write-Host "Step 5: Push to GitHub repository..." -ForegroundColor Green
-$push = Read-Host "Push changes to GitHub now? (Y/N)"
-if ($push.ToLower() -eq "y") {
-    # Get current branch
-    $currentBranch = git rev-parse --abbrev-ref HEAD
-    
-    git push origin $currentBranch
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "ERROR: Failed to push to GitHub." -ForegroundColor Red
-        Write-Host "You might need to manually push with: git push origin $currentBranch" -ForegroundColor Yellow
-        exit 1
-    }
-    Write-Host "Changes successfully pushed to GitHub." -ForegroundColor Green
-} else {
-    Write-Host "Changes were committed but not pushed." -ForegroundColor Yellow
-    $currentBranch = git rev-parse --abbrev-ref HEAD
-    Write-Host "To push later, use: git push origin $currentBranch" -ForegroundColor Yellow
-}
-
-# Success
-Write-Host ""
-Write-Host "===========================================" -ForegroundColor Green
-Write-Host "SUCCESSFUL COMMIT: Data protection features added!" -ForegroundColor Green
-Write-Host "===========================================" -ForegroundColor Green
-Write-Host ""
+Write-Host "`n================================================" -ForegroundColor Green
+Write-Host "  Changes successfully pushed to GitHub!" -ForegroundColor Green
+Write-Host "  Heroku deployment should start automatically." -ForegroundColor Green
+Write-Host "================================================" -ForegroundColor Green

@@ -1,4 +1,4 @@
-﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -15,10 +15,21 @@ import TopicListModal from './components/TopicListModal';
 import { 
   addVersionMetadata, 
   safeParseJSON, 
-  validateCards, 
   localStorageHelpers, 
   dataLogger 
 } from './utils/DataUtils';
+
+import {
+  migrateCardsToStandard,
+  createStandardCard
+} from './utils/StandardCardModel';
+
+import {
+  sanitizeCards,
+  validateCards,
+  prepareForKnack,
+  needsMigration
+} from './utils/CardDataProcessor';
 
 // API Keys and constants
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
@@ -215,13 +226,23 @@ function App() {
 
   // Save data to Knack - depends on saveToLocalStorage and showStatus
   const saveData = useCallback(() => {
-    if (!auth) return;
+    if (!auth) {
+      console.log("[Save] No auth data, cannot save to Knack");
+      return;
+    }
 
     setIsSaving(true);
+    console.log("[Save] Starting save operation...");
 
     try {
+      // Always save to localStorage as fallback
+      console.log("[Save] Saving to localStorage first");
+      saveToLocalStorage();
+      
       // Send data to parent window for saving to Knack
       if (window.parent !== window) {
+        console.log("[Save] Preparing data for Knack integration");
+        
         // Get the user info for saving
         const userInfo = getUserInfo();
         
@@ -249,39 +270,73 @@ function App() {
           field_73: userRole                                // User Role
         };
         
-        console.log("Saving to Knack with additional fields:", additionalFields);
+        // Ensure data is serializable by running it through JSON.stringify + JSON.parse
+        // This prevents circular references and other serialization issues
+        const safeSerializeData = (data) => {
+          try {
+            return JSON.parse(JSON.stringify(data));
+          } catch (e) {
+            console.error("[Save] Serialization error:", e);
+            // Try to clean the data manually
+            return {
+              ...data,
+              _cleaned: true
+            };
+          }
+        };
         
+        // Prepare the data payload for Knack
+        const safeData = {
+          recordId: recordId,
+          cards: safeSerializeData(allCards),
+          colorMapping: safeSerializeData(subjectColorMapping), 
+          spacedRepetition: safeSerializeData(spacedRepetitionData),
+          userTopics: safeSerializeData(userTopics),
+          additionalFields: additionalFields
+        };
+        
+        console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${recordId})`);
+        
+        // Send save message to parent window
         window.parent.postMessage(
           {
             type: "SAVE_DATA",
-            data: {
-              recordId: recordId,
-              cards: allCards,
-              colorMapping: subjectColorMapping,
-              spacedRepetition: spacedRepetitionData,
-              userTopics: userTopics,
-              additionalFields: additionalFields
-            },
+            data: safeData
           },
           "*"
         );
 
-        console.log("Saving data with additional user fields to Knack Object_102");
+        console.log("[Save] Message sent to parent window");
         showStatus("Saving your flashcards...");
-      }
-      
-      // Always save to localStorage as fallback
-      saveToLocalStorage();
-      
-      // If we're in standalone mode, mark as saved
-      if (window.parent === window) {
+      } else {
+        // If we're in standalone mode, mark as saved immediately
+        console.log("[Save] Running in standalone mode");
         setIsSaving(false);
-        showStatus("Saved successfully!");
+        showStatus("Saved to browser storage");
       }
     } catch (error) {
-      console.error("Error saving data:", error);
+      // Log detailed error information
+      console.error("[Save] Error details:", {
+        message: error.message,
+        stack: error.stack,
+        cards: allCards?.length || 0,
+        auth: !!auth,
+        recordId: recordId || 'none'
+      });
+      
       setIsSaving(false);
-      showStatus("Error saving data");
+      showStatus("Error saving data - check console for details");
+      
+      // Attempt emergency local save
+      try {
+        localStorage.setItem('flashcards_emergency', JSON.stringify({
+          timestamp: new Date().toISOString(),
+          cards: allCards
+        }));
+        console.log("[Save] Emergency local backup created");
+      } catch (backupError) {
+        console.error("[Save] Even emergency backup failed:", backupError);
+      }
     }
   }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, showStatus, saveToLocalStorage, recordId, getUserInfo]);
 
@@ -1110,14 +1165,35 @@ function App() {
   }, [auth, allCards, saveData]);
 
   // Initialize communication with parent window (Knack)
+  // Reference to track if auth has been processed to prevent loops
+  const authProcessedRef = useRef(false);
+  const readyMessageSentRef = useRef(false);
+  
   useEffect(() => {
+    // Prevent duplicate message sending
+    if (readyMessageSentRef.current) return;
+    
+    // Store a timestamp when we send the ready message
+    const initTimestamp = new Date().getTime();
+    
     const handleMessage = (event) => {
-      console.log("Message received from parent:", event.data);
+      // Avoid logging every message to reduce console spam
+      if (event.data && event.data.type !== 'PING') {
+        console.log(`[Message Handler ${new Date().toISOString()}] From parent: ${event.data?.type}`);
+      }
 
       if (event.data && event.data.type) {
         switch (event.data.type) {
           case "KNACK_USER_INFO":
-            console.log("Received user info from Knack", event.data.data);
+            // IMPORTANT: Only process auth once to prevent loops
+            if (authProcessedRef.current) {
+              console.log("[User Info] Already processed, ignoring duplicate message");
+              return;
+            }
+            
+            // Set the flag immediately to prevent race conditions
+            authProcessedRef.current = true;
+            console.log("[User Info] First-time processing of user data");
             
             // Process student data if we have a role of "student"
             const userRole = event.data.data?.role || "";
@@ -1146,9 +1222,9 @@ function App() {
                   school: schoolData
                 };
                 
-                console.log("Processed student data:", userStudentData);
+                console.log("[User Info] Processed student data");
               } catch (e) {
-                console.error("Error processing student data:", e);
+                console.error("[User Info] Error processing student data:", e);
               }
             } else {
               // For non-student users, just extract the school data
@@ -1173,7 +1249,7 @@ function App() {
                 // Store the recordId if available
                 if (userData.recordId) {
                   setRecordId(userData.recordId);
-                  console.log("Stored recordId:", userData.recordId);
+                  console.log("[User Info] Stored recordId:", userData.recordId);
                 }
 
                 // Process cards
@@ -1198,28 +1274,29 @@ function App() {
                 }
                 
                 // Additional logging to help with debugging
-                console.log("Successfully processed user data from Knack");
+                console.log("[User Info] Successfully processed user data from Knack");
               } catch (e) {
-                console.error("Error processing userData JSON:", e);
+                console.error("[User Info] Error processing userData JSON:", e);
                 showStatus("Error loading your data. Loading from local storage instead.");
                 loadFromLocalStorage();
               }
             } else {
               // If no user data, load from localStorage
-              console.log("No user data received, falling back to localStorage");
+              console.log("[User Info] No user data received, falling back to localStorage");
               loadFromLocalStorage();
             }
             
             setLoading(false);
             
-            // Confirm receipt of auth info
+            // Confirm receipt of auth info (only do this once)
             if (window.parent !== window) {
+              console.log("[User Info] Sending AUTH_CONFIRMED message");
               window.parent.postMessage({ type: "AUTH_CONFIRMED" }, "*");
             }
             break;
 
           case "SAVE_RESULT":
-            console.log("Save result received:", event.data.success);
+            console.log("[Save Result] Received:", event.data.success);
             setIsSaving(false);
             if (event.data.success) {
               showStatus("Saved successfully!");
@@ -1229,7 +1306,7 @@ function App() {
             break;
             
           case "LOAD_SAVED_DATA":
-            console.log("Received updated data from Knack", event.data.data);
+            console.log("[Load Data] Received updated data from Knack");
 
             if (event.data.data) {
               try {
@@ -1256,14 +1333,14 @@ function App() {
                 
                 showStatus("Updated with latest data from server");
               } catch (error) {
-                console.error("Error processing updated data:", error);
+                console.error("[Load Data] Error processing updated data:", error);
                 showStatus("Error loading updated data");
               }
             }
             break;
 
           default:
-            console.log("Unknown message type:", event.data.type);
+            console.log("[Message Handler] Unknown message type:", event.data.type);
         }
       }
     };
@@ -1271,13 +1348,24 @@ function App() {
     // Set up listener for messages from parent window
     window.addEventListener("message", handleMessage);
 
-    // Try to send a ready message to parent
+    // Track if we've sent the initial ready message
+    let readyMessageSent = false;
+    
+    // Send ready message only once
+    const sendReadyMessage = () => {
+      if (!readyMessageSent && window.parent !== window) {
+        window.parent.postMessage({ type: "APP_READY" }, "*");
+        console.log("[Init] Sent ready message to parent");
+        readyMessageSent = true;
+      }
+    };
+    
+    // Send ready message or initialize standalone mode
     if (window.parent !== window) {
-      window.parent.postMessage({ type: "APP_READY" }, "*");
-      console.log("Sent ready message to parent");
+      sendReadyMessage();
     } else {
       // In standalone mode, load from localStorage
-      console.log("Running in standalone mode");
+      console.log("[Init] Running in standalone mode");
       setAuth({
         id: "test-user",
         email: "test@example.com",
