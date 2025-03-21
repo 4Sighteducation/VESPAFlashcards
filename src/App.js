@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -11,7 +11,7 @@ import UserProfile from "./components/UserProfile";
 import AICardGenerator from './components/AICardGenerator';
 import PrintModal from './components/PrintModal';
 import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
-import TopicListModal from './components/TopicListModal';
+import TopicListSyncManager from './components/TopicListSyncManager';
 import { 
   addVersionMetadata, 
   safeParseJSON, 
@@ -94,6 +94,10 @@ function App() {
 
   // User-specific topics
   const [userTopics, setUserTopics] = useState({});
+  
+  // Topic lists state
+  const [topicLists, setTopicLists] = useState([]);
+  const [topicMetadata, setTopicMetadata] = useState([]);
 
   // Status messages
   const [statusMessage, setStatusMessage] = useState("");
@@ -198,7 +202,9 @@ function App() {
       cards: allCards,
       colorMapping: subjectColorMapping,
       spacedRepetition: spacedRepetitionData,
-      userTopics: userTopics
+      userTopics: userTopics,
+      topicLists: topicLists,
+      topicMetadata: topicMetadata
     };
     
     try {
@@ -292,6 +298,9 @@ function App() {
           colorMapping: safeSerializeData(subjectColorMapping), 
           spacedRepetition: safeSerializeData(spacedRepetitionData),
           userTopics: safeSerializeData(userTopics),
+          topicLists: safeSerializeData(topicLists),
+          topicMetadata: safeSerializeData(topicMetadata),
+          preserveFields: true,
           additionalFields: additionalFields
         };
         
@@ -338,7 +347,7 @@ function App() {
         console.error("[Save] Even emergency backup failed:", backupError);
       }
     }
-  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, showStatus, saveToLocalStorage, recordId, getUserInfo]);
+  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, showStatus, saveToLocalStorage, recordId, getUserInfo]);
 
   // Generate a random vibrant color
   const getRandomColor = useCallback(() => {
@@ -1273,6 +1282,18 @@ function App() {
                   setUserTopics(userData.userTopics);
                 }
                 
+                // Process topic lists if available
+                if (userData.topicLists && Array.isArray(userData.topicLists)) {
+                  setTopicLists(userData.topicLists);
+                  console.log("[User Info] Loaded topic lists from Knack:", userData.topicLists.length);
+                }
+                
+                // Process topic metadata if available
+                if (userData.topicMetadata && Array.isArray(userData.topicMetadata)) {
+                  setTopicMetadata(userData.topicMetadata);
+                  console.log("[User Info] Loaded topic metadata from Knack:", userData.topicMetadata.length);
+                }
+                
                 // Additional logging to help with debugging
                 console.log("[User Info] Successfully processed user data from Knack");
               } catch (e) {
@@ -1329,6 +1350,22 @@ function App() {
                 // Process user topics if available
                 if (event.data.data.userTopics) {
                   setUserTopics(safeParseJSON(event.data.data.userTopics));
+                }
+                
+                // Process topic lists if available
+                if (event.data.data.topicLists) {
+                  setTopicLists(safeParseJSON(event.data.data.topicLists));
+                  console.log("[Load Data] Loaded topic lists:", 
+                    Array.isArray(safeParseJSON(event.data.data.topicLists)) ? 
+                    safeParseJSON(event.data.data.topicLists).length : 'none');
+                }
+                
+                // Process topic metadata if available
+                if (event.data.data.topicMetadata) {
+                  setTopicMetadata(safeParseJSON(event.data.data.topicMetadata));
+                  console.log("[Load Data] Loaded topic metadata:",
+                    Array.isArray(safeParseJSON(event.data.data.topicMetadata)) ?
+                    safeParseJSON(event.data.data.topicMetadata).length : 'none');
                 }
                 
                 showStatus("Updated with latest data from server");
@@ -1469,6 +1506,18 @@ function App() {
           console.log("Loaded user topics from Knack");
         }
         
+        // Load topic lists if available
+        if (event.data.topicLists && Array.isArray(event.data.topicLists)) {
+          setTopicLists(event.data.topicLists);
+          console.log(`Loaded ${event.data.topicLists.length} topic lists from Knack`);
+        }
+        
+        // Load topic metadata if available
+        if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
+          setTopicMetadata(event.data.topicMetadata);
+          console.log(`Loaded ${event.data.topicMetadata.length} topic metadata entries from Knack`);
+        }
+        
         setLoading(false);
       }
       
@@ -1592,18 +1641,17 @@ function App() {
           )}
           
           {/* Topic List Modal */}
-          {topicListModalOpen && topicListSubject && (
-            <TopicListModal
-              subject={topicListSubject}
-              examBoard={topicListExamBoard}
-              examType={topicListExamType}
-              onClose={() => setTopicListModalOpen(false)}
-              onSelectTopic={handleSelectTopicFromList}
-              onGenerateCards={handleGenerateCardsFromTopic}
-              auth={auth}
-              userId={auth?.id}
-            />
-          )}
+          <TopicListSyncManager
+            isOpen={topicListModalOpen && topicListSubject}
+            subject={topicListSubject}
+            examBoard={topicListExamBoard}
+            examType={topicListExamType}
+            onClose={() => setTopicListModalOpen(false)}
+            onSelectTopic={handleSelectTopicFromList}
+            onGenerateCards={handleGenerateCardsFromTopic}
+            auth={auth}
+            userId={auth?.id}
+          />
 
           {view === "cardBank" && (
             <div className="card-bank-view">

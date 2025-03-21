@@ -69,23 +69,86 @@ window.addEventListener('message', function(event) {
           }
         });
       }
-      // Otherwise use the standard save logic
+      // Otherwise use the standard save logic with field preservation
       else {
-        // Standard save logic (existing code)
-        const dataToSave = {
-          field_3011: JSON.stringify(messageData.topicLists),
-          field_3030: JSON.stringify(messageData.topicMetadata)
-          // Add any other fields you need to include
-        };
+        console.log(`[${new Date().toISOString()}] Using standard save logic with field preservation`);
         
-        saveToKnack(recordId, dataToSave, function(success) {
-          // Send result back to the React app
-          if (event.source) {
-            event.source.postMessage({
-              type: 'SAVE_RESULT',
-              success: success
-            }, '*');
+        // First get the current data to avoid overwriting fields we don't manage
+        getCurrentData(recordId, function(existingData) {
+          if (!existingData) {
+            console.error(`[${new Date().toISOString()}] Failed to get current data for standard save`);
+            
+            // Even if we can't get current data, try to save what we have
+            const basicDataToSave = {
+              field_3011: JSON.stringify(messageData.topicLists || []),
+              field_3030: JSON.stringify(messageData.topicMetadata || []),
+              field_2957: new Date().toISOString() // Last saved timestamp
+            };
+            
+            saveToKnack(recordId, basicDataToSave, function(success) {
+              // Send result back to the React app
+              if (event.source) {
+                event.source.postMessage({
+                  type: 'SAVE_RESULT',
+                  success: success,
+                  timestamp: new Date().toISOString()
+                }, '*');
+              }
+            });
+            
+            return;
           }
+          
+          // Create a merged data object using the existing data as a base
+          const mergedData = {
+            // Keep all existing fields from the complete data
+            ...existingData,
+            
+            // Update the fields we want to save
+            field_3011: JSON.stringify(messageData.topicLists || []), // Topic Lists
+            field_3030: JSON.stringify(messageData.topicMetadata || []), // Topic Metadata
+            field_2957: new Date().toISOString(), // Last saved timestamp
+            
+            // Preserve card data if available in the message
+            field_2979: messageData.cards ? JSON.stringify(messageData.cards) : existingData.field_2979,
+            
+            // Preserve spaced repetition data if available in the message
+            field_2986: messageData.spacedRepetition?.box1 ? JSON.stringify(messageData.spacedRepetition.box1) : existingData.field_2986,
+            field_2987: messageData.spacedRepetition?.box2 ? JSON.stringify(messageData.spacedRepetition.box2) : existingData.field_2987,
+            field_2988: messageData.spacedRepetition?.box3 ? JSON.stringify(messageData.spacedRepetition.box3) : existingData.field_2988,
+            field_2989: messageData.spacedRepetition?.box4 ? JSON.stringify(messageData.spacedRepetition.box4) : existingData.field_2989,
+            field_2990: messageData.spacedRepetition?.box5 ? JSON.stringify(messageData.spacedRepetition.box5) : existingData.field_2990
+          };
+          
+          debugLog("MERGED DATA FOR STANDARD SAVE", {
+            field_3011_size: mergedData.field_3011 ? mergedData.field_3011.length : 0,
+            field_3030_size: mergedData.field_3030 ? mergedData.field_3030.length : 0,
+            field_2979_preserved: !!mergedData.field_2979,
+            field_2986_preserved: !!mergedData.field_2986,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Now save the merged data to Knack
+          saveToKnack(recordId, mergedData, function(success) {
+            debugLog("STANDARD SAVE RESULT", { 
+              success, 
+              timestamp: new Date().toISOString() 
+            });
+            
+            // Send result back to the React app
+            if (event.source) {
+              event.source.postMessage({
+                type: 'SAVE_RESULT',
+                success: success,
+                timestamp: new Date().toISOString()
+              }, '*');
+            }
+            
+            // If successful, verify the save to confirm topicLists are still there
+            if (success) {
+              verifyDataSave(recordId);
+            }
+          });
         });
       }
       break;
@@ -259,7 +322,7 @@ function saveToKnack(recordId, data, callback) {
   attemptSave();
 }
 
-// Function to verify data was saved correctly
+// Function to verify data was saved correctly and notify the React app
 function verifyDataSave(recordId) {
   console.log(`[${new Date().toISOString()}] Verifying data save for record:`, recordId);
   
@@ -279,24 +342,92 @@ function verifyDataSave(recordId) {
         debugLog("VERIFICATION RESULT", {
           recordId: recordId,
           hasTopicLists: response && response[FIELD_MAPPING.topicLists] ? true : false,
+          hasCards: response && response[FIELD_MAPPING.cards] ? true : false,
           timestamp: new Date().toISOString()
         });
         
-        // Check if field_3011 exists and has content
+        // Check if topic lists (field_3011) exists and has content
+        let topicListsValid = false;
         if (response && response[FIELD_MAPPING.topicLists]) {
           const topicLists = safeParseJSON(response[FIELD_MAPPING.topicLists]);
           if (Array.isArray(topicLists) && topicLists.length > 0) {
             console.log(`[${new Date().toISOString()}] Verification successful: Topic lists present with ${topicLists.length} items`);
+            topicListsValid = true;
           } else {
-            console.error(`[${new Date().toISOString()}] Verification failed: Topic lists empty or malformed`);
+            console.error(`[${new Date().toISOString()}] Verification warning: Topic lists empty or malformed`);
           }
         } else {
-          console.error(`[${new Date().toISOString()}] Verification failed: No topic lists field found`);
+          console.error(`[${new Date().toISOString()}] Verification warning: No topic lists field found`);
+        }
+        
+        // Check if cards (field_2979) exists and has content
+        let cardsValid = false;
+        if (response && response[FIELD_MAPPING.cards]) {
+          const cards = safeParseJSON(response[FIELD_MAPPING.cards]);
+          if (Array.isArray(cards) && cards.length > 0) {
+            console.log(`[${new Date().toISOString()}] Verification successful: Cards present with ${cards.length} items`);
+            cardsValid = true;
+          } else {
+            console.error(`[${new Date().toISOString()}] Verification warning: Cards empty or malformed`);
+          }
+        } else {
+          console.error(`[${new Date().toISOString()}] Verification warning: No cards field found`);
+        }
+        
+        // Push the verification result back to the React app
+        if (window.frames.length > 0 && window.frames[0].postMessage) {
+          window.frames[0].postMessage({
+            type: 'VERIFICATION_RESULT',
+            success: topicListsValid && cardsValid,
+            data: {
+              topicListsValid,
+              cardsValid,
+              timestamp: new Date().toISOString()
+            }
+          }, '*');
         }
       },
       error: function(error) {
         console.error(`[${new Date().toISOString()}] Verification error:`, error);
+        
+        // Push the error back to the React app
+        if (window.frames.length > 0 && window.frames[0].postMessage) {
+          window.frames[0].postMessage({
+            type: 'VERIFICATION_ERROR',
+            error: error.statusText || 'Unknown error',
+            timestamp: new Date().toISOString()
+          }, '*');
+        }
       }
     });
   }, 2000); // Wait 2 seconds before verification
+}
+
+// Safe JSON parse helper function (in case it's not defined elsewhere)
+function safeParseJSON(jsonString) {
+  if (!jsonString) return null;
+  
+  try {
+    // If it's already an object, just return it
+    if (typeof jsonString === 'object') return jsonString;
+    
+    // Regular JSON parse
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error("Error parsing JSON:", error, "String:", jsonString ? jsonString.substring(0, 100) : "null");
+    
+    // Return empty array as fallback for arrays
+    return [];
+  }
+}
+
+// Debug log helper (in case it's not defined elsewhere)
+function debugLog(title, data) {
+  if (typeof console.groupCollapsed === 'function') {
+    console.groupCollapsed(`%c${title}`, 'color: #5d00ff; font-weight: bold;');
+    console.log(JSON.stringify(data, null, 2));
+    console.groupEnd();
+  } else {
+    console.log(`[${title}]`, JSON.stringify(data));
+  }
 }
