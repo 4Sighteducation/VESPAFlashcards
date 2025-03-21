@@ -1225,7 +1225,7 @@ Use this format for different question types:
     
     // Trigger an explicit save operation to prevent data loss on refresh
     if (window.parent && window.parent.postMessage) {
-      // Send the specific card data to ensure it gets added to the card bank properly
+      // First add the card to the bank
       window.parent.postMessage({ 
         type: "ADD_TO_BANK",
         data: {
@@ -1233,13 +1233,17 @@ Use this format for different question types:
           recordId: auth?.recordId || window.recordId
         }
       }, "*");
-      console.log("Explicitly triggered ADD_TO_BANK to add card to both card bank and Box 1");
+      console.log("Added card to bank");
       
-      // Also trigger general save
-      setTimeout(() => {
-        window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
-        console.log("Triggered save after adding card to bank");
-      }, 500);
+      // Then immediately trigger a save to ensure persistence
+      window.parent.postMessage({ 
+        type: "TRIGGER_SAVE",
+        data: {
+          cards: [card],
+          recordId: auth?.recordId || window.recordId
+        }
+      }, "*");
+      console.log("Triggered immediate save after adding card");
     }
   };
 
@@ -1270,25 +1274,29 @@ Use this format for different question types:
       setSuccessModal(prev => ({...prev, show: false}));
     }, 3000);
     
-  // Trigger an explicit save operation to ensure cards are saved to the database
-  // This is important to prevent data loss if the user refreshes the page
-  if (window.parent && window.parent.postMessage) {
-    // First explicitly add all cards to the bank
-    window.parent.postMessage({ 
-      type: "ADD_TO_BANK",
-      data: {
-        cards: unadded,
-        recordId: auth?.recordId || window.recordId
-      }
-    }, "*");
-    console.log("Explicitly triggered ADD_TO_BANK for all cards");
-    
-    // Then trigger a general save
-    setTimeout(() => {
-      window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
-      console.log("Triggered save after adding all cards");
-    }, 500);
-  }
+    // Trigger an explicit save operation to ensure cards are saved to the database
+    // This is important to prevent data loss if the user refreshes the page
+    if (window.parent && window.parent.postMessage) {
+      // First add all cards to the bank
+      window.parent.postMessage({ 
+        type: "ADD_TO_BANK",
+        data: {
+          cards: unadded,
+          recordId: auth?.recordId || window.recordId
+        }
+      }, "*");
+      console.log("Added all cards to bank");
+      
+      // Then immediately trigger a save to ensure persistence
+      window.parent.postMessage({ 
+        type: "TRIGGER_SAVE",
+        data: {
+          cards: unadded,
+          recordId: auth?.recordId || window.recordId
+        }
+      }, "*");
+      console.log("Triggered immediate save after adding all cards");
+    }
   };
   
   // Modal to show successfully added cards
@@ -2099,10 +2107,9 @@ Use this format for different question types:
         return false;
       }
 
-      // Get existing data
-      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-      const getResponse = await fetch(getUrl, {
-        method: "GET",
+      // Get existing data to preserve fields and append cards
+      const existingDataUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+      const existingDataResponse = await fetch(existingDataUrl, {
         headers: {
           "Content-Type": "application/json",
           "X-Knack-Application-ID": KNACK_APP_ID,
@@ -2111,44 +2118,66 @@ Use this format for different question types:
         }
       });
 
-      if (!getResponse.ok) {
+      if (!existingDataResponse.ok) {
         throw new Error("Failed to get existing data");
       }
 
-      const existingData = await getResponse.json();
-      
-      // Merge new cards with existing ones
+      const existingData = await existingDataResponse.json();
+
+      // Parse existing cards and box 1 data
       let existingCards = [];
+      let box1Cards = [];
+      
       try {
-        if (existingData.field_2979) {
-          existingCards = JSON.parse(existingData.field_2979);
-        }
+        existingCards = JSON.parse(existingData.field_2979 || '[]');
+        box1Cards = JSON.parse(existingData.field_2986 || '[]');
       } catch (e) {
-        console.error("Error parsing existing cards:", e);
+        console.error("Error parsing existing data:", e);
+        // Continue with empty arrays if parsing fails
       }
 
-      // Ensure existingCards is an array
-      if (!Array.isArray(existingCards)) {
-        existingCards = [];
-      }
+      // Ensure arrays
+      if (!Array.isArray(existingCards)) existingCards = [];
+      if (!Array.isArray(box1Cards)) box1Cards = [];
 
-      // Add new cards
-      const updatedCards = [...existingCards, ...cards];
+      // Prepare new cards with proper metadata
+      const newCards = cards.map(card => ({
+        ...card,
+        boxNum: 1,
+        lastReviewed: new Date().toISOString(),
+        nextReviewDate: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }));
 
-      // Prepare update data with field preservation
+      // Append new cards to existing ones
+      const updatedCards = [...existingCards, ...newCards];
+
+      // Create Box 1 entries for new cards
+      const newBox1Items = newCards.map(card => ({
+        cardId: card.id,
+        lastReviewed: new Date().toISOString(),
+        nextReviewDate: new Date().toISOString()
+      }));
+
+      // Append new items to Box 1
+      const updatedBox1 = [...box1Cards, ...newBox1Items];
+
+      // Prepare update data
       const updateData = {
-        field_2979: JSON.stringify(updatedCards),
-        field_2957: new Date().toISOString() // Last saved timestamp
+        field_2979: JSON.stringify(updatedCards), // Card bank
+        field_2986: JSON.stringify(updatedBox1),  // Box 1
+        field_2957: new Date().toISOString()      // Last saved timestamp
       };
 
       // Preserve other fields
       if (existingData.field_3011) updateData.field_3011 = existingData.field_3011; // Topic lists
       if (existingData.field_3030) updateData.field_3030 = existingData.field_3030; // Topic metadata
-      if (existingData.field_2986) updateData.field_2986 = existingData.field_2986; // Box 1
       if (existingData.field_2987) updateData.field_2987 = existingData.field_2987; // Box 2
       if (existingData.field_2988) updateData.field_2988 = existingData.field_2988; // Box 3
       if (existingData.field_2989) updateData.field_2989 = existingData.field_2989; // Box 4
       if (existingData.field_2990) updateData.field_2990 = existingData.field_2990; // Box 5
+      if (existingData.field_3000) updateData.field_3000 = existingData.field_3000; // Color mapping
 
       // Save to Knack
       const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
@@ -2168,7 +2197,17 @@ Use this format for different question types:
         throw new Error(errorData.message || "Failed to save cards");
       }
 
-      console.log("Cards saved successfully:", cards.length, "new cards");
+      console.log("Cards saved successfully:", {
+        newCardsCount: newCards.length,
+        totalCardsCount: updatedCards.length,
+        box1Count: updatedBox1.length
+      });
+
+      // Trigger a save to ensure everything is synchronized
+      if (window.parent) {
+        window.parent.postMessage({ type: "TRIGGER_SAVE" }, "*");
+      }
+
       return true;
     } catch (error) {
       console.error("Error saving cards:", error);
