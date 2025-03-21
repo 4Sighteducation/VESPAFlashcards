@@ -44,7 +44,12 @@ const TopicListModal = ({
   onSelectTopic, 
   onGenerateCards,
   auth,
-  userId
+  userId,
+  onSaveTopicList,
+  existingTopicLists = [],
+  existingTopicMetadata = [],
+  isLoadingData = false,
+  completeUserData = null
 }) => {
   const [step, setStep] = useState(1); // 1 = Info screen, 2 = Topic list, 3 = Post-save options
   const [examBoard, setExamBoard] = useState(initialExamBoard || "");
@@ -66,8 +71,60 @@ const TopicListModal = ({
 
   // Load existing topic list when component mounts
   useEffect(() => {
-    checkSubjectMetadata();
-  }, []);
+    if (isLoadingData) {
+      setIsLoading(true);
+    } else {
+      checkSubjectMetadata();
+    }
+  }, [isLoadingData]);
+  
+  // When existingTopicLists or existingTopicMetadata change, update our state
+  useEffect(() => {
+    if (existingTopicLists.length > 0 || existingTopicMetadata.length > 0) {
+      processExistingData();
+    }
+  }, [existingTopicLists, existingTopicMetadata]);
+  
+  // Process existing data from props
+  const processExistingData = () => {
+    // Find metadata for current subject
+    const subjectMetadata = existingTopicMetadata.find(meta => meta.subject === subject);
+    
+    // If metadata exists, use it
+    if (subjectMetadata) {
+      if (subjectMetadata.examBoard && subjectMetadata.examBoard !== "general" && subjectMetadata.examBoard !== "null") {
+        setExamBoard(subjectMetadata.examBoard);
+      }
+      
+      if (subjectMetadata.examType && subjectMetadata.examType !== "general" && subjectMetadata.examType !== "null") {
+        setExamType(subjectMetadata.examType);
+      }
+      
+      if (subjectMetadata.lastUpdated) {
+        setLastUpdated(subjectMetadata.lastUpdated);
+      }
+    }
+    
+    // Find topic list for this subject
+    if (examBoard && examType) {
+      const matchingList = existingTopicLists.find(list => 
+        list.subject === subject && 
+        list.examBoard === examBoard && 
+        list.examType === examType
+      );
+      
+      if (matchingList && matchingList.topics) {
+        setTopics(matchingList.topics);
+        setTopicCount(matchingList.topics.length);
+        
+        if (matchingList.lastUpdated) {
+          setLastUpdated(matchingList.lastUpdated);
+        }
+      }
+    }
+    
+    setIsLoading(false);
+  };
   
   // Group topics by category when topics change
   useEffect(() => {
@@ -119,6 +176,12 @@ const TopicListModal = ({
       }
       
       console.log(`Checking metadata for subject: ${subject}`);
+      
+      // First check if we have data from props
+      if (existingTopicLists.length > 0 || existingTopicMetadata.length > 0) {
+        processExistingData();
+        return;
+      }
       
       // Get user data from Knack
       const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
@@ -241,6 +304,27 @@ const TopicListModal = ({
       
       console.log(`Loading topic list for subject: ${subject} (${examBoard} ${examType})`);
       
+      // First check if we have data from props
+      if (existingTopicLists.length > 0) {
+        // Find topic list for this subject, exam board, and exam type
+        const matchingList = existingTopicLists.find(list => 
+          list.subject === subject && 
+          list.examBoard === examBoard && 
+          list.examType === examType
+        );
+        
+        if (matchingList && matchingList.topics) {
+          setTopics(matchingList.topics);
+          console.log(`Found existing topic list with ${matchingList.topics.length} topics`);
+          
+          // Update metadata to remember these selections for next time
+          updateSubjectMetadata();
+          
+          setIsLoading(false);
+          return;
+        }
+      }
+      
       // Get topic lists from Knack
       const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
       
@@ -313,6 +397,36 @@ const TopicListModal = ({
   // Update subject metadata
   const updateSubjectMetadata = async () => {
     try {
+      // If we have a custom save handler from parent component, use that instead
+      if (onSaveTopicList) {
+        // Get current topic lists from props
+        const currentTopicLists = [...existingTopicLists];
+        const currentMetadata = [...existingTopicMetadata];
+        
+        // Create new metadata object
+        const newMetadata = {
+          subject,
+          examBoard,
+          examType,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        // Find if metadata for this subject already exists
+        const metaIndex = currentMetadata.findIndex(meta => meta.subject === subject);
+        
+        // Update or add the metadata
+        if (metaIndex >= 0) {
+          currentMetadata[metaIndex] = newMetadata;
+        } else {
+          currentMetadata.push(newMetadata);
+        }
+        
+        // Send to parent component
+        await onSaveTopicList(currentTopicLists, currentMetadata);
+        return;
+      }
+      
+      // Original Knack API implementation below for backwards compatibility
       // First get the actual record ID for this user in object_102
       let recordId = null;
       const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
@@ -507,7 +621,12 @@ const TopicListModal = ({
     }
   };
 
-  // Save topic list to Knack using window messaging system
+  // Generate a unique ID
+  const generateId = (prefix = 'topic') => {
+    return `${prefix}_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
+  };
+
+  // Save topic list to Knack
   const saveTopicList = async () => {
     if (topics.length === 0) {
       setError("No topics to save");
@@ -536,162 +655,83 @@ const TopicListModal = ({
         auth: auth ? { email: auth.email, name: auth.name } : null
       });
       
-      // Get the record ID from our current user record - first try looking for it
-      let recordId = null;
-      
-      // Check if it's already in auth object
-      if (auth.recordId) {
-        recordId = auth.recordId;
-      } else {
-        // We need to find it by searching records
-        console.log("Searching for user record ID...");
-        const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
-        
+      // If we have a custom save handler from parent component, use that
+      if (onSaveTopicList) {
         try {
-          const searchResponse = await fetch(searchUrl, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Knack-Application-ID": KNACK_APP_ID,
-              "X-Knack-REST-API-Key": KNACK_API_KEY
-            }
-          });
+          // Get current topic lists from props or initialize empty array
+          const currentTopicLists = Array.isArray(existingTopicLists) ? [...existingTopicLists] : [];
           
-          if (searchResponse.ok) {
-            const allRecords = await searchResponse.json();
-            
-            // Find the record matching this user ID
-            if (allRecords && allRecords.records) {
-              const userRecord = allRecords.records.find(record => {
-                return record.field_2954 === userId || 
-                      (record.field_2958 && record.field_2958 === auth.email);
-              });
-              
-              if (userRecord) {
-                recordId = userRecord.id;
-                console.log("Found matching record ID:", recordId);
-              }
-            }
-          }
-        } catch (e) {
-          console.error("Error finding record ID:", e);
-        }
-      }
-      
-      if (!recordId) {
-        console.error("Could not find a record ID for this user");
-        setError("Failed to locate your user record. Please refresh and try again.");
-        setIsSaving(false);
-        return;
-      }
-
-      // Get ALL existing user data (including card bank, study boxes, etc.)
-      let completeUserData = null;
-      let allTopicLists = [];
-      let subjectMetadata = [];
-      
-      // Get the current data for this record
-      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-      
-      try {
-        console.log("Fetching complete user data to preserve all fields");
-        const getResponse = await fetch(getUrl, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY
-          }
-        });
-        
-        if (getResponse.ok) {
-          completeUserData = await getResponse.json();
-          console.log("Successfully retrieved complete user data");
+          // Create new topic list object
+          const newTopicList = {
+            id: generateId('list'),
+            subject,
+            examBoard,
+            examType,
+            topics,
+            lastUpdated: new Date().toISOString()
+          };
           
-          // Extract topic lists if available
-          if (completeUserData && completeUserData.field_3011) {
-            try {
-              const parsed = JSON.parse(completeUserData.field_3011);
-              if (Array.isArray(parsed)) {
-                allTopicLists = parsed;
-              }
-            } catch (e) {
-              console.error("Error parsing existing topic lists:", e);
-            }
+          // Find if topic list for this subject, exam board, and exam type already exists
+          const existingIndex = currentTopicLists.findIndex(list => 
+            list.subject === subject && 
+            list.examBoard === examBoard && 
+            list.examType === examType
+          );
+          
+          // Update or add the topic list
+          if (existingIndex >= 0) {
+            // Preserve the original ID
+            newTopicList.id = currentTopicLists[existingIndex].id;
+            currentTopicLists[existingIndex] = newTopicList;
+          } else {
+            currentTopicLists.push(newTopicList);
           }
           
-          // Extract metadata if available
-          if (completeUserData && completeUserData.field_3030) {
-            try {
-              const parsed = JSON.parse(completeUserData.field_3030);
-              if (Array.isArray(parsed)) {
-                subjectMetadata = parsed;
-              }
-            } catch (e) {
-              console.error("Error parsing subject metadata:", e);
-            }
+          // Get current metadata from props or initialize empty array
+          const currentMetadata = Array.isArray(existingTopicMetadata) ? [...existingTopicMetadata] : [];
+          
+          // Create new metadata object
+          const newMetadata = {
+            subject,
+            examBoard,
+            examType,
+            lastUpdated: new Date().toISOString()
+          };
+          
+          // Find if metadata for this subject already exists
+          const metaIndex = currentMetadata.findIndex(meta => meta.subject === subject);
+          
+          // Update or add the metadata
+          if (metaIndex >= 0) {
+            currentMetadata[metaIndex] = newMetadata;
+          } else {
+            currentMetadata.push(newMetadata);
           }
-        } else {
-          console.error("Failed to retrieve user data:", await getResponse.text());
-          setError("Failed to retrieve your current data. Please try again.");
+          
+          // Send to parent component
+          const success = await onSaveTopicList(currentTopicLists, currentMetadata);
+          
+          if (success) {
+            console.log("Topic list saved successfully via parent handler");
+            setTopicListSaved(true);
+            setIsSaving(false);
+            setStep(3); // Move to post-save options
+          } else {
+            console.error("Failed to save topic list via parent handler");
+            setError("Failed to save topic list. Please try again.");
+            setIsSaving(false);
+          }
+        } catch (error) {
+          console.error("Error in custom save handler:", error);
+          setError("Failed to save topic list. Please try again.");
           setIsSaving(false);
-          return;
         }
-      } catch (e) {
-        console.error("Error retrieving complete user data:", e);
-        setError("Error retrieving your data. Please try again.");
-        setIsSaving(false);
+        
         return;
       }
       
-      // Find if topic list for this subject, exam board, and exam type already exists
-      const existingIndex = allTopicLists.findIndex(list => 
-        list.subject === subject && 
-        list.examBoard === examBoard && 
-        list.examType === examType
-      );
-      
-      // Create new topic list object
-      const newTopicList = {
-        id: existingIndex >= 0 ? allTopicLists[existingIndex].id : generateId('list'),
-        subject,
-        examBoard,
-        examType,
-        topics,
-        lastUpdated: new Date().toISOString()
-      };
-      
-      // Update or add the topic list
-      let updatedTopicLists = [...allTopicLists];
-      if (existingIndex >= 0) {
-        updatedTopicLists[existingIndex] = newTopicList;
-      } else {
-        updatedTopicLists.push(newTopicList);
-      }
-      
-      // Find if metadata for this subject already exists
-      const metaIndex = subjectMetadata.findIndex(meta => meta.subject === subject);
-      
-      // Create new metadata object
-      const newMetadata = {
-        subject,
-        examBoard,
-        examType,
-        lastUpdated: new Date().toISOString()
-      };
-      
-      // Update or add the metadata
-      let updatedMetadata = [...subjectMetadata];
-      if (metaIndex >= 0) {
-        updatedMetadata[metaIndex] = newMetadata;
-      } else {
-        updatedMetadata.push(newMetadata);
-      }
-      
-      // Use window.parent.postMessage to send data to the parent window
-      console.log("Sending topic list data to parent window via postMessage");
-      
-      // Set up a listener for the response
+      // Legacy direct Knack saving logic
+      // Set up a listener for the response from parent window
       const messageHandler = (event) => {
         if (event.data && event.data.type === "SAVE_RESULT") {
           // Remove the event listener once we get a response
@@ -713,476 +753,76 @@ const TopicListModal = ({
       // Add the event listener
       window.addEventListener("message", messageHandler);
       
-      // Send the message to the parent window, including preserveOtherFields flag
-      // and complete data for reference
-      const messageData = {
-        type: "SAVE_DATA",
-        data: {
-          recordId: recordId,
-          userId: userId,
-          topicLists: updatedTopicLists,
-          topicMetadata: updatedMetadata,
-          preserveFields: true,
-          completeData: completeUserData
-        }
-      };
+      // Get all existing topic lists
+      const allTopicLists = existingTopicLists.length > 0 
+        ? [...existingTopicLists]
+        : [];
       
-      // Log the exact message being sent
-      debugLog("SENDING MESSAGE TO PARENT", {
-        messageType: messageData.type,
-        recordId: recordId, 
-        listCount: updatedTopicLists.length,
-        timestamp: new Date().toISOString()
-      });
+      // Find if topic list for this subject, exam board, and exam type already exists
+      const existingIndex = allTopicLists.findIndex(list => 
+        list.subject === subject && 
+        list.examBoard === examBoard && 
+        list.examType === examType
+      );
       
-      // Send the message
-      window.parent.postMessage(messageData, "*");
-      
-      console.log(`[${new Date().toISOString()}] Sent data with preserveFields flag to maintain other data`);
-      
-      // Set a timeout to handle no response
-      setTimeout(() => {
-        if (isSaving) {
-          window.removeEventListener("message", messageHandler);
-          console.error("[TIMEOUT] No save response received within timeout period");
-          debugLog("SAVE TIMEOUT", {
-            elapsedTime: "10 seconds",
-            recordId: recordId,
-            timestamp: new Date().toISOString()
-          });
-          setError("Save operation timed out. Please try again. This may indicate an issue with the server connection.");
-          setIsSaving(false);
-        }
-      }, 10000); // 10-second timeout
-      
-    } catch (error) {
-      console.error("Error saving topic list:", error);
-      setError(`Failed to save topic list: ${error.message}`);
-      setIsSaving(false);
-    }
-  };
-
-  // Generate a unique ID
-  const generateId = (prefix = 'topic') => {
-    return `${prefix}_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
-  };
-  
-  // Handle adding a new topic
-  const handleAddTopic = () => {
-    if (!newTopicName.trim()) {
-      setError("Please enter a topic name");
-      return;
-    }
-    
-    // Create new topic object
-    const newTopic = {
-      id: generateId('topic'),
-      name: newTopicName.trim()
-    };
-    
-    // Add to topics list
-    setTopics(prevTopics => [...prevTopics, newTopic]);
-    
-    // Reset form and close modal
-    setNewTopicName("");
-    setShowAddTopicModal(false);
-    setTopicListSaved(false); // Indicate changes need to be saved
-  };
-  
-  // Handle deleting a topic
-  const handleDeleteTopic = (topicId, event) => {
-    event.stopPropagation(); // Prevent topic selection
-    
-    // Remove topic from list
-    setTopics(prevTopics => prevTopics.filter(topic => topic.id !== topicId));
-    
-    // If the deleted topic was selected, clear selection
-    if (selectedTopic && selectedTopic.id === topicId) {
-      setSelectedTopic(null);
-    }
-    
-    setTopicListSaved(false); // Indicate changes need to be saved
-  };
-  
-  // Handle clicking a topic
-  const handleTopicClick = (topic) => {
-    setSelectedTopic(topic);
-  };
-  
-  // Handle continue button in post-save options
-  const handleContinue = () => {
-    if (selectedTopic) {
-      onSelectTopic(selectedTopic);
-    }
-    onClose();
-  };
-  
-  // Handle continue button in exam selection
-  const handleContinueToTopics = () => {
-    if (!examBoard || !examType) {
-      setError("Please select both an exam board and exam type");
-      return;
-    }
-    
-    setStep(2);
-    loadTopicList();
-  };
-  
-  // Handle the View Topics button click
-  const handleViewTopics = () => {
-    if (!examBoard || !examType) {
-      setError("Subject metadata is incomplete. Please contact support.");
-      return;
-    }
-    
-    setStep(2);
-    loadTopicList();
-  };
-  
-  // Handle the Regenerate Topics button click
-  const handleRegenerateTopics = () => {
-    if (!examBoard || !examType) {
-      setError("Subject metadata is incomplete. Please contact support.");
-      return;
-    }
-    
-    generateTopics();
-    setStep(2);
-  };
-  
-  // Handle the Prioritize Topics button click
-  const handlePrioritizeTopics = () => {
-    if (!examBoard || !examType) {
-      setError("Subject metadata is incomplete. Please contact support.");
-      return;
-    }
-    
-    if (topics.length === 0) {
-      loadTopicList();
-    }
-    
-    setPrioritizationMode(true);
-    setStep(2);
-  };
-
-  // Handle generating cards from selected topic
-  const handleGenerateCards = () => {
-    if (selectedTopic) {
-      // Pass metadata along with the selected topic to skip initial steps
-      onGenerateCards({
-        topic: selectedTopic.name,
+      // Create new topic list object
+      const newTopicList = {
+        id: existingIndex >= 0 ? allTopicLists[existingIndex].id : generateId('list'),
+        subject,
         examBoard,
         examType,
-        subject
-      });
-    } else {
-      setError("Please select a topic first");
-    }
-  };
-
-  // Render info screen (new initial view)
-  const renderInfoScreen = () => {
-    // Format date for display
-    const formatDate = (dateString) => {
-      if (!dateString) return "Never";
-      try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-GB', { 
-          day: 'numeric', 
-          month: 'short', 
-          year: 'numeric' 
-        });
-      } catch (e) {
-        return "Invalid date";
+        topics,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      // Update or add the topic list
+      if (existingIndex >= 0) {
+        allTopicLists[existingIndex] = newTopicList;
+      } else {
+        allTopicLists.push(newTopicList);
       }
-    };
-
-    return (
-      <>
-        <div className="topic-info-card">
-          <h3>Subject Information</h3>
-          <div className="info-grid">
-            <div className="info-label">Subject:</div>
-            <div className="info-value">{subject}</div>
-            
-            <div className="info-label">Exam Board:</div>
-            <div className="info-value">{examBoard || "Not specified"}</div>
-            
-            <div className="info-label">Exam Type:</div>
-            <div className="info-value">{examType || "Not specified"}</div>
-            
-            <div className="info-label">Last Updated:</div>
-            <div className="info-value">{formatDate(lastUpdated)}</div>
-            
-            <div className="info-label">Topics:</div>
-            <div className="info-value">{topicCount || "None"}</div>
-          </div>
-        </div>
+      
+      // Get all metadata
+      const allMetadata = existingTopicMetadata.length > 0
+        ? [...existingTopicMetadata]
+        : [];
+      
+      // Find if metadata for this subject already exists
+      const metaIndex = allMetadata.findIndex(meta => meta.subject === subject);
+      
+      // Create new metadata object
+      const newMetadata = {
+        subject,
+        examBoard,
+        examType,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      // Update or add the metadata
+      if (metaIndex >= 0) {
+        allMetadata[metaIndex] = newMetadata;
+      } else {
+        allMetadata.push(newMetadata);
+      }
+      
+      // Find the actual Knack record ID for this user
+      let recordId = null;
+      
+      console.log(`Searching for user record ID...`);
+      const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
+      
+      try {
+        const searchResponse = await fetch(searchUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Knack-Application-ID": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY
+          }
+        });
         
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-        
-        <div className="topic-action-buttons">
-          <button 
-            className="topic-button view-topics-button"
-            onClick={handleViewTopics}
-            disabled={isLoading}
-          >
-            {topicCount > 0 ? "View Topics / Generate Cards" : "Generate Topics"}
-          </button>
+        if (searchResponse.ok) {
+          const allRecords = await searchResponse.json();
           
-          <button
-            className="topic-button regenerate-button"
-            onClick={handleRegenerateTopics}
-            disabled={isLoading}
-          >
-            Regenerate Topics
-          </button>
-          
-          <button
-            className="topic-button prioritize-button"
-            onClick={handlePrioritizeTopics}
-            disabled={isLoading || topicCount === 0}
-          >
-            Prioritize Topics
-          </button>
-        </div>
-        
-        <div className="modal-actions">
-          <button 
-            className="modal-button cancel-button" 
-            onClick={onClose}
-          >
-            Close
-          </button>
-        </div>
-      </>
-    );
-  };
-
-  // Render topic list step
-  const renderTopicList = () => {
-    return (
-      <>
-        {isLoading ? (
-          <div className="loading-indicator">
-            <div className="spinner"></div>
-            <p>Loading topics for {subject}...</p>
-          </div>
-        ) : isGenerating ? (
-          <div className="loading-indicator">
-            <div className="spinner"></div>
-            <p>Generating topics for {subject} ({examBoard} {examType})...</p>
-          </div>
-        ) : (
-          <>
-            <div className="topic-list-header">
-              <h3>Topics for {subject} ({examBoard} {examType})</h3>
-              <div className="topic-header-actions">
-                <button
-                  className="add-topic-button"
-                  onClick={() => setShowAddTopicModal(true)}
-                  title="Add a new topic"
-                >
-                  ➕ Add Topic
-                </button>
-                
-                <button
-                  className="prioritize-button"
-                  onClick={() => setPrioritizationMode(!prioritizationMode)}
-                  title="Prioritize topics"
-                >
-                  {prioritizationMode ? "✓ Done" : "🔝 Prioritize"}
-                </button>
-                
-                {!topicListSaved && (
-                  <button 
-                    className="save-topic-button" 
-                    onClick={saveTopicList}
-                    disabled={topics.length === 0 || isSaving}
-                  >
-                    {isSaving ? 'Saving...' : 'Save Topic List'}
-                  </button>
-                )}
-                
-                <button 
-                  className="regenerate-button" 
-                  onClick={generateTopics}
-                  disabled={isGenerating}
-                >
-                  🔄 Regenerate
-                </button>
-              </div>
-            </div>
-            
-            <div className="topics-container">
-              {topics.length > 0 ? (
-                <div className="topics-by-category">
-                  {Object.keys(groupedTopicsByCategory).map(category => (
-                    <div key={category} className="topic-category">
-                      <h4 className="category-heading">{category}</h4>
-                      <ul className="topics-list">
-                        {groupedTopicsByCategory[category].map((topic) => (
-                          <li 
-                            key={topic.id} 
-                            className={`topic-item ${selectedTopic?.id === topic.id ? 'selected' : ''}`}
-                            onClick={() => handleTopicClick(topic)}
-                          >
-                            <span className="topic-name">
-                              {/* Only show the part after the colon (if it exists) */}
-                              {topic.displayName}
-                            </span>
-                            
-                            <div className="topic-actions">
-                              <button
-                                className="delete-topic-button"
-                                onClick={(e) => handleDeleteTopic(topic.id, e)}
-                                title="Delete this topic"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="no-topics-message">No topics available. Click "Regenerate" to create topics.</p>
-              )}
-            </div>
-            
-            {error && (
-              <div className="error-message">
-                {error}
-              </div>
-            )}
-            
-            <div className="modal-actions">
-              <button 
-                className="modal-button cancel-button" 
-                onClick={onClose}
-              >
-                Cancel
-              </button>
-              <button 
-                className="modal-button select-button" 
-                onClick={handleContinue}
-                disabled={!selectedTopic}
-              >
-                Select Topic
-              </button>
-            </div>
-          </>
-        )}
-      </>
-    );
-  };
-
-  // Render post-save options
-  const renderPostSaveOptions = () => {
-    return (
-      <>
-        <div className="post-save-message">
-          <h3>Topic List Saved Successfully!</h3>
-          <p>What would you like to do next?</p>
-        </div>
-        
-        <div className="post-save-options">
-          <button 
-            className="modal-button generate-cards-button" 
-            onClick={handleGenerateCards}
-            disabled={!selectedTopic}
-          >
-            Generate Flashcards for {selectedTopic ? selectedTopic.name : 'Selected Topic'}
-          </button>
-          
-          <button 
-            className="modal-button continue-editing-button" 
-            onClick={() => setStep(2)}
-          >
-            Continue Editing Topics
-          </button>
-          
-          <button 
-            className="modal-button return-button" 
-            onClick={onClose}
-          >
-            Return to Card Bank
-          </button>
-        </div>
-      </>
-    );
-  };
-
-  // Render Add Topic modal
-  const renderAddTopicModal = () => {
-    if (!showAddTopicModal) return null;
-    
-    return (
-      <div className="add-topic-modal-overlay">
-        <div className="add-topic-modal">
-          <h3>Add New Topic</h3>
-          <div className="add-topic-form">
-            <input
-              type="text"
-              value={newTopicName}
-              onChange={(e) => setNewTopicName(e.target.value)}
-              placeholder="Enter topic name"
-              className="topic-input"
-            />
-            
-            <div className="add-topic-actions">
-              <button 
-                className="cancel-button" 
-                onClick={() => {
-                  setNewTopicName(""); 
-                  setShowAddTopicModal(false);
-                }}
-              >
-                Cancel
-              </button>
-              <button 
-                className="add-button" 
-                onClick={handleAddTopic}
-                disabled={!newTopicName.trim()}
-              >
-                Add Topic
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-container topic-list-modal">
-        <button className="modal-close-button" onClick={onClose}>×</button>
-        
-        <div className="modal-header">
-          <h2>
-            {step === 1 && `Set up Topic List for ${subject}`}
-            {step === 2 && `Topic List for ${subject}`}
-            {step === 3 && `Topic List for ${subject} Saved!`}
-          </h2>
-        </div>
-        
-        <div className="modal-content">
-          {step === 1 && renderInfoScreen()}
-          {step === 2 && renderTopicList()}
-          {step === 3 && renderPostSaveOptions()}
-        </div>
-        
-        {renderAddTopicModal()}
-      </div>
-    </div>
-  );
-};
-
-export default TopicListModal;
+          // Find the record matching this user ID
+          if (allRecords && allRecords.records) {
