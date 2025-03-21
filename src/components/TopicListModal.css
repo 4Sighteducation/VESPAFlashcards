@@ -905,6 +905,96 @@ button:disabled {
     padding: 8px;
     font-size: 14px;
   }
+  
+  /* Better touch targets for mobile */
+  .topic-item {
+    min-height: 48px; /* Minimum height for better touch targets */
+    display: flex;
+    align-items: center;
+  }
+  
+  .delete-topic-button {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+  }
+  
+  /* Ensure buttons are large enough for touch */
+  .modal-button {
+    min-height: 48px;
+    font-size: 16px;
+  }
+  
+  /* Enhance list visibility */
+  .topics-container {
+    border: 1px solid #e6e6e6;
+    border-radius: 8px;
+    background-color: #fdfdfd;
+  }
+  
+  /* Better spacing for topic lists */
+  .topics-by-category {
+    gap: 12px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+  .modal-header h2 {
+    font-size: 16px;
+  }
+  
+  .topic-info-card h3 {
+    font-size: 16px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 75px 1fr;
+    row-gap: 6px;
+  }
+  
+  .info-label {
+    font-size: 0.8rem;
+  }
+  
+  .info-value {
+    font-size: 0.85rem;
+  }
+  
+  .topic-action-buttons {
+    gap: 10px;
+  }
+  
+  .topic-button {
+    padding: 12px 8px;
+    font-size: 0.9rem;
+  }
+  
+  /* Make modals take full screen width */
+  .modal-container {
+    width: 100%;
+    border-radius: 0;
+  }
+  
+  .modal-overlay {
+    padding: 0;
+  }
+  
+  /* Optimize add topic modal */
+  .add-topic-modal {
+    width: 100%;
+    border-radius: 0;
+    padding: 15px;
+  }
+  
+  .add-topic-form {
+    gap: 10px;
+  }
+  
+  .topic-input {
+    padding: 10px;
+    font-size: 16px; /* Prevent iOS zoom */
+  }
 }
 
 /* Fix for landscape mode on mobile */
@@ -919,7 +1009,31 @@ button:disabled {
   
   .modal-actions button {
     margin-bottom: 5px;
-    min-height: 40px;
+    min-height: 44px; /* Still maintain good touch target */
+  }
+  
+  /* Improve layout for landscape */
+  .topic-info-card {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .topic-action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  /* More compact header */
+  .modal-header {
+    padding: 10px 15px;
+  }
+  
+  /* Topics in two columns for landscape */
+  .topics-by-category {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 }
 

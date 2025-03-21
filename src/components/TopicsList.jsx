@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from "react";
 import "./TopicsList.css";
+import TopicButtonsModal from "./TopicButtonsModal";
 
 const TopicsList = ({
   topics,
   selectedTopic,
   onSelectTopic,
   getColorForTopic,
-  updateTopics
+  updateTopics,
+  examBoard,
+  examType,
+  subject,
+  onGenerateCards
 }) => {
+  // State for showing the topic buttons modal
+  const [showTopicButtonsModal, setShowTopicButtonsModal] = useState(false);
   // State for tracking expanded topics
   const [expandedTopics, setExpandedTopics] = useState({});
   const [groupedTopics, setGroupedTopics] = useState({});
@@ -85,6 +92,44 @@ const TopicsList = ({
     return brightness > 0.5 ? "#000000" : "#ffffff";
   };
 
+  // Handle adding a new topic
+  const handleAddTopic = async (topicName) => {
+    // Create new topic object with a unique ID
+    const newTopic = {
+      id: `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: topicName
+    };
+    
+    // Add to topics list
+    const updatedTopics = [...topics, newTopic];
+    
+    // Update the topics in the parent component
+    if (updateTopics && typeof updateTopics === 'function') {
+      await updateTopics(updatedTopics);
+    }
+    
+    return Promise.resolve();
+  };
+  
+  // Handle deleting a topic
+  const handleDeleteTopic = (topicId) => {
+    // Remove topic from list
+    const updatedTopics = topics.filter(topic => topic.id !== topicId);
+    
+    // Update the topics in the parent component
+    if (updateTopics && typeof updateTopics === 'function') {
+      updateTopics(updatedTopics);
+    }
+  };
+  
+  // Handle saving topics
+  const handleSaveTopics = () => {
+    // Trigger save in the parent component
+    if (updateTopics && typeof updateTopics === 'function') {
+      updateTopics(topics);
+    }
+  };
+
   if (!topics || topics.length === 0) {
     return (
       <div className="topics-list empty">
@@ -95,7 +140,17 @@ const TopicsList = ({
 
   return (
     <div className="topics-list">
-      <h3>Topics</h3>
+      <div className="topics-header">
+        <h3>Topics</h3>
+        <button 
+          className="topic-buttons-link" 
+          onClick={() => setShowTopicButtonsModal(true)} 
+          title="View topic buttons"
+        >
+          <span className="icon">📋</span>
+          <span className="text">Topic Buttons</span>
+        </button>
+      </div>
       <div className="topics-container">
         {/* All Topics button */}
         <button
@@ -168,6 +223,21 @@ const TopicsList = ({
           );
         })}
       </div>
+      
+      {/* Render the TopicButtonsModal when it should be visible */}
+      {showTopicButtonsModal && (
+        <TopicButtonsModal
+          topics={topics}
+          subject={subject}
+          examBoard={examBoard}
+          examType={examType}
+          onClose={() => setShowTopicButtonsModal(false)}
+          onGenerateCards={onGenerateCards}
+          onDeleteTopic={handleDeleteTopic}
+          onAddTopic={handleAddTopic}
+          onSaveTopics={handleSaveTopics}
+        />
+      )}
     </div>
   );
 };

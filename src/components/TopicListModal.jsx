@@ -525,7 +525,16 @@ const TopicListModal = ({
         return;
       }
       
-      console.log(`Saving topic list for ${subject} with ${topics.length} topics`);
+      // Enhanced logging to track save process
+      console.log(`[${new Date().toISOString()}] Saving topic list for ${subject} with ${topics.length} topics`);
+      debugLog("SAVE ATTEMPT STARTED", { 
+        subject,
+        examBoard,
+        examType,
+        topicCount: topics.length,
+        userId,
+        auth: auth ? { email: auth.email, name: auth.name } : null
+      });
       
       // Get the record ID from our current user record - first try looking for it
       let recordId = null;
@@ -706,25 +715,42 @@ const TopicListModal = ({
       
       // Send the message to the parent window, including preserveOtherFields flag
       // and complete data for reference
-      window.parent.postMessage({
+      const messageData = {
         type: "SAVE_DATA",
         data: {
           recordId: recordId,
+          userId: userId,
           topicLists: updatedTopicLists,
           topicMetadata: updatedMetadata,
           preserveFields: true,
           completeData: completeUserData
         }
-      }, "*");
+      };
       
-      console.log("Sent data with preserveFields flag to maintain other data");
+      // Log the exact message being sent
+      debugLog("SENDING MESSAGE TO PARENT", {
+        messageType: messageData.type,
+        recordId: recordId, 
+        listCount: updatedTopicLists.length,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Send the message
+      window.parent.postMessage(messageData, "*");
+      
+      console.log(`[${new Date().toISOString()}] Sent data with preserveFields flag to maintain other data`);
       
       // Set a timeout to handle no response
       setTimeout(() => {
         if (isSaving) {
           window.removeEventListener("message", messageHandler);
-          console.error("No save response received within timeout");
-          setError("Save operation timed out. Please try again.");
+          console.error("[TIMEOUT] No save response received within timeout period");
+          debugLog("SAVE TIMEOUT", {
+            elapsedTime: "10 seconds",
+            recordId: recordId,
+            timestamp: new Date().toISOString()
+          });
+          setError("Save operation timed out. Please try again. This may indicate an issue with the server connection.");
           setIsSaving(false);
         }
       }, 10000); // 10-second timeout
