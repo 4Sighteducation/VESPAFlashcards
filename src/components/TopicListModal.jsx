@@ -576,14 +576,16 @@ const TopicListModal = ({
         return;
       }
 
-      // Get existing topic lists if available
+      // Get ALL existing user data (including card bank, study boxes, etc.)
+      let completeUserData = null;
       let allTopicLists = [];
       let subjectMetadata = [];
       
-      // Get the current data for this record to extract existing topic lists
+      // Get the current data for this record
       const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
       
       try {
+        console.log("Fetching complete user data to preserve all fields");
         const getResponse = await fetch(getUrl, {
           method: "GET",
           headers: {
@@ -594,11 +596,13 @@ const TopicListModal = ({
         });
         
         if (getResponse.ok) {
-          const userData = await getResponse.json();
+          completeUserData = await getResponse.json();
+          console.log("Successfully retrieved complete user data");
           
-          if (userData && userData.field_3011) {
+          // Extract topic lists if available
+          if (completeUserData && completeUserData.field_3011) {
             try {
-              const parsed = JSON.parse(userData.field_3011);
+              const parsed = JSON.parse(completeUserData.field_3011);
               if (Array.isArray(parsed)) {
                 allTopicLists = parsed;
               }
@@ -607,10 +611,10 @@ const TopicListModal = ({
             }
           }
           
-          // Also get metadata if available
-          if (userData && userData.field_3030) {
+          // Extract metadata if available
+          if (completeUserData && completeUserData.field_3030) {
             try {
-              const parsed = JSON.parse(userData.field_3030);
+              const parsed = JSON.parse(completeUserData.field_3030);
               if (Array.isArray(parsed)) {
                 subjectMetadata = parsed;
               }
@@ -618,9 +622,17 @@ const TopicListModal = ({
               console.error("Error parsing subject metadata:", e);
             }
           }
+        } else {
+          console.error("Failed to retrieve user data:", await getResponse.text());
+          setError("Failed to retrieve your current data. Please try again.");
+          setIsSaving(false);
+          return;
         }
       } catch (e) {
-        console.warn("Could not retrieve existing data, will create new");
+        console.error("Error retrieving complete user data:", e);
+        setError("Error retrieving your data. Please try again.");
+        setIsSaving(false);
+        return;
       }
       
       // Find if topic list for this subject, exam board, and exam type already exists
@@ -692,15 +704,20 @@ const TopicListModal = ({
       // Add the event listener
       window.addEventListener("message", messageHandler);
       
-      // Send the message to the parent window
+      // Send the message to the parent window, including preserveOtherFields flag
+      // and complete data for reference
       window.parent.postMessage({
         type: "SAVE_DATA",
         data: {
           recordId: recordId,
           topicLists: updatedTopicLists,
-          topicMetadata: updatedMetadata
+          topicMetadata: updatedMetadata,
+          preserveFields: true,
+          completeData: completeUserData
         }
       }, "*");
+      
+      console.log("Sent data with preserveFields flag to maintain other data");
       
       // Set a timeout to handle no response
       setTimeout(() => {
