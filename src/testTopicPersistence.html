@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topic Persistence Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .red {
+            background-color: #f44336;
+        }
+        .red:hover {
+            background-color: #d32f2f;
+        }
+        .blue {
+            background-color: #2196F3;
+        }
+        .blue:hover {
+            background-color: #0b7dda;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #dff0d8;
+            border: 1px solid #d6e9c6;
+            color: #3c763d;
+            border-radius: 4px;
+        }
+        #status.error {
+            background-color: #f2dede;
+            border-color: #ebccd1;
+            color: #a94442;
+        }
+        .topic-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .topic-list li {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Topic Persistence Test Page</h1>
+    
+    <div class="section">
+        <h2>Test Configuration</h2>
+        <div>
+            <label for="subject">Subject:</label>
+            <input type="text" id="subject" value="Mathematics" />
+        </div>
+        <div>
+            <label for="examBoard">Exam Board:</label>
+            <input type="text" id="examBoard" value="AQA" />
+        </div>
+        <div>
+            <label for="examType">Exam Type:</label>
+            <input type="text" id="examType" value="GCSE" />
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Topic Management</h2>
+        <div>
+            <label for="topicInput">Add Topic:</label>
+            <input type="text" id="topicInput" placeholder="Enter a topic name" />
+            <button id="addTopicBtn">Add Topic</button>
+        </div>
+        <div>
+            <h3>Current Topics</h3>
+            <ul id="topicsList" class="topic-list">
+                <!-- Topics will be added here -->
+            </ul>
+        </div>
+        <div>
+            <button id="clearTopicsBtn" class="red">Clear All Topics</button>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Persistence Testing</h2>
+        <button id="saveToStorageBtn">Save to Storage</button>
+        <button id="loadFromStorageBtn">Load from Storage</button>
+        <button id="refreshPageBtn" class="blue">Simulate Page Refresh</button>
+        <button id="simulateAutosaveBtn" class="blue">Simulate Autosave</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <script>
+        // Topic list
+        let topics = [];
+        
+        // Helper function to generate unique IDs
+        function generateId() {
+            return 'topic_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        }
+        
+        // Helper function to update status
+        function updateStatus(message, isError = false) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            if (isError) {
+                statusDiv.classList.add('error');
+            } else {
+                statusDiv.classList.remove('error');
+            }
+        }
+        
+        // Helper function to render topics
+        function renderTopics() {
+            const topicsList = document.getElementById('topicsList');
+            topicsList.innerHTML = '';
+            
+            if (topics.length === 0) {
+                topicsList.innerHTML = '<li>No topics available</li>';
+                return;
+            }
+            
+            topics.forEach(topic => {
+                const li = document.createElement('li');
+                li.textContent = topic.name;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.classList.add('red');
+                deleteBtn.style.float = 'right';
+                deleteBtn.style.padding = '2px 5px';
+                deleteBtn.style.fontSize = '12px';
+                deleteBtn.onclick = () => {
+                    topics = topics.filter(t => t.id !== topic.id);
+                    renderTopics();
+                    updateStatus(`Deleted topic: ${topic.name}`);
+                };
+                
+                li.appendChild(deleteBtn);
+                topicsList.appendChild(li);
+            });
+        }
+        
+        // Topic Storage Functions
+        
+        // Time-based cache key generation to ensure uniqueness
+        function generateCacheKey(subject, examBoard, examType) {
+            return `topics_${subject}_${examBoard}_${examType}`.replace(/\s+/g, '_').toLowerCase();
+        }
+        
+        // Session storage key
+        const sessionStorageKey = 'vespa_topic_list_cache';
+        
+        // Save topics to both session storage and a memory cache
+        function persistTopics(subject, examBoard, examType, topics) {
+            if (!subject || !examBoard || !examType) return false;
+            
+            try {
+                const cacheKey = generateCacheKey(subject, examBoard, examType);
+                
+                // Create the cache entry
+                const cacheEntry = {
+                    subject,
+                    examBoard,
+                    examType,
+                    topics,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Save to session storage as a fallback for page refreshes
+                let sessionCache = {};
+                
+                try {
+                    const existingCache = sessionStorage.getItem(sessionStorageKey);
+                    if (existingCache) {
+                        sessionCache = JSON.parse(existingCache);
+                    }
+                } catch (e) {
+                    console.warn("Error reading from session storage:", e);
+                }
+                
+                // Update the cache with this entry
+                sessionCache[cacheKey] = cacheEntry;
+                
+                // Save updated cache back to session storage
+                try {
+                    sessionStorage.setItem(sessionStorageKey, JSON.stringify(sessionCache));
+                    console.log(`Topics persisted to session storage for ${subject} (${examBoard} ${examType})`);
+                } catch (e) {
+                    console.warn("Error saving to session storage:", e);
+                }
+                
+                // Also update memory cache for immediate access
+                window.__vespaPersistentTopics = window.__vespaPersistentTopics || {};
+                window.__vespaPersistentTopics[cacheKey] = cacheEntry;
+                
+                return true;
+            } catch (error) {
+                console.error("Error persisting topics:", error);
+                return false;
+            }
+        }
+        
+        // Retrieve topics from cache
+        function retrieveTopics(subject, examBoard, examType) {
+            if (!subject || !examBoard || !examType) return null;
+            
+            try {
+                const cacheKey = generateCacheKey(subject, examBoard, examType);
+                
+                // First try memory cache (fastest)
+                if (window.__vespaPersistentTopics && window.__vespaPersistentTopics[cacheKey]) {
+                    console.log(`Retrieved topics from memory cache for ${subject} (${examBoard} ${examType})`);
+                    return window.__vespaPersistentTopics[cacheKey].topics;
+                }
+                
+                // Fall back to session storage
+                try {
+                    const sessionCache = sessionStorage.getItem(sessionStorageKey);
+                    if (sessionCache) {
+                        const parsed = JSON.parse(sessionCache);
+                        if (parsed[cacheKey]) {
+                            // Update memory cache for future use
+                            window.__vespaPersistentTopics = window.__vespaPersistentTopics || {};
+                            window.__vespaPersistentTopics[cacheKey] = parsed[cacheKey];
+                            
+                            console.log(`Retrieved topics from session storage for ${subject} (${examBoard} ${examType})`);
+                            return parsed[cacheKey].topics;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Error reading from session storage:", e);
+                }
+                
+                return null;
+            } catch (error) {
+                console.error("Error retrieving topics:", error);
+                return null;
+            }
+        }
+        
+        // Clear topics from cache
+        function clearPersistedTopics(subject, examBoard, examType) {
+            if (!subject || !examBoard || !examType) return;
+            
+            try {
+                const cacheKey = generateCacheKey(subject, examBoard, examType);
+                
+                // Clear from memory cache
+                if (window.__vespaPersistentTopics) {
+                    delete window.__vespaPersistentTopics[cacheKey];
+                }
+                
+                // Clear from session storage
+                try {
+                    const sessionCache = sessionStorage.getItem(sessionStorageKey);
+                    if (sessionCache) {
+                        const parsed = JSON.parse(sessionCache);
+                        if (parsed[cacheKey]) {
+                            delete parsed[cacheKey];
+                            sessionStorage.setItem(sessionStorageKey, JSON.stringify(parsed));
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Error clearing from session storage:", e);
+                }
+            } catch (error) {
+                console.error("Error clearing persisted topics:", error);
+            }
+        }
+        
+        // Event Handlers
+        
+        // Add topic button
+        document.getElementById('addTopicBtn').addEventListener('click', () => {
+            const topicInput = document.getElementById('topicInput');
+            const topicName = topicInput.value.trim();
+            
+            if (topicName) {
+                const newTopic = {
+                    id: generateId(),
+                    name: topicName
+                };
+                
+                topics.push(newTopic);
+                renderTopics();
+                topicInput.value = '';
+                updateStatus(`Added topic: ${topicName}`);
+            } else {
+                updateStatus('Please enter a topic name', true);
+            }
+        });
+        
+        // Clear topics button
+        document.getElementById('clearTopicsBtn').addEventListener('click', () => {
+            if (topics.length === 0) {
+                updateStatus('No topics to clear', true);
+                return;
+            }
+            
+            topics = [];
+            renderTopics();
+            updateStatus('All topics cleared');
+        });
+        
+        // Save to storage button
+        document.getElementById('saveToStorageBtn').addEventListener('click', () => {
+            const subject = document.getElementById('subject').value;
+            const examBoard = document.getElementById('examBoard').value;
+            const examType = document.getElementById('examType').value;
+            
+            if (!subject || !examBoard || !examType) {
+                updateStatus('Please fill in all fields', true);
+                return;
+            }
+            
+            const success = persistTopics(subject, examBoard, examType, topics);
+            
+            if (success) {
+                updateStatus(`Saved ${topics.length} topics to storage`);
+            } else {
+                updateStatus('Failed to save topics to storage', true);
+            }
+        });
+        
+        // Load from storage button
+        document.getElementById('loadFromStorageBtn').addEventListener('click', () => {
+            const subject = document.getElementById('subject').value;
+            const examBoard = document.getElementById('examBoard').value;
+            const examType = document.getElementById('examType').value;
+            
+            if (!subject || !examBoard || !examType) {
+                updateStatus('Please fill in all fields', true);
+                return;
+            }
+            
+            const loadedTopics = retrieveTopics(subject, examBoard, examType);
+            
+            if (loadedTopics && loadedTopics.length > 0) {
+                topics = loadedTopics;
+                renderTopics();
+                updateStatus(`Loaded ${topics.length} topics from storage`);
+            } else {
+                updateStatus('No topics found in storage', true);
+            }
+        });
+        
+        // Refresh page button
+        document.getElementById('refreshPageBtn').addEventListener('click', () => {
+            const subject = document.getElementById('subject').value;
+            const examBoard = document.getElementById('examBoard').value;
+            const examType = document.getElementById('examType').value;
+            
+            if (!subject || !examBoard || !examType) {
+                updateStatus('Please fill in all fields', true);
+                return;
+            }
+            
+            // Save current topics to storage
+            persistTopics(subject, examBoard, examType, topics);
+            
+            // Clear topics from memory
+            topics = [];
+            
+            // Render empty list
+            renderTopics();
+            
+            updateStatus('Page refresh simulated - topics cleared from memory. Try loading from storage.');
+        });
+        
+        // Simulate autosave button
+        document.getElementById('simulateAutosaveBtn').addEventListener('click', () => {
+            const subject = document.getElementById('subject').value;
+            const examBoard = document.getElementById('examBoard').value;
+            const examType = document.getElementById('examType').value;
+            
+            if (!subject || !examBoard || !examType) {
+                updateStatus('Please fill in all fields', true);
+                return;
+            }
+            
+            // Save current topics to storage for protection
+            persistTopics(subject, examBoard, examType, topics);
+            
+            // Simulate an autosave that would overwrite topic lists in real app
+            updateStatus('Autosave simulated - topics have been protected. Try clearing and then loading from storage.');
+        });
+        
+        // Initialize the app
+        renderTopics();
+        updateStatus('Test page loaded. Add some topics and test the persistence features.');
+    </script>
+</body>
+</html>
