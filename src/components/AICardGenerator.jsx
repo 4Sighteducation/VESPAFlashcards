@@ -1206,24 +1206,28 @@ Use this format for different question types:
 
   // Add a single card to the bank
   const handleAddCard = (card) => {
-    onAddCard(card);
-    // Mark card as added in UI
-    setGeneratedCards(prev => 
-      prev.map(c => c.id === card.id ? {...c, added: true} : c)
-    );
-    
-    // Show success modal with this card
+    if (!card || !card.id) {
+      console.error("Invalid card data:", card);
+      return;
+    }
+
+    // Mark the card as added
+    setGeneratedCards(prev => prev.map(c => 
+      c.id === card.id ? {...c, added: true} : c
+    ));
+
+    // Show success modal with the added card
     setSuccessModal({
       show: true,
       addedCards: [card]
     });
-    
-    // Auto-hide after 2 seconds
+
+    // Auto-hide after 3 seconds
     setTimeout(() => {
       setSuccessModal(prev => ({...prev, show: false}));
-    }, 2000);
-    
-    // Trigger an explicit save operation to prevent data loss on refresh
+    }, 3000);
+
+    // Send message to parent window to add card to bank
     if (window.parent && window.parent.postMessage) {
       // First add the card to the bank
       window.parent.postMessage({ 
@@ -1233,8 +1237,8 @@ Use this format for different question types:
           recordId: auth?.recordId || window.recordId
         }
       }, "*");
-      console.log("Added card to bank");
-      
+      console.log("Added card to bank:", card);
+
       // Then immediately trigger a save to ensure persistence
       window.parent.postMessage({ 
         type: "TRIGGER_SAVE",
@@ -1285,7 +1289,7 @@ Use this format for different question types:
           recordId: auth?.recordId || window.recordId
         }
       }, "*");
-      console.log("Added all cards to bank");
+      console.log("Added all cards to bank:", unadded);
       
       // Then immediately trigger a save to ensure persistence
       window.parent.postMessage({ 
