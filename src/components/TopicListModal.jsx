@@ -46,9 +46,11 @@ const TopicListModal = ({
   auth,
   userId
 }) => {
-  const [step, setStep] = useState(1); // 1 = Exam selection, 2 = Topic list, 3 = Post-save options
+  const [step, setStep] = useState(1); // 1 = Info screen, 2 = Topic list, 3 = Post-save options
   const [examBoard, setExamBoard] = useState(initialExamBoard || "");
   const [examType, setExamType] = useState(initialExamType || "");
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [topicCount, setTopicCount] = useState(0);
   const [topics, setTopics] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
@@ -100,6 +102,10 @@ const TopicListModal = ({
         
         const userData = await getResponse.json();
         
+        // Check for subject metadata and existing topic lists
+        let existingTopics = [];
+        let foundMetadata = false;
+        
         // Check for subject metadata
         if (userData && userData.field_3030) {
           try {
@@ -109,6 +115,8 @@ const TopicListModal = ({
             const subjectData = subjectMetadata.find(meta => meta.subject === subject);
             
             if (subjectData) {
+              foundMetadata = true;
+              
               // If metadata exists, use it
               if (subjectData.examBoard && subjectData.examBoard !== "general" && subjectData.examBoard !== "null") {
                 setExamBoard(subjectData.examBoard);
@@ -118,17 +126,8 @@ const TopicListModal = ({
                 setExamType(subjectData.examType);
               }
               
-              // If we have both exam board and type, go straight to topic list
-              if (
-                subjectData.examBoard && 
-                subjectData.examType && 
-                subjectData.examBoard !== "general" && 
-                subjectData.examType !== "general" &&
-                subjectData.examBoard !== "null" && 
-                subjectData.examType !== "null"
-              ) {
-                setStep(2);
-                loadTopicList();
+              if (subjectData.lastUpdated) {
+                setLastUpdated(subjectData.lastUpdated);
               }
               
               console.log(`Found existing metadata for ${subject}. Set exam board to ${subjectData.examBoard} and exam type to ${subjectData.examType}`);
@@ -140,6 +139,36 @@ const TopicListModal = ({
           }
         } else {
           console.log("No subject metadata found in user data");
+        }
+        
+        // Check for existing topic lists
+        if (userData && userData.field_3011 && examBoard && examType) {
+          try {
+            const topicLists = JSON.parse(userData.field_3011);
+            
+            if (Array.isArray(topicLists)) {
+              // Find topic list for this subject, exam board, and exam type
+              const matchingList = topicLists.find(list => 
+                list.subject === subject && 
+                list.examBoard === examBoard && 
+                list.examType === examType
+              );
+              
+              if (matchingList && matchingList.topics) {
+                existingTopics = matchingList.topics;
+                setTopics(existingTopics);
+                setTopicCount(existingTopics.length);
+                
+                if (matchingList.lastUpdated) {
+                  setLastUpdated(matchingList.lastUpdated);
+                }
+                
+                console.log(`Found existing topic list with ${existingTopics.length} topics`);
+              }
+            }
+          } catch (e) {
+            console.error("Error parsing topic lists:", e);
+          }
         }
         
         setIsLoading(false);
@@ -900,6 +929,43 @@ const TopicListModal = ({
     setStep(2);
     loadTopicList();
   };
+  
+  // Handle the View Topics button click
+  const handleViewTopics = () => {
+    if (!examBoard || !examType) {
+      setError("Subject metadata is incomplete. Please contact support.");
+      return;
+    }
+    
+    setStep(2);
+    loadTopicList();
+  };
+  
+  // Handle the Regenerate Topics button click
+  const handleRegenerateTopics = () => {
+    if (!examBoard || !examType) {
+      setError("Subject metadata is incomplete. Please contact support.");
+      return;
+    }
+    
+    generateTopics();
+    setStep(2);
+  };
+  
+  // Handle the Prioritize Topics button click
+  const handlePrioritizeTopics = () => {
+    if (!examBoard || !examType) {
+      setError("Subject metadata is incomplete. Please contact support.");
+      return;
+    }
+    
+    if (topics.length === 0) {
+      loadTopicList();
+    }
+    
+    setPrioritizationMode(true);
+    setStep(2);
+  };
 
   // Handle generating cards from selected topic
   const handleGenerateCards = () => {
@@ -916,37 +982,42 @@ const TopicListModal = ({
     }
   };
 
-  // Render exam selection step
-  const renderExamSelection = () => {
+  // Render info screen (new initial view)
+  const renderInfoScreen = () => {
+    // Format date for display
+    const formatDate = (dateString) => {
+      if (!dateString) return "Never";
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', { 
+          day: 'numeric', 
+          month: 'short', 
+          year: 'numeric' 
+        });
+      } catch (e) {
+        return "Invalid date";
+      }
+    };
+
     return (
       <>
-        <div className="exam-selection-form">
-          <div className="form-group">
-            <label>Exam Type</label>
-            <select 
-              value={examType} 
-              onChange={(e) => setExamType(e.target.value)}
-              className="exam-select"
-            >
-              <option value="">-- Select Exam Type --</option>
-              {EXAM_TYPES.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="form-group">
-            <label>Exam Board</label>
-            <select 
-              value={examBoard} 
-              onChange={(e) => setExamBoard(e.target.value)}
-              className="exam-select"
-            >
-              <option value="">-- Select Exam Board --</option>
-              {EXAM_BOARDS.map(board => (
-                <option key={board} value={board}>{board}</option>
-              ))}
-            </select>
+        <div className="topic-info-card">
+          <h3>Subject Information</h3>
+          <div className="info-grid">
+            <div className="info-label">Subject:</div>
+            <div className="info-value">{subject}</div>
+            
+            <div className="info-label">Exam Board:</div>
+            <div className="info-value">{examBoard || "Not specified"}</div>
+            
+            <div className="info-label">Exam Type:</div>
+            <div className="info-value">{examType || "Not specified"}</div>
+            
+            <div className="info-label">Last Updated:</div>
+            <div className="info-value">{formatDate(lastUpdated)}</div>
+            
+            <div className="info-label">Topics:</div>
+            <div className="info-value">{topicCount || "None"}</div>
           </div>
         </div>
         
@@ -956,19 +1027,38 @@ const TopicListModal = ({
           </div>
         )}
         
+        <div className="topic-action-buttons">
+          <button 
+            className="topic-button view-topics-button"
+            onClick={handleViewTopics}
+            disabled={isLoading}
+          >
+            {topicCount > 0 ? "View Topics / Generate Cards" : "Generate Topics"}
+          </button>
+          
+          <button
+            className="topic-button regenerate-button"
+            onClick={handleRegenerateTopics}
+            disabled={isLoading}
+          >
+            Regenerate Topics
+          </button>
+          
+          <button
+            className="topic-button prioritize-button"
+            onClick={handlePrioritizeTopics}
+            disabled={isLoading || topicCount === 0}
+          >
+            Prioritize Topics
+          </button>
+        </div>
+        
         <div className="modal-actions">
           <button 
             className="modal-button cancel-button" 
             onClick={onClose}
           >
-            Cancel
-          </button>
-          <button 
-            className="modal-button continue-button" 
-            onClick={handleContinueToTopics}
-            disabled={!examBoard || !examType}
-          >
-            Continue
+            Close
           </button>
         </div>
       </>
@@ -1176,7 +1266,7 @@ const TopicListModal = ({
         </div>
         
         <div className="modal-content">
-          {step === 1 && renderExamSelection()}
+          {step === 1 && renderInfoScreen()}
           {step === 2 && renderTopicList()}
           {step === 3 && renderPostSaveOptions()}
         </div>
@@ -1187,4 +1277,4 @@ const TopicListModal = ({
   );
 };
 
-export default TopicListModal; 
+export default TopicListModal;

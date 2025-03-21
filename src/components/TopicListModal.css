@@ -375,6 +375,102 @@ button:disabled {
   font-size: 1.1rem;
 }
 
+/* Topic info screen styles */
+.topic-info-card {
+  background-color: #f5f7ff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.topic-info-card h3 {
+  color: #06206e;
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  row-gap: 12px;
+  column-gap: 15px;
+}
+
+.info-label {
+  font-weight: bold;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.info-value {
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.topic-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.topic-button {
+  padding: 14px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.view-topics-button {
+  background-color: #06206e;
+  color: white;
+}
+
+.view-topics-button:hover:not(:disabled) {
+  background-color: #041a54;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.regenerate-button {
+  background-color: #3498db;
+  color: white;
+}
+
+.regenerate-button:hover:not(:disabled) {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.topic-button.prioritize-button {
+  background-color: #f39c12;
+  color: white;
+}
+
+.topic-button.prioritize-button:hover:not(:disabled) {
+  background-color: #e67e22;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.topic-button:disabled {
+  background-color: #cccccc;
+  color: #999999;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 @media (max-width: 768px) {
   .modal-container {
     width: 95%;
@@ -395,6 +491,11 @@ button:disabled {
   
   .post-save-options {
     padding: 0 10px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 100px 1fr;
+    row-gap: 10px;
   }
 }
 
@@ -481,4 +582,4 @@ button:disabled {
 .add-topic-actions .add-button:hover:not(:disabled) {
   background-color: #041a54;
   transform: translateY(-2px);
-} 
+}
