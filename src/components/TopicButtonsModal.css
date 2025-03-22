@@ -14,22 +14,25 @@
   align-items: center;
   z-index: 9999;
   padding: 0;
+  overflow: hidden; /* Prevent any overflow in the overlay */
 }
 
 /* Main Modal Container */
 .topic-buttons-modal {
   background-color: white;
-  width: 100%;
-  height: 100vh;
-  max-height: 100vh;
+  width: 90%; /* Further reduce width to prevent scrollbar */
+  height: 90vh;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   animation: modalEnter 0.3s ease-out;
-  overflow: hidden;
-  border-radius: 0;
+  overflow: hidden; /* Prevent overflow from content */
+  border-radius: 10px;
   position: relative;
   box-sizing: border-box;
+  margin: 0 auto; /* Center the modal */
+  max-width: 1200px; /* Set absolute max-width */
 }
 
 @keyframes modalEnter {
@@ -53,6 +56,8 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
   box-sizing: border-box;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  overflow: hidden; /* Prevent overflow */
 }
 
 .modal-header h2 {
@@ -138,11 +143,9 @@
   transform: rotate(90deg);
 }
 
-/* Modal Content */
+/* Modal Content - Fix for vertical scrollbar */
 .modal-content {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
   padding: 1.5rem;
   background-color: #f8fafc;
   width: 100%;
@@ -151,18 +154,23 @@
   flex-direction: column;
   align-items: center;
   position: relative;
+  overflow-y: hidden; /* Changed from auto to hidden to remove vertical scrollbar */
+  overflow-x: hidden;
 }
 
-/* Topic Categories */
+/* Topic Categories - Make container scrollable instead of the modal content */
 .topic-buttons-container {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   width: 100%;
-  max-width: 1100px;
+  max-width: 600px; /* Further reduced to eliminate need for scrolling */
   margin: 0 auto;
   box-sizing: border-box;
+  overflow-y: auto; /* Add vertical scrolling here if needed */
   overflow-x: hidden;
+  max-height: calc(90vh - 150px); /* Set max height to fit within modal without scrollbar */
+  padding-right: 10px; /* Add padding to prevent content touching scrollbar */
 }
 
 .topic-category-section {
@@ -172,7 +180,8 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: hidden; /* Prevent overflow */
+  max-width: 100%; /* Ensure it stays within parent container */
 }
 
 .category-heading {
@@ -192,49 +201,49 @@
   font-size: 1.25rem;
 }
 
-/* Subcategory styles */
+/* Subcategory styles - Improved for better display */
 .subcategory-section {
   margin-bottom: 1.5rem;
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Prevent content overflow */
+  max-width: 100%; /* Ensure it stays within parent container */
 }
 
 .subcategory-section:last-child {
   margin-bottom: 0;
 }
 
+/* Add spacing between subcategory sections */
+.subcategory-section + .subcategory-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
 .subcategory-heading {
   color: #4a5568;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 500;
   margin: 0 0 1rem 0;
   padding-left: 0.5rem;
   border-left: 3px solid #4a5568;
 }
 
-/* Topic Grid - Improved for better grid layout with more columns */
+/* Topic Grid - Changed back to vertical layout for subtopics */
 .topic-buttons-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
   width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: hidden; /* Prevent overflow */
+  max-width: 100%; /* Ensure it fits within parent */
 }
 
-/* Ensure at least 3 columns on larger screens when possible */
-@media (min-width: 1200px) {
-  .topic-buttons-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  }
-}
-
-/* Add a bit more distance between subcategories */
-.subcategory-section + .subcategory-section {
-  margin-top: 2rem;
-}
-
-/* Topic Button - Improved for grid layout */
+/* Topic Button - Fixed for vertical layout */
 .topic-button {
   background: white;
   border: 1px solid #e2e8f0;
@@ -246,8 +255,13 @@
   transition: all 0.2s ease;
   overflow: hidden;
   width: 100%;
+  max-width: 100%; /* Ensure button doesn't overflow */
   box-sizing: border-box;
-  min-width: 0;
+  margin-bottom: 0.5rem; /* Add space between buttons */
+}
+
+.topic-button:last-child {
+  margin-bottom: 0;
 }
 
 .topic-button:hover {
@@ -264,7 +278,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
+  min-width: 0; /* Allow text to shrink */
+  max-width: calc(100% - 5rem); /* Allow space for buttons */
 }
 
 /* Topic Actions - Make sure they don't force width */
@@ -328,6 +343,7 @@
     width: 100%;
     height: 100vh;
     border-radius: 0;
+    max-width: none; /* Remove max-width on mobile */
   }
 
   .modal-header {
@@ -351,8 +367,12 @@
     padding: 1rem;
   }
 
+  .topic-buttons-container {
+    width: 100%;
+    max-width: 100%; /* Use full width on mobile */
+  }
+
   .topic-buttons-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 0.5rem;
   }
 
@@ -605,41 +625,41 @@
   }
 }
 
-/* Customize scrollbar to be more modern and less intrusive */
-.modal-content::-webkit-scrollbar {
-  width: 10px;
+/* Customize scrollbar for topic buttons container to be more subtle */
+.topic-buttons-container::-webkit-scrollbar {
+  width: 6px; /* Thinner scrollbar */
 }
 
-.modal-content::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 5px;
+.topic-buttons-container::-webkit-scrollbar-track {
+  background: transparent; /* Invisible track */
 }
 
-.modal-content::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 5px;
+.topic-buttons-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15); /* Very subtle thumb */
+  border-radius: 10px;
 }
 
-.modal-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
+.topic-buttons-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25); /* Slightly darker on hover */
 }
 
 /* For Firefox */
-.modal-content {
+.topic-buttons-container {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.05);
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }
 
 /* Large Desktop Screens - Add back some space around the modal */
 @media (min-width: 1600px) {
   .topic-buttons-modal-overlay {
-    padding: 2rem;
+    padding: 0; /* Remove padding that might cause scrollbar */
   }
   
   .topic-buttons-modal {
-    width: 95%;
+    width: 85%; /* Reduced width on large screens */
     height: 90vh;
     border-radius: 1rem;
+    max-width: 1400px; /* Cap the maximum width */
   }
 }
 
