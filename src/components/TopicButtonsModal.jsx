@@ -33,6 +33,20 @@ const TopicButtonsModal = ({
   // State for save confirmation
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   
+  // Handle modal close with escape key
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [onClose]);
+
   // Group topics by category on component mount or when topics change
   useEffect(() => {
     if (topics && topics.length > 0) {
@@ -59,10 +73,10 @@ const TopicButtonsModal = ({
     topicsList.forEach(topic => {
       // Extract category from topic name (before the colon)
       let category = "General";
-      let name = topic.name;
+      let name = topic.name || topic;
       
-      if (topic.name.includes(":")) {
-        const parts = topic.name.split(":");
+      if (name.includes(":")) {
+        const parts = name.split(":");
         category = parts[0].trim();
         name = parts[1].trim();
       }
@@ -75,11 +89,17 @@ const TopicButtonsModal = ({
         ...topic,
         displayName: name,
         category: category,
-        fullName: topic.name
+        fullName: topic.name || topic
       });
     });
     
-    return groups;
+    // Sort categories alphabetically
+    return Object.keys(groups)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = groups[key].sort((a, b) => a.displayName.localeCompare(b.displayName));
+        return acc;
+      }, {});
   };
   
   // Handle generating cards for a topic
@@ -213,7 +233,7 @@ const TopicButtonsModal = ({
     );
   };
   
-  // Render delete confirmation dialog
+  // Render delete confirmation modal
   const renderDeleteConfirmation = () => {
     if (!showDeleteConfirm) return null;
     
@@ -221,13 +241,15 @@ const TopicButtonsModal = ({
       <div className="delete-confirm-overlay" onClick={() => setShowDeleteConfirm(false)}>
         <div className="delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
           <h3>Delete Topic</h3>
-          <p>Are you sure you want to delete the topic "{topicToDelete?.name}"?</p>
-          <p className="warning">This action cannot be undone.</p>
-          
+          <p>Are you sure you want to delete this topic?</p>
+          <p className="warning">{topicToDelete?.displayName}</p>
           <div className="delete-confirm-actions">
             <button 
               className="cancel-button" 
-              onClick={() => setShowDeleteConfirm(false)}
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                setTopicToDelete(null);
+              }}
             >
               Cancel
             </button>
@@ -244,8 +266,8 @@ const TopicButtonsModal = ({
   };
   
   return (
-    <div className="topic-buttons-modal-overlay">
-      <div className="topic-buttons-modal">
+    <div className="topic-buttons-modal-overlay" onClick={onClose}>
+      <div className="topic-buttons-modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-modal-button" onClick={onClose}>×</button>
         
         <div className="modal-header">
@@ -277,7 +299,7 @@ const TopicButtonsModal = ({
                   <h3 className="category-heading">{category}</h3>
                   <div className="topic-buttons-grid">
                     {categoryTopics.map(topic => (
-                      <div key={topic.id} className="topic-button-wrapper">
+                      <div key={topic.id || topic.fullName} className="topic-button-wrapper">
                         <div className="topic-button">
                           <div className="topic-name">{topic.displayName}</div>
                           <div className="topic-actions">
