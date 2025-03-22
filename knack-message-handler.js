@@ -20,7 +20,8 @@ window.addEventListener('message', function(event) {
       debugLog("SAVE_DATA MESSAGE DETAILS", {
         recordId: event.data.data.recordId,
         preserveFields: event.data.data.preserveFields,
-        topicListCount: event.data.data.topicLists ? event.data.data.topicLists.length : 0
+        topicListCount: event.data.data.topicLists ? event.data.data.topicLists.length : 0,
+        hasExplicitFields: !!event.data.data.explicitFields
       });
       
       // Get provided data
@@ -105,8 +106,8 @@ window.addEventListener('message', function(event) {
             ...existingData,
             
             // Update the fields we want to save
-            field_3011: JSON.stringify(messageData.topicLists || []), // Topic Lists
-            field_3030: JSON.stringify(messageData.topicMetadata || []), // Topic Metadata
+            field_3011: messageData.explicitFields?.field_3011 || JSON.stringify(messageData.topicLists || []), // Topic Lists
+            field_3030: messageData.explicitFields?.field_3030 || JSON.stringify(messageData.topicMetadata || []), // Topic Metadata
             field_2957: new Date().toISOString(), // Last saved timestamp
             
             // Preserve card data if available in the message
@@ -119,6 +120,13 @@ window.addEventListener('message', function(event) {
             field_2989: messageData.spacedRepetition?.box4 ? JSON.stringify(messageData.spacedRepetition.box4) : existingData.field_2989,
             field_2990: messageData.spacedRepetition?.box5 ? JSON.stringify(messageData.spacedRepetition.box5) : existingData.field_2990
           };
+          
+          // Log important field values for debugging
+          console.log(`[${new Date().toISOString()}] Field values for critical fields:`, {
+            'field_3011_length': mergedData.field_3011 ? mergedData.field_3011.length : 0,
+            'field_3030_length': mergedData.field_3030 ? mergedData.field_3030.length : 0,
+            'used_explicit_fields': !!messageData.explicitFields
+          });
           
           debugLog("MERGED DATA FOR STANDARD SAVE", {
             field_3011_size: mergedData.field_3011 ? mergedData.field_3011.length : 0,

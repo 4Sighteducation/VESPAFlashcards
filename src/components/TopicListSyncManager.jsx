@@ -257,18 +257,73 @@ const TopicListSyncManager = ({
   // Only render when isOpen is true
   if (!isOpen) return null;
   
-  // Use the new modal
+  // Import the components we need
+  const TopicListViewModal = require('./TopicListViewModal').default;
+  const TopicButtonsModal = require('./TopicButtonsModal').default;
+  
+  // Use our enhanced topic list modal flow
   return (
-    <NewTopicModal
-      isOpen={isOpen}
-      subject={subject}
-      examBoard={examBoard}
-      examType={examType}
-      onClose={onClose}
-      onGenerateCards={onGenerateCards}
-      onSaveTopics={saveTopics}
-      initialTopics={currentTopics}
-    />
+    <>
+      {/* First view - Topic List Summary with two key options */}
+      <TopicListViewModal
+        isOpen={isOpen}
+        subject={subject}
+        examBoard={examBoard}
+        examType={examType}
+        topics={currentTopics}
+        lastUpdated={lastUpdated}
+        onClose={onClose}
+        onSelectTopic={onSelectTopic}
+        onGenerateTopics={() => {
+          // Show the original Topic Generation modal
+          return (
+            <NewTopicModal
+              isOpen={true}
+              subject={subject}
+              examBoard={examBoard}
+              examType={examType}
+              onClose={onClose}
+              onGenerateCards={onGenerateCards}
+              onSaveTopics={saveTopics}
+              initialTopics={currentTopics}
+            />
+          );
+        }}
+        onViewAllTopics={() => {
+          // Show the Topic Buttons modal
+          return (
+            <TopicButtonsModal
+              isOpen={true}
+              subject={subject}
+              examBoard={examBoard}
+              examType={examType}
+              topics={currentTopics}
+              onClose={onClose}
+              onSelectTopic={onSelectTopic}
+              onGenerateCardsFromTopic={onGenerateCards}
+              onDeleteTopic={(topic) => {
+                // Use our TopicCardSyncService to handle deletion
+                import('../services/TopicCardSyncService').then(({ verifyTopicHasCards, cleanupDeletedTopic }) => {
+                  // First check if the topic has cards
+                  verifyTopicHasCards(topic, userId, auth).then(({ hasCards, count }) => {
+                    if (hasCards) {
+                      // Show orphaned cards warning
+                      // This would be implemented in TopicButtonsModal
+                      console.log(`Topic has ${count} cards that will be deleted`);
+                    } else {
+                      // Safe to delete the topic
+                      console.log(`Deleting topic with no cards: ${topic.name}`);
+                    }
+                  });
+                });
+              }}
+              auth={auth}
+              userId={userId}
+            />
+          );
+        }}
+      />
+    </>
   );
 };
 

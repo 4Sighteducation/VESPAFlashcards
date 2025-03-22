@@ -1,4 +1,4 @@
-﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -298,10 +298,15 @@ function App() {
           colorMapping: safeSerializeData(subjectColorMapping), 
           spacedRepetition: safeSerializeData(spacedRepetitionData),
           userTopics: safeSerializeData(userTopics),
-          topicLists: safeSerializeData(topicLists),
-          topicMetadata: safeSerializeData(topicMetadata),
+          topicLists: safeSerializeData(topicLists || []),
+          topicMetadata: safeSerializeData(topicMetadata || []),
           preserveFields: true,
-          additionalFields: additionalFields
+          additionalFields: additionalFields,
+          // Add explicit field mapping for Knack to ensure field_3011 is preserved
+          explicitFields: {
+            field_3011: safeSerializeData(topicLists || []), // Explicit topic list preservation
+            field_3030: safeSerializeData(topicMetadata || []) // Explicit topic metadata preservation
+          }
         };
         
         console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${recordId})`);

@@ -382,24 +382,69 @@ const saveTopicList = async (topics, subject, examBoard, examType, userId, auth)
       currentTopicLists = safeParseJSON(userData[FIELD_MAPPING.topicLists], []);
     }
     
-    // Create or update topic list for this subject/exam board/exam type
-    const formattedTopicList = formatTopicList(topics, subject, examBoard, examType);
+  // Create a new formatted topic list for this subject/exam board/exam type
+  const formattedTopicList = formatTopicList(topics, subject, examBoard, examType);
+  
+  // Find existing list for this combination
+  const existingIndex = currentTopicLists.findIndex(list => 
+    list.subject === subject && 
+    list.examBoard === examBoard && 
+    list.examType === examType
+  );
+  
+  // Update or add the list
+  if (existingIndex >= 0) {
+    // Preserve the original ID and only update topics
+    formattedTopicList.id = currentTopicLists[existingIndex].id;
     
-    // Find existing list for this combination
-    const existingIndex = currentTopicLists.findIndex(list => 
-      list.subject === subject && 
-      list.examBoard === examBoard && 
-      list.examType === examType
-    );
+    // CRITICAL FIX: Merge topics rather than replacing the entire list
+    // This ensures we don't lose existing topics when saving new ones
     
-    // Update or add the list
-    if (existingIndex >= 0) {
-      // Preserve the original ID
-      formattedTopicList.id = currentTopicLists[existingIndex].id;
-      currentTopicLists[existingIndex] = formattedTopicList;
-    } else {
-      currentTopicLists.push(formattedTopicList);
-    }
+    // Create a map of existing topics for faster lookup
+    const existingTopicMap = {};
+    currentTopicLists[existingIndex].topics.forEach(topic => {
+      existingTopicMap[topic.name || topic.topic || ''] = topic;
+    });
+    
+    // Merge the topics, using new topic data if it exists,
+    // otherwise keep the existing topic
+    const mergedTopics = [...topics];
+    
+    // Add any existing topics that aren't in the new list
+    currentTopicLists[existingIndex].topics.forEach(topic => {
+      const topicName = topic.name || topic.topic || '';
+      // If this topic isn't in the new list, add it
+      if (topicName && !mergedTopics.some(t => (t.name || t.topic) === topicName)) {
+        mergedTopics.push(topic);
+      }
+    });
+    
+    // Replace with merged data
+    formattedTopicList.topics = mergedTopics;
+    
+    // Preserve any other fields from the existing list
+    const updatedList = {
+      ...currentTopicLists[existingIndex],
+      ...formattedTopicList,
+      // Explicitly use the merged topics list
+      topics: mergedTopics
+    };
+    
+    // Update with merged list
+    currentTopicLists[existingIndex] = updatedList;
+    
+    debugLog("MERGED TOPIC LIST", {
+      subject,
+      examBoard, 
+      examType,
+      topicCount: mergedTopics.length,
+      originalCount: currentTopicLists[existingIndex].topics.length,
+      newCount: topics.length
+    });
+  } else {
+    // No existing list, so just add the new one
+    currentTopicLists.push(formattedTopicList);
+  }
     
     // Validate before saving
     const validation = validateTopicLists(currentTopicLists);
