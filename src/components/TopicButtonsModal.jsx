@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FaTimes, FaPlus, FaStar, FaTrash, FaMagic, FaSave, FaFolder } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaStar, FaTrash, FaMagic, FaSave, FaFolder, FaEye, FaExchangeAlt, FaInfoCircle, FaExclamationTriangle, FaSync } from 'react-icons/fa';
 import './TopicButtonsModal.css';
+import './TopicButtonsModal.additions.css';
+import { findCardsForTopic, cleanupDeletedTopic, reassignCards, verifyTopicHasCards } from '../services/TopicCardSyncService';
 
 /**
  * TopicButtonsModal - Displays a modal with buttons for each topic
@@ -24,13 +26,23 @@ const TopicButtonsModal = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPrioritizePopup, setShowPrioritizePopup] = useState(false);
   const [topicToDelete, setTopicToDelete] = useState(null);
+  const [topicCardInfo, setTopicCardInfo] = useState({ hasCards: false, count: 0, cards: [] });
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [showCardPreview, setShowCardPreview] = useState(false);
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [isCheckingCards, setIsCheckingCards] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
 
   // Close all popups when the main modal closes
   useEffect(() => {
     setActivePopup(null);
     setShowPrioritizePopup(false);
     setTopicToDelete(null);
+    setTopicCardInfo({ hasCards: false, count: 0, cards: [] });
+    setShowCardPreview(false);
+    setShowReassignModal(false);
+    setShowRegenerateConfirm(false);
   }, []);
 
   // Group topics by main category and subcategory
@@ -99,13 +111,83 @@ const TopicButtonsModal = ({
     }
   }, [onGenerateCards]);
 
-  const handleDeleteConfirm = useCallback(async () => {
-    if (topicToDelete) {
-      await onDeleteTopic(topicToDelete);
-      setTopicToDelete(null);
-      setUnsavedChanges(true);
+  // Check if a topic has cards before deletion
+  const handleTopicDelete = useCallback(async (topic, userId, auth) => {
+    setIsCheckingCards(true);
+    setTopicToDelete(topic);
+    
+    try {
+      // Check if this topic has any associated cards
+      const cardCheck = await verifyTopicHasCards(topic, userId, auth);
+      
+      if (cardCheck.hasCards) {
+        // If it has cards, get the actual cards for preview
+        const topicCards = await findCardsForTopic(topic, userId, auth);
+        setTopicCardInfo({
+          hasCards: true,
+          count: cardCheck.count,
+          cards: topicCards
+        });
+      } else {
+        setTopicCardInfo({
+          hasCards: false,
+          count: 0,
+          cards: []
+        });
+      }
+    } catch (error) {
+      console.error('Error checking topic cards:', error);
+      // If there's an error checking cards, assume there are none
+      setTopicCardInfo({ hasCards: false, count: 0, cards: [] });
+    } finally {
+      setIsCheckingCards(false);
     }
-  }, [topicToDelete, onDeleteTopic]);
+  }, []);
+
+  // Handle delete confirmation with card deletion
+  const handleDeleteConfirm = useCallback(async (userId, auth) => {
+    if (!topicToDelete) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      if (topicCardInfo.hasCards) {
+        // Remove the orphaned cards associated with this topic
+        await cleanupDeletedTopic(topicToDelete, userId, auth);
+      }
+      
+      // Now delete the topic itself
+      await onDeleteTopic(topicToDelete);
+      setUnsavedChanges(true);
+    } catch (error) {
+      console.error('Error deleting topic and cards:', error);
+    } finally {
+      setIsDeleting(false);
+      setTopicToDelete(null);
+      setTopicCardInfo({ hasCards: false, count: 0, cards: [] });
+    }
+  }, [topicToDelete, topicCardInfo, onDeleteTopic]);
+
+  // Handle reassigning cards to another topic
+  const handleReassignCards = useCallback(async (targetTopic, userId, auth) => {
+    if (!topicToDelete || !topicCardInfo.cards.length) return;
+    
+    try {
+      // Reassign the cards to the target topic
+      await reassignCards(topicCardInfo.cards, targetTopic, userId, auth);
+      
+      // Now delete the original topic (without cards since they're reassigned)
+      await onDeleteTopic(topicToDelete);
+      setUnsavedChanges(true);
+      
+      // Close the reassign modal
+      setShowReassignModal(false);
+      setTopicToDelete(null);
+      setTopicCardInfo({ hasCards: false, count: 0, cards: [] });
+    } catch (error) {
+      console.error('Error reassigning cards:', error);
+    }
+  }, [topicToDelete, topicCardInfo, onDeleteTopic]);
 
   const handleSaveTopics = useCallback(() => {
     if (onSaveTopics) {
@@ -129,12 +211,20 @@ const TopicButtonsModal = ({
           <div className="modal-header">
             <h2>Topics for {subject} ({examBoard} {examType})</h2>
             <div className="modal-actions">
-              <button className="add-topic-button" onClick={onAddTopic}>
+              <button className="add-topic-button" onClick={onAddTopic} title="Add a new topic">
                 <FaPlus /> Add Topic
+              </button>
+              <button 
+                className="regenerate-button" 
+                onClick={() => setShowRegenerateConfirm(true)}
+                title="Regenerate all topics"
+              >
+                <FaSync /> Regenerate
               </button>
               <button 
                 className="prioritize-button" 
                 onClick={() => setShowPrioritizePopup(true)}
+                title="Prioritize topics"
               >
                 <FaStar /> Prioritize
               </button>
@@ -142,11 +232,12 @@ const TopicButtonsModal = ({
                 <button 
                   className="save-topics-button" 
                   onClick={handleSaveTopics}
+                  title="Save changes"
                 >
                   <FaSave /> Save Changes
                 </button>
               )}
-              <button className="close-modal-button" onClick={onClose}>
+              <button className="close-modal-button" onClick={onClose} title="Close modal">
                 <FaTimes />
               </button>
             </div>
@@ -185,7 +276,7 @@ const TopicButtonsModal = ({
                               </button>
                               <button
                                 className="delete-button"
-                                onClick={() => setTopicToDelete(topic)}
+                                onClick={() => handleTopicDelete(topic, /* userId and auth from props */)}
                                 title="Delete Topic"
                               >
                                 <FaTrash />
@@ -253,29 +344,240 @@ const TopicButtonsModal = ({
           document.body
         )}
 
-        {/* Delete Confirmation Modal */}
+        {/* Enhanced Delete Confirmation Modal */}
         {topicToDelete && createPortal(
           <div 
             className="action-modal-overlay" 
             onClick={(e) => {
-              e.stopPropagation(); // Prevent event from reaching parent
-              setTopicToDelete(null);
+              e.stopPropagation();
+              if (!isCheckingCards && !isDeleting) {
+                setTopicToDelete(null);
+                setTopicCardInfo({ hasCards: false, count: 0, cards: [] });
+              }
             }}
           >
             <div className="action-modal" onClick={e => e.stopPropagation()}>
               <div className="action-modal-header">
-                <h3>Delete Topic</h3>
+                <h3>
+                  {isCheckingCards ? 'Checking Topic' : 'Delete Topic'}
+                  {topicCardInfo.hasCards && !isCheckingCards && ' and Cards'}
+                </h3>
+              </div>
+              
+              {isCheckingCards ? (
+                <div className="action-modal-content checking-content">
+                  <div className="checking-spinner"></div>
+                  <p>Checking if this topic has associated cards...</p>
+                </div>
+              ) : (
+                <div className="action-modal-content">
+                  {topicCardInfo.hasCards ? (
+                    <>
+                      <div className="warning-message">
+                        <FaExclamationTriangle className="warning-icon" />
+                        <div>
+                          <p>This topic has <strong>{topicCardInfo.count} associated cards</strong>.</p>
+                          <p>Deleting this topic will also remove these cards from your card bank.</p>
+                        </div>
+                      </div>
+                      <div className="topic-delete-options">
+                        <button 
+                          className="option-button preview-button"
+                          onClick={() => setShowCardPreview(true)}
+                        >
+                          <FaEye /> View Cards
+                        </button>
+                        <button 
+                          className="option-button reassign-button"
+                          onClick={() => setShowReassignModal(true)}
+                        >
+                          <FaExchangeAlt /> Reassign Cards
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p>Are you sure you want to delete this topic?</p>
+                      <p>This action cannot be undone.</p>
+                    </>
+                  )}
+                </div>
+              )}
+              
+              <div className="action-modal-footer">
+                {!isCheckingCards && (
+                  <>
+                    <button 
+                      className="cancel-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTopicToDelete(null);
+                        setTopicCardInfo({ hasCards: false, count: 0, cards: [] });
+                      }}
+                      disabled={isDeleting}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="action-button delete-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteConfirm(/* userId and auth from props */);
+                      }}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? 'Deleting...' : 
+                       topicCardInfo.hasCards ? 'Delete Topic & Cards' : 'Delete Topic'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+        {/* Card Preview Modal */}
+        {showCardPreview && topicToDelete && createPortal(
+          <div 
+            className="card-preview-modal-overlay" 
+            onClick={() => setShowCardPreview(false)}
+          >
+            <div className="card-preview-modal" onClick={e => e.stopPropagation()}>
+              <div className="card-preview-header">
+                <h3>Cards for Topic: {topicToDelete.name || topicToDelete.parsedName}</h3>
+                <button 
+                  className="close-button"
+                  onClick={() => setShowCardPreview(false)}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              <div className="card-preview-content">
+                {topicCardInfo.cards.length === 0 ? (
+                  <p className="no-cards-message">No cards found for this topic.</p>
+                ) : (
+                  <div className="cards-grid">
+                    {topicCardInfo.cards.map(card => (
+                      <div 
+                        key={card.id} 
+                        className="card-preview-item"
+                        style={{ backgroundColor: card.cardColor || '#f0f0f0' }}
+                      >
+                        <div className="card-preview-question">
+                          <div dangerouslySetInnerHTML={{ __html: card.front || card.question }} />
+                        </div>
+                        <div className="card-preview-meta">
+                          <span className="card-type">{card.questionType}</span>
+                          <span className="card-box">Box {card.boxNum || 1}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="card-preview-footer">
+                <button 
+                  className="back-button"
+                  onClick={() => setShowCardPreview(false)}
+                >
+                  Back to Delete Options
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+        
+        {/* Reassign Topic Modal */}
+        {showReassignModal && topicToDelete && createPortal(
+          <div 
+            className="reassign-modal-overlay" 
+            onClick={() => setShowReassignModal(false)}
+          >
+            <div className="reassign-modal" onClick={e => e.stopPropagation()}>
+              <div className="reassign-modal-header">
+                <h3>Reassign Cards to Another Topic</h3>
+                <button 
+                  className="close-button"
+                  onClick={() => setShowReassignModal(false)}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              <div className="reassign-modal-content">
+                <p>Select a topic to move the cards to:</p>
+                
+                <div className="topics-list">
+                  {topics.filter(t => t.id !== topicToDelete.id).length === 0 ? (
+                    <p className="no-topics-message">
+                      No other topics available. Please create another topic first.
+                    </p>
+                  ) : (
+                    topics
+                      .filter(t => t.id !== topicToDelete.id)
+                      .map(topic => (
+                        <div 
+                          key={topic.id} 
+                          className="reassign-topic-item"
+                          onClick={() => handleReassignCards(topic, /* userId and auth from props */)}
+                        >
+                          <span className="topic-name">
+                            {topic.name || topic.parsedName}
+                          </span>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+              <div className="reassign-modal-footer">
+                <button 
+                  className="cancel-button"
+                  onClick={() => setShowReassignModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+        
+        {/* Regenerate Topics Confirmation */}
+        {showRegenerateConfirm && createPortal(
+          <div 
+            className="action-modal-overlay" 
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowRegenerateConfirm(false);
+            }}
+          >
+            <div className="action-modal warning-modal" onClick={e => e.stopPropagation()}>
+              <div className="action-modal-header">
+                <h3>
+                  <FaExclamationTriangle className="warning-icon" /> 
+                  Regenerate All Topics
+                </h3>
               </div>
               <div className="action-modal-content">
-                <p>Are you sure you want to delete this topic?</p>
-                <p>This action cannot be undone.</p>
+                <p className="warning-text">
+                  <strong>Warning:</strong> This will replace your current topic list with newly generated topics.
+                </p>
+                <p>Any changes to the current topic list will be lost.</p>
+                <div className="info-box">
+                  <FaInfoCircle className="info-icon" />
+                  <p>
+                    Cards created from existing topics will <strong>not</strong> be affected, but 
+                    the topics themselves will be replaced with new ones.
+                  </p>
+                </div>
               </div>
               <div className="action-modal-footer">
                 <button 
                   className="cancel-button"
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevent event from reaching parent
-                    setTopicToDelete(null);
+                    e.stopPropagation();
+                    setShowRegenerateConfirm(false);
                   }}
                 >
                   Cancel
@@ -283,11 +585,12 @@ const TopicButtonsModal = ({
                 <button
                   className="action-button"
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevent event from reaching parent
-                    handleDeleteConfirm();
+                    e.stopPropagation();
+                    // Handle regenerate topics
+                    setShowRegenerateConfirm(false);
                   }}
                 >
-                  Delete Topic
+                  Regenerate Topics
                 </button>
               </div>
             </div>
