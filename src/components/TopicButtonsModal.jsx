@@ -169,7 +169,12 @@ const TopicButtonsModal = ({
                       <div className="topic-buttons-grid">
                         {subTopics.map((topic) => (
                           <div key={topic.id || topic.fullName} className="topic-button">
-                            <span className="topic-name">{topic.parsedName || topic.displayName || topic.name}</span>
+                            <span 
+                              className="topic-name" 
+                              title={topic.parsedName || topic.displayName || topic.name}
+                            >
+                              {topic.parsedName || topic.displayName || topic.name}
+                            </span>
                             <div className="topic-actions">
                               <button
                                 className="generate-button"
