@@ -7,43 +7,15 @@ import {
   clearPersistedTopics,
   setupPageUnloadProtection
 } from './TopicsPersistenceManager';
+import {
+  saveTopicLists,
+  loadTopicLists,
+  safeParseJSON,
+  withRetry
+} from '../services/TopicPersistenceService';
 
 // API keys for topic generation if needed
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
-
-// Safe JSON parsing helper
-const safeParseJSON = (jsonString) => {
-  if (!jsonString) return null;
-  
-  try {
-    // If it's already an object, just return it
-    if (typeof jsonString === 'object') return jsonString;
-    
-    // Regular JSON parse
-    return JSON.parse(jsonString);
-  } catch (error) {
-    console.error("Error parsing JSON:", error, "String:", jsonString.substring(0, 100));
-    
-    // Try recovery methods for common JSON issues
-    try {
-      // Try to clean up the JSON string
-      const cleaned = jsonString
-        .replace(/\\"/g, '"')        // Fix escaped quotes
-        .replace(/"\s+/g, '"')       // Remove whitespace after quotes
-        .replace(/\s+"/g, '"')       // Remove whitespace before quotes
-        .replace(/,\s*}/g, '}')      // Remove trailing commas in objects
-        .replace(/,\s*\]/g, ']');    // Remove trailing commas in arrays
-        
-      return JSON.parse(cleaned);
-    } catch (secondError) {
-      console.error("JSON recovery failed:", secondError);
-      
-      // Last resort - return empty object/array
-      if (jsonString.trim().startsWith('[')) return [];
-      return {};
-    }
-  }
-};
 
 // Debug logging helper
 const debugLog = (title, data) => {
@@ -90,82 +62,47 @@ const TopicListSyncManager = ({
   // Load existing topic lists from Knack when the component mounts or subject changes
   useEffect(() => {
     if (isOpen && auth && userId) {
-      loadTopicLists();
+      loadTopicListsFromKnack();
     }
   }, [isOpen, auth, userId, subject]);
   
   // Function to load topic lists from Knack
-  const loadTopicLists = async () => {
+  const loadTopicListsFromKnack = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
       console.log(`Loading topic lists for user ID: ${userId}`);
       
-      // Get user data from Knack
-      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+      // Use our centralized service to load topic lists
+      const { topicLists: loadedLists, metadata, userData } = await loadTopicLists(userId, auth);
       
-      try {
-        const getResponse = await fetch(getUrl, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY
-          }
-        });
-        
-        if (!getResponse.ok) {
-          throw new Error("Failed to fetch topic lists");
-        }
-        
-        const userData = await getResponse.json();
-        
-        // Store the complete user data for later use
+      // Store the complete user data for later use
+      if (userData) {
         setCompleteUserData(userData);
-        
-        // Extract topic lists if available
-        if (userData && userData.field_3011) {
-          try {
-            const parsedLists = safeParseJSON(userData.field_3011);
-            if (Array.isArray(parsedLists)) {
-              setTopicLists(parsedLists);
-              console.log(`Loaded ${parsedLists.length} topic lists from Knack`);
-            }
-          } catch (e) {
-            console.error("Error parsing topic lists:", e);
-            setTopicLists([]);
-          }
-        } else {
-          console.log("No topic lists found in user data");
-          setTopicLists([]);
-        }
-        
-        // Extract topic metadata if available
-        if (userData && userData.field_3030) {
-          try {
-            const parsedMetadata = safeParseJSON(userData.field_3030);
-            if (Array.isArray(parsedMetadata)) {
-              setTopicMetadata(parsedMetadata);
-              console.log(`Loaded ${parsedMetadata.length} topic metadata entries from Knack`);
-            }
-          } catch (e) {
-            console.error("Error parsing topic metadata:", e);
-            setTopicMetadata([]);
-          }
-        } else {
-          console.log("No topic metadata found in user data");
-          setTopicMetadata([]);
-        }
-      } catch (error) {
-        console.error("Error fetching from Knack API:", error);
-        setError("Failed to load topic lists from server");
-      } finally {
-        setIsLoading(false);
+      }
+      
+      // Update state with loaded data
+      if (loadedLists.length > 0) {
+        setTopicLists(loadedLists);
+        console.log(`Loaded ${loadedLists.length} topic lists from Knack`);
+      } else {
+        console.log("No topic lists found in user data");
+        setTopicLists([]);
+      }
+      
+      // Set metadata if available
+      if (metadata && metadata.length > 0) {
+        setTopicMetadata(metadata);
+        console.log(`Loaded ${metadata.length} topic metadata entries from Knack`);
+      } else {
+        console.log("No topic metadata found in user data");
+        setTopicMetadata([]);
       }
     } catch (error) {
       console.error("Error loading topic lists:", error);
-      setError("An unexpected error occurred");
+      setError("Error loading topic lists: " + error.message);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -175,33 +112,28 @@ const TopicListSyncManager = ({
     try {
       console.log(`[${new Date().toISOString()}] Saving topic lists with ${updatedTopicLists.length} entries`);
       
-      // IMPORTANT: Get the most up-to-date user data to ensure field preservation
-      let currentCompleteData = completeUserData;
+      // Log detailed info about the save operation
+      debugLog("SAVING TOPIC LISTS", {
+        topicListsCount: updatedTopicLists.length,
+        topicMetadataCount: updatedMetadata?.length || 0,
+        timestamp: new Date().toISOString()
+      });
       
-      // If we don't have completeUserData, try to fetch it again
-      if (!currentCompleteData) {
-        try {
-          console.log("Getting the latest user data before saving");
-          
-          const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
-          const getResponse = await fetch(getUrl, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Knack-Application-ID": KNACK_APP_ID,
-              "X-Knack-REST-API-Key": KNACK_API_KEY
-            }
-          });
-          
-          if (getResponse.ok) {
-            currentCompleteData = await getResponse.json();
-            console.log("Successfully fetched latest user data before saving");
-            setCompleteUserData(currentCompleteData);
-          }
-        } catch (error) {
-          console.error("Error fetching latest user data:", error);
-        }
+      // First try the direct API save with our service (most reliable method)
+      const success = await withRetry(() => 
+        saveTopicLists(updatedTopicLists, userId, auth, updatedMetadata)
+      );
+      
+      if (success) {
+        console.log(`[${new Date().toISOString()}] Topic lists saved successfully via direct API`);
+        // Update our local state
+        setTopicLists(updatedTopicLists);
+        setTopicMetadata(updatedMetadata);
+        return true;
       }
+      
+      // If direct API fails, try window messaging as fallback
+      console.log("Direct API save failed, trying window messaging fallback");
       
       // Create the message with preserve fields flag
       const messageData = {
@@ -212,20 +144,9 @@ const TopicListSyncManager = ({
           topicLists: updatedTopicLists,
           topicMetadata: updatedMetadata,
           preserveFields: true, // This is crucial to prevent overwriting other fields
-          completeData: currentCompleteData
+          completeData: completeUserData
         }
       };
-      
-      // Log detailed info about the save operation
-      debugLog("SAVING TOPIC LISTS TO KNACK", {
-        messageType: messageData.type,
-        recordId: userId, 
-        topicListsCount: updatedTopicLists.length,
-        topicMetadataCount: updatedMetadata.length,
-        hasCompleteData: !!currentCompleteData,
-        preserveFields: true,
-        timestamp: new Date().toISOString()
-      });
       
       // Set up a listener for the response
       return new Promise((resolve) => {

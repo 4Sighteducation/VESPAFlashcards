@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
+import { saveTopicLists, loadTopicLists, safeParseJSON } from '../services/TopicPersistenceService';
 
 // Constants for question types and exam boards
 const QUESTION_TYPES = [
@@ -176,7 +177,7 @@ const AICardGenerator = ({
     setAvailableSubjects(subjects.filter(s => examTypes.includes(s.examType)));
   }, [auth, userId]);
 
-  // Load saved topic lists from Knack
+  // Load saved topic lists from Knack using our centralized service
   const loadTopicListsFromKnack = async () => {
     try {
       // Check if we're authenticated or have a user ID
@@ -187,55 +188,12 @@ const AICardGenerator = ({
       
       console.log("Loading topic lists from Knack for user:", userId);
       
-      // Get topic lists from Knack
-      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${userId}`;
+      // Use our centralized service to load topic lists
+      const { topicLists: knackTopicLists } = await loadTopicLists(userId, auth);
       
-      try {
-        const getResponse = await fetch(getUrl, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY
-          }
-        });
-        
-        if (!getResponse.ok) {
-          // Try to get the error as text first to avoid JSON parsing errors
-          const errorText = await getResponse.text();
-          console.error("Failed to get Knack record:", errorText);
-          return [];
-        }
-        
-        const userData = await getResponse.json();
-        debugLog("LOADED USER DATA FROM KNACK", userData);
-        
-        // Parse topic lists from Knack
-        if (userData && userData.field_3011) {
-          try {
-            const knackTopicLists = JSON.parse(userData.field_3011);
-            if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
-              console.log("Successfully loaded topic lists from Knack:", knackTopicLists);
-              
-              // Also parse metadata if available
-              let metadata = [];
-              if (userData.field_3030) {
-                try {
-                  metadata = JSON.parse(userData.field_3030);
-                  console.log("Successfully loaded subject metadata:", metadata);
-                } catch (metaError) {
-                  console.error("Error parsing metadata:", metaError);
-                }
-              }
-              
-              return knackTopicLists;
-            }
-          } catch (e) {
-            console.error("Error parsing Knack topic lists:", e);
-          }
-        }
-      } catch (fetchError) {
-        console.error("Error fetching from Knack API:", fetchError);
+      if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
+        console.log("Successfully loaded topic lists from Knack:", knackTopicLists);
+        return knackTopicLists;
       }
       
       return [];
@@ -474,7 +432,7 @@ const AICardGenerator = ({
     return `${prefix}_${timestamp}_${randomStr}`;
   };
   
-  // Save topic list to Knack - updated to save the entire lists array
+  // Save topic list to Knack using our centralized service
   const saveTopicListToKnack = async (topicLists) => {
     try {
       // Check if we're authenticated or have a user ID
@@ -493,124 +451,14 @@ const AICardGenerator = ({
         return false;
       }
 
-      // First find the actual record ID for this user in object_102
-      let recordId = null;
-      try {
-        const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
-        console.log("RECORD SEARCH URL", searchUrl);
-
-        const searchResponse = await fetch(searchUrl, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY,
-            "Authorization": `Bearer ${auth.token}`
-          }
-        });
-
-        if (!searchResponse.ok) {
-          const errorText = await searchResponse.text();
-          console.error("Failed to search for user record:", errorText);
-          setError("Failed to find user record");
-          return false;
-        }
-
-        const allRecords = await searchResponse.json();
-        console.log("Found matching record ID:", recordId);
-
-        // Find the record matching this user ID
-        if (allRecords && allRecords.records) {
-          const userRecord = allRecords.records.find(record => 
-            record.field_2954 === userId || 
-            (record.field_2958 && record.field_2958 === auth.email)
-          );
-
-          if (userRecord) {
-            recordId = userRecord.id;
-            console.log("Found matching record ID:", recordId);
-          }
-        }
-
-        if (!recordId) {
-          console.error("Could not find a record for this user ID:", userId);
-          setError("Could not find your user record");
-          return false;
-        }
-      } catch (searchError) {
-        console.error("Error searching for user record:", searchError);
-        setError("Error finding user record: " + searchError.message);
-        return false;
-      }
-
-      // Now get existing data to preserve metadata and other fields
-      let existingData = null;
-      try {
-        const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-        console.log("GET URL", getUrl);
-
-        const getResponse = await fetch(getUrl, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY,
-            "Authorization": `Bearer ${auth.token}`
-          }
-        });
-
-        if (getResponse.ok) {
-          existingData = await getResponse.json();
-          console.log("Successfully fetched existing data");
-        } else {
-          const errorText = await getResponse.text();
-          console.error("Failed to get existing data:", errorText);
-          setError("Failed to get your existing data");
-          return false;
-        }
-      } catch (e) {
-        console.error("Error fetching existing data:", e);
-        setError("Error getting existing data: " + e.message);
-        return false;
-      }
-
-      // Create the update data with field preservation
-      const updateData = {
-        field_3011: JSON.stringify(topicLists),
-        field_2957: new Date().toISOString() // Last saved timestamp
-      };
-
-      // Preserve existing fields
-      if (existingData) {
-        if (existingData.field_2979) updateData.field_2979 = existingData.field_2979; // Cards
-        if (existingData.field_3030) updateData.field_3030 = existingData.field_3030; // Topic metadata
-        if (existingData.field_2986) updateData.field_2986 = existingData.field_2986; // Box 1
-        if (existingData.field_2987) updateData.field_2987 = existingData.field_2987; // Box 2
-        if (existingData.field_2988) updateData.field_2988 = existingData.field_2988; // Box 3
-        if (existingData.field_2989) updateData.field_2989 = existingData.field_2989; // Box 4
-        if (existingData.field_2990) updateData.field_2990 = existingData.field_2990; // Box 5
-      }
-
-      // Save to Knack directly
-      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-      const updateResponse = await fetch(updateUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY,
-          "Authorization": `Bearer ${auth.token}`
-        },
-        body: JSON.stringify(updateData)
-      });
-
-      if (updateResponse.ok) {
+      // Use our centralized service to save topic lists
+      const success = await saveTopicLists(topicLists, userId, auth);
+      
+      if (success) {
         console.log("Topic lists saved to Knack successfully:", topicLists.length, "lists");
         return true;
       } else {
-        const errorData = await updateResponse.json().catch(e => ({ message: "Unknown error" }));
-        console.error("Failed to save topic lists to Knack:", errorData);
-        setError(`Failed to save topic lists: ${errorData.message || "API error"}`);
+        setError("Failed to save topic lists");
         return false;
       }
     } catch (error) {
