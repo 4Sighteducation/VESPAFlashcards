@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import "./TopicButtonsModal.css";
 
 /**
@@ -41,65 +42,79 @@ const TopicButtonsModal = ({
   
   const modalRef = useRef(null);
   const popupRef = useRef(null);
+  const prioritizeButtonRef = useRef(null);
 
-  // Handle modal close with escape key
+  // Create portal container for popups
+  useEffect(() => {
+    const portalContainer = document.createElement('div');
+    portalContainer.id = 'popup-portal';
+    document.body.appendChild(portalContainer);
+    return () => {
+      document.body.removeChild(portalContainer);
+    };
+  }, []);
+
+  // Handle click outside for all popups
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if ((showPrioritizePopup && 
+          !event.target.closest('.prioritize-button') && 
+          !event.target.closest('.coming-soon-popup')) ||
+          (activePopup && 
+          !event.target.closest('.topic-button') && 
+          !event.target.closest('.topic-popup'))) {
+        setShowPrioritizePopup(false);
+        setActivePopup(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showPrioritizePopup, activePopup]);
+
+  // Handle escape key for all popups
   useEffect(() => {
     const handleEscapeKey = (event) => {
       if (event.key === 'Escape') {
-        if (activePopup) {
+        if (showPrioritizePopup) {
+          setShowPrioritizePopup(false);
+        } else if (showAddTopicModal) {
+          setShowAddTopicModal(false);
+        } else if (activePopup) {
           setActivePopup(null);
         } else {
           onClose();
         }
       }
     };
-    
+
     document.addEventListener('keydown', handleEscapeKey);
     return () => {
       document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [onClose, activePopup]);
-
-  // Handle click outside to close popups
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (popupRef.current && !popupRef.current.contains(event.target)) {
-        setActivePopup(null);
-      }
-    };
-
-    if (activePopup) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [activePopup]);
+  }, [showPrioritizePopup, showAddTopicModal, activePopup, onClose]);
 
   // Calculate popup position
   const calculatePopupPosition = (buttonElement, popupType) => {
-    if (!buttonElement || !modalRef.current) return;
+    if (!buttonElement) return;
 
     const buttonRect = buttonElement.getBoundingClientRect();
-    const modalRect = modalRef.current.getBoundingClientRect();
     const windowHeight = window.innerHeight;
     const windowWidth = window.innerWidth;
 
-    // Default to showing below the button
-    let placement = 'bottom';
     let top = buttonRect.bottom + 8;
-    let left = buttonRect.left - 150 + buttonRect.width / 2; // Center the popup
+    let left = buttonRect.left + (buttonRect.width / 2) - 160;
 
     // Check if popup would go below viewport
     if (top + 200 > windowHeight) {
-      top = buttonRect.top - 8;
-      placement = 'top';
+      top = buttonRect.top - 216; // Height of popup + padding
     }
 
     // Check if popup would go off screen to the right
-    if (left + 300 > windowWidth) {
-      left = windowWidth - 320;
+    if (left + 320 > windowWidth) {
+      left = windowWidth - 340;
     }
 
     // Check if popup would go off screen to the left
@@ -107,8 +122,7 @@ const TopicButtonsModal = ({
       left = 20;
     }
 
-    setPopupPosition({ top, left });
-    setPopupPlacement(placement);
+    return { top, left };
   };
 
   // Group topics by category on component mount or when topics change
@@ -170,7 +184,8 @@ const TopicButtonsModal = ({
   const handleGenerateCards = (topic, event) => {
     event.stopPropagation();
     const buttonElement = event.currentTarget;
-    calculatePopupPosition(buttonElement, 'generate');
+    const position = calculatePopupPosition(buttonElement, 'generate');
+    setPopupPosition(position);
     setActivePopup({ type: 'generate', topic });
   };
   
@@ -178,7 +193,8 @@ const TopicButtonsModal = ({
   const handleDeleteTopic = (topic, event) => {
     event.stopPropagation();
     const buttonElement = event.currentTarget;
-    calculatePopupPosition(buttonElement, 'delete');
+    const position = calculatePopupPosition(buttonElement, 'delete');
+    setPopupPosition(position);
     setTopicToDelete(topic);
     setActivePopup({ type: 'delete', topic });
   };
@@ -210,13 +226,16 @@ const TopicButtonsModal = ({
   };
   
   // Handle prioritize button click
-  const handlePrioritizeClick = (event) => {
-    const buttonRect = event.currentTarget.getBoundingClientRect();
-    setPrioritizePopupPosition({
-      top: buttonRect.bottom + 8,
-      left: buttonRect.left + (buttonRect.width / 2) - 150
-    });
-    setShowPrioritizePopup(true);
+  const handlePrioritizeClick = () => {
+    if (prioritizeButtonRef.current) {
+      const buttonRect = prioritizeButtonRef.current.getBoundingClientRect();
+      const position = {
+        top: buttonRect.bottom + 8,
+        left: Math.max(20, buttonRect.left + (buttonRect.width / 2) - 160)
+      };
+      setPrioritizePopupPosition(position);
+      setShowPrioritizePopup(true);
+    }
   };
   
   // Render "Add Topic" modal
@@ -298,28 +317,22 @@ const TopicButtonsModal = ({
   const renderPopupContent = () => {
     if (!activePopup) return null;
 
-    return (
+    const content = (
       <div 
-        ref={popupRef}
-        className={`topic-popup ${popupPlacement}`}
+        className="topic-popup"
         style={{
           top: popupPosition.top,
           left: popupPosition.left
         }}
       >
         {activePopup.type === 'generate' ? (
-          <div className="generate-popup">
-            <h4>Generate Cards</h4>
-            <p>Generate flashcards for: {activePopup.topic.displayName}</p>
+          <div className="popup-content">
+            <h4>Generate Flashcards</h4>
+            <p>Generate flashcards for "{activePopup.topic.displayName}"?</p>
             <div className="popup-actions">
               <button 
                 onClick={() => {
-                  onGenerateCards({
-                    topic: activePopup.topic.fullName,
-                    examBoard,
-                    examType,
-                    subject
-                  });
+                  onGenerateCards(activePopup.topic);
                   setActivePopup(null);
                 }}
                 className="confirm-button"
@@ -335,15 +348,13 @@ const TopicButtonsModal = ({
             </div>
           </div>
         ) : (
-          <div className="delete-popup">
+          <div className="popup-content">
             <h4>Delete Topic</h4>
-            <p>Are you sure you want to delete this topic?</p>
-            <p className="warning">{activePopup.topic.displayName}</p>
+            <p>Are you sure you want to delete "{activePopup.topic.displayName}"?</p>
             <div className="popup-actions">
               <button 
                 onClick={() => {
-                  onDeleteTopic(activePopup.topic.id);
-                  setUnsavedChanges(true);
+                  onDeleteTopic(activePopup.topic);
                   setActivePopup(null);
                 }}
                 className="delete-button"
@@ -361,15 +372,17 @@ const TopicButtonsModal = ({
         )}
       </div>
     );
+
+    return createPortal(content, document.getElementById('popup-portal'));
   };
   
   // Render prioritize popup
   const renderPrioritizePopup = () => {
     if (!showPrioritizePopup) return null;
 
-    return (
+    const content = (
       <div 
-        className="topic-popup bottom"
+        className="topic-popup"
         style={{
           top: prioritizePopupPosition.top,
           left: prioritizePopupPosition.left
@@ -390,6 +403,8 @@ const TopicButtonsModal = ({
         </div>
       </div>
     );
+
+    return createPortal(content, document.getElementById('popup-portal'));
   };
   
   return (
@@ -406,16 +421,18 @@ const TopicButtonsModal = ({
               className="add-topic-button" 
               onClick={() => setShowAddTopicModal(true)}
             >
+              <span className="button-icon">➕</span>
               Add Topic
             </button>
             
             <button 
+              ref={prioritizeButtonRef}
               className="prioritize-button" 
               onClick={handlePrioritizeClick}
               title="Prioritize topics"
             >
               <span className="button-icon">⭐</span>
-              <span className="button-text">Prioritize</span>
+              Prioritize
             </button>
             
             {unsavedChanges && (
@@ -423,6 +440,7 @@ const TopicButtonsModal = ({
                 className="save-topics-button" 
                 onClick={onSaveTopics}
               >
+                <span className="button-icon">💾</span>
                 Save Changes
               </button>
             )}

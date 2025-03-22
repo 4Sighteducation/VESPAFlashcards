@@ -1,4 +1,4 @@
-/* TopicButtonsModal.css - Styles for the topic buttons modal with mobile-first approach */
+/* TopicButtonsModal.css - Modern fullscreen design */
 
 .topic-buttons-modal-overlay {
   position: fixed;
@@ -6,129 +6,168 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .topic-buttons-modal {
-  background-color: white;
-  width: 100%;
+  background-color: #f3f4f6;
+  width: 100vw;
   height: 100vh;
   display: flex;
   flex-direction: column;
   position: relative;
+  animation: modalEnter 0.3s ease-out;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Modal header */
 .topic-buttons-modal .modal-header {
-  padding: 20px 24px;
+  padding: 1.5rem 2rem;
   background-color: white;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #e5e7eb;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .topic-buttons-modal .modal-header h2 {
   margin: 0;
-  font-size: 1.5rem;
-  color: #333;
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #111827;
   flex: 1;
 }
 
 .topic-buttons-modal .modal-actions {
   display: flex;
-  gap: 12px;
-  margin-left: 20px;
+  gap: 1rem;
+  margin-left: 2rem;
 }
 
 .topic-buttons-modal .modal-actions button {
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
   border: none;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  min-height: 44px;
-  font-size: 14px;
+  min-height: 2.75rem;
+  font-size: 0.875rem;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .topic-buttons-modal .add-topic-button {
-  background-color: #0275d8;
+  background-color: #3b82f6;
   color: white;
 }
 
 .topic-buttons-modal .add-topic-button:hover {
-  background-color: #025aa5;
+  background-color: #2563eb;
+  transform: translateY(-1px);
 }
 
 .topic-buttons-modal .prioritize-button {
-  background-color: #ffd700;
-  color: #333;
+  background-color: #fbbf24;
+  color: #1f2937;
 }
 
 .topic-buttons-modal .prioritize-button:hover {
-  background-color: #ffed4a;
+  background-color: #f59e0b;
+  transform: translateY(-1px);
 }
 
 .topic-buttons-modal .save-topics-button {
-  background-color: #5cb85c;
+  background-color: #10b981;
   color: white;
 }
 
 .topic-buttons-modal .save-topics-button:hover {
-  background-color: #449d44;
+  background-color: #059669;
+  transform: translateY(-1px);
 }
 
 /* Modal content */
 .topic-buttons-modal .modal-content {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
-  height: calc(100vh - 85px); /* Account for header height */
-  background-color: #f8f9fa;
+  padding: 2rem;
+  height: calc(100vh - 5rem);
+  background-color: #f3f4f6;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e2e8f0;
+}
+
+.topic-buttons-modal .modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.topic-buttons-modal .modal-content::-webkit-scrollbar-track {
+  background: #e2e8f0;
+}
+
+.topic-buttons-modal .modal-content::-webkit-scrollbar-thumb {
+  background-color: #94a3b8;
+  border-radius: 4px;
 }
 
 /* Topic buttons container */
 .topic-buttons-container {
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 2rem;
 }
 
 /* Category section */
 .topic-category-section {
   background-color: white;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.topic-category-section:hover {
+  transform: translateY(-2px);
 }
 
 .category-heading {
-  font-size: 1.3rem;
-  margin: 0 0 20px 0;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #e9ecef;
-  color: #333;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  color: #1f2937;
 }
 
 /* Topic buttons grid */
 .topic-buttons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
   width: 100%;
 }
 
@@ -140,46 +179,45 @@
 
 .topic-button {
   background-color: white;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 60px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  min-height: 4rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
 }
 
 .topic-button:hover {
-  border-color: #dee2e6;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+  transform: translateY(-2px);
 }
 
 .topic-name {
   font-weight: 500;
-  font-size: 0.95rem;
-  color: #495057;
+  font-size: 1rem;
+  color: #1f2937;
   flex: 1;
-  margin-right: 12px;
-  line-height: 1.4;
-  word-break: break-word;
+  margin-right: 1rem;
+  line-height: 1.5;
 }
 
 /* Action buttons */
 .topic-actions {
   display: flex;
-  gap: 8px;
+  gap: 0.75rem;
   flex-shrink: 0;
 }
 
 .topic-actions button {
-  width: 36px;
-  height: 36px;
+  width: 2.5rem;
+  height: 2.5rem;
   border: none;
-  border-radius: 6px;
-  background-color: transparent;
+  border-radius: 0.5rem;
+  background-color: #f3f4f6;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -188,121 +226,115 @@
 }
 
 .topic-actions .generate-button {
-  color: #0275d8;
+  color: #3b82f6;
 }
 
 .topic-actions .generate-button:hover {
-  background-color: rgba(2, 117, 216, 0.1);
+  background-color: #dbeafe;
+  transform: translateY(-1px);
 }
 
 .topic-actions .delete-button {
-  color: #dc3545;
+  color: #ef4444;
 }
 
 .topic-actions .delete-button:hover {
-  background-color: rgba(220, 53, 69, 0.1);
+  background-color: #fee2e2;
+  transform: translateY(-1px);
 }
 
 /* Close button */
 .close-modal-button {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 1.5rem;
   cursor: pointer;
-  color: #666;
-  width: 44px;
-  height: 44px;
+  color: #6b7280;
+  width: 3rem;
+  height: 3rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  margin-left: 12px;
+  border-radius: 9999px;
+  margin-left: 1rem;
   transition: all 0.2s ease;
 }
 
 .close-modal-button:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-  color: #333;
+  background-color: #f3f4f6;
+  color: #1f2937;
 }
 
 /* Popup styles */
 .topic-popup {
   position: fixed;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  padding: 24px;
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  padding: 1.5rem;
   min-width: 320px;
   max-width: 400px;
-  z-index: 2000;
+  z-index: 9999;
+  animation: popupEnter 0.2s ease-out;
 }
 
-.topic-popup::before {
-  content: '';
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: white;
-  transform: rotate(45deg);
-}
-
-.topic-popup.top::before {
-  bottom: -6px;
-  left: 50%;
-  margin-left: -6px;
-}
-
-.topic-popup.bottom::before {
-  top: -6px;
-  left: 50%;
-  margin-left: -6px;
+@keyframes popupEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Coming soon popup styles */
 .coming-soon-popup {
   text-align: center;
-  padding: 8px;
+  padding: 1.5rem;
 }
 
 .coming-soon-popup h4 {
-  margin: 0 0 16px 0;
-  color: #333;
-  font-size: 1.3rem;
+  margin: 0 0 1rem 0;
+  color: #1f2937;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .coming-soon-popup p {
-  margin: 12px 0;
-  color: #555;
-  line-height: 1.5;
-  font-size: 1.1rem;
+  margin: 0.75rem 0;
+  color: #4b5563;
+  line-height: 1.6;
+  font-size: 1.125rem;
 }
 
 .coming-soon-popup .fun-message {
-  color: #666;
+  color: #6b7280;
   font-style: italic;
-  margin-top: 16px;
+  margin-top: 1rem;
 }
 
 .coming-soon-popup .popup-actions {
-  margin-top: 24px;
+  margin-top: 1.5rem;
   display: flex;
   justify-content: center;
 }
 
 .coming-soon-popup .confirm-button {
-  background-color: #ffd700;
-  color: #333;
+  background-color: #fbbf24;
+  color: #1f2937;
   border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 1.1rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .coming-soon-popup .confirm-button:hover {
-  background-color: #ffed4a;
+  background-color: #f59e0b;
   transform: translateY(-1px);
 }
 
@@ -312,19 +344,19 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: 2.5rem;
   text-align: center;
-  color: #495057;
+  color: #4b5563;
 }
 
 .loading-spinner {
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #0275d8;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #3b82f6;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 2.5rem;
+  height: 2.5rem;
   animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 @keyframes spin {
@@ -335,31 +367,34 @@
 /* Responsive styles */
 @media (max-width: 768px) {
   .topic-buttons-modal .modal-header {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 16px;
+    padding: 1rem;
+  }
+
+  .topic-buttons-modal .modal-header h2 {
+    font-size: 1.5rem;
   }
 
   .topic-buttons-modal .modal-actions {
     margin-left: 0;
-    margin-top: 16px;
-    flex-direction: column;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .topic-buttons-modal .modal-content {
+    padding: 1rem;
   }
 
   .topic-buttons-grid {
     grid-template-columns: 1fr;
   }
 
-  .topic-popup {
-    position: fixed;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: 90%;
-    max-width: none;
+  .topic-category-section {
+    padding: 1.5rem;
   }
 
-  .topic-popup::before {
-    display: none;
+  .topic-popup {
+    width: calc(100% - 2rem);
+    max-width: none;
+    margin: 1rem;
   }
 }
