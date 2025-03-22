@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./TopicButtonsModal.css";
 
 /**
@@ -32,12 +32,25 @@ const TopicButtonsModal = ({
   const [topicToDelete, setTopicToDelete] = useState(null);
   // State for save confirmation
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  // State for popup positioning
+  const [activePopup, setActivePopup] = useState(null);
+  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+  const [popupPlacement, setPopupPlacement] = useState('bottom');
+  const [showPrioritizePopup, setShowPrioritizePopup] = useState(false);
+  const [prioritizePopupPosition, setPrioritizePopupPosition] = useState({ top: 0, left: 0 });
   
+  const modalRef = useRef(null);
+  const popupRef = useRef(null);
+
   // Handle modal close with escape key
   useEffect(() => {
     const handleEscapeKey = (event) => {
       if (event.key === 'Escape') {
-        onClose();
+        if (activePopup) {
+          setActivePopup(null);
+        } else {
+          onClose();
+        }
       }
     };
     
@@ -45,7 +58,58 @@ const TopicButtonsModal = ({
     return () => {
       document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [onClose]);
+  }, [onClose, activePopup]);
+
+  // Handle click outside to close popups
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setActivePopup(null);
+      }
+    };
+
+    if (activePopup) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activePopup]);
+
+  // Calculate popup position
+  const calculatePopupPosition = (buttonElement, popupType) => {
+    if (!buttonElement || !modalRef.current) return;
+
+    const buttonRect = buttonElement.getBoundingClientRect();
+    const modalRect = modalRef.current.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
+    const windowWidth = window.innerWidth;
+
+    // Default to showing below the button
+    let placement = 'bottom';
+    let top = buttonRect.bottom + 8;
+    let left = buttonRect.left - 150 + buttonRect.width / 2; // Center the popup
+
+    // Check if popup would go below viewport
+    if (top + 200 > windowHeight) {
+      top = buttonRect.top - 8;
+      placement = 'top';
+    }
+
+    // Check if popup would go off screen to the right
+    if (left + 300 > windowWidth) {
+      left = windowWidth - 320;
+    }
+
+    // Check if popup would go off screen to the left
+    if (left < 20) {
+      left = 20;
+    }
+
+    setPopupPosition({ top, left });
+    setPopupPlacement(placement);
+  };
 
   // Group topics by category on component mount or when topics change
   useEffect(() => {
@@ -105,31 +169,18 @@ const TopicButtonsModal = ({
   // Handle generating cards for a topic
   const handleGenerateCards = (topic, event) => {
     event.stopPropagation();
-    onGenerateCards({
-      topic: topic.name,
-      examBoard,
-      examType,
-      subject
-    });
+    const buttonElement = event.currentTarget;
+    calculatePopupPosition(buttonElement, 'generate');
+    setActivePopup({ type: 'generate', topic });
   };
   
   // Handle deleting a topic
   const handleDeleteTopic = (topic, event) => {
     event.stopPropagation();
-    
-    // Set the topic to delete and show confirmation modal
+    const buttonElement = event.currentTarget;
+    calculatePopupPosition(buttonElement, 'delete');
     setTopicToDelete(topic);
-    setShowDeleteConfirm(true);
-  };
-  
-  // Confirm topic deletion
-  const confirmDeleteTopic = () => {
-    if (topicToDelete) {
-      onDeleteTopic(topicToDelete.id);
-      setUnsavedChanges(true);
-    }
-    setShowDeleteConfirm(false);
-    setTopicToDelete(null);
+    setActivePopup({ type: 'delete', topic });
   };
   
   // Handle adding a new topic
@@ -156,6 +207,16 @@ const TopicButtonsModal = ({
       .finally(() => {
         setAddingTopic(false);
       });
+  };
+  
+  // Handle prioritize button click
+  const handlePrioritizeClick = (event) => {
+    const buttonRect = event.currentTarget.getBoundingClientRect();
+    setPrioritizePopupPosition({
+      top: buttonRect.bottom + 8,
+      left: buttonRect.left + (buttonRect.width / 2) - 150
+    });
+    setShowPrioritizePopup(true);
   };
   
   // Render "Add Topic" modal
@@ -233,31 +294,97 @@ const TopicButtonsModal = ({
     );
   };
   
-  // Render delete confirmation modal
-  const renderDeleteConfirmation = () => {
-    if (!showDeleteConfirm) return null;
-    
+  // Render popup content
+  const renderPopupContent = () => {
+    if (!activePopup) return null;
+
     return (
-      <div className="delete-confirm-overlay" onClick={() => setShowDeleteConfirm(false)}>
-        <div className="delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
-          <h3>Delete Topic</h3>
-          <p>Are you sure you want to delete this topic?</p>
-          <p className="warning">{topicToDelete?.displayName}</p>
-          <div className="delete-confirm-actions">
+      <div 
+        ref={popupRef}
+        className={`topic-popup ${popupPlacement}`}
+        style={{
+          top: popupPosition.top,
+          left: popupPosition.left
+        }}
+      >
+        {activePopup.type === 'generate' ? (
+          <div className="generate-popup">
+            <h4>Generate Cards</h4>
+            <p>Generate flashcards for: {activePopup.topic.displayName}</p>
+            <div className="popup-actions">
+              <button 
+                onClick={() => {
+                  onGenerateCards({
+                    topic: activePopup.topic.fullName,
+                    examBoard,
+                    examType,
+                    subject
+                  });
+                  setActivePopup(null);
+                }}
+                className="confirm-button"
+              >
+                Generate
+              </button>
+              <button 
+                onClick={() => setActivePopup(null)}
+                className="cancel-button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="delete-popup">
+            <h4>Delete Topic</h4>
+            <p>Are you sure you want to delete this topic?</p>
+            <p className="warning">{activePopup.topic.displayName}</p>
+            <div className="popup-actions">
+              <button 
+                onClick={() => {
+                  onDeleteTopic(activePopup.topic.id);
+                  setUnsavedChanges(true);
+                  setActivePopup(null);
+                }}
+                className="delete-button"
+              >
+                Delete
+              </button>
+              <button 
+                onClick={() => setActivePopup(null)}
+                className="cancel-button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // Render prioritize popup
+  const renderPrioritizePopup = () => {
+    if (!showPrioritizePopup) return null;
+
+    return (
+      <div 
+        className="topic-popup bottom"
+        style={{
+          top: prioritizePopupPosition.top,
+          left: prioritizePopupPosition.left
+        }}
+      >
+        <div className="coming-soon-popup">
+          <h4>🌟 Coming Soon! 🌟</h4>
+          <p>Our AI minions are working hard to bring you this awesome feature!</p>
+          <p className="fun-message">In the meantime, why not generate some flashcards? They're like priorities, but without the guilt trip! 😄</p>
+          <div className="popup-actions">
             <button 
-              className="cancel-button" 
-              onClick={() => {
-                setShowDeleteConfirm(false);
-                setTopicToDelete(null);
-              }}
+              onClick={() => setShowPrioritizePopup(false)}
+              className="confirm-button"
             >
-              Cancel
-            </button>
-            <button 
-              className="delete-button" 
-              onClick={confirmDeleteTopic}
-            >
-              Delete
+              Got it! 👍
             </button>
           </div>
         </div>
@@ -267,9 +394,11 @@ const TopicButtonsModal = ({
   
   return (
     <div className="topic-buttons-modal-overlay" onClick={onClose}>
-      <div className="topic-buttons-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="close-modal-button" onClick={onClose}>×</button>
-        
+      <div 
+        ref={modalRef}
+        className="topic-buttons-modal" 
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h2>Topics for {subject} ({examBoard} {examType})</h2>
           <div className="modal-actions">
@@ -278,6 +407,15 @@ const TopicButtonsModal = ({
               onClick={() => setShowAddTopicModal(true)}
             >
               Add Topic
+            </button>
+            
+            <button 
+              className="prioritize-button" 
+              onClick={handlePrioritizeClick}
+              title="Prioritize topics"
+            >
+              <span className="button-icon">⭐</span>
+              <span className="button-text">Prioritize</span>
             </button>
             
             {unsavedChanges && (
@@ -289,6 +427,7 @@ const TopicButtonsModal = ({
               </button>
             )}
           </div>
+          <button className="close-modal-button" onClick={onClose}>×</button>
         </div>
         
         <div className="modal-content">
@@ -332,10 +471,10 @@ const TopicButtonsModal = ({
             </div>
           )}
         </div>
-        
-        {renderAddTopicModal()}
-        {renderDeleteConfirmation()}
       </div>
+      {renderAddTopicModal()}
+      {renderPopupContent()}
+      {renderPrioritizePopup()}
     </div>
   );
 };

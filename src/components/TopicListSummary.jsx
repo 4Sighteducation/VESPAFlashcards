@@ -27,6 +27,7 @@ const TopicListSummary = ({
   const [showTopicsModal, setShowTopicsModal] = useState(false);
   const [showTopicInfoModal, setShowTopicInfoModal] = useState(false);
   const [isPrioritizing, setIsPrioritizing] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -56,6 +57,16 @@ const TopicListSummary = ({
     setIsPrioritizing(true);
     // Prioritization mode is a future feature - for now, just show the topics modal
     setShowTopicsModal(true);
+  };
+  
+  // Handle regenerating topics
+  const handleRegenerateTopics = async () => {
+    setIsRegenerating(true);
+    try {
+      await onRegenerateTopics();
+    } finally {
+      setIsRegenerating(false);
+    }
   };
   
   // Render the quick info modal that shows all topics in a simple list
@@ -126,7 +137,7 @@ const TopicListSummary = ({
           <button 
             className="action-button view-topics-button"
             onClick={handleViewTopics}
-            disabled={isLoading}
+            disabled={isLoading || isRegenerating}
           >
             <span className="button-icon">📋</span>
             <span className="button-text">View & Edit Topics</span>
@@ -135,19 +146,21 @@ const TopicListSummary = ({
           <button 
             className="action-button prioritize-button"
             onClick={handlePrioritizeTopics}
-            disabled={isLoading || topics.length === 0}
+            disabled={isLoading || isRegenerating || topics.length === 0}
           >
             <span className="button-icon">⭐</span>
             <span className="button-text">Prioritize Topics</span>
           </button>
           
           <button 
-            className="action-button regenerate-button"
-            onClick={onRegenerateTopics}
-            disabled={isLoading}
+            className={`action-button regenerate-button ${isRegenerating ? 'loading' : ''}`}
+            onClick={handleRegenerateTopics}
+            disabled={isLoading || isRegenerating}
           >
-            <span className="button-icon">🔄</span>
-            <span className="button-text">Regenerate Topics</span>
+            <span className="button-icon">{isRegenerating ? '🔄' : '🔄'}</span>
+            <span className="button-text">
+              {isRegenerating ? 'Regenerating...' : 'Regenerate Topics'}
+            </span>
           </button>
         </div>
       </div>
