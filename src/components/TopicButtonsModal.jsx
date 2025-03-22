@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FaTimes, FaPlus, FaStar, FaTrash, FaMagic, FaSave, FaFolder } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaStar, FaTrash, FaMagic, FaSave, FaFolder, FaCheck, FaRegStar } from 'react-icons/fa';
+import ModalOverlay from './ModalOverlay';
 import './TopicButtonsModal.css';
 
 /**
@@ -18,13 +19,19 @@ const TopicButtonsModal = ({
   onGenerateCards,
   onDeleteTopic,
   onAddTopic,
-  onSaveTopics
+  onSaveTopics,
+  onTopicChange,
+  onPrioritizeTopic,
+  currentTopic
 }) => {
   const [activePopup, setActivePopup] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPrioritizePopup, setShowPrioritizePopup] = useState(false);
   const [topicToDelete, setTopicToDelete] = useState(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [organizedTopics, setOrganizedTopics] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredTopics, setFilteredTopics] = useState({});
 
   // Close all popups when the main modal closes
   useEffect(() => {
@@ -85,7 +92,45 @@ const TopicButtonsModal = ({
     return organizedTopics;
   }, []);
 
-  const organizedTopics = organizeTopics(topics);
+  useEffect(() => {
+    if (topics) {
+      const organized = organizeTopics(topics);
+      setOrganizedTopics(organized);
+      setFilteredTopics(organized);
+    }
+  }, [topics, organizeTopics]);
+
+  // Update filtered topics when search term changes
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredTopics(organizedTopics);
+      return;
+    }
+
+    const searchLower = searchTerm.toLowerCase();
+    const filtered = {};
+
+    // Filter topics by search term
+    Object.entries(organizedTopics).forEach(([category, subcategories]) => {
+      const filteredSubcategories = {};
+      
+      Object.entries(subcategories).forEach(([subcategory, topicsArray]) => {
+        const matchedTopics = topicsArray.filter(topic => 
+          topic.name.toLowerCase().includes(searchLower)
+        );
+        
+        if (matchedTopics.length > 0) {
+          filteredSubcategories[subcategory] = matchedTopics;
+        }
+      });
+      
+      if (Object.keys(filteredSubcategories).length > 0) {
+        filtered[category] = filteredSubcategories;
+      }
+    });
+    
+    setFilteredTopics(filtered);
+  }, [searchTerm, organizedTopics]);
 
   const handleGenerateCards = useCallback(async (topic) => {
     setIsGenerating(true);
@@ -114,97 +159,161 @@ const TopicButtonsModal = ({
     }
   }, [onSaveTopics]);
 
-  const modalContent = (
-    <div className="reset-style-root">
-      <div 
-        className="topic-buttons-modal-overlay" 
-        onClick={() => {
-          // Only close the parent modal if no child modal is open
-          if (!activePopup && !topicToDelete && !showPrioritizePopup) {
-            onClose();
-          }
-        }}
-      >
-        <div className="topic-buttons-modal" onClick={e => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>Topics for {subject} ({examBoard} {examType})</h2>
-            <div className="modal-actions">
-              <button className="add-topic-button" onClick={onAddTopic}>
-                <FaPlus /> Add Topic
-              </button>
-              <button 
-                className="prioritize-button" 
-                onClick={() => setShowPrioritizePopup(true)}
-              >
-                <FaStar /> Prioritize
-              </button>
-              {unsavedChanges && (
-                <button 
-                  className="save-topics-button" 
-                  onClick={handleSaveTopics}
-                >
-                  <FaSave /> Save Changes
-                </button>
-              )}
-              <button className="close-modal-button" onClick={onClose}>
-                <FaTimes />
-              </button>
-            </div>
-          </div>
+  // Handle click on a topic button
+  const handleTopicClick = (topic) => {
+    if (onTopicChange) {
+      onTopicChange(topic);
+    }
+  };
 
-          <div className="modal-content">
-            <div className="topic-buttons-container">
-              {Object.keys(organizedTopics).length > 0 ? (
-                Object.entries(organizedTopics).map(([mainCategory, categoryData]) => (
-                  <div key={mainCategory} className="topic-category-section">
-                    <h3 className="category-heading">
-                      <FaFolder className="category-icon" /> {mainCategory}
-                    </h3>
+  // Show deletion confirmation
+  const handleShowDeleteConfirmation = (topic, e) => {
+    e.stopPropagation();
+    setTopicToDelete(topic);
+  };
+
+  // Handle topic prioritization
+  const handlePrioritizeTopic = (topic, e) => {
+    e.stopPropagation();
+    if (onPrioritizeTopic) {
+      onPrioritizeTopic(topic);
+    }
+  };
+
+  // Handle adding a new topic
+  const handleAddNewTopic = () => {
+    if (onAddTopic) {
+      onAddTopic();
+      onClose();
+    }
+  };
+
+  const modalContent = (
+    <ModalOverlay isOpen={true} onClose={onClose} zIndex={1050}>
+      <div className="topic-buttons-modal">
+        <div className="modal-header">
+          <h2>Topics for {subject} ({examBoard} {examType})</h2>
+          <div className="modal-actions">
+            <button className="add-topic-button" onClick={handleAddNewTopic}>
+              <FaPlus /> Add Topic
+            </button>
+            <button 
+              className="prioritize-button" 
+              onClick={() => setShowPrioritizePopup(true)}
+            >
+              <FaStar /> Prioritize
+            </button>
+            {unsavedChanges && (
+              <button 
+                className="save-topics-button" 
+                onClick={handleSaveTopics}
+              >
+                <FaSave /> Save Changes
+              </button>
+            )}
+            <button className="close-modal-button" onClick={onClose}>
+              <FaTimes />
+            </button>
+          </div>
+        </div>
+
+        <div className="modal-search">
+          <input
+            type="text"
+            placeholder="Search topics..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+        </div>
+
+        <div className="modal-content">
+          <div className="topic-buttons-container">
+            {Object.keys(filteredTopics).length > 0 ? (
+              <div className="topic-categories">
+                {Object.entries(filteredTopics).map(([category, subcategories]) => (
+                  <div key={category} className="topic-category">
+                    <h3 className="category-title">{category}</h3>
                     
-                    {Object.entries(categoryData.subcategories).map(([subCategory, subTopics]) => (
-                      <div key={`${mainCategory}-${subCategory}`} className="subcategory-section">
-                        {subCategory !== 'Topics' && (
-                          <h4 className="subcategory-heading">{subCategory}</h4>
-                        )}
+                    {Object.entries(subcategories).map(([subcategory, topicsArray]) => (
+                      <div key={subcategory} className="topic-subcategory">
+                        <h4 className="subcategory-title">{subcategory}</h4>
                         
-                        {subTopics.map((topic) => (
-                          <div key={topic.id || topic.fullName} className="topic-button">
-                            <span 
-                              className="topic-name" 
-                              title={topic.parsedName || topic.displayName || topic.name}
+                        <div className="topics-grid">
+                          {topicsArray.map((topic) => (
+                            <div 
+                              key={topic.id} 
+                              className={`topic-button-container ${currentTopic === topic.id ? 'selected' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTopicClick(topic);
+                              }}
                             >
-                              {topic.parsedName || topic.displayName || topic.name}
-                            </span>
-                            <div className="topic-actions">
-                              <button
-                                className="generate-button"
-                                onClick={() => setActivePopup(topic.id || topic.fullName)}
-                                title="Generate Cards"
+                              <span 
+                                className="topic-name" 
+                                title={topic.parsedName || topic.displayName || topic.name}
                               >
-                                <FaMagic />
-                              </button>
-                              <button
-                                className="delete-button"
-                                onClick={() => setTopicToDelete(topic)}
-                                title="Delete Topic"
-                              >
-                                <FaTrash />
-                              </button>
+                                {topic.parsedName || topic.displayName || topic.name}
+                              </span>
+                              
+                              <div className="topic-actions">
+                                <button 
+                                  className="action-button generate" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleGenerateCards(topic);
+                                  }}
+                                  title="Generate cards"
+                                >
+                                  <FaMagic />
+                                </button>
+                                
+                                <button 
+                                  className={`action-button prioritize ${topic.priority ? 'active' : ''}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePrioritizeTopic(topic, e);
+                                  }}
+                                  title={topic.priority ? "Remove priority" : "Prioritize topic"}
+                                >
+                                  {topic.priority ? <FaStar /> : <FaRegStar />}
+                                </button>
+                                
+                                <button 
+                                  className="action-button delete" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShowDeleteConfirmation(topic, e);
+                                  }}
+                                  title="Delete topic"
+                                >
+                                  <FaTrash />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
-                ))
-              ) : (
-                <div className="no-topics-message">
-                  <p>No topics available for this subject.</p>
-                  <p>Click "Add Topic" to create your first topic</p>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-topics-message">
+                <p>No topics available for this subject.</p>
+                <p>Click "Add Topic" to create your first topic</p>
+              </div>
+            )}
           </div>
+        </div>
+
+        <div className="modal-footer">
+          <button 
+            className="add-topic-button" 
+            onClick={handleAddNewTopic}
+          >
+            <FaPlus /> Add New Topic
+          </button>
         </div>
 
         {/* Generate Cards Confirmation Modal */}
@@ -328,7 +437,7 @@ const TopicButtonsModal = ({
           document.body
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 
   return createPortal(modalContent, document.body);

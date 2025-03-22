@@ -1,0 +1,371 @@
+/* TopicListViewModal.css - Styles for the topic list view modal */
+
+.topic-list-view-modal {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 90%;
+  max-width: 900px;
+  height: 85vh;
+  max-height: 800px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  animation: modalEnter 0.3s ease-out;
+}
+
+@keyframes modalEnter {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Modal Header */
+.topic-list-view-modal .modal-header {
+  background-color: #06206e;
+  color: white;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.topic-list-view-modal .modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.topic-list-view-modal .close-modal-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.topic-list-view-modal .close-modal-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+/* Modal Content */
+.topic-list-view-modal .modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* Topic List Info */
+.topic-list-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Info Section */
+.info-section {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.info-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.2rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 1.1rem;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* Stats Section */
+.stats-section {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.stats-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.2rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #06206e;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  text-align: center;
+}
+
+/* Expandable Sections */
+.expandable-section {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.section-header {
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background-color: #f8fafc;
+  transition: background-color 0.2s ease;
+}
+
+.section-header:hover {
+  background-color: #f1f5f9;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-title h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.warning-icon {
+  color: #f59e0b;
+  font-size: 1.1rem;
+}
+
+.success-icon {
+  color: #10b981;
+  font-size: 1.1rem;
+}
+
+.section-content {
+  padding: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.section-description {
+  margin: 0 0 1rem 0;
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Orphaned Cards List */
+.orphaned-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.orphaned-card {
+  background-color: #f8fafc;
+  border-radius: 6px;
+  padding: 1rem;
+  border-left: 3px solid #f59e0b;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.card-question {
+  font-weight: 500;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.card-topic {
+  font-weight: 500;
+}
+
+/* Topics List */
+.topics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.topic-item {
+  background-color: #f8fafc;
+  border-radius: 6px;
+  padding: 1rem;
+  border-left: 3px solid #10b981;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.topic-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 1.05rem;
+}
+
+.topic-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.topic-card-count {
+  font-weight: 500;
+}
+
+.topic-sr-count {
+  color: #06206e;
+  font-weight: 500;
+}
+
+/* Box Distribution */
+.boxes-distribution {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.5);
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.box-indicator {
+  font-size: 0.8rem;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.box-label {
+  font-weight: 500;
+}
+
+.box-count {
+  background-color: rgba(6, 32, 110, 0.1);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .topic-list-view-modal {
+    width: 100%;
+    height: 100vh;
+    max-height: none;
+    border-radius: 0;
+  }
+  
+  .topic-list-view-modal .modal-header {
+    padding: 1rem;
+  }
+  
+  .topic-list-view-modal .modal-content {
+    padding: 1rem;
+  }
+  
+  .info-grid, .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .info-item, .stat-item {
+    padding: 0.75rem;
+  }
+  
+  .section-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .section-content {
+    padding: 1rem;
+  }
+  
+  .orphaned-card, .topic-item {
+    padding: 0.75rem;
+  }
+}
+
+/* For very small screens */
+@media (max-width: 480px) {
+  .info-grid, .stats-grid {
+    grid-template-columns: 1fr;
+  }
+} 
