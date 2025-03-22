@@ -166,34 +166,32 @@ const TopicButtonsModal = ({
                         <h4 className="subcategory-heading">{subCategory}</h4>
                       )}
                       
-                      <div className="topic-buttons-grid">
-                        {subTopics.map((topic) => (
-                          <div key={topic.id || topic.fullName} className="topic-button">
-                            <span 
-                              className="topic-name" 
-                              title={topic.parsedName || topic.displayName || topic.name}
+                      {subTopics.map((topic) => (
+                        <div key={topic.id || topic.fullName} className="topic-button">
+                          <span 
+                            className="topic-name" 
+                            title={topic.parsedName || topic.displayName || topic.name}
+                          >
+                            {topic.parsedName || topic.displayName || topic.name}
+                          </span>
+                          <div className="topic-actions">
+                            <button
+                              className="generate-button"
+                              onClick={() => setActivePopup(topic.id || topic.fullName)}
+                              title="Generate Cards"
                             >
-                              {topic.parsedName || topic.displayName || topic.name}
-                            </span>
-                            <div className="topic-actions">
-                              <button
-                                className="generate-button"
-                                onClick={() => setActivePopup(topic.id || topic.fullName)}
-                                title="Generate Cards"
-                              >
-                                <FaMagic />
-                              </button>
-                              <button
-                                className="delete-button"
-                                onClick={() => setTopicToDelete(topic)}
-                                title="Delete Topic"
-                              >
-                                <FaTrash />
-                              </button>
-                            </div>
+                              <FaMagic />
+                            </button>
+                            <button
+                              className="delete-button"
+                              onClick={() => setTopicToDelete(topic)}
+                              title="Delete Topic"
+                            >
+                              <FaTrash />
+                            </button>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>

@@ -1,4 +1,4 @@
-/* TopicButtonsModal.css - Modern fullscreen design */
+/* TopicButtonsModal.css - Full redesign to fix layout issues */
 
 /* Main Modal Overlay */
 .topic-buttons-modal-overlay {
@@ -13,26 +13,20 @@
   justify-content: center;
   align-items: center;
   z-index: 9999;
-  padding: 0;
-  overflow: hidden; /* Prevent any overflow in the overlay */
 }
 
 /* Main Modal Container */
 .topic-buttons-modal {
   background-color: white;
-  width: 90%; /* Further reduce width to prevent scrollbar */
+  width: 90%;
   height: 90vh;
-  max-height: 90vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   animation: modalEnter 0.3s ease-out;
-  overflow: hidden; /* Prevent overflow from content */
   border-radius: 10px;
   position: relative;
   box-sizing: border-box;
-  margin: 0 auto; /* Center the modal */
-  max-width: 1200px; /* Set absolute max-width */
 }
 
 @keyframes modalEnter {
@@ -56,8 +50,6 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
   box-sizing: border-box;
-  flex-wrap: wrap; /* Allow wrapping on smaller screens */
-  overflow: hidden; /* Prevent overflow */
 }
 
 .modal-header h2 {
@@ -117,10 +109,6 @@
   transform: translateY(-1px);
 }
 
-.button-icon {
-  font-size: 1.25rem;
-}
-
 /* Close Button */
 .close-modal-button {
   background: rgba(255, 255, 255, 0.1);
@@ -143,45 +131,28 @@
   transform: rotate(90deg);
 }
 
-/* Modal Content - Fix for vertical scrollbar */
+/* Modal Content - FIXED */
 .modal-content {
   flex: 1;
+  overflow-y: auto; /* Restore vertical scrolling here */
   padding: 1.5rem;
   background-color: #f8fafc;
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  overflow-y: hidden; /* Changed from auto to hidden to remove vertical scrollbar */
-  overflow-x: hidden;
 }
 
-/* Topic Categories - Make container scrollable instead of the modal content */
+/* Topic Categories Container - FIXED */
 .topic-buttons-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
   width: 100%;
-  max-width: 600px; /* Further reduced to eliminate need for scrolling */
-  margin: 0 auto;
   box-sizing: border-box;
-  overflow-y: auto; /* Add vertical scrolling here if needed */
-  overflow-x: hidden;
-  max-height: calc(90vh - 150px); /* Set max height to fit within modal without scrollbar */
-  padding-right: 10px; /* Add padding to prevent content touching scrollbar */
 }
 
+/* Topic Category Section */
 .topic-category-section {
   background: white;
   border-radius: 1rem;
   padding: 1.25rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
   width: 100%;
-  box-sizing: border-box;
-  overflow: hidden; /* Prevent overflow */
-  max-width: 100%; /* Ensure it stays within parent container */
 }
 
 .category-heading {
@@ -201,15 +172,9 @@
   font-size: 1.25rem;
 }
 
-/* Subcategory styles - Improved for better display */
+/* Subcategory styles */
 .subcategory-section {
   margin-bottom: 1.5rem;
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* Prevent content overflow */
-  max-width: 100%; /* Ensure it stays within parent container */
 }
 
 .subcategory-section:last-child {
@@ -225,25 +190,14 @@
 
 .subcategory-heading {
   color: #4a5568;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 500;
   margin: 0 0 1rem 0;
   padding-left: 0.5rem;
   border-left: 3px solid #4a5568;
 }
 
-/* Topic Grid - Changed back to vertical layout for subtopics */
-.topic-buttons-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  width: 100%;
-  box-sizing: border-box;
-  overflow: hidden; /* Prevent overflow */
-  max-width: 100%; /* Ensure it fits within parent */
-}
-
-/* Topic Button - Fixed for vertical layout */
+/* Topic Button Style - FIXED */
 .topic-button {
   background: white;
   border: 1px solid #e2e8f0;
@@ -253,11 +207,7 @@
   align-items: center;
   justify-content: space-between;
   transition: all 0.2s ease;
-  overflow: hidden;
-  width: 100%;
-  max-width: 100%; /* Ensure button doesn't overflow */
-  box-sizing: border-box;
-  margin-bottom: 0.5rem; /* Add space between buttons */
+  margin-bottom: 0.75rem;
 }
 
 .topic-button:last-child {
@@ -278,11 +228,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0; /* Allow text to shrink */
-  max-width: calc(100% - 5rem); /* Allow space for buttons */
 }
 
-/* Topic Actions - Make sure they don't force width */
+/* Topic Actions */
 .topic-actions {
   display: flex;
   gap: 0.5rem;
@@ -333,7 +281,7 @@
   font-size: 1.1rem;
 }
 
-/* Mobile Responsive - Improved for better small screen display */
+/* Mobile Responsive */
 @media (max-width: 768px) {
   .topic-buttons-modal-overlay {
     padding: 0;
@@ -343,7 +291,6 @@
     width: 100%;
     height: 100vh;
     border-radius: 0;
-    max-width: none; /* Remove max-width on mobile */
   }
 
   .modal-header {
@@ -364,19 +311,6 @@
   }
 
   .modal-content {
-    padding: 1rem;
-  }
-
-  .topic-buttons-container {
-    width: 100%;
-    max-width: 100%; /* Use full width on mobile */
-  }
-
-  .topic-buttons-grid {
-    gap: 0.5rem;
-  }
-
-  .topic-category-section {
     padding: 1rem;
   }
 }
@@ -478,193 +412,26 @@
   transform: translateY(-1px);
 }
 
-/* Loading State */
-@keyframes spinner {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+/* Customize scrollbar to be more subtle */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
 }
 
-/* Popup styles */
-.topic-popup {
-  position: fixed;
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  padding: 1.5rem;
-  min-width: 320px;
-  max-width: 400px;
-  z-index: 9999;
-  animation: popupEnter 0.2s ease-out;
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-@keyframes popupEnter {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Coming soon popup styles */
-.coming-soon-popup {
-  text-align: center;
-  padding: 1.5rem;
-}
-
-.coming-soon-popup h4 {
-  margin: 0 0 1rem 0;
-  color: #1f2937;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.coming-soon-popup p {
-  margin: 0.75rem 0;
-  color: #4b5563;
-  line-height: 1.6;
-  font-size: 1.125rem;
-}
-
-.coming-soon-popup .fun-message {
-  color: #6b7280;
-  font-style: italic;
-  margin-top: 1rem;
-}
-
-.coming-soon-popup .popup-actions {
-  margin-top: 1.5rem;
-  display: flex;
-  justify-content: center;
-}
-
-.coming-soon-popup .confirm-button {
-  background-color: #fbbf24;
-  color: #1f2937;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.coming-soon-popup .confirm-button:hover {
-  background-color: #f59e0b;
-  transform: translateY(-1px);
-}
-
-/* Loading indicator */
-.loading-indicator {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2.5rem;
-  text-align: center;
-  color: #4b5563;
-}
-
-.loading-spinner {
-  border: 3px solid #e5e7eb;
-  border-top: 3px solid #3b82f6;
-  border-radius: 50%;
-  width: 2.5rem;
-  height: 2.5rem;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Loading State */
-.loading-spinner {
-  display: inline-block;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid currentColor;
-  border-radius: 50%;
-  margin-right: 0.5rem;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Mobile Responsive Styles */
-@media (max-width: 640px) {
-  .action-modal {
-    width: 95%;
-    margin: 1rem;
-  }
-
-  .action-modal-header {
-    padding: 1rem 1.5rem;
-  }
-
-  .action-modal-content {
-    padding: 1.5rem;
-  }
-
-  .action-modal-footer {
-    padding: 1rem 1.5rem;
-    flex-direction: column;
-  }
-
-  .action-modal-footer button {
-    width: 100%;
-  }
-}
-
-/* Customize scrollbar for topic buttons container to be more subtle */
-.topic-buttons-container::-webkit-scrollbar {
-  width: 6px; /* Thinner scrollbar */
-}
-
-.topic-buttons-container::-webkit-scrollbar-track {
-  background: transparent; /* Invisible track */
-}
-
-.topic-buttons-container::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15); /* Very subtle thumb */
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 10px;
 }
 
-.topic-buttons-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25); /* Slightly darker on hover */
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
 }
 
 /* For Firefox */
-.topic-buttons-container {
+.modal-content {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
-}
-
-/* Large Desktop Screens - Add back some space around the modal */
-@media (min-width: 1600px) {
-  .topic-buttons-modal-overlay {
-    padding: 0; /* Remove padding that might cause scrollbar */
-  }
-  
-  .topic-buttons-modal {
-    width: 85%; /* Reduced width on large screens */
-    height: 90vh;
-    border-radius: 1rem;
-    max-width: 1400px; /* Cap the maximum width */
-  }
-}
-
-/* Force all content to fit within container widths - improved */
-*, *::before, *::after {
-  max-width: 100%;
-  box-sizing: border-box;
 }
