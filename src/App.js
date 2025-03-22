@@ -1,4 +1,4 @@
-﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -12,6 +12,7 @@ import AICardGenerator from './components/AICardGenerator';
 import PrintModal from './components/PrintModal';
 import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
 import TopicListSyncManager from './components/TopicListSyncManager';
+import TopicListHome from './components/TopicListHome';
 import { 
   addVersionMetadata, 
   safeParseJSON, 
@@ -81,6 +82,7 @@ function App() {
   const [topicListSubject, setTopicListSubject] = useState(null);
   const [topicListExamBoard, setTopicListExamBoard] = useState("AQA");
   const [topicListExamType, setTopicListExamType] = useState("A-Level");
+  const [topicListLastUpdated, setTopicListLastUpdated] = useState(null);
 
   // Spaced repetition state
   const [currentBox, setCurrentBox] = useState(1);
@@ -1640,9 +1642,43 @@ function App() {
             </div>
           )}
           
-          {/* Topic List Modal */}
+          {/* Topic List Navigation */}
+          {topicListModalOpen && topicListSubject && (
+            <TopicListHome
+              subject={topicListSubject}
+              examBoard={topicListExamBoard}
+              examType={topicListExamType}
+              topics={userTopics[topicListSubject] || []}
+              lastUpdated={topicListLastUpdated}
+              onClose={() => setTopicListModalOpen(false)}
+              onViewTopics={() => {
+                // We'll use the existing TopicListSyncManager when they click View Topics
+                // This preserves the existing flow while adding our new entry point
+              }}
+              onGenerateTopics={() => {
+                // Open topic generator when they click this button
+                if (window.parent !== window) {
+                  window.parent.postMessage({
+                    type: "GENERATE_TOPICS",
+                    subject: topicListSubject,
+                    examBoard: topicListExamBoard,
+                    examType: topicListExamType
+                  }, "*");
+                } else {
+                  // Standalone mode - use the existing generator
+                  // This will need to be implemented
+                }
+              }}
+              onSaveTopicList={() => {
+                // Save current topic list to Knack
+                // Need to hook this up to existing functionality
+              }}
+            />
+          )}
+
+          {/* Keep original TopicListSyncManager but don't show it by default */}
           <TopicListSyncManager
-            isOpen={topicListModalOpen && topicListSubject}
+            isOpen={false} // We'll control this from the TopicListHome component
             subject={topicListSubject}
             examBoard={topicListExamBoard}
             examType={topicListExamType}
