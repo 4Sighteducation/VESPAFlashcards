@@ -1,29 +1,37 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FaTimes, FaPlus, FaStar, FaTrash, FaMagic } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaStar, FaTrash, FaMagic, FaSave } from 'react-icons/fa';
 import './TopicButtonsModal.css';
 
 /**
- * TopicButtonsModal component - Displays topics as buttons with actions
+ * TopicButtonsModal - Displays a modal with buttons for each topic
  * 
- * This component allows users to see and interact with their topics in a visually
- * appealing way. Each topic is displayed as a button with options to generate
- * cards directly or delete the topic.
+ * This component allows users to view all their topics organized by category
+ * and perform actions like generating cards directly or deleting topics.
  */
-const TopicButtonsModal = ({ isOpen, onClose, topics = [], onGenerateCards, onDeleteTopic, onAddTopic }) => {
+const TopicButtonsModal = ({
+  topics = [],
+  subject,
+  examBoard,
+  examType,
+  onClose,
+  onGenerateCards,
+  onDeleteTopic,
+  onAddTopic,
+  onSaveTopics
+}) => {
   const [activePopup, setActivePopup] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPrioritizePopup, setShowPrioritizePopup] = useState(false);
   const [topicToDelete, setTopicToDelete] = useState(null);
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
 
   // Close all popups when the main modal closes
   useEffect(() => {
-    if (!isOpen) {
-      setActivePopup(null);
-      setShowPrioritizePopup(false);
-      setTopicToDelete(null);
-    }
-  }, [isOpen]);
+    setActivePopup(null);
+    setShowPrioritizePopup(false);
+    setTopicToDelete(null);
+  }, []);
 
   // Group topics by category
   const groupedTopics = topics.reduce((acc, topic) => {
@@ -51,16 +59,22 @@ const TopicButtonsModal = ({ isOpen, onClose, topics = [], onGenerateCards, onDe
     if (topicToDelete) {
       await onDeleteTopic(topicToDelete);
       setTopicToDelete(null);
+      setUnsavedChanges(true);
     }
   }, [topicToDelete, onDeleteTopic]);
 
-  if (!isOpen) return null;
+  const handleSaveTopics = useCallback(() => {
+    if (onSaveTopics) {
+      onSaveTopics();
+      setUnsavedChanges(false);
+    }
+  }, [onSaveTopics]);
 
   const modalContent = (
     <div className="topic-buttons-modal-overlay" onClick={() => onClose()}>
       <div className="topic-buttons-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Topics</h2>
+          <h2>Topics for {subject} ({examBoard} {examType})</h2>
           <div className="modal-actions">
             <button className="add-topic-button" onClick={onAddTopic}>
               <FaPlus /> Add Topic
@@ -71,6 +85,14 @@ const TopicButtonsModal = ({ isOpen, onClose, topics = [], onGenerateCards, onDe
             >
               <FaStar /> Prioritize
             </button>
+            {unsavedChanges && (
+              <button 
+                className="save-topics-button" 
+                onClick={handleSaveTopics}
+              >
+                <FaSave /> Save Changes
+              </button>
+            )}
             <button className="close-modal-button" onClick={onClose}>
               <FaTimes />
             </button>
@@ -79,38 +101,38 @@ const TopicButtonsModal = ({ isOpen, onClose, topics = [], onGenerateCards, onDe
 
         <div className="modal-content">
           <div className="topic-buttons-container">
-            {Object.entries(groupedTopics).map(([category, categoryTopics]) => (
-              <div key={category} className="topic-category-section">
-                <h3 className="category-heading">{category}</h3>
-                <div className="topic-buttons-grid">
-                  {categoryTopics.map((topic) => (
-                    <div key={topic.id} className="topic-button">
-                      <span className="topic-name">{topic.name}</span>
-                      <div className="topic-actions">
-                        <button
-                          className="generate-button"
-                          onClick={() => setActivePopup(topic.id)}
-                          title="Generate Cards"
-                        >
-                          <FaMagic />
-                        </button>
-                        <button
-                          className="delete-button"
-                          onClick={() => setTopicToDelete(topic)}
-                          title="Delete Topic"
-                        >
-                          <FaTrash />
-                        </button>
+            {Object.keys(groupedTopics).length > 0 ? (
+              Object.entries(groupedTopics).map(([category, categoryTopics]) => (
+                <div key={category} className="topic-category-section">
+                  <h3 className="category-heading">{category}</h3>
+                  <div className="topic-buttons-grid">
+                    {categoryTopics.map((topic) => (
+                      <div key={topic.id || topic.fullName} className="topic-button">
+                        <span className="topic-name">{topic.displayName || topic.name}</span>
+                        <div className="topic-actions">
+                          <button
+                            className="generate-button"
+                            onClick={() => setActivePopup(topic.id || topic.fullName)}
+                            title="Generate Cards"
+                          >
+                            <FaMagic />
+                          </button>
+                          <button
+                            className="delete-button"
+                            onClick={() => setTopicToDelete(topic)}
+                            title="Delete Topic"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-            
-            {Object.keys(groupedTopics).length === 0 && (
+              ))
+            ) : (
               <div className="no-topics-message">
-                <p>No topics found</p>
+                <p>No topics available for this subject.</p>
                 <p>Click "Add Topic" to create your first topic</p>
               </div>
             )}
@@ -138,7 +160,12 @@ const TopicButtonsModal = ({ isOpen, onClose, topics = [], onGenerateCards, onDe
               </button>
               <button
                 className="action-button"
-                onClick={() => handleGenerateCards(topics.find(t => t.id === activePopup))}
+                onClick={() => {
+                  const selectedTopic = topics.find(t => (t.id || t.fullName) === activePopup);
+                  if (selectedTopic) {
+                    handleGenerateCards(selectedTopic);
+                  }
+                }}
                 disabled={isGenerating}
               >
                 {isGenerating ? 'Generating...' : 'Generate Cards'}

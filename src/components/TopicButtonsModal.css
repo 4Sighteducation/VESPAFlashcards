@@ -387,6 +387,12 @@
   transform: translateY(-1px);
 }
 
+/* Loading State */
+@keyframes spinner {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Popup styles */
 .topic-popup {
   position: fixed;
