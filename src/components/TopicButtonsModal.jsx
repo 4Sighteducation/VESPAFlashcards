@@ -44,25 +44,24 @@ const TopicButtonsModal = ({
   const popupRef = useRef(null);
   const prioritizeButtonRef = useRef(null);
 
-  // Create portal container for popups
+  // Create portal container for modals
   useEffect(() => {
     const portalContainer = document.createElement('div');
-    portalContainer.id = 'popup-portal';
+    portalContainer.id = 'modal-portal';
     document.body.appendChild(portalContainer);
     return () => {
       document.body.removeChild(portalContainer);
     };
   }, []);
 
-  // Handle click outside for all popups
+  // Handle click outside for all modals
   useEffect(() => {
     const handleClickOutside = (event) => {
       if ((showPrioritizePopup && 
           !event.target.closest('.prioritize-button') && 
           !event.target.closest('.coming-soon-popup')) ||
           (activePopup && 
-          !event.target.closest('.topic-button') && 
-          !event.target.closest('.topic-popup'))) {
+          !event.target.closest('.action-modal'))) {
         setShowPrioritizePopup(false);
         setActivePopup(null);
       }
@@ -74,7 +73,7 @@ const TopicButtonsModal = ({
     };
   }, [showPrioritizePopup, activePopup]);
 
-  // Handle escape key for all popups
+  // Handle escape key for all modals
   useEffect(() => {
     const handleEscapeKey = (event) => {
       if (event.key === 'Escape') {
@@ -183,18 +182,12 @@ const TopicButtonsModal = ({
   // Handle generating cards for a topic
   const handleGenerateCards = (topic, event) => {
     event.stopPropagation();
-    const buttonElement = event.currentTarget;
-    const position = calculatePopupPosition(buttonElement, 'generate');
-    setPopupPosition(position);
     setActivePopup({ type: 'generate', topic });
   };
   
   // Handle deleting a topic
   const handleDeleteTopic = (topic, event) => {
     event.stopPropagation();
-    const buttonElement = event.currentTarget;
-    const position = calculatePopupPosition(buttonElement, 'delete');
-    setPopupPosition(position);
     setTopicToDelete(topic);
     setActivePopup({ type: 'delete', topic });
   };
@@ -313,67 +306,66 @@ const TopicButtonsModal = ({
     );
   };
   
-  // Render popup content
-  const renderPopupContent = () => {
+  // Render action modal content
+  const renderActionModal = () => {
     if (!activePopup) return null;
 
+    const isGenerateModal = activePopup.type === 'generate';
+    const modalClass = isGenerateModal ? 'generate-modal' : 'delete-modal';
+
     const content = (
-      <div 
-        className="topic-popup"
-        style={{
-          top: popupPosition.top,
-          left: popupPosition.left
-        }}
-      >
-        {activePopup.type === 'generate' ? (
-          <div className="popup-content">
-            <h4>Generate Flashcards</h4>
-            <p>Generate flashcards for "{activePopup.topic.displayName}"?</p>
-            <div className="popup-actions">
-              <button 
-                onClick={() => {
+      <div className="action-modal-overlay">
+        <div className={`action-modal ${modalClass}`}>
+          <div className="action-modal-header">
+            <h3>
+              {isGenerateModal ? 'Generate Flashcards' : 'Delete Topic'}
+            </h3>
+          </div>
+          
+          <div className="action-modal-content">
+            <p>
+              {isGenerateModal 
+                ? 'Are you sure you want to generate flashcards for this topic?' 
+                : 'Are you sure you want to delete this topic? This action cannot be undone.'}
+            </p>
+            
+            <div className="topic-name">
+              {activePopup.topic.displayName}
+            </div>
+            
+            {isGenerateModal && (
+              <p className="help-text">
+                This will create a new set of flashcards based on the curriculum content for this topic.
+              </p>
+            )}
+          </div>
+          
+          <div className="action-modal-footer">
+            <button 
+              className="cancel-button"
+              onClick={() => setActivePopup(null)}
+            >
+              Cancel
+            </button>
+            <button 
+              className="action-button"
+              onClick={() => {
+                if (isGenerateModal) {
                   onGenerateCards(activePopup.topic);
-                  setActivePopup(null);
-                }}
-                className="confirm-button"
-              >
-                Generate
-              </button>
-              <button 
-                onClick={() => setActivePopup(null)}
-                className="cancel-button"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="popup-content">
-            <h4>Delete Topic</h4>
-            <p>Are you sure you want to delete "{activePopup.topic.displayName}"?</p>
-            <div className="popup-actions">
-              <button 
-                onClick={() => {
+                } else {
                   onDeleteTopic(activePopup.topic);
-                  setActivePopup(null);
-                }}
-                className="delete-button"
-              >
-                Delete
-              </button>
-              <button 
-                onClick={() => setActivePopup(null)}
-                className="cancel-button"
-              >
-                Cancel
-              </button>
-            </div>
+                }
+                setActivePopup(null);
+              }}
+            >
+              {isGenerateModal ? 'Generate Cards' : 'Delete Topic'}
+            </button>
           </div>
-        )}
+        </div>
       </div>
     );
 
-    return createPortal(content, document.getElementById('popup-portal'));
+    return createPortal(content, document.getElementById('modal-portal'));
   };
   
   // Render prioritize popup
@@ -491,7 +483,7 @@ const TopicButtonsModal = ({
         </div>
       </div>
       {renderAddTopicModal()}
-      {renderPopupContent()}
+      {renderActionModal()}
       {renderPrioritizePopup()}
     </div>
   );

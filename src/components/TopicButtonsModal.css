@@ -398,3 +398,194 @@
     margin: 1rem;
   }
 }
+
+/* Action Modals (Generate Cards & Delete) */
+.action-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.action-modal {
+  background: white;
+  border-radius: 1rem;
+  width: 90%;
+  max-width: 600px;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.action-modal-header {
+  background-color: #f8fafc;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.action-modal-header h3 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.action-modal-content {
+  padding: 2rem;
+}
+
+.action-modal-content p {
+  margin: 0 0 1.5rem;
+  color: #475569;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.action-modal-content .topic-name {
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 1.25rem;
+  padding: 1rem 1.5rem;
+  background-color: #f1f5f9;
+  border-radius: 0.75rem;
+  margin: 1rem 0;
+  border-left: 4px solid #3b82f6;
+}
+
+.action-modal-footer {
+  padding: 1.5rem 2rem;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* Generate Cards Modal Specific Styles */
+.generate-modal .action-modal-header {
+  border-top: 6px solid #3b82f6;
+}
+
+.generate-modal .action-button {
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.generate-modal .action-button:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.generate-modal .cancel-button {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.generate-modal .cancel-button:hover {
+  background-color: #e2e8f0;
+}
+
+/* Delete Modal Specific Styles */
+.delete-modal .action-modal-header {
+  border-top: 6px solid #ef4444;
+}
+
+.delete-modal .topic-name {
+  border-left-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.delete-modal .action-button {
+  background-color: #ef4444;
+  color: white;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-modal .action-button:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+.delete-modal .cancel-button {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.delete-modal .cancel-button:hover {
+  background-color: #e2e8f0;
+}
+
+/* Loading State */
+.loading-spinner {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid currentColor;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 640px) {
+  .action-modal {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .action-modal-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .action-modal-content {
+    padding: 1.5rem;
+  }
+
+  .action-modal-footer {
+    padding: 1rem 1.5rem;
+    flex-direction: column;
+  }
+
+  .action-modal-footer button {
+    width: 100%;
+  }
+}
