@@ -100,14 +100,132 @@ window.addEventListener('message', function(event) {
             return;
           }
           
-          // Create a merged data object using the existing data as a base
+          // ENHANCED FIELD PRESERVATION LOGIC
+          console.log(`[${new Date().toISOString()}] CRITICAL: Using enhanced field preservation for topic list save`);
+          
+          // Extract the original topic lists if they exist
+          let existingTopicLists = [];
+          let existingTopicMetadata = [];
+          
+          try {
+            if (existingData.field_3011) {
+              existingTopicLists = JSON.parse(existingData.field_3011 || '[]');
+              console.log(`[${new Date().toISOString()}] Found ${existingTopicLists.length} existing topic lists to preserve`);
+            }
+            
+            if (existingData.field_3030) {
+              existingTopicMetadata = JSON.parse(existingData.field_3030 || '[]');
+            }
+          } catch (error) {
+            console.error(`[${new Date().toISOString()}] Error parsing existing topic data:`, error);
+          }
+          
+          // Process new topic lists - MERGE rather than REPLACE
+          let mergedTopicLists = [];
+          let newTopicLists = [];
+          
+          try {
+            // Get the new topic lists from the message
+            if (messageData.explicitFields?.field_3011) {
+              // Use explicit fields if provided
+              if (typeof messageData.explicitFields.field_3011 === 'string') {
+                newTopicLists = JSON.parse(messageData.explicitFields.field_3011);
+              } else {
+                newTopicLists = messageData.explicitFields.field_3011;
+              }
+            } else if (messageData.topicLists) {
+              // Otherwise use the topicLists property
+              newTopicLists = Array.isArray(messageData.topicLists) ? 
+                messageData.topicLists : 
+                JSON.parse(messageData.topicLists || '[]');
+            }
+            
+            console.log(`[${new Date().toISOString()}] Processing ${newTopicLists.length} new topic lists for merge`);
+            
+            // If there are existing topic lists, merge with the new ones
+            if (existingTopicLists.length > 0 && newTopicLists.length > 0) {
+              // Create a map of existing lists by subject+exam combination for easy lookup
+              const existingListsMap = {};
+              
+              existingTopicLists.forEach(list => {
+                // Create a unique key for each list based on subject/exam/type
+                const key = `${list.subject || ''}_${list.examBoard || ''}_${list.examType || ''}`.toLowerCase();
+                existingListsMap[key] = list;
+              });
+              
+              // Process each new list
+              newTopicLists.forEach(newList => {
+                const key = `${newList.subject || ''}_${newList.examBoard || ''}_${newList.examType || ''}`.toLowerCase();
+                
+                if (existingListsMap[key]) {
+                  // List exists - merge topics rather than replace
+                  const existingList = existingListsMap[key];
+                  
+                  // Create a map of existing topics for O(1) lookup
+                  const existingTopicsMap = {};
+                  existingList.topics.forEach(topic => {
+                    // Create key based on either name or topic property
+                    const topicName = topic.name || topic.topic || '';
+                    existingTopicsMap[topicName.toLowerCase()] = topic;
+                  });
+                  
+                  // Create merged topics array
+                  const mergedTopics = [...existingList.topics]; // Start with existing topics
+                  
+                  // Add any new topics not already in the list
+                  newList.topics.forEach(newTopic => {
+                    const topicName = newTopic.name || newTopic.topic || '';
+                    if (!existingTopicsMap[topicName.toLowerCase()]) {
+                      mergedTopics.push(newTopic);
+                    }
+                  });
+                  
+                  // Update the list with merged topics
+                  existingListsMap[key] = {
+                    ...existingList,
+                    topics: mergedTopics,
+                    lastUpdated: new Date().toISOString()
+                  };
+                  
+                  console.log(`[${new Date().toISOString()}] Merged topic list for ${key} - now has ${mergedTopics.length} topics`);
+                } else {
+                  // New list - add it directly
+                  existingListsMap[key] = newList;
+                  console.log(`[${new Date().toISOString()}] Added new topic list for ${key} with ${newList.topics?.length || 0} topics`);
+                }
+              });
+              
+              // Convert the map back to an array
+              mergedTopicLists = Object.values(existingListsMap);
+              
+              console.log(`[${new Date().toISOString()}] Final merged topic list count: ${mergedTopicLists.length} lists`);
+              
+              // Add detailed logging of the first list as a sample
+              if (mergedTopicLists.length > 0) {
+                console.log(`[${new Date().toISOString()}] Sample merged list:`, 
+                  mergedTopicLists[0].subject,
+                  mergedTopicLists[0].examBoard,
+                  mergedTopicLists[0].topics?.length || 0, 'topics');
+              }
+            } else {
+              // If no existing lists, just use the new ones
+              mergedTopicLists = newTopicLists;
+              console.log(`[${new Date().toISOString()}] No existing topic lists, using ${mergedTopicLists.length} new lists`);
+            }
+          } catch (error) {
+            console.error(`[${new Date().toISOString()}] Error merging topic lists:`, error);
+            // Use existing lists as fallback
+            mergedTopicLists = existingTopicLists;
+          }
+          
+          // Create the final merged data object
           const mergedData = {
             // Keep all existing fields from the complete data
             ...existingData,
             
-            // Update the fields we want to save
-            field_3011: messageData.explicitFields?.field_3011 || JSON.stringify(messageData.topicLists || []), // Topic Lists
-            field_3030: messageData.explicitFields?.field_3030 || JSON.stringify(messageData.topicMetadata || []), // Topic Metadata
+            // Use our carefully merged topic lists
+            field_3011: JSON.stringify(mergedTopicLists || []), // Topic Lists
+            field_3030: messageData.explicitFields?.field_3030 || JSON.stringify(messageData.topicMetadata || existingTopicMetadata || []), // Topic Metadata
             field_2957: new Date().toISOString(), // Last saved timestamp
             
             // Preserve card data if available in the message

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { FaTimes, FaList, FaCalendarAlt, FaBook } from 'react-icons/fa';
+import { FaTimes, FaList, FaCalendarAlt, FaBook, FaPlusCircle, FaRedo, FaClipboardList } from 'react-icons/fa';
 import './TopicListViewModal.css';
 
 /**
@@ -12,9 +12,17 @@ import './TopicListViewModal.css';
  */
 const TopicListViewModal = ({
   isOpen,
+  subject,
+  examBoard,
+  examType,
+  topics = [],
+  lastUpdated,
   topicLists = [],
   onClose,
-  onSelectTopicList
+  onSelectTopicList,
+  onSelectTopic,
+  onGenerateTopics,
+  onViewAllTopics
 }) => {
   const [groupedLists, setGroupedLists] = useState({});
 
@@ -74,37 +82,74 @@ const TopicListViewModal = ({
           {Object.keys(groupedLists).length === 0 ? (
             <div className="no-topic-lists">
               <p>No topic lists found. Generate topics to create your first list.</p>
+              
+              {/* New button for generating topics when none exist */}
+              <button 
+                className="generate-topics-button"
+                onClick={onGenerateTopics}
+              >
+                <FaPlusCircle /> Generate Topics
+              </button>
+              
+              {/* Show subject info if available */}
+              {subject && (
+                <div className="subject-info">
+                  <p>Subject: <strong>{subject}</strong></p>
+                  <p>Exam Board: <strong>{examBoard}</strong></p>
+                  <p>Exam Type: <strong>{examType}</strong></p>
+                </div>
+              )}
             </div>
           ) : (
-            Object.entries(groupedLists).map(([subject, lists]) => (
-              <div key={subject} className="subject-group">
-                <h3 className="subject-header">{subject}</h3>
-                <div className="topic-lists">
-                  {lists.map((list) => (
-                    <div 
-                      key={list.id} 
-                      className="topic-list-item"
-                      onClick={() => onSelectTopicList(list)}
-                    >
-                      <div className="topic-list-info">
-                        <div className="topic-list-header">
-                          <h4 className="topic-list-subject">
-                            <FaBook className="subject-icon" /> {list.subject}
-                          </h4>
-                          <span className="topic-count">{list.topics.length} topics</span>
-                        </div>
-                        <div className="topic-list-meta">
-                          <span className="exam-info">{list.examBoard} {list.examType}</span>
-                          <span className="timestamp">
-                            <FaCalendarAlt className="calendar-icon" /> {formatDate(list.lastUpdated)}
-                          </span>
+            <>
+              {/* Action buttons when lists exist */}
+              <div className="topic-list-actions">
+                <button 
+                  className="action-button regenerate-button"
+                  onClick={onGenerateTopics}
+                >
+                  <FaRedo /> Regenerate Topics
+                </button>
+                
+                <button 
+                  className="action-button view-topics-button"
+                  onClick={onViewAllTopics}
+                >
+                  <FaClipboardList /> View All Topics
+                </button>
+              </div>
+              
+              {/* Render the grouped topic lists */}
+              {Object.entries(groupedLists).map(([subject, lists]) => (
+                <div key={subject} className="subject-group">
+                  <h3 className="subject-header">{subject}</h3>
+                  <div className="topic-lists">
+                    {lists.map((list) => (
+                      <div 
+                        key={list.id} 
+                        className="topic-list-item"
+                        onClick={() => onSelectTopicList(list)}
+                      >
+                        <div className="topic-list-info">
+                          <div className="topic-list-header">
+                            <h4 className="topic-list-subject">
+                              <FaBook className="subject-icon" /> {list.subject}
+                            </h4>
+                            <span className="topic-count">{list.topics.length} topics</span>
+                          </div>
+                          <div className="topic-list-meta">
+                            <span className="exam-info">{list.examBoard} {list.examType}</span>
+                            <span className="timestamp">
+                              <FaCalendarAlt className="calendar-icon" /> {formatDate(list.lastUpdated)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </>
           )}
         </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
-import { saveTopicLists, loadTopicLists, safeParseJSON } from '../services/TopicPersistenceService';
+import { saveTopicList, loadTopicLists, safeParseJSON } from '../services/TopicListService';
 
 // Constants for question types and exam boards
 const QUESTION_TYPES = [

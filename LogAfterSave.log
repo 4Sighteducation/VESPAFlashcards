@@ -1,0 +1,526 @@
+vespa-academy#flashcards/:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+main.js?1742657480293&_=1742657480294:112 VESPA Config initialized: Object
+main.js?1742657480293&_=1742657480294:135 Document ready - checking if flashcard app needs initialization
+main.js?1742657480293&_=1742657480294:125 VESPA Integration script loaded successfully
+index.js?v=1:76 Developed byKsense Technology Group LLCPRODUCTION MODE - Branch: mainKSENSE DEBUG: INJECTED URL: https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1
+index.js?v=1:90 Object
+KnackJavascript4.js:104 Flashcard app: Scene rendered: scene_1206
+KnackJavascript4.js:223 Initializing Flashcard React app
+KnackJavascript4.js:230 Flashcard app: User is authenticated
+KnackJavascript4.js:237 Flashcard app: Basic user info: Object
+KnackJavascript4.js:195 Flashcard app: Getting complete user data for: 630510eb3c91500021a8fad2
+KnackJavascript4.js:207 Flashcard app: Complete user data: Object
+KnackJavascript4.js:188 CONNECTION FIELD IDs
+KnackJavascript4.js:189 {
+  "emailId": "630510eb3c91500021a8fad2",
+  "schoolId": null,
+  "tutorId": null,
+  "roleId": null
+}
+KnackJavascript4.js:277 Flashcard app: First selector failed, trying alternatives
+KnackJavascript4.js:283 Flashcard app: No rich text field found, looking for the view
+KnackJavascript4.js:287 Flashcard app: View found, creating container
+App.js:1395 [Init] Sent ready message to parent
+KnackJavascript4.js:345 Flashcard app [2025-03-22T15:31:21.686Z]: Message from React app: APP_READY
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-22T15:31:21.686Z",
+  "hasData": "no"
+}
+KnackJavascript4.js:363 Flashcard app: React app is ready, sending user info (first time)
+KnackJavascript4.js:491 Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+KnackJavascript4.js:517 Flashcard app: User data search response: Object
+KnackJavascript4.js:522 Flashcard app: Found existing user data: Object
+KnackJavascript4.js:396 Flashcard app: Sent user info to React app
+App.js:1191 [Message Handler 2025-03-22T15:31:22.190Z] From parent: KNACK_USER_INFO
+App.js:1205 [User Info] First-time processing of user data
+App.js:1261 [User Info] Stored recordId: 67ded6fcde1bee02ed028955
+App.js:1288 [User Info] Loaded topic lists from Knack: 0
+App.js:1294 [User Info] Loaded topic metadata from Knack: 0
+App.js:1298 [User Info] Successfully processed user data from Knack
+App.js:1314 [User Info] Sending AUTH_CONFIRMED message
+KnackJavascript4.js:345 Flashcard app [2025-03-22T15:31:22.195Z]: Message from React app: AUTH_CONFIRMED
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "AUTH_CONFIRMED",
+  "timestamp": "2025-03-22T15:31:22.195Z",
+  "hasData": "no"
+}
+KnackJavascript4.js:402 Flashcard app: Authentication confirmed by React app
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+App.js:1395 [Init] Sent ready message to parent
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+KnackJavascript4.js:345 Flashcard app [2025-03-22T15:31:22.206Z]: Message from React app: APP_READY
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-22T15:31:22.206Z",
+  "hasData": "no"
+}
+KnackJavascript4.js:357 Flashcard app: Ignoring duplicate APP_READY message
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+TopicListSyncManager.jsx:68 Loading topic lists for user ID: 630510eb3c91500021a8fad2
+TopicListService.js:26 [TopicListService] Loading topic lists
+TopicListService.js:27 {
+  "userId": "630510eb3c91500021a8fad2",
+  "subject": "Physical Education (PE)",
+  "examBoard": "AQA",
+  "examType": "A-Level"
+}
+TopicListService.js:26 [TopicListService] Looking up record ID for user
+TopicListService.js:27 {
+  "userId": "630510eb3c91500021a8fad2"
+}
+TopicListSyncManager.jsx:68 Loading topic lists for user ID: 630510eb3c91500021a8fad2
+TopicListService.js:26 [TopicListService] Loading topic lists
+TopicListService.js:27 {
+  "userId": "630510eb3c91500021a8fad2",
+  "subject": "Physical Education (PE)",
+  "examBoard": "AQA",
+  "examType": "A-Level"
+}
+TopicListService.js:26 [TopicListService] Looking up record ID for user
+TopicListService.js:27 {
+  "userId": "630510eb3c91500021a8fad2"
+}
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+TopicListService.js:26 [TopicListService] Found record ID
+TopicListService.js:27 {
+  "recordId": "67ded6fcde1bee02ed028955"
+}
+TopicListService.js:26 [TopicListService] Fetching user data
+TopicListService.js:27 {
+  "recordId": "67ded6fcde1bee02ed028955"
+}
+TopicListService.js:26 [TopicListService] Found record ID
+TopicListService.js:27 {
+  "recordId": "67ded6fcde1bee02ed028955"
+}
+TopicListService.js:26 [TopicListService] Fetching user data
+TopicListService.js:27 {
+  "recordId": "67ded6fcde1bee02ed028955"
+}
+TopicListService.js:26 [TopicListService] User data fetched successfully
+TopicListService.js:27 {
+  "recordId": "67ded6fcde1bee02ed028955"
+}
+TopicListSyncManager.jsx:89 No topic lists found in user data
+TopicListService.js:26 [TopicListService] User data fetched successfully
+TopicListService.js:27 {
+  "recordId": "67ded6fcde1bee02ed028955"
+}
+TopicListSyncManager.jsx:89 No topic lists found in user data
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+App.js:1168 Auto-saving data...
+App.js:241 [Save] Starting save operation...
+App.js:245 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-22T15:32:22.292Z
+DataUtils.js:373 Data Stats: Object
+App.js:226 Saved data to localStorage with versioning and backup
+App.js:250 [Save] Preparing data for Knack integration
+App.js:307 [Save] Sending data to Knack (5 cards, record ID: 67ded6fcde1bee02ed028955)
+App.js:318 [Save] Message sent to parent window
+KnackJavascript4.js:345 Flashcard app [2025-03-22T15:32:22.304Z]: Message from React app: SAVE_DATA
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-22T15:32:22.305Z",
+  "hasData": "yes"
+}
+KnackJavascript4.js:410 Flashcard app [2025-03-22T15:32:22.305Z]: Saving data from React app: Object
+KnackJavascript4.js:188 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4.js:189 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-22T15:32:22.305Z"
+}
+KnackJavascript4.js:1089 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+KnackJavascript4.js:188 SAVING DATA WITH RECORD ID
+KnackJavascript4.js:189 "67ded6fcde1bee02ed028955"
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+KnackJavascript4.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+KnackJavascript4.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+KnackJavascript4.js:188 SAVING TO KNACK: DATA STATS
+KnackJavascript4.js:189 {
+  "cardsCount": 5,
+  "colorCount": 1,
+  "spacedRepCount": 5
+}
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67ded6fcde1bee02ed028955
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67ded6fcde1bee02ed028955",
+  "timestamp": "2025-03-22T15:32:24.000Z"
+}
+App.js:1191 [Message Handler 2025-03-22T15:32:24.002Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+App.js:1168 Auto-saving data...
+App.js:241 [Save] Starting save operation...
+App.js:245 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-22T15:33:22.300Z
+DataUtils.js:373 Data Stats: Object
+App.js:226 Saved data to localStorage with versioning and backup
+App.js:250 [Save] Preparing data for Knack integration
+App.js:307 [Save] Sending data to Knack (5 cards, record ID: 67ded6fcde1bee02ed028955)
+App.js:318 [Save] Message sent to parent window
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+KnackJavascript4.js:345 Flashcard app [2025-03-22T15:33:22.304Z]: Message from React app: SAVE_DATA
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-22T15:33:22.304Z",
+  "hasData": "yes"
+}
+KnackJavascript4.js:410 Flashcard app [2025-03-22T15:33:22.304Z]: Saving data from React app: Object
+KnackJavascript4.js:188 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4.js:189 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-22T15:33:22.304Z"
+}
+KnackJavascript4.js:1089 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+KnackJavascript4.js:188 SAVING DATA WITH RECORD ID
+KnackJavascript4.js:189 "67ded6fcde1bee02ed028955"
+KnackJavascript4.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+KnackJavascript4.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+KnackJavascript4.js:188 SAVING TO KNACK: DATA STATS
+KnackJavascript4.js:189 {
+  "cardsCount": 5,
+  "colorCount": 1,
+  "spacedRepCount": 5
+}
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67ded6fcde1bee02ed028955
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67ded6fcde1bee02ed028955",
+  "timestamp": "2025-03-22T15:33:23.733Z"
+}
+App.js:1191 [Message Handler 2025-03-22T15:33:23.735Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+App.js:1168 Auto-saving data...
+App.js:241 [Save] Starting save operation...
+App.js:245 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-22T15:34:22.293Z
+DataUtils.js:373 Data Stats: Object
+App.js:226 Saved data to localStorage with versioning and backup
+App.js:250 [Save] Preparing data for Knack integration
+App.js:307 [Save] Sending data to Knack (5 cards, record ID: 67ded6fcde1bee02ed028955)
+App.js:318 [Save] Message sent to parent window
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+KnackJavascript4.js:345 Flashcard app [2025-03-22T15:34:22.297Z]: Message from React app: SAVE_DATA
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-22T15:34:22.298Z",
+  "hasData": "yes"
+}
+KnackJavascript4.js:410 Flashcard app [2025-03-22T15:34:22.298Z]: Saving data from React app: Object
+KnackJavascript4.js:188 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4.js:189 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-22T15:34:22.298Z"
+}
+KnackJavascript4.js:1089 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+KnackJavascript4.js:188 SAVING DATA WITH RECORD ID
+KnackJavascript4.js:189 "67ded6fcde1bee02ed028955"
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+KnackJavascript4.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+KnackJavascript4.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+KnackJavascript4.js:188 SAVING TO KNACK: DATA STATS
+KnackJavascript4.js:189 {
+  "cardsCount": 5,
+  "colorCount": 1,
+  "spacedRepCount": 5
+}
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67ded6fcde1bee02ed028955
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67ded6fcde1bee02ed028955",
+  "timestamp": "2025-03-22T15:34:23.706Z"
+}
+App.js:1191 [Message Handler 2025-03-22T15:34:23.707Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+App.js:1168 Auto-saving data...
+App.js:241 [Save] Starting save operation...
+App.js:245 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-22T15:35:22.298Z
+DataUtils.js:373 Data Stats: Object
+App.js:226 Saved data to localStorage with versioning and backup
+App.js:250 [Save] Preparing data for Knack integration
+App.js:307 [Save] Sending data to Knack (5 cards, record ID: 67ded6fcde1bee02ed028955)
+App.js:318 [Save] Message sent to parent window
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+KnackJavascript4.js:345 Flashcard app [2025-03-22T15:35:22.302Z]: Message from React app: SAVE_DATA
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-22T15:35:22.302Z",
+  "hasData": "yes"
+}
+KnackJavascript4.js:410 Flashcard app [2025-03-22T15:35:22.302Z]: Saving data from React app: Object
+KnackJavascript4.js:188 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4.js:189 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-22T15:35:22.302Z"
+}
+KnackJavascript4.js:1089 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+KnackJavascript4.js:188 SAVING DATA WITH RECORD ID
+KnackJavascript4.js:189 "67ded6fcde1bee02ed028955"
+KnackJavascript4.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+KnackJavascript4.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+KnackJavascript4.js:188 SAVING TO KNACK: DATA STATS
+KnackJavascript4.js:189 {
+  "cardsCount": 5,
+  "colorCount": 1,
+  "spacedRepCount": 5
+}
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67ded6fcde1bee02ed028955
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67ded6fcde1bee02ed028955",
+  "timestamp": "2025-03-22T15:35:23.853Z"
+}
+App.js:1191 [Message Handler 2025-03-22T15:35:23.855Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+App.js:1168 Auto-saving data...
+App.js:241 [Save] Starting save operation...
+App.js:245 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-22T15:36:22.210Z
+DataUtils.js:373 Data Stats: Object
+App.js:226 Saved data to localStorage with versioning and backup
+App.js:250 [Save] Preparing data for Knack integration
+App.js:307 [Save] Sending data to Knack (5 cards, record ID: 67ded6fcde1bee02ed028955)
+App.js:318 [Save] Message sent to parent window
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+KnackJavascript4.js:345 Flashcard app [2025-03-22T15:36:22.215Z]: Message from React app: SAVE_DATA
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-22T15:36:22.215Z",
+  "hasData": "yes"
+}
+KnackJavascript4.js:410 Flashcard app [2025-03-22T15:36:22.215Z]: Saving data from React app: Object
+KnackJavascript4.js:188 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4.js:189 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-22T15:36:22.215Z"
+}
+KnackJavascript4.js:1089 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+KnackJavascript4.js:188 SAVING DATA WITH RECORD ID
+KnackJavascript4.js:189 "67ded6fcde1bee02ed028955"
+KnackJavascript4.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+KnackJavascript4.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+KnackJavascript4.js:188 SAVING TO KNACK: DATA STATS
+KnackJavascript4.js:189 {
+  "cardsCount": 5,
+  "colorCount": 1,
+  "spacedRepCount": 5
+}
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67ded6fcde1bee02ed028955
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67ded6fcde1bee02ed028955",
+  "timestamp": "2025-03-22T15:36:22.728Z"
+}
+App.js:1191 [Message Handler 2025-03-22T15:36:22.729Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+App.js:241 [Save] Starting save operation...
+App.js:245 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-22T15:36:36.209Z
+DataUtils.js:373 Data Stats: Object
+App.js:226 Saved data to localStorage with versioning and backup
+App.js:250 [Save] Preparing data for Knack integration
+App.js:307 [Save] Sending data to Knack (5 cards, record ID: 67ded6fcde1bee02ed028955)
+App.js:318 [Save] Message sent to parent window
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+KnackJavascript4.js:345 Flashcard app [2025-03-22T15:36:36.213Z]: Message from React app: SAVE_DATA
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-22T15:36:36.214Z",
+  "hasData": "yes"
+}
+KnackJavascript4.js:410 Flashcard app [2025-03-22T15:36:36.214Z]: Saving data from React app: Object
+KnackJavascript4.js:188 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4.js:189 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-22T15:36:36.214Z"
+}
+KnackJavascript4.js:1089 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+KnackJavascript4.js:188 SAVING DATA WITH RECORD ID
+KnackJavascript4.js:189 "67ded6fcde1bee02ed028955"
+KnackJavascript4.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+KnackJavascript4.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+KnackJavascript4.js:188 SAVING TO KNACK: DATA STATS
+KnackJavascript4.js:189 {
+  "cardsCount": 5,
+  "colorCount": 1,
+  "spacedRepCount": 5
+}
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67ded6fcde1bee02ed028955
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67ded6fcde1bee02ed028955",
+  "timestamp": "2025-03-22T15:36:37.301Z"
+}
+App.js:1191 [Message Handler 2025-03-22T15:36:37.301Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+FlashcardList.jsx:920 Subject color for Physical Education (PE): Object
+
+                
+          
+          
+          
+         Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+App.js:1168 Auto-saving data...
+App.js:241 [Save] Starting save operation...
+App.js:245 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-22T15:37:22.296Z
+DataUtils.js:373 Data Stats: {cards: 5, subjects: 1, version: '1.0'}
+App.js:226 Saved data to localStorage with versioning and backup
+App.js:250 [Save] Preparing data for Knack integration
+App.js:307 [Save] Sending data to Knack (5 cards, record ID: 67ded6fcde1bee02ed028955)
+App.js:318 [Save] Message sent to parent window
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
+KnackJavascript4.js:345 Flashcard app [2025-03-22T15:37:22.303Z]: Message from React app: SAVE_DATA
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-22T15:37:22.303Z",
+  "hasData": "yes"
+}
+KnackJavascript4.js:410 Flashcard app [2025-03-22T15:37:22.303Z]: Saving data from React app: {recordId: '67ded6fcde1bee02ed028955', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
+KnackJavascript4.js:188 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4.js:189 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-22T15:37:22.303Z"
+}
+KnackJavascript4.js:1089 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+KnackJavascript4.js:188 SAVING DATA WITH RECORD ID
+KnackJavascript4.js:189 "67ded6fcde1bee02ed028955"
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
+KnackJavascript4.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+KnackJavascript4.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+KnackJavascript4.js:188 SAVING TO KNACK: DATA STATS
+KnackJavascript4.js:189 {
+  "cardsCount": 5,
+  "colorCount": 1,
+  "spacedRepCount": 5
+}
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67ded6fcde1bee02ed028955
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67ded6fcde1bee02ed028955",
+  "timestamp": "2025-03-22T15:37:23.737Z"
+}
+App.js:1191 [Message Handler 2025-03-22T15:37:23.741Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
+App.js:1168 Auto-saving data...
+App.js:241 [Save] Starting save operation...
+App.js:245 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-22T15:38:22.208Z
+DataUtils.js:373 Data Stats: {cards: 5, subjects: 1, version: '1.0'}
+App.js:226 Saved data to localStorage with versioning and backup
+App.js:250 [Save] Preparing data for Knack integration
+App.js:307 [Save] Sending data to Knack (5 cards, record ID: 67ded6fcde1bee02ed028955)
+App.js:318 [Save] Message sent to parent window
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
+KnackJavascript4.js:345 Flashcard app [2025-03-22T15:38:22.211Z]: Message from React app: SAVE_DATA
+KnackJavascript4.js:188 MESSAGE RECEIVED
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
+KnackJavascript4.js:189 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-22T15:38:22.211Z",
+  "hasData": "yes"
+}
+KnackJavascript4.js:410 Flashcard app [2025-03-22T15:38:22.211Z]: Saving data from React app: {recordId: '67ded6fcde1bee02ed028955', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
+KnackJavascript4.js:188 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4.js:189 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-22T15:38:22.211Z"
+}
+KnackJavascript4.js:1089 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+KnackJavascript4.js:188 SAVING DATA WITH RECORD ID
+KnackJavascript4.js:189 "67ded6fcde1bee02ed028955"
+KnackJavascript4.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+KnackJavascript4.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+KnackJavascript4.js:188 SAVING TO KNACK: DATA STATS
+KnackJavascript4.js:189 {
+  "cardsCount": 5,
+  "colorCount": 1,
+  "spacedRepCount": 5
+}
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67ded6fcde1bee02ed028955
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67ded6fcde1bee02ed028955",
+  "timestamp": "2025-03-22T15:38:23.019Z"
+}
+App.js:1191 [Message Handler 2025-03-22T15:38:23.021Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
+FlashcardList.jsx:920 Subject color for Physical Education (PE): {subjectColor: '#000080', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: '#000080', firstCard: {…}}
