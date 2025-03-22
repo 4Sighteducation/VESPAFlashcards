@@ -1,6 +1,14 @@
-/* TopicButtonsModal.css - Full redesign to fix layout issues */
+/* TopicButtonsModal.css - Complete rebuild */
 
-/* Main Modal Overlay */
+/* Reset all styles within the modal to prevent inheritance issues */
+.reset-style-root * {
+  box-sizing: border-box;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Main Modal Overlay - Higher z-index to ensure it's above other elements */
 .topic-buttons-modal-overlay {
   position: fixed;
   top: 0;
@@ -12,62 +20,64 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 10000; /* Higher z-index to override parent modals */
+  padding: 0;
+  overflow: hidden;
 }
 
-/* Main Modal Container */
+/* Main Modal Container - Reset positioning and width */
 .topic-buttons-modal {
   background-color: white;
-  width: 90%;
-  height: 90vh;
+  width: 900px; /* Fixed width rather than percentage */
+  max-width: 90%; /* Maximum percentage of viewport */
+  height: 80vh;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  animation: modalEnter 0.3s ease-out;
   border-radius: 10px;
   position: relative;
-  box-sizing: border-box;
+  animation: modalEnter 0.3s ease-out;
+  overflow: hidden; /* Prevent any overflow */
 }
 
 @keyframes modalEnter {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-/* Modal Header */
-.modal-header {
+/* Modal Header - Fixed height and full width */
+.topic-buttons-modal .modal-header {
   background-color: #06206e;
-  padding: 1.5rem 2rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
-  box-sizing: border-box;
+  flex-shrink: 0; /* Prevent header from shrinking */
 }
 
-.modal-header h2 {
+.topic-buttons-modal .modal-header h2 {
   color: white;
   margin: 0;
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.modal-actions {
+.topic-buttons-modal .modal-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
+  flex-shrink: 0; /* Prevent action buttons from shrinking */
 }
 
 /* Action Buttons */
-.modal-actions button {
-  padding: 0.75rem 1.5rem;
+.topic-buttons-modal .modal-actions button {
+  padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   border: none;
   font-weight: 600;
@@ -76,129 +86,135 @@
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s ease;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  line-height: 1.2;
 }
 
-.add-topic-button {
+.topic-buttons-modal .add-topic-button {
   background-color: #4CAF50;
   color: white;
 }
 
-.add-topic-button:hover {
+.topic-buttons-modal .add-topic-button:hover {
   background-color: #43A047;
-  transform: translateY(-1px);
 }
 
-.prioritize-button {
+.topic-buttons-modal .prioritize-button {
   background-color: #FFC107;
   color: #1a1a1a;
 }
 
-.prioritize-button:hover {
+.topic-buttons-modal .prioritize-button:hover {
   background-color: #FFB300;
-  transform: translateY(-1px);
 }
 
-.save-topics-button {
+.topic-buttons-modal .save-topics-button {
   background-color: #2196F3;
   color: white;
 }
 
-.save-topics-button:hover {
+.topic-buttons-modal .save-topics-button:hover {
   background-color: #1E88E5;
-  transform: translateY(-1px);
 }
 
 /* Close Button */
-.close-modal-button {
+.topic-buttons-modal .close-modal-button {
   background: rgba(255, 255, 255, 0.1);
   border: none;
   color: white;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-left: 1rem;
+  margin-left: 0.75rem;
+  flex-shrink: 0;
 }
 
-.close-modal-button:hover {
+.topic-buttons-modal .close-modal-button:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: rotate(90deg);
 }
 
-/* Modal Content - FIXED */
-.modal-content {
+/* Modal Content Area - Scrollable container for all topics */
+.topic-buttons-modal .modal-content {
   flex: 1;
-  overflow-y: auto; /* Restore vertical scrolling here */
+  overflow-y: auto;
   padding: 1.5rem;
   background-color: #f8fafc;
+  width: 100%;
+  height: calc(100% - 70px); /* Adjust based on header height */
 }
 
-/* Topic Categories Container - FIXED */
-.topic-buttons-container {
+/* Topic Categories Container */
+.topic-buttons-modal .topic-buttons-container {
   width: 100%;
-  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 /* Topic Category Section */
-.topic-category-section {
+.topic-buttons-modal .topic-category-section {
   background: white;
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   padding: 1.25rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.5rem;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.category-heading {
+.topic-buttons-modal .category-heading {
   color: #06206e;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin: 0 0 1.5rem 0;
-  padding-bottom: 1rem;
+  margin: 0 0 1.25rem 0;
+  padding-bottom: 0.75rem;
   border-bottom: 2px solid #e2e8f0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.category-icon {
+.topic-buttons-modal .category-icon {
   color: #06206e;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
 }
 
 /* Subcategory styles */
-.subcategory-section {
-  margin-bottom: 1.5rem;
+.topic-buttons-modal .subcategory-section {
+  margin-bottom: 1.25rem;
+  width: 100%;
 }
 
-.subcategory-section:last-child {
+.topic-buttons-modal .subcategory-section:last-child {
   margin-bottom: 0;
 }
 
 /* Add spacing between subcategory sections */
-.subcategory-section + .subcategory-section {
-  margin-top: 1.5rem;
+.topic-buttons-modal .subcategory-section + .subcategory-section {
+  margin-top: 1.25rem;
   padding-top: 1rem;
   border-top: 1px solid #e5e7eb;
 }
 
-.subcategory-heading {
+.topic-buttons-modal .subcategory-heading {
   color: #4a5568;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 500;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.75rem 0;
   padding-left: 0.5rem;
   border-left: 3px solid #4a5568;
 }
 
-/* Topic Button Style - FIXED */
-.topic-button {
+/* Topic Button Style */
+.topic-buttons-modal .topic-button {
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
@@ -208,19 +224,20 @@
   justify-content: space-between;
   transition: all 0.2s ease;
   margin-bottom: 0.75rem;
+  width: 100%;
 }
 
-.topic-button:last-child {
+.topic-buttons-modal .topic-button:last-child {
   margin-bottom: 0;
 }
 
-.topic-button:hover {
+.topic-buttons-modal .topic-button:hover {
   border-color: #06206e;
   box-shadow: 0 4px 12px rgba(6, 32, 110, 0.1);
   transform: translateY(-2px);
 }
 
-.topic-name {
+.topic-buttons-modal .topic-name {
   font-weight: 500;
   color: #1a1a1a;
   flex: 1;
@@ -231,13 +248,13 @@
 }
 
 /* Topic Actions */
-.topic-actions {
+.topic-buttons-modal .topic-actions {
   display: flex;
   gap: 0.5rem;
   flex-shrink: 0;
 }
 
-.topic-actions button {
+.topic-buttons-modal .topic-actions button {
   width: 2.25rem;
   height: 2.25rem;
   border: none;
@@ -249,73 +266,81 @@
   transition: all 0.2s ease;
 }
 
-.generate-button {
+.topic-buttons-modal .generate-button {
   background-color: #e3f2fd;
   color: #1976D2;
 }
 
-.generate-button:hover {
+.topic-buttons-modal .generate-button:hover {
   background-color: #1976D2;
   color: white;
 }
 
-.delete-button {
+.topic-buttons-modal .delete-button {
   background-color: #ffebee;
   color: #d32f2f;
 }
 
-.delete-button:hover {
+.topic-buttons-modal .delete-button:hover {
   background-color: #d32f2f;
   color: white;
 }
 
 /* Empty State */
-.no-topics-message {
+.topic-buttons-modal .no-topics-message {
   text-align: center;
   padding: 4rem 2rem;
   color: #64748b;
 }
 
-.no-topics-message p {
+.topic-buttons-modal .no-topics-message p {
   margin: 0.5rem 0;
   font-size: 1.1rem;
 }
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
-  .topic-buttons-modal-overlay {
-    padding: 0;
-  }
-
   .topic-buttons-modal {
     width: 100%;
     height: 100vh;
+    max-height: 100vh;
     border-radius: 0;
   }
 
-  .modal-header {
+  .topic-buttons-modal .modal-header {
     padding: 1rem;
     flex-direction: column;
     align-items: stretch;
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
-  .modal-actions {
+  .topic-buttons-modal .modal-actions {
     flex-wrap: wrap;
+    justify-content: space-between;
   }
 
-  .modal-actions button {
+  .topic-buttons-modal .modal-actions button {
     flex: 1;
-    min-width: 140px;
+    min-width: calc(50% - 0.5rem);
     justify-content: center;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8rem;
   }
 
-  .modal-content {
+  .topic-buttons-modal .close-modal-button {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    margin: 0;
+  }
+
+  .topic-buttons-modal .modal-content {
     padding: 1rem;
+    height: calc(100% - 100px);
   }
 }
 
-/* Action Modals (Generate/Delete Confirmation) */
+/* Action Modal Styles - Reuse consistently named classes with more specific selectors */
 .action-modal-overlay {
   position: fixed;
   top: 0;
@@ -327,43 +352,38 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000;
+  z-index: 11000; /* Higher than parent modal */
 }
 
 .action-modal {
   background: white;
   border-radius: 1rem;
   width: 90%;
-  max-width: 500px;
+  max-width: 450px;
   animation: actionModalEnter 0.3s ease-out;
   overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
 @keyframes actionModalEnter {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .action-modal-header {
-  padding: 1.5rem;
+  padding: 1.25rem;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .action-modal-header h3 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #1a1a1a;
 }
 
 .action-modal-content {
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .action-modal-content p {
@@ -373,8 +393,12 @@
   line-height: 1.6;
 }
 
+.action-modal-content p:last-child {
+  margin-bottom: 0;
+}
+
 .action-modal-footer {
-  padding: 1.5rem;
+  padding: 1.25rem;
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
   display: flex;
@@ -390,48 +414,46 @@
   transition: all 0.2s ease;
 }
 
-.action-button {
+.action-modal-footer .action-button {
   background: #06206e;
   color: white;
   border: none;
 }
 
-.action-button:hover {
+.action-modal-footer .action-button:hover {
   background: #051849;
-  transform: translateY(-1px);
 }
 
-.cancel-button {
+.action-modal-footer .cancel-button {
   background: #f1f5f9;
   color: #475569;
   border: 1px solid #e2e8f0;
 }
 
-.cancel-button:hover {
+.action-modal-footer .cancel-button:hover {
   background: #e2e8f0;
-  transform: translateY(-1px);
 }
 
 /* Customize scrollbar to be more subtle */
-.modal-content::-webkit-scrollbar {
+.topic-buttons-modal .modal-content::-webkit-scrollbar {
   width: 6px;
 }
 
-.modal-content::-webkit-scrollbar-track {
+.topic-buttons-modal .modal-content::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.modal-content::-webkit-scrollbar-thumb {
+.topic-buttons-modal .modal-content::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.15);
   border-radius: 10px;
 }
 
-.modal-content::-webkit-scrollbar-thumb:hover {
+.topic-buttons-modal .modal-content::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.25);
 }
 
 /* For Firefox */
-.modal-content {
+.topic-buttons-modal .modal-content {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }

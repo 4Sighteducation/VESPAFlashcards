@@ -115,217 +115,219 @@ const TopicButtonsModal = ({
   }, [onSaveTopics]);
 
   const modalContent = (
-    <div 
-      className="topic-buttons-modal-overlay" 
-      onClick={() => {
-        // Only close the parent modal if no child modal is open
-        if (!activePopup && !topicToDelete && !showPrioritizePopup) {
-          onClose();
-        }
-      }}
-    >
-      <div className="topic-buttons-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Topics for {subject} ({examBoard} {examType})</h2>
-          <div className="modal-actions">
-            <button className="add-topic-button" onClick={onAddTopic}>
-              <FaPlus /> Add Topic
-            </button>
-            <button 
-              className="prioritize-button" 
-              onClick={() => setShowPrioritizePopup(true)}
-            >
-              <FaStar /> Prioritize
-            </button>
-            {unsavedChanges && (
-              <button 
-                className="save-topics-button" 
-                onClick={handleSaveTopics}
-              >
-                <FaSave /> Save Changes
+    <div className="reset-style-root">
+      <div 
+        className="topic-buttons-modal-overlay" 
+        onClick={() => {
+          // Only close the parent modal if no child modal is open
+          if (!activePopup && !topicToDelete && !showPrioritizePopup) {
+            onClose();
+          }
+        }}
+      >
+        <div className="topic-buttons-modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>Topics for {subject} ({examBoard} {examType})</h2>
+            <div className="modal-actions">
+              <button className="add-topic-button" onClick={onAddTopic}>
+                <FaPlus /> Add Topic
               </button>
-            )}
-            <button className="close-modal-button" onClick={onClose}>
-              <FaTimes />
-            </button>
+              <button 
+                className="prioritize-button" 
+                onClick={() => setShowPrioritizePopup(true)}
+              >
+                <FaStar /> Prioritize
+              </button>
+              {unsavedChanges && (
+                <button 
+                  className="save-topics-button" 
+                  onClick={handleSaveTopics}
+                >
+                  <FaSave /> Save Changes
+                </button>
+              )}
+              <button className="close-modal-button" onClick={onClose}>
+                <FaTimes />
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="modal-content">
-          <div className="topic-buttons-container">
-            {Object.keys(organizedTopics).length > 0 ? (
-              Object.entries(organizedTopics).map(([mainCategory, categoryData]) => (
-                <div key={mainCategory} className="topic-category-section">
-                  <h3 className="category-heading">
-                    <FaFolder className="category-icon" /> {mainCategory}
-                  </h3>
-                  
-                  {Object.entries(categoryData.subcategories).map(([subCategory, subTopics]) => (
-                    <div key={`${mainCategory}-${subCategory}`} className="subcategory-section">
-                      {subCategory !== 'Topics' && (
-                        <h4 className="subcategory-heading">{subCategory}</h4>
-                      )}
-                      
-                      {subTopics.map((topic) => (
-                        <div key={topic.id || topic.fullName} className="topic-button">
-                          <span 
-                            className="topic-name" 
-                            title={topic.parsedName || topic.displayName || topic.name}
-                          >
-                            {topic.parsedName || topic.displayName || topic.name}
-                          </span>
-                          <div className="topic-actions">
-                            <button
-                              className="generate-button"
-                              onClick={() => setActivePopup(topic.id || topic.fullName)}
-                              title="Generate Cards"
+          <div className="modal-content">
+            <div className="topic-buttons-container">
+              {Object.keys(organizedTopics).length > 0 ? (
+                Object.entries(organizedTopics).map(([mainCategory, categoryData]) => (
+                  <div key={mainCategory} className="topic-category-section">
+                    <h3 className="category-heading">
+                      <FaFolder className="category-icon" /> {mainCategory}
+                    </h3>
+                    
+                    {Object.entries(categoryData.subcategories).map(([subCategory, subTopics]) => (
+                      <div key={`${mainCategory}-${subCategory}`} className="subcategory-section">
+                        {subCategory !== 'Topics' && (
+                          <h4 className="subcategory-heading">{subCategory}</h4>
+                        )}
+                        
+                        {subTopics.map((topic) => (
+                          <div key={topic.id || topic.fullName} className="topic-button">
+                            <span 
+                              className="topic-name" 
+                              title={topic.parsedName || topic.displayName || topic.name}
                             >
-                              <FaMagic />
-                            </button>
-                            <button
-                              className="delete-button"
-                              onClick={() => setTopicToDelete(topic)}
-                              title="Delete Topic"
-                            >
-                              <FaTrash />
-                            </button>
+                              {topic.parsedName || topic.displayName || topic.name}
+                            </span>
+                            <div className="topic-actions">
+                              <button
+                                className="generate-button"
+                                onClick={() => setActivePopup(topic.id || topic.fullName)}
+                                title="Generate Cards"
+                              >
+                                <FaMagic />
+                              </button>
+                              <button
+                                className="delete-button"
+                                onClick={() => setTopicToDelete(topic)}
+                                title="Delete Topic"
+                              >
+                                <FaTrash />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ))
+              ) : (
+                <div className="no-topics-message">
+                  <p>No topics available for this subject.</p>
+                  <p>Click "Add Topic" to create your first topic</p>
                 </div>
-              ))
-            ) : (
-              <div className="no-topics-message">
-                <p>No topics available for this subject.</p>
-                <p>Click "Add Topic" to create your first topic</p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Generate Cards Confirmation Modal */}
+        {activePopup && createPortal(
+          <div 
+            className="action-modal-overlay" 
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent event from reaching parent
+              setActivePopup(null);
+            }}
+          >
+            <div className="action-modal" onClick={e => e.stopPropagation()}>
+              <div className="action-modal-header">
+                <h3>Generate Cards</h3>
+              </div>
+              <div className="action-modal-content">
+                <p>Are you sure you want to generate cards for this topic?</p>
+                <p>This will create new flashcards based on the selected topic.</p>
+              </div>
+              <div className="action-modal-footer">
+                <button 
+                  className="cancel-button"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent event from reaching parent
+                    setActivePopup(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="action-button"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent event from reaching parent
+                    const selectedTopic = topics.find(t => (t.id || t.fullName) === activePopup);
+                    if (selectedTopic) {
+                      handleGenerateCards(selectedTopic);
+                    }
+                  }}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? 'Generating...' : 'Generate Cards'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {topicToDelete && createPortal(
+          <div 
+            className="action-modal-overlay" 
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent event from reaching parent
+              setTopicToDelete(null);
+            }}
+          >
+            <div className="action-modal" onClick={e => e.stopPropagation()}>
+              <div className="action-modal-header">
+                <h3>Delete Topic</h3>
+              </div>
+              <div className="action-modal-content">
+                <p>Are you sure you want to delete this topic?</p>
+                <p>This action cannot be undone.</p>
+              </div>
+              <div className="action-modal-footer">
+                <button 
+                  className="cancel-button"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent event from reaching parent
+                    setTopicToDelete(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="action-button"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent event from reaching parent
+                    handleDeleteConfirm();
+                  }}
+                >
+                  Delete Topic
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+        {/* Prioritize Coming Soon Popup */}
+        {showPrioritizePopup && createPortal(
+          <div 
+            className="action-modal-overlay" 
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent event from reaching parent
+              setShowPrioritizePopup(false);
+            }}
+          >
+            <div className="action-modal" onClick={e => e.stopPropagation()}>
+              <div className="action-modal-header">
+                <h3>Coming Soon! 🌟</h3>
+              </div>
+              <div className="action-modal-content">
+                <p>The prioritization feature is coming soon!</p>
+                <p>Soon you'll be able to organize your topics by importance and create a personalized study schedule.</p>
+              </div>
+              <div className="action-modal-footer">
+                <button 
+                  className="action-button"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent event from reaching parent
+                    setShowPrioritizePopup(false);
+                  }}
+                >
+                  Got it!
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
-
-      {/* Generate Cards Confirmation Modal */}
-      {activePopup && createPortal(
-        <div 
-          className="action-modal-overlay" 
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent event from reaching parent
-            setActivePopup(null);
-          }}
-        >
-          <div className="action-modal" onClick={e => e.stopPropagation()}>
-            <div className="action-modal-header">
-              <h3>Generate Cards</h3>
-            </div>
-            <div className="action-modal-content">
-              <p>Are you sure you want to generate cards for this topic?</p>
-              <p>This will create new flashcards based on the selected topic.</p>
-            </div>
-            <div className="action-modal-footer">
-              <button 
-                className="cancel-button"
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent event from reaching parent
-                  setActivePopup(null);
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className="action-button"
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent event from reaching parent
-                  const selectedTopic = topics.find(t => (t.id || t.fullName) === activePopup);
-                  if (selectedTopic) {
-                    handleGenerateCards(selectedTopic);
-                  }
-                }}
-                disabled={isGenerating}
-              >
-                {isGenerating ? 'Generating...' : 'Generate Cards'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {topicToDelete && createPortal(
-        <div 
-          className="action-modal-overlay" 
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent event from reaching parent
-            setTopicToDelete(null);
-          }}
-        >
-          <div className="action-modal" onClick={e => e.stopPropagation()}>
-            <div className="action-modal-header">
-              <h3>Delete Topic</h3>
-            </div>
-            <div className="action-modal-content">
-              <p>Are you sure you want to delete this topic?</p>
-              <p>This action cannot be undone.</p>
-            </div>
-            <div className="action-modal-footer">
-              <button 
-                className="cancel-button"
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent event from reaching parent
-                  setTopicToDelete(null);
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className="action-button"
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent event from reaching parent
-                  handleDeleteConfirm();
-                }}
-              >
-                Delete Topic
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Prioritize Coming Soon Popup */}
-      {showPrioritizePopup && createPortal(
-        <div 
-          className="action-modal-overlay" 
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent event from reaching parent
-            setShowPrioritizePopup(false);
-          }}
-        >
-          <div className="action-modal" onClick={e => e.stopPropagation()}>
-            <div className="action-modal-header">
-              <h3>Coming Soon! 🌟</h3>
-            </div>
-            <div className="action-modal-content">
-              <p>The prioritization feature is coming soon!</p>
-              <p>Soon you'll be able to organize your topics by importance and create a personalized study schedule.</p>
-            </div>
-            <div className="action-modal-footer">
-              <button 
-                className="action-button"
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent event from reaching parent
-                  setShowPrioritizePopup(false);
-                }}
-              >
-                Got it!
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   );
 
