@@ -140,6 +140,7 @@
 .modal-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 2rem;
   background-color: #f8fafc;
   width: 100%;
@@ -154,7 +155,7 @@
   flex-direction: column;
   gap: 2rem;
   width: 100%;
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -165,6 +166,7 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .category-heading {
@@ -205,9 +207,10 @@
 /* Topic Grid */
 .topic-buttons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1rem;
   width: 100%;
+  max-width: 100%;
 }
 
 /* Ensure at least 3 columns on larger screens when possible */
@@ -346,8 +349,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(5px);
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
   display: flex;
   justify-content: center;
   align-items: center;

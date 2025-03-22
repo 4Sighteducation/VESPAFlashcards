@@ -115,7 +115,15 @@ const TopicButtonsModal = ({
   }, [onSaveTopics]);
 
   const modalContent = (
-    <div className="topic-buttons-modal-overlay" onClick={() => onClose()}>
+    <div 
+      className="topic-buttons-modal-overlay" 
+      onClick={() => {
+        // Only close the parent modal if no child modal is open
+        if (!activePopup && !topicToDelete && !showPrioritizePopup) {
+          onClose();
+        }
+      }}
+    >
       <div className="topic-buttons-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Topics for {subject} ({examBoard} {examType})</h2>
@@ -197,8 +205,14 @@ const TopicButtonsModal = ({
 
       {/* Generate Cards Confirmation Modal */}
       {activePopup && createPortal(
-        <div className="action-modal-overlay">
-          <div className="action-modal">
+        <div 
+          className="action-modal-overlay" 
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent event from reaching parent
+            setActivePopup(null);
+          }}
+        >
+          <div className="action-modal" onClick={e => e.stopPropagation()}>
             <div className="action-modal-header">
               <h3>Generate Cards</h3>
             </div>
@@ -209,13 +223,17 @@ const TopicButtonsModal = ({
             <div className="action-modal-footer">
               <button 
                 className="cancel-button"
-                onClick={() => setActivePopup(null)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent event from reaching parent
+                  setActivePopup(null);
+                }}
               >
                 Cancel
               </button>
               <button
                 className="action-button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent event from reaching parent
                   const selectedTopic = topics.find(t => (t.id || t.fullName) === activePopup);
                   if (selectedTopic) {
                     handleGenerateCards(selectedTopic);
@@ -233,8 +251,14 @@ const TopicButtonsModal = ({
 
       {/* Delete Confirmation Modal */}
       {topicToDelete && createPortal(
-        <div className="action-modal-overlay">
-          <div className="action-modal">
+        <div 
+          className="action-modal-overlay" 
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent event from reaching parent
+            setTopicToDelete(null);
+          }}
+        >
+          <div className="action-modal" onClick={e => e.stopPropagation()}>
             <div className="action-modal-header">
               <h3>Delete Topic</h3>
             </div>
@@ -245,13 +269,19 @@ const TopicButtonsModal = ({
             <div className="action-modal-footer">
               <button 
                 className="cancel-button"
-                onClick={() => setTopicToDelete(null)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent event from reaching parent
+                  setTopicToDelete(null);
+                }}
               >
                 Cancel
               </button>
               <button
                 className="action-button"
-                onClick={handleDeleteConfirm}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent event from reaching parent
+                  handleDeleteConfirm();
+                }}
               >
                 Delete Topic
               </button>
@@ -263,8 +293,14 @@ const TopicButtonsModal = ({
 
       {/* Prioritize Coming Soon Popup */}
       {showPrioritizePopup && createPortal(
-        <div className="action-modal-overlay">
-          <div className="action-modal">
+        <div 
+          className="action-modal-overlay" 
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent event from reaching parent
+            setShowPrioritizePopup(false);
+          }}
+        >
+          <div className="action-modal" onClick={e => e.stopPropagation()}>
             <div className="action-modal-header">
               <h3>Coming Soon! 🌟</h3>
             </div>
@@ -275,7 +311,10 @@ const TopicButtonsModal = ({
             <div className="action-modal-footer">
               <button 
                 className="action-button"
-                onClick={() => setShowPrioritizePopup(false)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent event from reaching parent
+                  setShowPrioritizePopup(false);
+                }}
               >
                 Got it!
               </button>
