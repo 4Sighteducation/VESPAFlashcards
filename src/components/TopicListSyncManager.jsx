@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import TopicListSummary from "./TopicListSummary";
+import NewTopicModal from "./NewTopicModal";
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
 import { 
   persistTopics, 
@@ -8,11 +8,10 @@ import {
   setupPageUnloadProtection
 } from './TopicsPersistenceManager';
 import {
-  saveTopicLists,
+  saveTopicList,
   loadTopicLists,
-  safeParseJSON,
-  withRetry
-} from '../services/TopicPersistenceService';
+  formatTopicList
+} from '../services/TopicListService';
 
 // API keys for topic generation if needed
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
@@ -30,9 +29,7 @@ const debugLog = (title, data) => {
  * This component acts as a data management layer between the app and the topic UI components.
  * It handles loading, saving, and synchronizing topic data with Knack.
  * 
- * The UI is presented through the TopicListSummary component.
- * 
- * Created as part of the topic-modal-refactor (see git tag 'topic-modal-original' for previous implementation)
+ * The UI is presented through the NewTopicModal component.
  */
 const TopicListSyncManager = ({ 
   isOpen,
@@ -55,10 +52,6 @@ const TopicListSyncManager = ({
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   
-  // API keys - using the correct environment variables
-  const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
-  const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
-  
   // Load existing topic lists from Knack when the component mounts or subject changes
   useEffect(() => {
     if (isOpen && auth && userId) {
@@ -74,116 +67,33 @@ const TopicListSyncManager = ({
       
       console.log(`Loading topic lists for user ID: ${userId}`);
       
-      // Use our centralized service to load topic lists
-      const { topicLists: loadedLists, metadata, userData } = await loadTopicLists(userId, auth);
-      
-      // Store the complete user data for later use
-      if (userData) {
-        setCompleteUserData(userData);
-      }
+      // Use our dedicated topic service to load topic lists
+      const topicData = await loadTopicLists(userId, auth, subject, examBoard, examType);
       
       // Update state with loaded data
-      if (loadedLists.length > 0) {
-        setTopicLists(loadedLists);
-        console.log(`Loaded ${loadedLists.length} topic lists from Knack`);
+      if (topicData && topicData.length > 0) {
+        // Get just the topics from the first matching list
+        const matchingList = topicData[0];
+        if (matchingList && matchingList.topics) {
+          setCurrentTopics(matchingList.topics);
+          setLastUpdated(matchingList.lastUpdated);
+          console.log(`Loaded ${matchingList.topics.length} topics for ${subject}`);
+          
+          // Cache these topics for protection against page refresh
+          persistTopics(subject, examBoard, examType, matchingList.topics);
+        } else {
+          setCurrentTopics([]);
+          console.log("No topics found for this subject/exam combination");
+        }
       } else {
         console.log("No topic lists found in user data");
-        setTopicLists([]);
-      }
-      
-      // Set metadata if available
-      if (metadata && metadata.length > 0) {
-        setTopicMetadata(metadata);
-        console.log(`Loaded ${metadata.length} topic metadata entries from Knack`);
-      } else {
-        console.log("No topic metadata found in user data");
-        setTopicMetadata([]);
+        setCurrentTopics([]);
       }
     } catch (error) {
       console.error("Error loading topic lists:", error);
       setError("Error loading topic lists: " + error.message);
     } finally {
       setIsLoading(false);
-    }
-  };
-  
-  // Handler for when topic list is saved in the child component
-  const handleTopicListSave = async (updatedTopicLists, updatedMetadata) => {
-    try {
-      console.log(`[${new Date().toISOString()}] Saving topic lists with ${updatedTopicLists.length} entries`);
-      
-      // Log detailed info about the save operation
-      debugLog("SAVING TOPIC LISTS", {
-        topicListsCount: updatedTopicLists.length,
-        topicMetadataCount: updatedMetadata?.length || 0,
-        timestamp: new Date().toISOString()
-      });
-      
-      // First try the direct API save with our service (most reliable method)
-      const success = await withRetry(() => 
-        saveTopicLists(updatedTopicLists, userId, auth, updatedMetadata)
-      );
-      
-      if (success) {
-        console.log(`[${new Date().toISOString()}] Topic lists saved successfully via direct API`);
-        // Update our local state
-        setTopicLists(updatedTopicLists);
-        setTopicMetadata(updatedMetadata);
-        return true;
-      }
-      
-      // If direct API fails, try window messaging as fallback
-      console.log("Direct API save failed, trying window messaging fallback");
-      
-      // Create the message with preserve fields flag
-      const messageData = {
-        type: "SAVE_DATA",
-        data: {
-          recordId: userId,
-          userId: userId,
-          topicLists: updatedTopicLists,
-          topicMetadata: updatedMetadata,
-          preserveFields: true, // This is crucial to prevent overwriting other fields
-          completeData: completeUserData
-        }
-      };
-      
-      // Set up a listener for the response
-      return new Promise((resolve) => {
-        const messageHandler = (event) => {
-          if (event.data && event.data.type === "SAVE_RESULT") {
-            // Remove the event listener once we get a response
-            window.removeEventListener("message", messageHandler);
-            
-            if (event.data.success) {
-              console.log(`[${new Date().toISOString()}] Topic list saved successfully via postMessage`);
-              // Update our local state
-              setTopicLists(updatedTopicLists);
-              setTopicMetadata(updatedMetadata);
-              resolve(true);
-            } else {
-              console.error(`[${new Date().toISOString()}] Failed to save topic list via postMessage`);
-              resolve(false);
-            }
-          }
-        };
-        
-        // Add the event listener
-        window.addEventListener("message", messageHandler);
-        
-        // Send message to parent window
-        window.parent.postMessage(messageData, "*");
-        
-        // Set a timeout to handle no response
-        setTimeout(() => {
-          window.removeEventListener("message", messageHandler);
-          console.error(`[${new Date().toISOString()}] No save response received within timeout period`);
-          resolve(false);
-        }, 10000); // 10-second timeout
-      });
-    } catch (error) {
-      console.error("Error in handleTopicListSave:", error);
-      return false;
     }
   };
   
@@ -204,42 +114,20 @@ const TopicListSyncManager = ({
         return;
       }
       
-      // Fall back to server-loaded topics if no cache
-      if (topicLists.length > 0) {
-        const matchingList = topicLists.find(list => 
-          list.subject === subject && 
-          list.examBoard === examBoard && 
-          list.examType === examType
-        );
-        
-        if (matchingList && matchingList.topics) {
-          setCurrentTopics(matchingList.topics);
-          setLastUpdated(matchingList.lastUpdated);
-          
-          // Cache these topics for protection against page refresh/autosave
-          persistTopics(subject, examBoard, examType, matchingList.topics);
-        } else {
-          setCurrentTopics([]);
-          setLastUpdated(null);
-        }
+      // Otherwise try to load from Knack if we haven't already
+      if (currentTopics.length === 0 && !isLoading) {
+        loadTopicListsFromKnack();
       }
     }
-  }, [topicLists, subject, examBoard, examType]);
+  }, [subject, examBoard, examType]);
 
-  // Generate a unique ID for new topics/lists
-  const generateId = (prefix = 'topic') => {
-    return `${prefix}_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
-  };
-  
-  // Generate topics using OpenAI
+  // Generate topics using OpenAI (this will be called from the modal)
   const generateTopics = async () => {
     if (!examBoard || !examType) {
-      setError("Please select an exam board and type first");
-      return;
+      return [];
     }
 
     setIsGenerating(true);
-    setError(null);
     
     try {
       console.log(`Generating topics for ${subject} (${examBoard} ${examType})`);
@@ -301,68 +189,32 @@ const TopicListSyncManager = ({
         
         // Assign unique IDs to each topic
         const topicsWithIds = parsedTopics.map(topic => ({
-          id: generateId(),
-          name: topic
+          id: `topic_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          name: typeof topic === 'string' ? topic : topic.name || 'Unknown Topic'
         }));
         
         console.log("Generated topics:", topicsWithIds);
+        
+        // Update the current topics
         setCurrentTopics(topicsWithIds);
         
-        // Create or update the topic list
+        // Save the topics
         await saveTopics(topicsWithIds);
+        
+        return topicsWithIds;
       } catch (e) {
         console.error("Error parsing topics:", e);
-        setError("Failed to parse topics from AI response");
+        return [];
       }
     } catch (error) {
       console.error("Error generating topics:", error);
-      setError(`Failed to generate topics: ${error.message}`);
+      return [];
     } finally {
       setIsGenerating(false);
     }
   };
   
-  // Handle adding a new topic
-  const handleAddTopic = async (topicName) => {
-    try {
-      // Create new topic object
-      const newTopic = {
-        id: generateId('topic'),
-        name: topicName.trim()
-      };
-      
-      // Add to current topics
-      const updatedTopics = [...currentTopics, newTopic];
-      setCurrentTopics(updatedTopics);
-      
-      // Save the updated topics
-      await saveTopics(updatedTopics);
-      
-      return true;
-    } catch (error) {
-      console.error("Error adding topic:", error);
-      return false;
-    }
-  };
-  
-  // Handle deleting a topic
-  const handleDeleteTopic = async (topicId) => {
-    try {
-      // Filter out the deleted topic
-      const updatedTopics = currentTopics.filter(topic => topic.id !== topicId);
-      setCurrentTopics(updatedTopics);
-      
-      // Save the updated topics
-      await saveTopics(updatedTopics);
-      
-      return true;
-    } catch (error) {
-      console.error("Error deleting topic:", error);
-      return false;
-    }
-  };
-  
-  // Save current topics list
+  // Save topics - uses the dedicated service to ensure correct field persistence
   const saveTopics = async (topicsList) => {
     try {
       // First save to local cache to protect against issues during server save
@@ -371,69 +223,28 @@ const TopicListSyncManager = ({
         console.log(`Protected ${topicsList.length} topics in local cache`);
       }
       
-      // Get current topic lists or initialize empty array
-      const currentTopicLists = Array.isArray(topicLists) ? [...topicLists] : [];
-      
-      // Create new topic list object
-      const newTopicList = {
-        id: generateId('list'),
-        subject,
-        examBoard,
-        examType,
-        topics: topicsList,
-        lastUpdated: new Date().toISOString()
-      };
-      
-      // Find if topic list for this subject, exam board, and exam type already exists
-      const existingIndex = currentTopicLists.findIndex(list => 
-        list.subject === subject && 
-        list.examBoard === examBoard && 
-        list.examType === examType
+      // Use our dedicated service to save topics
+      const success = await saveTopicList(
+        topicsList, 
+        subject, 
+        examBoard, 
+        examType, 
+        userId, 
+        auth
       );
       
-      // Update or add the topic list
-      if (existingIndex >= 0) {
-        // Preserve the original ID
-        newTopicList.id = currentTopicLists[existingIndex].id;
-        currentTopicLists[existingIndex] = newTopicList;
-      } else {
-        currentTopicLists.push(newTopicList);
-      }
-      
-      // Get current metadata or initialize empty array
-      const currentMetadata = Array.isArray(topicMetadata) ? [...topicMetadata] : [];
-      
-      // Create new metadata object
-      const newMetadata = {
-        subject,
-        examBoard,
-        examType,
-        lastUpdated: new Date().toISOString()
-      };
-      
-      // Find if metadata for this subject already exists
-      const metaIndex = currentMetadata.findIndex(meta => meta.subject === subject);
-      
-      // Update or add the metadata
-      if (metaIndex >= 0) {
-        currentMetadata[metaIndex] = newMetadata;
-      } else {
-        currentMetadata.push(newMetadata);
-      }
-      
-      // Send to server
-      const success = await handleTopicListSave(currentTopicLists, currentMetadata);
-      
       if (success) {
-        console.log("Topics saved successfully to server");
-        setLastUpdated(newMetadata.lastUpdated);
+        console.log("Topics saved successfully to Knack field_3011");
+        setLastUpdated(new Date().toISOString());
+        
         // Clear from local cache only if successfully saved to server
         if (persistSuccess) {
           clearPersistedTopics(subject, examBoard, examType);
         }
+        
         return true;
       } else {
-        console.error("Failed to save topics to server");
+        console.error("Failed to save topics to Knack");
         console.log("Topics are still protected in local cache");
         return false;
       }
@@ -446,20 +257,17 @@ const TopicListSyncManager = ({
   // Only render when isOpen is true
   if (!isOpen) return null;
   
+  // Use the new modal
   return (
-    <TopicListSummary
+    <NewTopicModal
+      isOpen={isOpen}
       subject={subject}
       examBoard={examBoard}
       examType={examType}
       onClose={onClose}
       onGenerateCards={onGenerateCards}
-      topics={currentTopics}
-      lastUpdated={lastUpdated}
-      isLoading={isLoading || isGenerating}
-      onSaveTopics={() => saveTopics(currentTopics)}
-      onAddTopic={handleAddTopic}
-      onDeleteTopic={handleDeleteTopic}
-      onRegenerateTopics={generateTopics}
+      onSaveTopics={saveTopics}
+      initialTopics={currentTopics}
     />
   );
 };

@@ -326,7 +326,7 @@ function saveToKnack(recordId, data, callback) {
 function verifyDataSave(recordId) {
   console.log(`[${new Date().toISOString()}] Verifying data save for record:`, recordId);
   
-  // Wait a moment to ensure data has been committed to the database
+  // Wait a longer time to ensure data has been committed to the database
   setTimeout(function() {
     // Fetch the record to verify the data is there
     $.ajax({
@@ -342,19 +342,64 @@ function verifyDataSave(recordId) {
         debugLog("VERIFICATION RESULT", {
           recordId: recordId,
           hasTopicLists: response && response[FIELD_MAPPING.topicLists] ? true : false,
-          hasCards: response && response[FIELD_MAPPING.cards] ? true : false,
+          hasCards: response && response[FIELD_MAPPING.cardBankData] ? true : false,
           timestamp: new Date().toISOString()
         });
         
         // Check if topic lists (field_3011) exists and has content
         let topicListsValid = false;
         if (response && response[FIELD_MAPPING.topicLists]) {
-          const topicLists = safeParseJSON(response[FIELD_MAPPING.topicLists]);
-          if (Array.isArray(topicLists) && topicLists.length > 0) {
-            console.log(`[${new Date().toISOString()}] Verification successful: Topic lists present with ${topicLists.length} items`);
-            topicListsValid = true;
-          } else {
-            console.error(`[${new Date().toISOString()}] Verification warning: Topic lists empty or malformed`);
+          try {
+            const topicListsJson = response[FIELD_MAPPING.topicLists];
+            const topicLists = safeParseJSON(topicListsJson);
+            
+            if (Array.isArray(topicLists) && topicLists.length > 0) {
+              console.log(`[${new Date().toISOString()}] Verification successful: Topic lists present with ${topicLists.length} items`);
+              topicListsValid = true;
+              
+              // More thorough validation of topic lists structure
+              let isValidStructure = true;
+              let validationErrors = [];
+              
+              topicLists.forEach((list, index) => {
+                // Check if each list has required fields
+                if (!list.id) {
+                  isValidStructure = false;
+                  validationErrors.push(`List ${index} missing id`);
+                }
+                if (!list.subject) {
+                  isValidStructure = false;
+                  validationErrors.push(`List ${index} missing subject`);
+                }
+                if (!list.examBoard) {
+                  isValidStructure = false;
+                  validationErrors.push(`List ${index} missing examBoard`);
+                }
+                if (!list.examType) {
+                  isValidStructure = false;
+                  validationErrors.push(`List ${index} missing examType`);
+                }
+                if (!Array.isArray(list.topics)) {
+                  isValidStructure = false;
+                  validationErrors.push(`List ${index} topics is not an array`);
+                }
+              });
+              
+              if (!isValidStructure) {
+                console.error(`[${new Date().toISOString()}] Topic lists structure validation failed:`, validationErrors);
+                // Log details about the invalid structure for debugging
+                debugLog("INVALID TOPIC LIST STRUCTURE", {
+                  errors: validationErrors,
+                  sampleData: JSON.stringify(topicLists[0]).substring(0, 200) + '...'
+                });
+              } else {
+                console.log(`[${new Date().toISOString()}] Topic lists structure validation passed`);
+              }
+            } else {
+              console.error(`[${new Date().toISOString()}] Verification warning: Topic lists empty or malformed`);
+            }
+          } catch (e) {
+            console.error(`[${new Date().toISOString()}] Error parsing topic lists during verification:`, e);
           }
         } else {
           console.error(`[${new Date().toISOString()}] Verification warning: No topic lists field found`);
@@ -362,29 +407,56 @@ function verifyDataSave(recordId) {
         
         // Check if cards (field_2979) exists and has content
         let cardsValid = false;
-        if (response && response[FIELD_MAPPING.cards]) {
-          const cards = safeParseJSON(response[FIELD_MAPPING.cards]);
-          if (Array.isArray(cards) && cards.length > 0) {
-            console.log(`[${new Date().toISOString()}] Verification successful: Cards present with ${cards.length} items`);
-            cardsValid = true;
-          } else {
-            console.error(`[${new Date().toISOString()}] Verification warning: Cards empty or malformed`);
+        if (response && response[FIELD_MAPPING.cardBankData]) {
+          try {
+            const cards = safeParseJSON(response[FIELD_MAPPING.cardBankData]);
+            if (Array.isArray(cards) && cards.length > 0) {
+              console.log(`[${new Date().toISOString()}] Verification successful: Cards present with ${cards.length} items`);
+              cardsValid = true;
+            } else {
+              console.error(`[${new Date().toISOString()}] Verification warning: Cards empty or malformed`);
+            }
+          } catch (e) {
+            console.error(`[${new Date().toISOString()}] Error parsing cards during verification:`, e);
           }
         } else {
           console.error(`[${new Date().toISOString()}] Verification warning: No cards field found`);
         }
         
         // Push the verification result back to the React app
-        if (window.frames.length > 0 && window.frames[0].postMessage) {
-          window.frames[0].postMessage({
-            type: 'VERIFICATION_RESULT',
-            success: topicListsValid && cardsValid,
-            data: {
-              topicListsValid,
-              cardsValid,
-              timestamp: new Date().toISOString()
+        // Attempt to find the iframe and send a message
+        try {
+          // First try using window.frames
+          if (window.frames.length > 0 && window.frames[0].postMessage) {
+            window.frames[0].postMessage({
+              type: 'VERIFICATION_RESULT',
+              success: topicListsValid,
+              data: {
+                topicListsValid,
+                cardsValid,
+                timestamp: new Date().toISOString()
+              }
+            }, '*');
+          } 
+          // If that fails, try searching for the iframe
+          else {
+            const iframe = document.getElementById('flashcard-app-iframe');
+            if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'VERIFICATION_RESULT',
+                success: topicListsValid,
+                data: {
+                  topicListsValid,
+                  cardsValid,
+                  timestamp: new Date().toISOString()
+                }
+              }, '*');
+            } else {
+              console.warn('[Verification] Failed to find iframe for messaging');
             }
-          }, '*');
+          }
+        } catch (error) {
+          console.error('[Verification] Error sending verification result:', error);
         }
       },
       error: function(error) {
@@ -400,7 +472,7 @@ function verifyDataSave(recordId) {
         }
       }
     });
-  }, 2000); // Wait 2 seconds before verification
+  }, 5000); // Wait 5 seconds before verification to ensure data is committed
 }
 
 // Safe JSON parse helper function (in case it's not defined elsewhere)

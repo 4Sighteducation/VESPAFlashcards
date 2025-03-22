@@ -185,14 +185,44 @@ export const saveTopicLists = async (topicLists, userId, auth, metadata = null) 
     debugLog("Saving topic lists", { 
       count: topicLists.length, 
       userId,
-      hasMetadata: !!metadata
+      hasMetadata: !!metadata,
+      timestamp: new Date().toISOString()
     });
+
+    // Validate topic lists structure before sending to API
+    const validationResult = validateTopicLists(topicLists);
+    if (!validationResult.valid) {
+      console.error("Topic lists validation failed:", validationResult.errors);
+      
+      // Try to fix common issues with the topic lists
+      const fixedTopicLists = fixTopicListsStructure(topicLists);
+      debugLog("Fixed topic lists structure", {
+        originalCount: topicLists.length,
+        fixedCount: fixedTopicLists.length,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Replace the original with the fixed version
+      topicLists = fixedTopicLists;
+    }
 
     // Find the user's record ID
     const recordId = await findUserRecordId(userId, auth);
+    if (!recordId) {
+      console.error("Could not find record ID for user:", userId);
+      
+      // Try API call via postMessage as a fallback
+      return await saveViaPostMessage(topicLists, userId, metadata);
+    }
 
     // Get existing data to preserve fields
     const existingData = await getUserData(recordId, auth);
+    if (!existingData) {
+      console.error("Could not get existing data for user:", userId);
+      
+      // Try API call via postMessage as a fallback
+      return await saveViaPostMessage(topicLists, userId, metadata);
+    }
 
     // Create the update data with field preservation
     const updateData = {
@@ -221,31 +251,256 @@ export const saveTopicLists = async (topicLists, userId, auth, metadata = null) 
       }
     }
 
-    // Save to Knack
-    const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-    const updateResponse = await fetch(updateUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Knack-Application-ID": KNACK_APP_ID,
-        "X-Knack-REST-API-Key": KNACK_API_KEY,
-        "Authorization": `Bearer ${auth.token}`
-      },
-      body: JSON.stringify(updateData)
-    });
-
-    if (updateResponse.ok) {
-      debugLog("Topic lists saved successfully", { count: topicLists.length });
-      return true;
-    } else {
-      const errorData = await updateResponse.json().catch(e => ({ message: "Unknown error" }));
-      console.error("Failed to save topic lists:", errorData);
-      return false;
+    // First try direct API save
+    try {
+      // Save to Knack with retry logic
+      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
+      
+      // Implement retry mechanism
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount <= maxRetries) {
+        try {
+          const updateResponse = await fetch(updateUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Knack-Application-ID": KNACK_APP_ID,
+              "X-Knack-REST-API-Key": KNACK_API_KEY,
+              "Authorization": `Bearer ${auth.token}`
+            },
+            body: JSON.stringify(updateData)
+          });
+          
+          if (updateResponse.ok) {
+            debugLog("Topic lists saved successfully (direct API)", { 
+              count: topicLists.length,
+              recordId
+            });
+            
+            // Also try to save via postMessage for redundancy
+            setTimeout(() => {
+              saveViaPostMessage(topicLists, userId, metadata).catch(e => {
+                // Silently log error - we already have a successful save
+                console.log("Redundant save via postMessage failed:", e);
+              });
+            }, 500);
+            
+            return true;
+          }
+          
+          // If we get here, the request failed but didn't throw
+          const errorData = await updateResponse.json().catch(e => ({ message: "Unknown error" }));
+          console.error(`Save attempt ${retryCount + 1}/${maxRetries + 1} failed:`, errorData);
+          
+          // Increment retry count
+          retryCount++;
+          
+          // Wait before retrying (exponential backoff)
+          if (retryCount <= maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount - 1)));
+          }
+        } catch (fetchError) {
+          console.error(`Save attempt ${retryCount + 1}/${maxRetries + 1} failed with exception:`, fetchError);
+          retryCount++;
+          
+          // Wait before retrying
+          if (retryCount <= maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount - 1)));
+          }
+        }
+      }
+      
+      // All retries failed, try postMessage approach as fallback
+      return await saveViaPostMessage(topicLists, userId, metadata);
+    } catch (error) {
+      console.error("Error saving via direct API:", error);
+      
+      // Try API call via postMessage as a fallback
+      return await saveViaPostMessage(topicLists, userId, metadata);
     }
   } catch (error) {
     console.error("Error in saveTopicLists:", error);
     return false;
   }
+};
+
+/**
+ * Save topic lists via postMessage to Knack (fallback method)
+ * @param {Array} topicLists - Array of topic lists to save
+ * @param {string} userId - User ID
+ * @param {Array} metadata - Optional metadata to save
+ * @returns {Promise<boolean>} - Success status
+ */
+const saveViaPostMessage = async (topicLists, userId, metadata = null) => {
+  debugLog("Attempting to save topic lists via postMessage", {
+    count: topicLists.length,
+    userId,
+    timestamp: new Date().toISOString()
+  });
+  
+  return new Promise((resolve) => {
+    // Create the message with preserve fields flag
+    const messageData = {
+      type: "SAVE_DATA",
+      data: {
+        recordId: userId,
+        userId: userId,
+        topicLists: topicLists,
+        topicMetadata: metadata || [],
+        preserveFields: true // This is crucial to prevent overwriting other fields
+      }
+    };
+    
+    // Set up a listener for the response
+    const messageHandler = (event) => {
+      if (event.data && event.data.type === "SAVE_RESULT") {
+        // Remove the event listener once we get a response
+        window.removeEventListener("message", messageHandler);
+        
+        if (event.data.success) {
+          console.log(`[${new Date().toISOString()}] Topic list saved successfully via postMessage`);
+          resolve(true);
+        } else {
+          console.error(`[${new Date().toISOString()}] Failed to save topic list via postMessage`);
+          resolve(false);
+        }
+      }
+    };
+    
+    // Add the event listener
+    window.addEventListener("message", messageHandler);
+    
+    // Send message to parent window (Knack)
+    if (window.parent) {
+      window.parent.postMessage(messageData, "*");
+    } else {
+      console.error("No parent window found for postMessage");
+      resolve(false);
+    }
+    
+    // Set a timeout to handle no response
+    setTimeout(() => {
+      window.removeEventListener("message", messageHandler);
+      console.error(`[${new Date().toISOString()}] No save response received within timeout period`);
+      resolve(false);
+    }, 10000); // 10-second timeout
+  });
+};
+
+/**
+ * Validate topic lists structure
+ * @param {Array} topicLists - Array of topic lists to validate
+ * @returns {Object} - Validation result with errors
+ */
+const validateTopicLists = (topicLists) => {
+  const result = {
+    valid: true,
+    errors: []
+  };
+  
+  if (!Array.isArray(topicLists)) {
+    result.valid = false;
+    result.errors.push("Topic lists is not an array");
+    return result;
+  }
+  
+  topicLists.forEach((list, index) => {
+    // Check required fields
+    if (!list.id) {
+      result.valid = false;
+      result.errors.push(`List ${index} missing id`);
+    }
+    
+    if (!list.subject) {
+      result.valid = false;
+      result.errors.push(`List ${index} missing subject`);
+    }
+    
+    if (!list.examBoard) {
+      result.valid = false;
+      result.errors.push(`List ${index} missing examBoard`);
+    }
+    
+    if (!list.examType) {
+      result.valid = false;
+      result.errors.push(`List ${index} missing examType`);
+    }
+    
+    // Validate topics array
+    if (!Array.isArray(list.topics)) {
+      result.valid = false;
+      result.errors.push(`List ${index} topics is not an array`);
+    } else {
+      // Check each topic
+      list.topics.forEach((topic, topicIndex) => {
+        if (typeof topic !== 'object') {
+          result.valid = false;
+          result.errors.push(`Topic ${topicIndex} in list ${index} is not an object`);
+        } else if (!topic.id && !topic.name) {
+          result.valid = false;
+          result.errors.push(`Topic ${topicIndex} in list ${index} missing required fields`);
+        }
+      });
+    }
+  });
+  
+  return result;
+};
+
+/**
+ * Fix common issues with topic lists structure
+ * @param {Array} topicLists - Array of topic lists to fix
+ * @returns {Array} - Fixed topic lists
+ */
+const fixTopicListsStructure = (topicLists) => {
+  if (!Array.isArray(topicLists)) {
+    return [];
+  }
+  
+  // Fix each topic list
+  return topicLists.map((list, index) => {
+    // Ensure basic structure
+    const fixedList = {
+      id: list.id || `list_${Date.now()}_${index}`,
+      subject: list.subject || "Unknown Subject",
+      examBoard: list.examBoard || "Unknown Board",
+      examType: list.examType || "Unknown Type",
+      lastUpdated: list.lastUpdated || new Date().toISOString()
+    };
+    
+    // Fix topics array
+    if (!Array.isArray(list.topics)) {
+      fixedList.topics = [];
+    } else {
+      fixedList.topics = list.topics.map((topic, topicIndex) => {
+        // Convert string topics to objects
+        if (typeof topic === 'string') {
+          return {
+            id: `topic_${Date.now()}_${index}_${topicIndex}`,
+            name: topic
+          };
+        }
+        
+        // Fix object topics
+        if (typeof topic === 'object' && topic !== null) {
+          return {
+            id: topic.id || `topic_${Date.now()}_${index}_${topicIndex}`,
+            name: topic.name || topic.topic || `Topic ${topicIndex + 1}`
+          };
+        }
+        
+        // Default for invalid topics
+        return {
+          id: `topic_${Date.now()}_${index}_${topicIndex}`,
+          name: `Unknown Topic ${topicIndex + 1}`
+        };
+      });
+    }
+    
+    return fixedList;
+  });
 };
 
 /**

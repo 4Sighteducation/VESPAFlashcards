@@ -167,6 +167,9 @@
   /* Add these new properties to ensure children stretch properly */
   align-items: stretch;
   justify-content: flex-start;
+  /* Fix for children not stretching to full width */
+  min-width: 0;
+  overflow: hidden; /* Prevent overflow from causing layout issues */
 }
 
 /* Topic Category Section */
@@ -185,6 +188,9 @@
   align-self: stretch;
   flex: 1 1 auto;
   box-sizing: border-box;
+  /* Fix for width issues */
+  min-width: 0;
+  max-width: 100%;
 }
 
 .topic-buttons-modal .category-heading {
@@ -259,6 +265,7 @@
   /* Add these properties to ensure proper width handling */
   min-width: 0; /* Allows flex items to shrink below content size */
   align-self: stretch;
+  overflow: hidden; /* Prevent overflow from causing layout issues */
 }
 
 .topic-buttons-modal .topic-button:last-child {
@@ -279,6 +286,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Fix width issues */
+  min-width: 0;
+  max-width: calc(100% - 80px); /* Allow space for buttons */
 }
 
 /* Topic Actions */
