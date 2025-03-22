@@ -471,64 +471,6 @@ const findCardsForTopic = (cards, topic) => {
   );
 };
 
-// Generate a report of topics and their associated cards
-const generateTopicCardReport = (topics = [], cards = []) => {
-  if (!topics.length) {
-    return {
-      topicsWithCards: [],
-      topicsWithoutCards: [],
-      orphanedCards: cards,
-      totalCards: cards.length,
-      lastUpdated: new Date().toISOString()
-    };
-  }
-
-  // Initialize report structure
-  const report = {
-    topicsWithCards: [],
-    topicsWithoutCards: [],
-    orphanedCards: [],
-    totalCards: cards.length,
-    lastUpdated: new Date().toISOString()
-  };
-
-  // Normalize topic objects for consistent processing
-  const normalizedTopics = topics.map(topic => 
-    typeof topic === 'string' ? { name: topic } : topic
-  );
-  
-  // Track which cards have been assigned to topics
-  const assignedCards = new Set();
-  
-  // Process each topic to find related cards
-  normalizedTopics.forEach(topic => {
-    const topicName = topic.name || topic;
-    const topicCards = findCardsForTopic(cards, topicName);
-    
-    // Add to appropriate list based on whether it has cards
-    if (topicCards.length > 0) {
-      report.topicsWithCards.push({
-        name: topicName,
-        cardCount: topicCards.length,
-        cards: topicCards
-      });
-      
-      // Mark these cards as assigned
-      topicCards.forEach(card => assignedCards.add(card.id));
-    } else {
-      report.topicsWithoutCards.push({
-        name: topicName,
-        cardCount: 0
-      });
-    }
-  });
-  
-  // Find orphaned cards (not assigned to any topic)
-  report.orphanedCards = cards.filter(card => !assignedCards.has(card.id));
-  
-  return report;
-};
-
 // Check if a card is synchronized with its topic
 const isCardSynchronized = (card, topics = []) => {
   if (!card || !card.topic || !topics.length) return false;
