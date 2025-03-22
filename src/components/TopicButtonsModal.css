@@ -29,7 +29,7 @@
 .topic-buttons-modal {
   background-color: white;
   width: 900px; /* Fixed width rather than percentage */
-  max-width: 90%; /* Maximum percentage of viewport */
+  max-width: 95vw; /* Slightly larger percentage to prevent split appearance */
   height: 80vh;
   max-height: 90vh;
   display: flex;
@@ -39,6 +39,8 @@
   position: relative;
   animation: modalEnter 0.3s ease-out;
   overflow: hidden; /* Prevent any overflow */
+  /* Remove any potential borders that may cause visual splits */
+  border: none;
 }
 
 @keyframes modalEnter {
@@ -148,6 +150,8 @@
   background-color: #f8fafc;
   width: 100%;
   height: calc(100% - 70px); /* Adjust based on header height */
+  /* Ensure no vertical split by removing borders */
+  border: none;
 }
 
 /* Topic Categories Container */
@@ -157,6 +161,9 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  /* Remove any potential borders or backgrounds causing split */
+  border: none;
+  background: transparent;
 }
 
 /* Topic Category Section */
@@ -168,6 +175,9 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  /* Remove split-causing issues */
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .topic-buttons-modal .category-heading {
@@ -180,6 +190,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  /* Ensure full width */
+  width: 100%;
 }
 
 .topic-buttons-modal .category-icon {
@@ -190,7 +202,11 @@
 /* Subcategory styles */
 .topic-buttons-modal .subcategory-section {
   margin-bottom: 1.25rem;
-  width: 100%;
+  width: 100%; /* Ensure full width */
+  /* Remove any split-causing issues */
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
 }
 
 .topic-buttons-modal .subcategory-section:last-child {
@@ -211,6 +227,8 @@
   margin: 0 0 0.75rem 0;
   padding-left: 0.5rem;
   border-left: 3px solid #4a5568;
+  /* Ensure full width */
+  width: calc(100% - 0.5rem);
 }
 
 /* Topic Button Style */
@@ -225,6 +243,8 @@
   transition: all 0.2s ease;
   margin-bottom: 0.75rem;
   width: 100%;
+  /* Fix any box model issues causing split */
+  box-sizing: border-box;
 }
 
 .topic-buttons-modal .topic-button:last-child {
@@ -456,4 +476,9 @@
 .topic-buttons-modal .modal-content {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+/* Debug - add outline to see what's causing split */
+.reset-style-root * {
+  outline: none !important;
 }
