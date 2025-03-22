@@ -452,7 +452,7 @@ const AICardGenerator = ({
       }
 
       // Use our centralized service to save topic lists
-      const success = await saveTopicLists(topicLists, userId, auth);
+      const success = await saveTopicList(topicLists, userId, auth);
       
       if (success) {
         console.log("Topic lists saved to Knack successfully:", topicLists.length, "lists");

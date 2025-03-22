@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import NewTopicModal from "./NewTopicModal";
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
 import { 
   persistTopics, 
@@ -51,6 +50,7 @@ const TopicListSyncManager = ({
   const [currentTopics, setCurrentTopics] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [activeModal, setActiveModal] = useState('view'); // 'view', 'generate', 'buttons'
   
   // Load existing topic lists from Knack when the component mounts or subject changes
   useEffect(() => {
@@ -268,9 +268,6 @@ const TopicListSyncManager = ({
     list.examBoard === examBoard && 
     list.examType === examType
   );
-  
-  // State for tracking which modal to show
-  const [activeModal, setActiveModal] = useState('view'); // 'view', 'generate', 'buttons'
   
   // Use our enhanced topic list modal flow
   return (
