@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FaTimes, FaPlus, FaStar, FaTrash, FaMagic, FaSave } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaStar, FaTrash, FaMagic, FaSave, FaFolder } from 'react-icons/fa';
 import './TopicButtonsModal.css';
 
 /**
@@ -33,15 +33,59 @@ const TopicButtonsModal = ({
     setTopicToDelete(null);
   }, []);
 
-  // Group topics by category
-  const groupedTopics = topics.reduce((acc, topic) => {
-    const category = topic.category || 'Uncategorized';
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(topic);
-    return acc;
-  }, {});
+  // Group topics by main category and subcategory
+  const organizeTopics = useCallback((topicsList) => {
+    const organizedTopics = {};
+    
+    topicsList.forEach(topic => {
+      // Extract topic name information
+      let name = topic.displayName || topic.name || '';
+      let mainCategory = 'General';
+      let subCategory = null;
+      
+      // Check for main topic pattern (e.g., "Politics of the Late Republic: Civil War")
+      const mainTopicMatch = name.match(/^([^:]+):\s*(.+)$/);
+      
+      if (mainTopicMatch) {
+        mainCategory = mainTopicMatch[1].trim();
+        
+        // Check if there's a subcategory (e.g., "Civil War")
+        const subParts = mainTopicMatch[2].split(/\s*-\s*/);
+        if (subParts.length > 1) {
+          subCategory = subParts[0].trim();
+          name = subParts.slice(1).join(' - ').trim();
+        } else {
+          name = mainTopicMatch[2].trim();
+        }
+      }
+      
+      // Create main category if it doesn't exist
+      if (!organizedTopics[mainCategory]) {
+        organizedTopics[mainCategory] = {
+          mainCategory: true,
+          subcategories: {}
+        };
+      }
+      
+      // Use subcategory if available, otherwise use generic "Topics"
+      const subcategoryKey = subCategory || 'Topics';
+      
+      // Create subcategory if it doesn't exist
+      if (!organizedTopics[mainCategory].subcategories[subcategoryKey]) {
+        organizedTopics[mainCategory].subcategories[subcategoryKey] = [];
+      }
+      
+      // Add topic to its subcategory
+      organizedTopics[mainCategory].subcategories[subcategoryKey].push({
+        ...topic,
+        parsedName: name
+      });
+    });
+    
+    return organizedTopics;
+  }, []);
+
+  const organizedTopics = organizeTopics(topics);
 
   const handleGenerateCards = useCallback(async (topic) => {
     setIsGenerating(true);
@@ -101,33 +145,44 @@ const TopicButtonsModal = ({
 
         <div className="modal-content">
           <div className="topic-buttons-container">
-            {Object.keys(groupedTopics).length > 0 ? (
-              Object.entries(groupedTopics).map(([category, categoryTopics]) => (
-                <div key={category} className="topic-category-section">
-                  <h3 className="category-heading">{category}</h3>
-                  <div className="topic-buttons-grid">
-                    {categoryTopics.map((topic) => (
-                      <div key={topic.id || topic.fullName} className="topic-button">
-                        <span className="topic-name">{topic.displayName || topic.name}</span>
-                        <div className="topic-actions">
-                          <button
-                            className="generate-button"
-                            onClick={() => setActivePopup(topic.id || topic.fullName)}
-                            title="Generate Cards"
-                          >
-                            <FaMagic />
-                          </button>
-                          <button
-                            className="delete-button"
-                            onClick={() => setTopicToDelete(topic)}
-                            title="Delete Topic"
-                          >
-                            <FaTrash />
-                          </button>
-                        </div>
+            {Object.keys(organizedTopics).length > 0 ? (
+              Object.entries(organizedTopics).map(([mainCategory, categoryData]) => (
+                <div key={mainCategory} className="topic-category-section">
+                  <h3 className="category-heading">
+                    <FaFolder className="category-icon" /> {mainCategory}
+                  </h3>
+                  
+                  {Object.entries(categoryData.subcategories).map(([subCategory, subTopics]) => (
+                    <div key={`${mainCategory}-${subCategory}`} className="subcategory-section">
+                      {subCategory !== 'Topics' && (
+                        <h4 className="subcategory-heading">{subCategory}</h4>
+                      )}
+                      
+                      <div className="topic-buttons-grid">
+                        {subTopics.map((topic) => (
+                          <div key={topic.id || topic.fullName} className="topic-button">
+                            <span className="topic-name">{topic.parsedName || topic.displayName || topic.name}</span>
+                            <div className="topic-actions">
+                              <button
+                                className="generate-button"
+                                onClick={() => setActivePopup(topic.id || topic.fullName)}
+                                title="Generate Cards"
+                              >
+                                <FaMagic />
+                              </button>
+                              <button
+                                className="delete-button"
+                                onClick={() => setTopicToDelete(topic)}
+                                title="Delete Topic"
+                              >
+                                <FaTrash />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               ))
             ) : (
