@@ -3,6 +3,7 @@ import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
 import { saveTopicLists, loadTopicLists, safeParseJSON } from '../services/TopicPersistenceService';
+import TopicHub from '../components/TopicHub';
 
 // Constants for question types and exam boards
 const QUESTION_TYPES = [
@@ -1340,18 +1341,51 @@ Use this format for different question types:
           </div>
         );
         
-      case 4: // Topic
+      case 4: // Topic Hub
         return (
           <div className="step-content">
-            <h2>Select a Topic</h2>
+            <h2>Topic Hub</h2>
             
-            <div className="form-group">
-              <label>Topic</label>
-              {renderTopicSelectionUI()}
-            </div>
-            
-            {/* Saved topic lists shown below */}
-            {renderSavedTopicLists()}
+            <TopicHub
+              subject={formData.subject || formData.newSubject}
+              examBoard={formData.examBoard}
+              examType={formData.examType}
+              initialTopics={hierarchicalTopics}
+              onSaveTopicList={(topicList) => {
+                // Create a new saved list
+                const newSavedList = {
+                  id: generateId('topiclist'),
+                  name: topicList.name,
+                  examBoard: formData.examBoard,
+                  examType: formData.examType,
+                  subject: formData.subject || formData.newSubject,
+                  topics: topicList.topics,
+                  created: new Date().toISOString(),
+                  userId: userId
+                };
+                
+                // Add to state
+                const updatedLists = [...savedTopicLists, newSavedList];
+                setSavedTopicLists(updatedLists);
+                
+                // Save to Knack
+                saveTopicListToKnack(updatedLists);
+                setTopicListSaved(true);
+                
+                console.log("Topic list saved:", newSavedList.name);
+              }}
+              onSelectTopic={(topic) => {
+                // Set the selected topic and move to the next step
+                setFormData(prev => ({
+                  ...prev,
+                  topic: topic.topic,
+                  newTopic: ''
+                }));
+                
+                console.log("Selected topic:", topic.topic);
+                setCurrentStep(5); // Move to number of cards step
+              }}
+            />
           </div>
         );
         

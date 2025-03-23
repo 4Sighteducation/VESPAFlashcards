@@ -92,43 +92,76 @@ For subjects with optional routes/topics (e.g., History with different period op
 `;
 
 /**
- * A simpler prompt for extracting just the topic names in a format suitable for the app
+ * An improved prompt for extracting topic lists with better structure and organization
  */
-const SIMPLIFIED_TOPIC_EXTRACTION_PROMPT = `Return only a valid JSON array with no additional text. Search for the full syllabus topic list for {examBoard} {examType} {subject}, default to the current academic year specification if no update is available. 
+const IMPROVED_TOPIC_EXTRACTION_PROMPT = `You are an exam syllabus expert. Return ONLY a valid JSON array with no additional text, explanations, or prefixes.
 
-List topic areas and their subtopics in a hierarchical format. For each main topic area, list its subtopics as: "Topic Area: Subtopic".
+Find the current {examBoard} {examType} {subject} specification for the {academicYear} academic year from the official source:
+- AQA: https://www.aqa.org.uk/
+- Edexcel/Pearson: https://qualifications.pearson.com/
+- OCR: https://www.ocr.org.uk/
+- WJEC/Eduqas: https://www.wjec.co.uk/ or https://www.eduqas.co.uk/
+- SQA: https://www.sqa.org.uk/
 
-Group related subtopics under their main topic area and ensure the format is exactly:
-["Topic Area: Subtopic 1", "Topic Area: Subtopic 2", "Another Topic Area: Subtopic 1", ...].
+Extract ALL topics and subtopics in this exact format:
+[
+  {
+    "id": "1.1",
+    "topic": "Topic Area 1: Subtopic 1",
+    "mainTopic": "Topic Area 1",
+    "subtopic": "Subtopic 1"
+  },
+  {
+    "id": "1.2",
+    "topic": "Topic Area 1: Subtopic 2",
+    "mainTopic": "Topic Area 1",
+    "subtopic": "Subtopic 2"
+  },
+  {
+    "id": "2.1",
+    "topic": "Topic Area 2: Subtopic 1",
+    "mainTopic": "Topic Area 2",
+    "subtopic": "Subtopic 1"
+  }
+]
 
-Ensure each main topic appears multiple times (once for each of its subtopics) to preserve the hierarchy.
-Be comprehensive and include all topics and subtopics from the official specification.
-`;
+FORMAT RULES:
+1. Each string must follow the pattern "Main Topic: Subtopic"
+2. Include EVERY subtopic from the official specification
+3. Repeat the main topic name for each of its subtopics
+4. Use the exact topic and subtopic names from the official specification
+5. No duplicates allowed
+6. No extra explanations outside the JSON array
+7. Return properly formatted, valid JSON only
+
+SOURCE: Use only the latest official {examBoard} specification document.`;
 
 /**
  * A function to generate the specific prompt based on exam parameters
  * @param {string} examBoard - The exam board (AQA, Edexcel, etc.)
  * @param {string} examType - The exam type (GCSE, A Level)
  * @param {string} subject - The subject name
- * @param {boolean} detailed - Whether to use the detailed or simplified prompt
+ * @param {boolean} detailed - Whether to use the detailed or structured prompt
+ * @param {string} academicYear - The academic year (e.g., "2024-2025")
  * @returns {string} The formatted prompt
  */
-function generateTopicPrompt(examBoard, examType, subject, detailed = false) {
+function generateTopicPrompt(examBoard, examType, subject, detailed = false, academicYear = "2024-2025") {
   if (detailed) {
     return TOPIC_EXTRACTION_PROMPT
       .replace('BOARD_NAME', examBoard)
       .replace('GCSE/A_LEVEL', examType)
       .replace('SUBJECT_NAME', subject);
   } else {
-    return SIMPLIFIED_TOPIC_EXTRACTION_PROMPT
+    return IMPROVED_TOPIC_EXTRACTION_PROMPT
       .replace('{examBoard}', examBoard)
       .replace('{examType}', examType)
-      .replace('{subject}', subject);
+      .replace('{subject}', subject)
+      .replace('{academicYear}', academicYear);
   }
 }
 
 export {
   TOPIC_EXTRACTION_PROMPT,
-  SIMPLIFIED_TOPIC_EXTRACTION_PROMPT,
+  IMPROVED_TOPIC_EXTRACTION_PROMPT,
   generateTopicPrompt
-}; 
+};
