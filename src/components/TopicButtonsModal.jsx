@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FaTimes, FaPlus, FaStar, FaTrash, FaMagic, FaSave, FaFolder } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaStar, FaTrash, FaMagic, FaSave, FaFolder, FaBolt } from 'react-icons/fa';
 import './TopicButtonsModal.css';
 
 /**
@@ -87,17 +87,37 @@ const TopicButtonsModal = ({
 
   const organizedTopics = organizeTopics(topics);
 
+  // Updated handle generate cards to include all topic metadata
   const handleGenerateCards = useCallback(async (topic) => {
     setIsGenerating(true);
     try {
-      await onGenerateCards(topic);
-      setActivePopup(null);
+      // Get the topic data to pass to the card generator
+      const topicData = {
+        ...topic,
+        subject,
+        examBoard,
+        examType,
+        // Ensure the topic name is properly set
+        topic: topic.name || topic.parsedName || topic.displayName || topic.fullName
+      };
+      
+      console.log("Generating cards with topic data:", topicData);
+      
+      // Pass to the onGenerateCards function which should open the AICardGenerator at stage 5
+      await onGenerateCards(topicData);
+      
+      // Close the topic modal
+      onClose();
     } catch (error) {
       console.error('Error generating cards:', error);
     } finally {
       setIsGenerating(false);
     }
-  }, [onGenerateCards]);
+  }, [onGenerateCards, subject, examBoard, examType, onClose]);
+
+  // State for delete topic list confirmation
+  const [showDeleteListConfirmation, setShowDeleteListConfirmation] = useState(false);
+  const [topicListToDelete, setTopicListToDelete] = useState(null);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (topicToDelete) {
@@ -106,6 +126,16 @@ const TopicButtonsModal = ({
       setUnsavedChanges(true);
     }
   }, [topicToDelete, onDeleteTopic]);
+
+  // Handle delete topic list confirmation
+  const handleDeleteListConfirm = useCallback(async () => {
+    if (topicListToDelete) {
+      // Here would be the actual deletion logic for a topic list
+      console.log("Deleting topic list:", topicListToDelete);
+      setTopicListToDelete(null);
+      setShowDeleteListConfirmation(false);
+    }
+  }, [topicListToDelete]);
 
   const handleSaveTopics = useCallback(() => {
     if (onSaveTopics) {
@@ -178,10 +208,10 @@ const TopicButtonsModal = ({
                             <div className="topic-actions">
                               <button
                                 className="generate-button"
-                                onClick={() => setActivePopup(topic.id || topic.fullName)}
+                                onClick={() => handleGenerateCards(topic)}
                                 title="Generate Cards"
                               >
-                                <FaMagic />
+                                <FaBolt />
                               </button>
                               <button
                                 className="delete-button"
@@ -253,7 +283,7 @@ const TopicButtonsModal = ({
           document.body
         )}
 
-        {/* Delete Confirmation Modal */}
+        {/* Delete Topic Confirmation Modal */}
         {topicToDelete && createPortal(
           <div 
             className="action-modal-overlay" 
@@ -288,6 +318,50 @@ const TopicButtonsModal = ({
                   }}
                 >
                   Delete Topic
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+        {/* Delete Topic List Confirmation Modal */}
+        {showDeleteListConfirmation && createPortal(
+          <div 
+            className="action-modal-overlay" 
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDeleteListConfirmation(false);
+              setTopicListToDelete(null);
+            }}
+          >
+            <div className="action-modal" onClick={e => e.stopPropagation()}>
+              <div className="action-modal-header">
+                <h3>Delete Topic List</h3>
+              </div>
+              <div className="action-modal-content">
+                <p>Are you sure you want to delete this topic list?</p>
+                <p>This will remove the entire list and cannot be undone.</p>
+              </div>
+              <div className="action-modal-footer">
+                <button 
+                  className="cancel-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteListConfirmation(false);
+                    setTopicListToDelete(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="action-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteListConfirm();
+                  }}
+                >
+                  Delete List
                 </button>
               </div>
             </div>

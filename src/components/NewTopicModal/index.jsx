@@ -178,6 +178,7 @@ const NewTopicModal = ({
             onAddTopic={handleAddTopic}
             onDeleteTopic={handleDeleteTopic}
             onEditTopic={handleEditTopic}
+            onGenerateCards={onGenerateCards}
             error={error}
           />
         );

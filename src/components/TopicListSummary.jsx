@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./TopicListSummary.css";
 import TopicButtonsModal from "./TopicButtonsModal";
+import { FaBolt, FaTrash } from "react-icons/fa";
 
 /**
  * TopicListSummary - A streamlined component for topic list management
@@ -28,6 +29,30 @@ const TopicListSummary = ({
   const [showTopicInfoModal, setShowTopicInfoModal] = useState(false);
   const [isPrioritizing, setIsPrioritizing] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [topicListToDelete, setTopicListToDelete] = useState(null);
+
+  // Handle opening the topic selection modal for generating cards
+  const handleGenerateCards = () => {
+    setShowTopicsModal(true);
+  };
+
+  // Handle delete with confirmation
+  const handleDeleteTopicList = (topicList) => {
+    setTopicListToDelete(topicList);
+    setShowDeleteConfirmation(true);
+  };
+
+  // Confirm deletion of topic list
+  const confirmDeleteTopicList = () => {
+    if (topicListToDelete) {
+      // Call the actual delete function from props
+      // onDeleteTopicList(topicListToDelete);
+      console.log("Deleting topic list:", topicListToDelete);
+      setShowDeleteConfirmation(false);
+      setTopicListToDelete(null);
+    }
+  };
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -135,6 +160,15 @@ const TopicListSummary = ({
 
         <div className="actions-section">
           <button 
+            className="action-button generate-cards-button"
+            onClick={handleGenerateCards}
+            disabled={isLoading || isRegenerating || topics.length === 0}
+          >
+            <span className="button-icon"><FaBolt /></span>
+            <span className="button-text">Generate Cards</span>
+          </button>
+
+          <button 
             className="action-button view-topics-button"
             onClick={handleViewTopics}
             disabled={isLoading || isRegenerating}
@@ -162,6 +196,15 @@ const TopicListSummary = ({
               {isRegenerating ? 'Regenerating...' : 'Regenerate Topics'}
             </span>
           </button>
+
+          <button 
+            className="action-button delete-button"
+            onClick={() => handleDeleteTopicList({ subject, examBoard, examType })}
+            disabled={isLoading || topics.length === 0}
+          >
+            <span className="button-icon"><FaTrash /></span>
+            <span className="button-text">Delete List</span>
+          </button>
         </div>
       </div>
       
@@ -184,7 +227,25 @@ const TopicListSummary = ({
       )}
       
       {/* Render the simple topic info modal if needed */}
-      {renderTopicInfoModal()}
+  {renderTopicInfoModal()}
+  
+  {/* Render Delete Confirmation Modal */}
+  {showDeleteConfirmation && (
+    <div className="modal-overlay" onClick={() => setShowDeleteConfirmation(false)}>
+      <div className="confirmation-modal" onClick={(e) => e.stopPropagation()}>
+        <h3>Delete Topic List</h3>
+        <p>Are you sure you want to delete this topic list? This action cannot be undone.</p>
+        <div className="confirmation-actions">
+          <button className="cancel-button" onClick={() => setShowDeleteConfirmation(false)}>
+            Cancel
+          </button>
+          <button className="delete-button" onClick={confirmDeleteTopicList}>
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
     </div>
   );
 };

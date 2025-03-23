@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaFolder, FaEdit, FaTrash, FaPlus, FaExclamationTriangle, FaSave } from 'react-icons/fa';
+import { FaFolder, FaEdit, FaTrash, FaPlus, FaExclamationTriangle, FaSave, FaBolt } from 'react-icons/fa';
 
 /**
  * TopicReviewStep - Second step in the topic modal flow
@@ -10,6 +10,7 @@ const TopicReviewStep = ({
   onAddTopic,
   onDeleteTopic,
   onEditTopic,
+  onGenerateCards,
   error
 }) => {
   const [newTopicName, setNewTopicName] = useState('');
@@ -116,6 +117,13 @@ const TopicReviewStep = ({
                       <>
                         <span className="topic-item-name">{topic.name}</span>
                         <div className="topic-item-actions">
+                          <button
+                            className="generate-button"
+                            onClick={() => onGenerateCards && onGenerateCards(topic)}
+                            title="Generate Cards from this Topic"
+                          >
+                            <FaBolt />
+                          </button>
                           <button
                             className="edit-button"
                             onClick={() => handleStartEdit(topic)}

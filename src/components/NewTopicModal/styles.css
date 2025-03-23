@@ -278,6 +278,17 @@
   color: white;
 }
 
+.topic-item-actions .generate-button {
+  color: #f5a623;
+  background-color: rgba(245, 166, 35, 0.1);
+}
+
+.topic-item-actions .generate-button:hover {
+  background-color: #f5a623;
+  color: white;
+  transform: scale(1.1);
+}
+
 .add-topic-form {
   display: flex;
   gap: 12px;

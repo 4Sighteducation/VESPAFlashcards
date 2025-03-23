@@ -311,13 +311,14 @@
 }
 
 .topic-buttons-modal .generate-button {
-  background-color: #e3f2fd;
-  color: #1976D2;
+  background-color: #fff9e6;
+  color: #f5a623;
 }
 
 .topic-buttons-modal .generate-button:hover {
-  background-color: #1976D2;
+  background-color: #f5a623;
   color: white;
+  transform: scale(1.1);
 }
 
 .topic-buttons-modal .delete-button {

@@ -149,19 +149,56 @@
   pointer-events: none;
 }
 
+.generate-cards-button {
+  background-color: #fff9e6;
+  color: #f5a623;
+  border: 1px solid #f5a623;
+}
+
+.generate-cards-button:hover:not(:disabled) {
+  background-color: #f5a623;
+  color: white;
+}
+
 .view-topics-button {
   background-color: #e6f7ff;
-  border-color: #1890ff;
+  border: 1px solid #1890ff;
+}
+
+.view-topics-button:hover:not(:disabled) {
+  background-color: #1890ff;
+  color: white;
 }
 
 .prioritize-button {
   background-color: #fff7e6;
-  border-color: #ffc53d;
+  border: 1px solid #ffc53d;
+}
+
+.prioritize-button:hover:not(:disabled) {
+  background-color: #ffc53d;
+  color: white;
 }
 
 .regenerate-button {
   background-color: #f6ffed;
-  border-color: #52c41a;
+  border: 1px solid #52c41a;
+}
+
+.regenerate-button:hover:not(:disabled) {
+  background-color: #52c41a;
+  color: white;
+}
+
+.delete-button {
+  background-color: #ffebee;
+  border: 1px solid #ff4d4f;
+  color: #ff4d4f;
+}
+
+.delete-button:hover:not(:disabled) {
+  background-color: #ff4d4f;
+  color: white;
 }
 
 /* Topic info modal */
@@ -178,15 +215,56 @@
   z-index: 1002;
 }
 
-.topic-info-modal {
+.topic-info-modal,
+.confirmation-modal {
   background-color: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 80vh;
+  border-radius: 5px;
   padding: 20px;
-  position: relative;
+  width: 80%;
+  max-width: 800px;
+  max-height: 80vh;
   overflow-y: auto;
+  position: relative;
+}
+
+.confirmation-modal {
+  max-width: 500px;
+  text-align: center;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.confirmation-actions button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.confirmation-actions .cancel-button {
+  background-color: #f0f0f0;
+  border: 1px solid #d0d0d0;
+  color: #666;
+}
+
+.confirmation-actions .delete-button {
+  background-color: #ff4d4f;
+  border: 1px solid #ff4d4f;
+  color: white;
+}
+
+.confirmation-actions .cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+.confirmation-actions .delete-button:hover {
+  background-color: #ff7875;
 }
 
 .topic-info-modal h3 {
