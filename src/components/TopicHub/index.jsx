@@ -68,18 +68,23 @@ const TopicHub = ({
     }
   }, [topics]);
   
+  // API key - matching the format used in AICardGenerator for consistency
+  const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
+
   // Call the API to generate topics
   const generateTopics = async () => {
     setIsGenerating(true);
     setError(null);
     
     try {
+      console.log("Starting topic generation for:", examBoard, examType, subject);
+      
       // Implement the API call to generate topics
       // This should use your OpenAI integration and the updated prompt
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.REACT_APP_OPENAI_KEY}`,
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -150,7 +155,26 @@ const TopicHub = ({
       
     } catch (error) {
       console.error("Error generating topics:", error);
-      setError(`Failed to generate topics: ${error.message}`);
+      
+      // Additional debugging info
+      console.error("API Key available:", !!OPENAI_API_KEY);
+      console.error("API Key length:", OPENAI_API_KEY ? OPENAI_API_KEY.length : 0);
+      
+      // Log more detailed error information
+      if (error.response) {
+        console.error("API response status:", error.response.status);
+        console.error("API response data:", error.response.data);
+      }
+      
+      // Show a more detailed error message to the user
+      let errorMessage = `Failed to generate topics: ${error.message}`;
+      if (error.message.includes("API key")) {
+        errorMessage = "API key error. Please check your OpenAI API key configuration.";
+      } else if (!OPENAI_API_KEY || OPENAI_API_KEY === "your-openai-key") {
+        errorMessage = "No API key found. Please add your OpenAI API key to the environment variables.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsGenerating(false);
     }
