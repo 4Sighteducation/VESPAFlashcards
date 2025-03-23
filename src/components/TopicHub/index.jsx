@@ -29,6 +29,7 @@ const TopicHub = ({
   const [newTopicInput, setNewTopicInput] = useState({ mainTopic: '', subtopic: '' });
   const [usingFallbackTopics, setUsingFallbackTopics] = useState(false);
   const [showFallbackNotice, setShowFallbackNotice] = useState(false);
+  const [useExistingMainTopic, setUseExistingMainTopic] = useState(true);
   
   // State for edit functionality
   const [editMode, setEditMode] = useState(null);
@@ -1430,13 +1431,53 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
           <h4>Add New Topic</h4>
           <div className="add-topic-form">
             <div className="add-topic-inputs">
-              <input
-                type="text"
-                value={newTopicInput.mainTopic}
-                onChange={(e) => setNewTopicInput({...newTopicInput, mainTopic: e.target.value})}
-                placeholder="Main Topic"
-                className="add-main-topic"
-              />
+              <div className="main-topic-input-container">
+                <div className="topic-input-toggle">
+                  <label className="toggle-label">
+                    <input
+                      type="checkbox"
+                      checked={useExistingMainTopic}
+                      onChange={() => setUseExistingMainTopic(!useExistingMainTopic)}
+                      className="toggle-checkbox"
+                    />
+                    <span className="toggle-text">
+                      {useExistingMainTopic ? "Select existing main topic" : "Add new main topic"}
+                    </span>
+                  </label>
+                </div>
+                
+                {useExistingMainTopic && mainTopics.length > 0 ? (
+                  <select
+                    value={newTopicInput.mainTopic}
+                    onChange={(e) => {
+                      if (e.target.value === "__add_new__") {
+                        // Switch to text input mode if user selects "Add New Main Topic"
+                        setUseExistingMainTopic(false);
+                        setNewTopicInput({...newTopicInput, mainTopic: ''});
+                      } else {
+                        setNewTopicInput({...newTopicInput, mainTopic: e.target.value});
+                      }
+                    }}
+                    className="main-topic-select"
+                  >
+                    <option value="">-- Select Main Topic --</option>
+                    {mainTopics.map(mainTopic => (
+                      <option key={mainTopic.name} value={mainTopic.name}>
+                        {mainTopic.name}
+                      </option>
+                    ))}
+                    <option value="__add_new__">+ Add New Main Topic</option>
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={newTopicInput.mainTopic}
+                    onChange={(e) => setNewTopicInput({...newTopicInput, mainTopic: e.target.value})}
+                    placeholder="Main Topic"
+                    className="add-main-topic"
+                  />
+                )}
+              </div>
               <input
                 type="text"
                 value={newTopicInput.subtopic}
@@ -1448,7 +1489,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
             <button 
               onClick={addTopic} 
               className="add-topic-button"
-              disabled={!newTopicInput.mainTopic.trim() || !newTopicInput.subtopic.trim()}
+              disabled={!newTopicInput.mainTopic.trim() || !newTopicInput.subtopic.trim() || newTopicInput.mainTopic === "__add_new__"}
             >
               <FaPlus /> Add Topic
             </button>

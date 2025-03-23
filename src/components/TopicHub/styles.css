@@ -282,6 +282,7 @@
   display: flex;
   align-items: center;
   flex: 1;
+  overflow: hidden; /* Prevent content from overflowing */
 }
 
 .subtopic-id {
@@ -289,15 +290,21 @@
   font-size: 14px;
   margin-right: 12px;
   min-width: 40px;
+  flex-shrink: 0; /* Don't allow ID to shrink */
 }
 
 .subtopic-name {
   color: #212529;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Show ellipsis when text overflows */
+  white-space: nowrap; /* Keep text on one line */
 }
 
 .subtopic-actions {
   display: flex;
   gap: 8px;
+  flex-shrink: 0; /* Don't allow buttons to shrink */
+  margin-left: 8px; /* Add some space between text and buttons */
 }
 
 .generate-button, .edit-button, .delete-button, .save-edit-button, .cancel-edit-button, .select-optional-button {
@@ -400,6 +407,45 @@
 .add-topic-inputs {
   display: flex;
   gap: 12px;
+}
+
+.main-topic-input-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.topic-input-toggle {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #495057;
+  cursor: pointer;
+}
+
+.toggle-checkbox {
+  margin-right: 8px;
+}
+
+.toggle-text {
+  user-select: none;
+}
+
+.main-topic-select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: #fff;
+  cursor: pointer;
 }
 
 .add-main-topic, .add-subtopic {
@@ -642,7 +688,50 @@
   border-radius: 4px;
 }
 
-@media (max-width: 768px) {
+/* Small devices (phones, < 576px) */
+@media (max-width: 575.98px) {
+  .topic-hub {
+    padding: 12px;
+  }
+  
+  .topic-generator, .topics-container {
+    padding: 16px;
+  }
+  
+  .subtopic-item {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px;
+  }
+  
+  .subtopic-actions {
+    margin-top: 10px;
+    align-self: flex-end;
+    display: flex; /* Ensure buttons are visible */
+  }
+  
+  .add-topic-inputs {
+    flex-direction: column;
+  }
+  
+  .generation-button, .regenerate-button, .add-topic-button, .continue-button, .save-button {
+    width: 100%; /* Full width buttons on small screens */
+    justify-content: center;
+  }
+  
+  .topics-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+  
+  .topics-actions button {
+    width: 100%;
+  }
+}
+
+/* Medium devices (tablets, 576px - 767px) */
+@media (min-width: 576px) and (max-width: 767.98px) {
   .topics-header {
     flex-direction: column;
     align-items: flex-start;
@@ -650,33 +739,30 @@
   
   .topics-actions {
     width: 100%;
-    justify-content: space-between;
+    gap: 8px;
+    margin-top: 10px;
   }
   
   .subtopic-item {
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 10px 16px;
   }
   
   .subtopic-actions {
-    margin-top: 12px;
-    align-self: flex-end;
+    display: flex; /* Ensure buttons are visible */
+  }
+}
+
+/* Large devices (desktops, 768px and up) */
+@media (min-width: 768px) {
+  .subtopic-actions {
+    display: flex; /* Ensure buttons are visible on all screen sizes */
   }
   
-  .subtopic-edit-form {
-    flex-direction: column;
+  .main-topic-header {
+    padding: 14px 18px;
   }
   
-  .edit-form-inputs {
-    width: 100%;
-    margin-bottom: 12px;
-  }
-  
-  .edit-form-actions {
-    align-self: flex-end;
-  }
-  
-  .add-topic-inputs {
-    flex-direction: column;
+  .subtopic-item {
+    padding: 12px 18px;
   }
 }
