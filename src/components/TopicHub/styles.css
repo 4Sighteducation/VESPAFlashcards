@@ -470,19 +470,35 @@
 
 /* Fallback notice styles */
 .fallback-notice {
+  margin-bottom: 16px;
+  padding: 10px 15px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #fff3cd;
-  border: 2px solid #ffeeba; /* Thicker border */
+}
+
+.fallback-notice-content {
+  display: flex;
+  align-items: center;
+}
+
+/* Database source badges */
+.database-source-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: #e6f7ff;
+  color: #0366d6;
   border-radius: 4px;
-  padding: 16px;
-  margin-bottom: 24px;
-  margin-top: 16px; /* Add top margin for better spacing */
-  color: #856404;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15); /* Add shadow for emphasis */
-  position: relative; /* Ensure proper stacking */
-  z-index: 100; /* Make sure it's not hidden */
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  margin-left: 8px;
+}
+
+.database-source-badge .badge-icon {
+  margin-right: 4px;
 }
 
 .fallback-notice-content {

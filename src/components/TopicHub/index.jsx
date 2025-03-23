@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes } from 'react-icons/fa';
 import './styles.css';
+import { generateTopicPrompt } from '../../prompts/topicListPrompt';
 
 /**
  * TopicHub - Enhanced topic management component
@@ -238,7 +239,7 @@ const TopicHub = ({
           model: "gpt-3.5-turbo",
           messages: [{
             role: "user",
-            content: generatePrompt(examBoard, examType, subject, academicYear)
+            content: generateTopicPrompt(examBoard, examType, subject, academicYear)
           }],
           max_tokens: 2000,
           temperature: 0.5
@@ -756,71 +757,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
     return null;
   };
 
-  // Generate the prompt using the flexible structure with explicit formatting requirements
-  const generatePrompt = (examBoard, examType, subject, academicYear) => {
-    const promptTemplate = `You are an exam syllabus expert. Extract the main topics and subtopics from the ${examBoard} ${examType} ${subject} specification for the ${academicYear} academic year.
-
-YOUR RESPONSE MUST BE VALID JSON ONLY - DO NOT INCLUDE ANY TEXT BEFORE OR AFTER THE JSON.
-
-Choose one of these formats (in order of preference):
-
-Format 1 - If the curriculum has clear main topics and subtopics:
-[
-  {
-    "id": "1.1",
-    "topic": "Main Topic 1: Subtopic 1",
-    "mainTopic": "Main Topic 1",
-    "subtopic": "Subtopic 1"
-  }
-]
-
-Format 2 - If the curriculum doesn't have a clear main/subtopic structure:
-[
-  "Topic 1",
-  "Topic 2",
-  "Topic 3"
-]
-
-Format 3 - If you can't find the exact curriculum, create topics based on standard ${subject} curricula:
-[
-  "Fundamental Concept 1",
-  "Fundamental Concept 2"
-]
-
-HANDLING OPTIONAL TOPICS (IMPORTANT - PRIORITIZE THIS):
-You MUST include ALL optional content in your response:
-- INCLUDE ALL optional topics in your response - this is essential
-- Mark optional topics clearly by adding "[Optional]" at the beginning of the topic name
-- For topics that belong to specific option groups, include the option group info: "[Optional - Option 1]"
-- If you see "Option 1:" or "Option A:" or similar in the source material, convert this to "[Optional - Option 1]" format
-- NEVER use "Option 1:" format in your responses - always use "[Optional - Option X]" format
-
-Example for optional topic:
-{
-  "id": "4.1",
-  "topic": "[Optional - Option 2] Ancient History: The Roman Empire",
-  "mainTopic": "[Optional - Option 2] Ancient History",
-  "subtopic": "The Roman Empire"
-}
-
-CRITICAL INSTRUCTIONS:
-- ONLY RETURN THE JSON ARRAY - NO PREFIX TEXT, NO EXPLANATIONS
-- ENSURE YOUR RESPONSE BEGINS WITH "[" AND ENDS WITH "]"
-- Include all main curriculum areas and key topics
-- If using Format 1, use "Topic Area: Subtopic" format for the "topic" field
-- If you find "Option 1:" or similar in the curriculum, CONVERT it to "[Optional - Option 1]" format
-- Avoid duplicate topics
-- If you can't access the specific curriculum, use Format 3 but make it relevant to ${examBoard} ${examType} level
-
-You can reference:
-- AQA: https://www.aqa.org.uk/
-- Edexcel/Pearson: https://qualifications.pearson.com/
-- OCR: https://www.ocr.org.uk/
-- WJEC/Eduqas: https://www.wjec.co.uk/ or https://www.eduqas.co.uk/
-- SQA: https://www.sqa.org.uk/`;
-    
-    return promptTemplate;
-  };
+  // Use the imported generateTopicPrompt function
   
   // Toggle expansion of a main topic
   const toggleMainTopic = (topicName) => {

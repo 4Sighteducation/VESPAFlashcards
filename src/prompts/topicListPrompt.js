@@ -1,167 +1,124 @@
 /**
- * AI Prompt for extracting exam topic lists
- * This prompt guides the AI to extract structured topic information from exam board websites
+ * Enhanced AI Prompt for extracting exam topic lists
+ * Provides detailed guidance for finding and structuring curriculum content
  */
 
-const TOPIC_EXTRACTION_PROMPT = `You are tasked with extracting the most current topic list for UK exam courses. Follow these steps precisely:
+const SIMPLIFIED_TOPIC_EXTRACTION_PROMPT = `You are an exam syllabus expert. Return ONLY a valid JSON array with no additional text, explanations, or prefixes.
 
-Use the user's selections to identify the correct exam board website:
+Find the current {examBoard} {examType} {subject} specification for the {academicYear} academic year using these approaches in order:
 
-AQA: https://www.aqa.org.uk/
-Edexcel: https://qualifications.pearson.com/
-OCR: https://www.ocr.org.uk/
-WJEC/Eduqas: https://www.wjec.co.uk/ or https://www.eduqas.co.uk/
-SQA: https://www.sqa.org.uk/
+1. FIRST ATTEMPT: Official source websites:
+   - AQA: https://www.aqa.org.uk/
+   - Edexcel/Pearson: https://qualifications.pearson.com/
+   - OCR: https://www.ocr.org.uk/
+   - WJEC/Eduqas: https://www.wjec.co.uk/ or https://www.eduqas.co.uk/
+   - SQA: https://www.sqa.org.uk/
 
+2. IF OFFICIAL SPECIFICATION IS DIFFICULT TO LOCATE:
+   - Look for official topic lists or syllabus summaries
+   - Check for teacher resources that list the full curriculum
+   - Review past papers to identify main topic areas
+   - Search for official revision guides or textbooks aligned with the current specification
 
-Navigate to the specific qualification page by:
+3. IF STILL UNCERTAIN:
+   - Use the most recent verified information available
+   - Make note of the source and year in the error message
 
-Identifying the correct URL structure for the exam board
-Using the qualification level (GCSE/A Level) and subject to find the specific page
-Looking for "Specification" or "Subject content" sections
+IMPORTANT: Each exam board uses different terminology and qualification levels. Normalize their structure as follows:
 
+EXAM BOARD TERMINOLOGY:
+- AQA: Extract from Units/Topics into main topics and subtopics
+- Edexcel: Extract from Themes/Topics into main topics and subtopics
+- OCR: Extract from Modules/Topics into main topics and subtopics
+- WJEC/Eduqas: Extract from Themes/Areas of study into main topics and subtopics
+- SQA: Extract from Outcomes/Assessment standards into main topics and subtopics
 
-Extract the complete topic list, focusing on:
+QUALIFICATION LEVELS:
+- A Level: Advanced level qualifications (England, Wales, and Northern Ireland)
+- AS Level: First year of A Level studies (England, Wales, and Northern Ireland)
+- GCSE: General Certificate of Secondary Education (England, Wales, and Northern Ireland)
+- National 5: Scottish equivalent to GCSE (Scotland)
+- Higher: Scottish equivalent to AS Level (Scotland)
+- Advanced Higher: Scottish equivalent to A Level (Scotland)
+- BTEC Level 2: Equivalent to GCSE (vocational qualification)
+- BTEC Level 3: Equivalent to A Level (vocational qualification)
+- Cambridge National Level 2: Equivalent to GCSE (vocational qualification)
+- Cambridge National Level 3: Equivalent to A Level (vocational qualification)
+- International Baccalaureate: Look for specific subject guides in the IB curriculum
 
-Main content areas/units
-Sub-topics within each area
-Any specified practical elements or coursework requirements
-Assessment objectives where relevant
+HANDLING OPTIONAL TOPICS:
+1. Mark optional topics with "[Optional]" prefix in both mainTopic and subtopic fields
+2. For optional topics that belong to specific groups, use "[Optional - Group X]" format
+3. NEVER use formats like "Option 1:" - always use "[Optional]" prefix instead
+4. Include ALL optional topics/routes in your response - do not omit any content
 
-
-Check for the most recent specification by:
-
-Verifying the "valid from" date (typically shown as academic years, e.g., "2023-2025")
-Confirming if it's the current specification or if there are upcoming changes
-
-
-Structure the extracted data in a clean JSON format as follows:
-
-{
-  "metadata": {
-    "exam_board": "BOARD_NAME",
-    "qualification": "GCSE/A_LEVEL",
-    "subject": "SUBJECT_NAME",
-    "specification_code": "CODE",
-    "valid_from": "DATE/YEAR",
-    "valid_until": "DATE/YEAR",
-    "specification_url": "FULL_URL_TO_SPECIFICATION",
-    "last_updated": "EXTRACTION_DATE"
-  },
-  "topics": [
-    {
-      "unit_number": "1",
-      "unit_title": "MAIN_TOPIC",
-      "weighting": "PERCENTAGE_IF_AVAILABLE",
-      "subtopics": [
-        {
-          "subtopic_id": "1.1",
-          "title": "SUBTOPIC_TITLE",
-          "description": "BRIEF_DESCRIPTION",
-          "required_practicals": ["PRACTICAL_1", "PRACTICAL_2"],
-          "assessment_objectives": ["AO1", "AO2"]
-        }
-      ]
-    }
-  ],
-  "assessment": {
-    "components": [
-      {
-        "title": "PAPER/COMPONENT_NAME",
-        "type": "EXAM/COURSEWORK/PRACTICAL",
-        "duration": "TIME_IN_MINUTES",
-        "weighting": "PERCENTAGE",
-        "total_marks": "NUMBER"
-      }
-    ]
-  }
-}
-
-Important handling instructions:
-
-If multiple specifications exist (e.g., Foundation and Higher tiers for GCSE), include both with clear labeling
-If the latest specification is not yet available online, provide the most recent one with a note about its status
-If a specification is being phased out, include information about both the current and upcoming specifications
-Always include direct URLs to the source pages where the information was extracted from
-Check for any recent updates or notices about specification changes
-
-
-Always verify the data against the official specification PDF where available, as this is the authoritative source
-If unable to access or parse certain information, include specific notes in the response about what's missing and why
-For subjects with optional routes/topics (e.g., History with different period options), include all available paths in a structured format
-`;
-
-/**
- * An improved prompt for extracting topic lists with better structure and organization
- */
-const IMPROVED_TOPIC_EXTRACTION_PROMPT = `You are an exam syllabus expert. Return ONLY a valid JSON array with no additional text, explanations, or prefixes.
-
-Find the current {examBoard} {examType} {subject} specification for the {academicYear} academic year from the official source:
-- AQA: https://www.aqa.org.uk/
-- Edexcel/Pearson: https://qualifications.pearson.com/
-- OCR: https://www.ocr.org.uk/
-- WJEC/Eduqas: https://www.wjec.co.uk/ or https://www.eduqas.co.uk/
-- SQA: https://www.sqa.org.uk/
-
-Extract ALL topics and subtopics in this exact format:
+Extract ONLY main topics and their immediate subtopics in this exact format:
 [
   {
-    "id": "1.1",
-    "topic": "Topic Area 1: Subtopic 1",
-    "mainTopic": "Topic Area 1",
-    "subtopic": "Subtopic 1"
+    "id": "1.1",  // Simple sequential numbering
+    "topic": "Main Topic: Subtopic",  // Combined for display
+    "mainTopic": "Main Topic",  // The primary topic area only
+    "subtopic": "Subtopic"  // First-level subtopic only
+  },
+  ...
+]
+
+RULES:
+1. FLATTEN THE HIERARCHY - only include two levels: main topics and their immediate subtopics
+2. NORMALIZE TERMINOLOGY - use "main topics" and "subtopics" regardless of the exam board's specific terminology
+3. PRESERVE EXACT SUBTOPIC STRUCTURE - If the specification lists items as separate subtopics, keep them separate. If listed as a single subtopic with multiple elements, keep as one subtopic. Do not split or combine subtopics differently than shown in the official specification.
+4. HANDLE COMPOUND SUBTOPICS - When a subtopic contains multiple elements separated by commas or "and" (e.g., "Daily life, cultural life and festivals"), preserve it exactly as written in the specification without splitting.
+5. CONSISTENT NUMBERING - Use simple sequential numbering (1.1, 1.2, 2.1, 2.2, etc.) regardless of the original specification
+6. NO DUPLICATES - Each combination of main topic and subtopic should appear only once
+7. CLEAN OUTPUT - The response must be ONLY the JSON array - no explanations or other text
+
+CRITICAL OUTPUT REQUIREMENTS:
+1. ONLY return the JSON array - absolutely no text before or after
+2. Ensure proper JSON syntax with double quotes around keys and string values
+3. No trailing commas after the last item in arrays or objects
+4. Each topic must have all required fields: id, topic, mainTopic, subtopic
+
+ERROR HANDLING:
+If you cannot find the specific syllabus, return: 
+[{"error": "Could not find current {examBoard} {examType} {subject} specification", 
+  "source": "Describe what sources you checked",
+  "alternative": "USE AI Fallback Function"}]
+
+// Example output for AQA A Level Physics (partial):
+[
+  {
+    "id": "1.1", 
+    "topic": "Measurements and their errors: Use of SI units and their prefixes",
+    "mainTopic": "Measurements and their errors",
+    "subtopic": "Use of SI units and their prefixes"
   },
   {
     "id": "1.2",
-    "topic": "Topic Area 1: Subtopic 2",
-    "mainTopic": "Topic Area 1",
-    "subtopic": "Subtopic 2"
-  },
-  {
-    "id": "2.1",
-    "topic": "Topic Area 2: Subtopic 1",
-    "mainTopic": "Topic Area 2",
-    "subtopic": "Subtopic 1"
+    "topic": "Measurements and their errors: Limitations of physical measurements", 
+    "mainTopic": "Measurements and their errors",
+    "subtopic": "Limitations of physical measurements"
   }
 ]
 
-FORMAT RULES:
-1. Each string must follow the pattern "Main Topic: Subtopic"
-2. Include EVERY subtopic from the official specification
-3. Repeat the main topic name for each of its subtopics
-4. Use the exact topic and subtopic names from the official specification
-5. No duplicates allowed
-6. No extra explanations outside the JSON array
-7. Return properly formatted, valid JSON only
-
-SOURCE: Use only the latest official {examBoard} specification document.`;
+SOURCE: Use only the latest official {examBoard} specification document from their website.`;
 
 /**
  * A function to generate the specific prompt based on exam parameters
- * @param {string} examBoard - The exam board (AQA, Edexcel, etc.)
- * @param {string} examType - The exam type (GCSE, A Level)
+ * @param {string} examBoard - The exam board (AQA, Edexcel, OCR, WJEC/Eduqas, SQA)
+ * @param {string} examType - The exam type (GCSE, A Level, etc.)
  * @param {string} subject - The subject name
- * @param {boolean} detailed - Whether to use the detailed or structured prompt
  * @param {string} academicYear - The academic year (e.g., "2024-2025")
  * @returns {string} The formatted prompt
  */
-function generateTopicPrompt(examBoard, examType, subject, detailed = false, academicYear = "2024-2025") {
-  if (detailed) {
-    return TOPIC_EXTRACTION_PROMPT
-      .replace('BOARD_NAME', examBoard)
-      .replace('GCSE/A_LEVEL', examType)
-      .replace('SUBJECT_NAME', subject);
-  } else {
-    return IMPROVED_TOPIC_EXTRACTION_PROMPT
-      .replace('{examBoard}', examBoard)
-      .replace('{examType}', examType)
-      .replace('{subject}', subject)
-      .replace('{academicYear}', academicYear);
-  }
+function generateTopicPrompt(examBoard, examType, subject, academicYear = "2024-2025") {
+  return SIMPLIFIED_TOPIC_EXTRACTION_PROMPT
+    .replace(/{examBoard}/g, examBoard)
+    .replace(/{examType}/g, examType)
+    .replace(/{subject}/g, subject)
+    .replace(/{academicYear}/g, academicYear);
 }
 
 export {
-  TOPIC_EXTRACTION_PROMPT,
-  IMPROVED_TOPIC_EXTRACTION_PROMPT,
+  SIMPLIFIED_TOPIC_EXTRACTION_PROMPT,
   generateTopicPrompt
 };
