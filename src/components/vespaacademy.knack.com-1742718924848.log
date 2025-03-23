@@ -1,0 +1,1356 @@
+ VESPA Config initialized: Object
+ Document ready - checking if flashcard app needs initialization
+ VESPA Integration script loaded successfully
+ Developed byKsense Technology Group LLCPRODUCTION MODE - Branch: mainKSENSE DEBUG: INJECTED URL: https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1
+ Object
+ Flashcard app: Scene rendered: scene_1206
+ Initializing Flashcard React app
+ Flashcard app: User is authenticated
+ Flashcard app: Basic user info: Object
+ Flashcard app: Getting complete user data for: 630510eb3c91500021a8fad2
+vespa-academy#flashcards/:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+ Flashcard app: Complete user data: Object
+ CONNECTION FIELD IDs
+ {
+  "emailId": "630510eb3c91500021a8fad2",
+  "schoolId": null,
+  "tutorId": null,
+  "roleId": null
+}
+ Flashcard app: First selector failed, trying alternatives
+ Flashcard app: No rich text field found, looking for the view
+ Flashcard app: View found, creating container
+ Flashcard app [2025-03-23T08:04:57.570Z]: Message from React app: APP_READY
+ MESSAGE RECEIVED
+ {
+  "type": "APP_READY",
+  "timestamp": "2025-03-23T08:04:57.570Z",
+  "hasData": "no"
+}
+ Flashcard app: React app is ready, sending user info (first time)
+ Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+ Flashcard app: User data search response: Object
+ Flashcard app: Found existing user data: Object
+ Flashcard app: Sent user info to React app
+ Flashcard app [2025-03-23T08:04:57.856Z]: Message from React app: AUTH_CONFIRMED
+ MESSAGE RECEIVED
+ {
+  "type": "AUTH_CONFIRMED",
+  "timestamp": "2025-03-23T08:04:57.856Z",
+  "hasData": "no"
+}
+ Flashcard app: Authentication confirmed by React app
+ Flashcard app [2025-03-23T08:04:57.928Z]: Message from React app: APP_READY
+ MESSAGE RECEIVED
+ {
+  "type": "APP_READY",
+  "timestamp": "2025-03-23T08:04:57.928Z",
+  "hasData": "no"
+}
+ Flashcard app: Ignoring duplicate APP_READY message
+ Flashcard app [2025-03-23T08:06:31.665Z]: Message from React app: SAVE_DATA
+ MESSAGE RECEIVED
+ {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-23T08:06:31.665Z",
+  "hasData": "yes"
+}
+ Flashcard app [2025-03-23T08:06:31.665Z]: Saving data from React app: Object
+ SAVE_DATA REQUEST RECEIVED
+ {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-23T08:06:31.665Z"
+}
+ Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+ SAVING DATA WITH RECORD ID
+ "630510eb3c91500021a8fad2"
+ Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+ Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+ SAVING TO KNACK: DATA STATS
+ {
+  "cardsCount": 0,
+  "colorCount": 0,
+  "spacedRepCount": 0
+}
+ Flashcard app: Successfully saved user data: undefined
+ KNACK SAVE SUCCESS
+ {
+  "userId": "630510eb3c91500021a8fad2",
+  "timestamp": "2025-03-23T08:06:32.178Z"
+}
+ Flashcard app [2025-03-23T08:08:36.616Z]: Message from React app: SAVE_DATA
+ MESSAGE RECEIVED
+ {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-23T08:08:36.616Z",
+  "hasData": "yes"
+}
+ Flashcard app [2025-03-23T08:08:36.616Z]: Saving data from React app: Object
+ SAVE_DATA REQUEST RECEIVED
+ {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-23T08:08:36.616Z"
+}
+ Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+ SAVING DATA WITH RECORD ID
+ "630510eb3c91500021a8fad2"
+ Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+ Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+ SAVING TO KNACK: DATA STATS
+ {
+  "cardsCount": 0,
+  "colorCount": 0,
+  "spacedRepCount": 0
+}
+ Flashcard app: Successfully saved user data: undefined
+ KNACK SAVE SUCCESS
+ {
+  "userId": "630510eb3c91500021a8fad2",
+  "timestamp": "2025-03-23T08:08:37.337Z"
+}
+ Flashcard app: Scene rendered: scene_1206
+ Initializing Flashcard React app
+  Flashcard app: User is not authenticated
+initializeFlashcardApp @ KnackJavascript4.js:485
+ logged in  true
+ assist false
+ resource role false
+ Flashcard app: Scene rendered: scene_1206
+ Initializing Flashcard React app
+ Flashcard app: User is authenticated
+ Flashcard app: Basic user info: Object
+ Flashcard app: Getting complete user data for: 630510eb3c91500021a8fad2
+ Flashcard app: Complete user data: Object
+ CONNECTION FIELD IDs
+ {
+  "emailId": "630510eb3c91500021a8fad2",
+  "schoolId": null,
+  "tutorId": null,
+  "roleId": null
+}
+ Flashcard app: First selector failed, trying alternatives
+ Flashcard app: No rich text field found, looking for the view
+ Flashcard app: View found, creating container
+ [Init] Sent ready message to parent
+ Flashcard app [2025-03-23T08:22:22.004Z]: Message from React app: APP_READY
+ MESSAGE RECEIVED
+ {
+  "type": "APP_READY",
+  "timestamp": "2025-03-23T08:22:22.004Z",
+  "hasData": "no"
+}
+ Flashcard app: React app is ready, sending user info (first time)
+ Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+ Flashcard app: User data search response: Object
+ Flashcard app: No existing user data found, creating new record
+ Flashcard app: Creating new flashcard user record for: 630510eb3c91500021a8fad2
+ Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+ Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+ CREATING NEW RECORD
+ {
+  "field_2954": "630510eb3c91500021a8fad2",
+  "field_2958": "aramsey@vespa.academy",
+  "field_2957": "2025-03-23T08:22:22.260Z",
+  "field_2979": "[]",
+  "field_2986": "[]",
+  "field_2987": "[]",
+  "field_2988": "[]",
+  "field_2989": "[]",
+  "field_2990": "[]",
+  "field_3000": "{}",
+  "field_3011": "[]",
+  "field_3030": "[]",
+  "field_3010": "Alena Ramsey",
+  "field_2956": "630510eb3c91500021a8fad2",
+  "field_3008": "603e9f97cb8481001b31183d"
+}
+ Flashcard app: Successfully created user record: Object
+ Flashcard app: Sent user info to React app
+ [Message Handler 2025-03-23T08:22:22.577Z] From parent: KNACK_USER_INFO
+ [User Info] First-time processing of user data
+ [User Info] Stored recordId: 67dfc4be3692f602c834b8c8
+ [User Info] Loaded topic lists from Knack: 0
+ [User Info] Loaded topic metadata from Knack: 0
+ [User Info] Successfully processed user data from Knack
+ [User Info] Sending AUTH_CONFIRMED message
+ Flashcard app [2025-03-23T08:22:22.581Z]: Message from React app: AUTH_CONFIRMED
+ MESSAGE RECEIVED
+ {
+  "type": "AUTH_CONFIRMED",
+  "timestamp": "2025-03-23T08:22:22.581Z",
+  "hasData": "no"
+}
+ Flashcard app: Authentication confirmed by React app
+ [Init] Sent ready message to parent
+ Flashcard app [2025-03-23T08:22:22.591Z]: Message from React app: APP_READY
+ MESSAGE RECEIVED
+ {
+  "type": "APP_READY",
+  "timestamp": "2025-03-23T08:22:22.591Z",
+  "hasData": "no"
+}
+ Flashcard app: Ignoring duplicate APP_READY message
+ User authenticated, loading topic lists from Knack
+ Loading topic lists from Knack for user: 630510eb3c91500021a8fad2
+ [TopicPersistenceService] Loading topic lists
+ {
+  "userId": "630510eb3c91500021a8fad2"
+}
+ [TopicPersistenceService] Looking up record ID for user
+ {
+  "userId": "630510eb3c91500021a8fad2"
+}
+ [TopicPersistenceService] Found record ID
+ {
+  "recordId": "67dfc4be3692f602c834b8c8"
+}
+ [TopicPersistenceService] Fetching user data
+ {
+  "recordId": "67dfc4be3692f602c834b8c8"
+}
+ [TopicPersistenceService] User data fetched successfully
+ {
+  "fields": [
+    "id",
+    "field_3010",
+    "field_3010_raw",
+    "field_3029_raw",
+    "field_3029",
+    "field_2954",
+    "field_2954_raw",
+    "field_3008",
+    "field_3008_raw",
+    "field_2956",
+    "field_2956_raw",
+    "field_3009",
+    "field_3009_raw",
+    "field_2958",
+    "field_2958_raw",
+    "field_2955_raw",
+    "field_2955",
+    "field_2978_raw",
+    "field_2978",
+    "field_2980_raw",
+    "field_2980",
+    "field_2979",
+    "field_2979_raw",
+    "field_2957",
+    "field_2957_raw",
+    "field_2959_raw",
+    "field_2959",
+    "field_2960",
+    "field_2960_raw",
+    "field_2974_raw",
+    "field_2974",
+    "field_2976",
+    "field_2976_raw",
+    "field_2977_raw",
+    "field_2977",
+    "field_2991",
+    "field_2991_raw",
+    "field_2992",
+    "field_2992_raw",
+    "field_2993",
+    "field_2993_raw",
+    "field_2994",
+    "field_2994_raw",
+    "field_2995",
+    "field_2995_raw",
+    "field_2986",
+    "field_2986_raw",
+    "field_2987",
+    "field_2987_raw",
+    "field_2988",
+    "field_2988_raw",
+    "field_2989",
+    "field_2989_raw",
+    "field_2990",
+    "field_2990_raw",
+    "field_3000",
+    "field_3000_raw",
+    "field_3011",
+    "field_3011_raw",
+    "field_3030",
+    "field_3030_raw",
+    "field_3031_raw",
+    "field_3031"
+  ]
+}
+ [TopicPersistenceService] Loaded topic lists
+ {
+  "count": 0
+}
+ [TopicPersistenceService] Loaded metadata
+ {
+  "count": 0
+}
+ Auto-generating topics for subject: Dance
+ Generating topics for: AQA A-Level Dance
+ Raw topic response: [
+    "Performance: Physical Skills",
+    "Performance: Technical Skills",
+    "Performance: Expressive Skills",
+    "Performance: Mental Skills and Attributes",
+    "Choreography: Choreographic Process",
+    "Choreography: Choreographic Devices",
+    "Choreography: Structuring Devices and Form",
+    "Choreography: Constituent Features",
+    "Choreography: Aural Setting",
+    "Choreography: Physical Setting",
+    "Choreography: Communication of Choreographic Intent",
+    "Critical Engagement: Study of Set Works",
+    "Critical Engagement: Analysis and Interpretation",
+    "Critical Engagement: Contextual Understanding",
+    "Critical Engagement: Professional Dance Works",
+    "Critical Engagement: Historical Development of Dance",
+    "Critical Engagement: Roles and Responsibilities in Dance"
+]
+ Generated topics: Array(17)
+ Generated topics: Array(17)
+ Showing options explanation modal
+ Creating new topic list: Object
+ Saving topic lists to Knack for user: 630510eb3c91500021a8fad2
+ [TopicPersistenceService] Saving topic lists
+ {
+  "count": 1,
+  "userId": "630510eb3c91500021a8fad2",
+  "hasMetadata": false,
+  "timestamp": "2025-03-23T08:22:50.486Z"
+}
+  Topic lists validation failed: Array(17)
+(anonymous) @ main.e2b08b87.js:2
+ [TopicPersistenceService] Fixed topic lists structure
+ {
+  "originalCount": 1,
+  "fixedCount": 1,
+  "timestamp": "2025-03-23T08:22:50.487Z"
+}
+ [TopicPersistenceService] Fetching user data
+ {
+  "recordId": "67dfc4be3692f602c834b8c8"
+}
+ [TopicPersistenceService] User data fetched successfully
+ {
+  "fields": [
+    "id",
+    "field_3010",
+    "field_3010_raw",
+    "field_3029_raw",
+    "field_3029",
+    "field_2954",
+    "field_2954_raw",
+    "field_3008",
+    "field_3008_raw",
+    "field_2956",
+    "field_2956_raw",
+    "field_3009",
+    "field_3009_raw",
+    "field_2958",
+    "field_2958_raw",
+    "field_2955_raw",
+    "field_2955",
+    "field_2978_raw",
+    "field_2978",
+    "field_2980_raw",
+    "field_2980",
+    "field_2979",
+    "field_2979_raw",
+    "field_2957",
+    "field_2957_raw",
+    "field_2959_raw",
+    "field_2959",
+    "field_2960",
+    "field_2960_raw",
+    "field_2974_raw",
+    "field_2974",
+    "field_2976",
+    "field_2976_raw",
+    "field_2977_raw",
+    "field_2977",
+    "field_2991",
+    "field_2991_raw",
+    "field_2992",
+    "field_2992_raw",
+    "field_2993",
+    "field_2993_raw",
+    "field_2994",
+    "field_2994_raw",
+    "field_2995",
+    "field_2995_raw",
+    "field_2986",
+    "field_2986_raw",
+    "field_2987",
+    "field_2987_raw",
+    "field_2988",
+    "field_2988_raw",
+    "field_2989",
+    "field_2989_raw",
+    "field_2990",
+    "field_2990_raw",
+    "field_3000",
+    "field_3000_raw",
+    "field_3011",
+    "field_3011_raw",
+    "field_3030",
+    "field_3030_raw",
+    "field_3031_raw",
+    "field_3031"
+  ]
+}
+ [TopicPersistenceService] Topic lists saved successfully (direct API)
+ {
+  "count": 1,
+  "recordId": "67dfc4be3692f602c834b8c8"
+}
+ Topic lists saved to Knack successfully: 1 lists
+ Topic list saved successfully: dance
+ [TopicPersistenceService] Attempting to save topic lists via postMessage
+ {
+  "count": 1,
+  "userId": "630510eb3c91500021a8fad2",
+  "timestamp": "2025-03-23T08:22:51.685Z"
+}
+ Flashcard app [2025-03-23T08:22:51.687Z]: Message from React app: SAVE_DATA
+ MESSAGE RECEIVED
+ {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-23T08:22:51.687Z",
+  "hasData": "yes"
+}
+ Flashcard app [2025-03-23T08:22:51.687Z]: Saving data from React app: Object
+ SAVE_DATA REQUEST RECEIVED
+ {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-23T08:22:51.687Z"
+}
+ Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+ SAVING DATA WITH RECORD ID
+ "630510eb3c91500021a8fad2"
+ Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+ Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+ SAVING TO KNACK: DATA STATS
+ {
+  "cardsCount": 0,
+  "colorCount": 0,
+  "spacedRepCount": 0
+}
+api.knack.com/v1/objects/object_102/records/630510eb3c91500021a8fad2:1   Failed to load resource: the server responded with a status of 400 ()
+  Flashcard app: Error saving user data: Object
+error @ KnackJavascript4.js:1218
+ KNACK SAVE ERROR
+ {
+  "readyState": 4,
+  "responseText": "{\"errors\":[{\"field\":\"field_2958\",\"fieldType\":\"short_text\",\"isUserField\":false,\"type\":\"unique\",\"message\":\"email address must be unique. \\\"aramsey@vespa.academy\\\" is already being used.\"}]}",
+  "status": 400,
+  "statusText": "error"
+}
+ [Message Handler 2025-03-23T08:22:52.152Z] From parent: SAVE_RESULT
+ [Save Result] Received: false
+  [2025-03-23T08:22:52.152Z] Failed to save topic list via postMessage
+o @ main.e2b08b87.js:2
+ Selected topic: Choreography: Choreographic Devices
+  [2025-03-23T08:23:01.688Z] No save response received within timeout period
+(anonymous) @ main.e2b08b87.js:2
+ Autosave completed successfully
+ Generating topics for: AQA A-Level Dance
+ Raw topic response: [
+    "Performance: Physical Skills",
+    "Performance: Technical Skills",
+    "Performance: Expressive Skills",
+    "Performance: Mental Skills and Attributes",
+    "Choreography: Choreographic Process",
+    "Choreography: Structuring Devices and Form",
+    "Choreography: Choreographic Devices",
+    "Choreography: Aural Setting",
+    "Choreography: Performance Environment",
+    "Choreography: Communication of Choreographic Intention",
+    "Critical Engagement: Knowledge and Understanding of Choreographic Processes",
+    "Critical Engagement: Knowledge and Understanding of Performance Processes",
+    "Critical Engagement: Analysis and Interpretation of Professional Works",
+    "Critical Engagement: Contextual Understanding of Professional Works",
+    "Area of Study: Rambert Dance Company (1966-2002)",
+    "Area of Study: Rambert Dance Company - Key Practitioners",
+    "Area of Study: Rambert Dance Company - Repertoire",
+    "Area of Study: Rambert Dance Company - Influences",
+    "Area of Study: Rambert Dance Company - Features of Style",
+    "Area of Study: Independent Contemporary Dance Scene in Britain (2000-current)",
+    "Area of Study: Independent Contemporary Dance Scene - Key Practitioners",
+    "Area of Study: Independent Contemporary Dance Scene - Repertoire",
+    "Area of Study: Independent Contemporary Dance Scene - Influences",
+    "Area of Study: Independent Contemporary Dance Scene - Features of Style",
+    "Set Work: Rooster by Christopher Bruce",
+    "Set Work: Rooster - Themes and Context",
+    "Set Work: Rooster - Movement Components",
+    "Set Work: Rooster - Physical Setting",
+    "Set Work: Rooster - Aural Setting",
+    "Set Work: Sutra by Sidi Larbi Cherkaoui",
+    "Set Work: Sutra - Themes and Context",
+    "Set Work: Sutra - Movement Components",
+    "Set Work: Sutra - Physical Setting",
+    "Set Work: Sutra - Aural Setting"
+]
+ Generated topics: Array(34)
+ Generated topics: Array(34)
+ Showing options explanation modal
+ Selected topic: Choreography: Choreographic Devices
+ Selected topic: Choreography: Choreographic Devices
+ Generate cards function called with state: Object
+ Explicit metadata for cards: Object
+ Selected new color #f58231 for subject Dance
+ Generating cards with prompt: Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). 
+Generate 5 high-quality AQA A-Level Dance flashcards for the specific topic "Choreography: Choreographic Devices".
+Make these appropriate for A-Level students (age 16-18). Questions should be challenging and involve deeper thinking. Include sufficient detail in answers and use appropriate technical language.
+
+Before generating questions, scrape the latest AQA A-Level Dance specification to ensure the content matches the current curriculum exactly.
+
+Use this format for different question types:
+[
+  {
+    "subject": "Dance",
+    "topic": "Choreography: Choreographic Devices",
+    "questionType": "multiple_choice",
+    "question": "Clear, focused question based on the curriculum",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+    "correctAnswer": "The correct option exactly as written in options array",
+    "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
+  }
+]
+ Autosave completed successfully
+ Raw AI response: [
+  {
+    "subject": "Dance",
+    "topic": "Choreography: Choreographic Devices",
+    "questionType": "multiple_choice",
+    "question": "Which choreographic device involves repeating a motif or movement phrase to emphasize its significance within a dance composition?",
+    "options": ["Augmentation", "Repetition", "Retrograde", "Fragmentation"],
+    "correctAnswer": "Repetition",
+    "detailedAnswer": "Repetition is a choreographic device used to emphasize a motif or movement phrase by repeating it at different points in the choreography. This can help to highlight a particular theme or idea, and create a sense of unity and coherence within the dance. It allows the audience to recognize and process the significance of the repeated element, potentially altering its perception each time it is reintroduced."
+  },
+  {
+    "subject": "Dance",
+    "topic": "Choreography: Choreographic Devices",
+    "questionType": "multiple_choice",
+    "question": "What is the purpose of using fragmentation as a choreographic device?",
+    "options": ["To create a sense of continuity", "To emphasize a specific theme", "To disrupt the flow and create interest", "To increase the tempo of the piece"],
+    "correctAnswer": "To disrupt the flow and create interest",
+    "detailedAnswer": "Fragmentation involves breaking down a movement phrase into smaller parts and rearranging them. This can disrupt the flow of the original movement, bringing a new perspective and interest to the piece. By deconstructing and reordering the elements, the choreographer can challenge the audience’s expectations and encourage them to engage with the dance more actively as they interpret the new sequences."
+  },
+  {
+    "subject": "Dance",
+    "topic": "Choreography: Choreographic Devices",
+    "questionType": "multiple_choice",
+    "question": "How does the use of unison as a choreographic device impact the visual presentation of a dance?",
+    "options": ["Creates contrast", "Enhances individual expression", "Establishes harmony and strength", "Allows for improvisation"],
+    "correctAnswer": "Establishes harmony and strength",
+    "detailedAnswer": "Unison occurs when dancers perform the same movement or sequence simultaneously. This device creates a powerful visual effect as the dancers' synchronized movements can convey themes of unity, strength, and harmony. It emphasizes the collective over the individual, often amplifying the impact of the choreography by creating patterns and shapes that are visually striking and emotionally resonant."
+  },
+  {
+    "subject": "Dance",
+    "topic": "Choreography: Choreographic Devices",
+    "questionType": "multiple_choice",
+    "question": "Which choreographic device involves reversing a sequence of movements to create contrast and complexity?",
+    "options": ["Repetition", "Inversion", "Retrograde", "Canon"],
+    "correctAnswer": "Retrograde",
+    "detailedAnswer": "Retrograde is a choreographic device where a sequence of movements is performed in reverse order. This technique can add contrast and complexity to a dance by altering the expected progression of movements. Retrograde can challenge both the dancers and the audience, as it requires a rethinking of the movement's temporal and spatial dynamics, often leading to new interpretations and layers of meaning within the choreography."
+  },
+  {
+    "subject": "Dance",
+    "topic": "Choreography: Choreographic Devices",
+    "questionType": "multiple_choice",
+    "question": "In which way does the use of canon as a choreographic device enhance the texture of a dance piece?",
+    "options": ["By creating a linear narrative", "By emphasizing solo performance", "By introducing rhythmic complexity and layering", "By simplifying the movement vocabulary"],
+    "correctAnswer": "By introducing rhythmic complexity and layering",
+    "detailedAnswer": "Canon involves dancers performing the same phrase but starting at different times, much like a musical round. This device introduces rhythmic complexity and layering, as the staggered entries create intricate interplays of movement and timing. The use of canon can highlight individual dancers while maintaining a cohesive group dynamic, enriching the texture of the dance and engaging the audience with its dynamic ebb and flow."
+  }
+]
+ Generating card #1 with metadata: Object
+ Generating card #2 with metadata: Object
+ Generating card #3 with metadata: Object
+ Generating card #4 with metadata: Object
+ Generating card #5 with metadata: Object
+ FINAL PROCESSED CARDS: Array(5)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ User authenticated, loading topic lists from Knack
+ Loading topic lists from Knack for user: 630510eb3c91500021a8fad2
+ [TopicPersistenceService] Loading topic lists
+ {
+  "userId": "630510eb3c91500021a8fad2"
+}
+ [TopicPersistenceService] Fetching user data
+ {
+  "recordId": "67dfc4be3692f602c834b8c8"
+}
+ [TopicPersistenceService] User data fetched successfully
+ {
+  "fields": [
+    "id",
+    "field_3010",
+    "field_3010_raw",
+    "field_3029_raw",
+    "field_3029",
+    "field_2954",
+    "field_2954_raw",
+    "field_3008",
+    "field_3008_raw",
+    "field_2956",
+    "field_2956_raw",
+    "field_3009",
+    "field_3009_raw",
+    "field_2958",
+    "field_2958_raw",
+    "field_2955_raw",
+    "field_2955",
+    "field_2978_raw",
+    "field_2978",
+    "field_2980_raw",
+    "field_2980",
+    "field_2979",
+    "field_2979_raw",
+    "field_2957",
+    "field_2957_raw",
+    "field_2959_raw",
+    "field_2959",
+    "field_2960",
+    "field_2960_raw",
+    "field_2974",
+    "field_2974_raw",
+    "field_2976",
+    "field_2976_raw",
+    "field_2977_raw",
+    "field_2977",
+    "field_2991",
+    "field_2991_raw",
+    "field_2992",
+    "field_2992_raw",
+    "field_2993",
+    "field_2993_raw",
+    "field_2994",
+    "field_2994_raw",
+    "field_2995",
+    "field_2995_raw",
+    "field_2986",
+    "field_2986_raw",
+    "field_2987",
+    "field_2987_raw",
+    "field_2988",
+    "field_2988_raw",
+    "field_2989",
+    "field_2989_raw",
+    "field_2990",
+    "field_2990_raw",
+    "field_3000",
+    "field_3000_raw",
+    "field_3011",
+    "field_3011_raw",
+    "field_3030",
+    "field_3030_raw",
+    "field_3031_raw",
+    "field_3031"
+  ]
+}
+ [TopicPersistenceService] Loaded topic lists
+ {
+  "count": 1
+}
+ [TopicPersistenceService] Loaded metadata
+ {
+  "count": 0
+}
+ Successfully loaded topic lists from Knack: Array(1)
+ Loaded topic lists from Knack: Array(1)
+ Autosave completed successfully
+ Autosave completed successfully
+ Autosave completed successfully
+ Autosave completed successfully
+ Autosave completed successfully
+ Autosave completed successfully
+ Autosave completed successfully
+ Autosave completed successfully
+ Autosave completed successfully
+ User authenticated, loading topic lists from Knack
+ Loading topic lists from Knack for user: 630510eb3c91500021a8fad2
+ [TopicPersistenceService] Loading topic lists
+ {
+  "userId": "630510eb3c91500021a8fad2"
+}
+ [TopicPersistenceService] Fetching user data
+ {
+  "recordId": "67dfc4be3692f602c834b8c8"
+}
+ [TopicPersistenceService] User data fetched successfully
+ {
+  "fields": [
+    "id",
+    "field_3010",
+    "field_3010_raw",
+    "field_3029_raw",
+    "field_3029",
+    "field_2954",
+    "field_2954_raw",
+    "field_3008",
+    "field_3008_raw",
+    "field_2956",
+    "field_2956_raw",
+    "field_3009",
+    "field_3009_raw",
+    "field_2958",
+    "field_2958_raw",
+    "field_2955_raw",
+    "field_2955",
+    "field_2978_raw",
+    "field_2978",
+    "field_2980_raw",
+    "field_2980",
+    "field_2979",
+    "field_2979_raw",
+    "field_2957",
+    "field_2957_raw",
+    "field_2959_raw",
+    "field_2959",
+    "field_2960",
+    "field_2960_raw",
+    "field_2974",
+    "field_2974_raw",
+    "field_2976",
+    "field_2976_raw",
+    "field_2977_raw",
+    "field_2977",
+    "field_2991",
+    "field_2991_raw",
+    "field_2992",
+    "field_2992_raw",
+    "field_2993",
+    "field_2993_raw",
+    "field_2994",
+    "field_2994_raw",
+    "field_2995",
+    "field_2995_raw",
+    "field_2986",
+    "field_2986_raw",
+    "field_2987",
+    "field_2987_raw",
+    "field_2988",
+    "field_2988_raw",
+    "field_2989",
+    "field_2989_raw",
+    "field_2990",
+    "field_2990_raw",
+    "field_3000",
+    "field_3000_raw",
+    "field_3011",
+    "field_3011_raw",
+    "field_3030",
+    "field_3030_raw",
+    "field_3031_raw",
+    "field_3031"
+  ]
+}
+ [TopicPersistenceService] Loaded topic lists
+ {
+  "count": 1
+}
+ [TopicPersistenceService] Loaded metadata
+ {
+  "count": 0
+}
+ Successfully loaded topic lists from Knack: Array(1)
+ Loaded topic lists from Knack: Array(1)
+ Auto-generating topics for subject: French
+ Generating topics for: AQA A-Level French
+ Raw topic response: [
+    "Aspects of French-speaking society: Current trends: The changing nature of family",
+    "Aspects of French-speaking society: Current trends: The 'cyber-society'",
+    "Aspects of French-speaking society: Current trends: The place of voluntary work",
+    "Artistic culture in the French-speaking world: A culture proud of its heritage",
+    "Artistic culture in the French-speaking world: Contemporary francophone music",
+    "Artistic culture in the French-speaking world: Cinema: the 7th art form",
+    "Aspects of French-speaking society: Current issues: Positive features of a diverse society",
+    "Aspects of French-speaking society: Current issues: Life for the marginalised",
+    "Aspects of French-speaking society: Current issues: How criminals are treated",
+    "Aspects of political life in the French-speaking world: Teenagers, the right to vote and political commitment",
+    "Aspects of political life in the French-speaking world: Demonstrations, strikes - who holds the power?",
+    "Aspects of political life in the French-speaking world: Politics and immigration"
+]
+ Generated topics: Array(12)
+ Generated topics: Array(12)
+ Showing options explanation modal
+ Selected topic: Artistic culture in the French-speaking world: Cinema: the 7th art form
+ Autosave completed successfully
+ Autosave completed successfully
+ Selected topic: Artistic culture in the French-speaking world: Cinema: the 7th art form
+ Generate cards function called with state: Object
+ Explicit metadata for cards: Object
+ Selected new color #800000 for subject French
+ Generating cards with prompt: Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). 
+Generate 5 high-quality AQA A-Level French flashcards for the specific topic "Artistic culture in the French-speaking world: Cinema: the 7th art form".
+Make these appropriate for A-Level students (age 16-18). Questions should be challenging and involve deeper thinking. Include sufficient detail in answers and use appropriate technical language.
+
+Before generating questions, scrape the latest AQA A-Level French specification to ensure the content matches the current curriculum exactly.
+
+Use this format for different question types:
+[
+  {
+    "subject": "French",
+    "topic": "Artistic culture in the French-speaking world: Cinema: the 7th art form",
+    "questionType": "multiple_choice",
+    "question": "Clear, focused question based on the curriculum",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+    "correctAnswer": "The correct option exactly as written in options array",
+    "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
+  }
+]
+ Raw AI response: [
+  {
+    "subject": "French",
+    "topic": "Artistic culture in the French-speaking world: Cinema: the 7th art form",
+    "questionType": "multiple_choice",
+    "question": "Quel événement a marqué la naissance du cinéma en tant que forme d'art en France ?",
+    "options": ["La première projection publique par les frères Lumière", "La sortie de 'A bout de souffle'", "La création du Festival de Cannes", "La fondation de la Cinémathèque française"],
+    "correctAnswer": "La première projection publique par les frères Lumière",
+    "detailedAnswer": "La première projection publique par les frères Lumière en 1895 est considérée comme la naissance du cinéma. Cette projection a marqué le début du cinéma en tant qu'art visuel et a introduit de nouvelles possibilités narratives et artistiques."
+  },
+  {
+    "subject": "French",
+    "topic": "Artistic culture in the French-speaking world: Cinema: the 7th art form",
+    "questionType": "multiple_choice",
+    "question": "Quelle est la caractéristique principale de la Nouvelle Vague française ?",
+    "options": ["L'utilisation de budgets très élevés", "Le refus des conventions du cinéma traditionnel", "La préférence pour les films en couleur", "L'usage de scénarios adaptés de la littérature classique"],
+    "correctAnswer": "Le refus des conventions du cinéma traditionnel",
+    "detailedAnswer": "La Nouvelle Vague française est connue pour son rejet des conventions du cinéma classique, favorisant l'improvisation, le tournage en extérieur et une approche plus personnelle et innovante du récit cinématographique, influençant profondément le cinéma mondial."
+  },
+  {
+    "subject": "French",
+    "topic": "Artistic culture in the French-speaking world: Cinema: the 7th art form",
+    "questionType": "multiple_choice",
+    "question": "Quel rôle joue le CNC (Centre national du cinéma et de l'image animée) dans l'industrie cinématographique française ?",
+    "options": ["Production de films internationaux", "Soutien financier et logistique à la production cinématographique", "Organisation de festivals de cinéma", "Formation d'acteurs et de réalisateurs"],
+    "correctAnswer": "Soutien financier et logistique à la production cinématographique",
+    "detailedAnswer": "Le CNC est essentiel pour l'industrie cinématographique française, fournissant un soutien financier et logistique aux réalisateurs et producteurs, contribuant à la diversité et à la richesse du cinéma français grâce à des subventions et des aides."
+  },
+  {
+    "subject": "French",
+    "topic": "Artistic culture in the French-speaking world: Cinema: the 7th art form",
+    "questionType": "multiple_choice",
+    "question": "Comment le cinéma français a-t-il influencé Hollywood ?",
+    "options": ["En popularisant le format du court métrage", "En introduisant le concept du star system", "En inspirant le style visuel avec la Nouvelle Vague", "En dominant les Oscars pendant les années 1960"],
+    "correctAnswer": "En inspirant le style visuel avec la Nouvelle Vague",
+    "detailedAnswer": "Le cinéma français, notamment par la Nouvelle Vague, a influencé Hollywood en termes de style visuel et narratif. Les techniques innovantes, comme les plans séquences et le montage rapide, ont inspiré une nouvelle génération de cinéastes américains."
+  },
+  {
+    "subject": "French",
+    "topic": "Artistic culture in the French-speaking world: Cinema: the 7th art form",
+    "questionType": "multiple_choice",
+    "question": "Quel impact a eu la politique des auteurs sur le cinéma français ?",
+    "options": ["Elle a réduit le nombre de films produits", "Elle a encouragé la collaboration entre réalisateurs", "Elle a mis en avant le réalisateur comme créateur principal", "Elle a favorisé l'exportation de films français"],
+    "correctAnswer": "Elle a mis en avant le réalisateur comme créateur principal",
+    "detailedAnswer": "La politique des auteurs a transformé le cinéma français en reconnaissant le réalisateur comme l'auteur principal du film, influençant la manière dont les films étaient perçus et valorisant la vision personnelle et artistique du réalisateur."
+  }
+]
+ Generating card #1 with metadata: Object
+ Generating card #2 with metadata: Object
+ Generating card #3 with metadata: Object
+ Generating card #4 with metadata: Object
+ Generating card #5 with metadata: Object
+ FINAL PROCESSED CARDS: Array(5)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ Updating color for subject: French, topic: Artistic culture in the French-speaking world: Cinema: the 7th art form, color: #800000, updateTopics: false
+ Updating color for subject: French, topic: Artistic culture in the French-speaking world: Cinema: the 7th art form, color: #800000, updateTopics: false
+ Updating color for subject: French, topic: Artistic culture in the French-speaking world: Cinema: the 7th art form, color: #800000, updateTopics: false
+ Updating color for subject: French, topic: Artistic culture in the French-speaking world: Cinema: the 7th art form, color: #800000, updateTopics: false
+ Updating color for subject: French, topic: Artistic culture in the French-speaking world: Cinema: the 7th art form, color: #800000, updateTopics: false
+ Added all cards to bank: Array(5)
+ Triggered immediate save after adding all cards
+ Sample cards after color update: Array(1)
+ Sample cards after color update: Array(2)
+ Sample cards after color update: Array(3)
+ Sample cards after color update: Array(3)
+ Sample cards after color update: Array(3)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ [Init] Sent ready message to parent
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ Flashcard app [2025-03-23T08:33:21.089Z]: Message from React app: ADD_TO_BANK
+ MESSAGE RECEIVED
+ {
+  "type": "ADD_TO_BANK",
+  "timestamp": "2025-03-23T08:33:21.090Z",
+  "hasData": "yes"
+}
+ Flashcard app: Adding cards to bank: Object
+ Flashcard app: Adding cards to bank for user: 630510eb3c91500021a8fad2
+  Flashcard app: Cannot add to bank - missing record ID or cards
+handleAddToBank @ KnackJavascript4.js:984
+ Flashcard app [2025-03-23T08:33:21.090Z]: Message from React app: TRIGGER_SAVE
+ MESSAGE RECEIVED
+ {
+  "type": "TRIGGER_SAVE",
+  "timestamp": "2025-03-23T08:33:21.090Z",
+  "hasData": "yes"
+}
+ Flashcard app: Triggered save from React app
+ Flashcard app [2025-03-23T08:33:21.090Z]: Message from React app: APP_READY
+ MESSAGE RECEIVED
+ {
+  "type": "APP_READY",
+  "timestamp": "2025-03-23T08:33:21.090Z",
+  "hasData": "no"
+}
+ Flashcard app: Ignoring duplicate APP_READY message
+ [Message Handler 2025-03-23T08:33:21.092Z] From parent: ADD_TO_BANK_RESULT
+ [Message Handler] Unknown message type: ADD_TO_BANK_RESULT
+ 📥 Save Operation: localStorage
+ Timestamp: 2025-03-23T08:33:21.156Z
+ Data Stats: Object
+ Saved data to localStorage with versioning and backup
+ [Save] Starting save operation...
+ [Save] Saving to localStorage first
+ 📥 Save Operation: localStorage
+ Timestamp: 2025-03-23T08:33:21.159Z
+ Data Stats: Object
+ Saved data to localStorage with versioning and backup
+ [Save] Preparing data for Knack integration
+ [Save] Sending data to Knack (0 cards, record ID: 67dfc4be3692f602c834b8c8)
+ [Save] Message sent to parent window
+ 📥 Save Operation: localStorage
+ Timestamp: 2025-03-23T08:33:21.159Z
+ Data Stats: Object
+ Saved data to localStorage with versioning and backup
+ [Save] Starting save operation...
+ [Save] Saving to localStorage first
+ 📥 Save Operation: localStorage
+ Timestamp: 2025-03-23T08:33:21.160Z
+ Data Stats: Object
+ Saved data to localStorage with versioning and backup
+ [Save] Preparing data for Knack integration
+ [Save] Sending data to Knack (0 cards, record ID: 67dfc4be3692f602c834b8c8)
+ [Save] Message sent to parent window
+ 📥 Save Operation: localStorage
+ Timestamp: 2025-03-23T08:33:21.160Z
+ Data Stats: Object
+ Saved data to localStorage with versioning and backup
+ [Save] Starting save operation...
+ [Save] Saving to localStorage first
+ 📥 Save Operation: localStorage
+ Timestamp: 2025-03-23T08:33:21.160Z
+ Data Stats: Object
+ Saved data to localStorage with versioning and backup
+ [Save] Preparing data for Knack integration
+ [Save] Sending data to Knack (0 cards, record ID: 67dfc4be3692f602c834b8c8)
+ Flashcard app [2025-03-23T08:33:21.160Z]: Message from React app: SAVE_DATA
+ [Save] Message sent to parent window
+ MESSAGE RECEIVED
+ {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-23T08:33:21.160Z",
+  "hasData": "yes"
+}
+ 📥 Save Operation: localStorage
+ Flashcard app [2025-03-23T08:33:21.160Z]: Saving data from React app: Object
+ Timestamp: 2025-03-23T08:33:21.161Z
+ SAVE_DATA REQUEST RECEIVED
+ Data Stats: Object
+ {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-23T08:33:21.161Z"
+}
+ Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+ SAVING DATA WITH RECORD ID
+ "67dfc4be3692f602c834b8c8"
+ Saved data to localStorage with versioning and backup
+ [Save] Starting save operation...
+ [Save] Saving to localStorage first
+ Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+ 📥 Save Operation: localStorage
+ Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+ Timestamp: 2025-03-23T08:33:21.161Z
+ Data Stats: Object
+ SAVING TO KNACK: DATA STATS
+ {
+  "cardsCount": 0,
+  "colorCount": 0,
+  "spacedRepCount": 5
+}
+ Saved data to localStorage with versioning and backup
+ [Save] Preparing data for Knack integration
+ Flashcard app [2025-03-23T08:33:21.161Z]: Message from React app: SAVE_DATA
+ [Save] Sending data to Knack (0 cards, record ID: 67dfc4be3692f602c834b8c8)
+ MESSAGE RECEIVED
+ {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-23T08:33:21.161Z",
+  "hasData": "yes"
+}
+ Flashcard app [2025-03-23T08:33:21.161Z]: Saving data from React app: Object
+ [Save] Message sent to parent window
+ SAVE_DATA REQUEST RECEIVED
+ {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-23T08:33:21.161Z"
+}
+ Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+ SAVING DATA WITH RECORD ID
+ 📥 Save Operation: localStorage
+ "67dfc4be3692f602c834b8c8"
+ Timestamp: 2025-03-23T08:33:21.161Z
+ Data Stats: Object
+ Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+ Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+ SAVING TO KNACK: DATA STATS
+ {
+  "cardsCount": 0,
+  "colorCount": 0,
+  "spacedRepCount": 5
+}
+ Flashcard app [2025-03-23T08:33:21.161Z]: Message from React app: SAVE_DATA
+ MESSAGE RECEIVED
+ {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-23T08:33:21.161Z",
+  "hasData": "yes"
+}
+ Flashcard app [2025-03-23T08:33:21.161Z]: Saving data from React app: Object
+ SAVE_DATA REQUEST RECEIVED
+ {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-23T08:33:21.161Z"
+}
+ Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+ SAVING DATA WITH RECORD ID
+ "67dfc4be3692f602c834b8c8"
+ Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+ Saved data to localStorage with versioning and backup
+ Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+ SAVING TO KNACK: DATA STATS
+ {
+  "cardsCount": 0,
+  "colorCount": 0,
+  "spacedRepCount": 5
+}
+ [Save] Starting save operation...
+ [Save] Saving to localStorage first
+ 📥 Save Operation: localStorage
+ Timestamp: 2025-03-23T08:33:21.162Z
+ Data Stats: Object
+ Flashcard app [2025-03-23T08:33:21.162Z]: Message from React app: SAVE_DATA
+ MESSAGE RECEIVED
+ {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-23T08:33:21.162Z",
+  "hasData": "yes"
+}
+ Flashcard app [2025-03-23T08:33:21.162Z]: Saving data from React app: Object
+ SAVE_DATA REQUEST RECEIVED
+ {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-23T08:33:21.162Z"
+}
+ Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+ SAVING DATA WITH RECORD ID
+ "67dfc4be3692f602c834b8c8"
+ Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+ Saved data to localStorage with versioning and backup
+ Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+ SAVING TO KNACK: DATA STATS
+ [Save] Preparing data for Knack integration
+ {
+  "cardsCount": 0,
+  "colorCount": 0,
+  "spacedRepCount": 5
+}
+ [Save] Sending data to Knack (0 cards, record ID: 67dfc4be3692f602c834b8c8)
+ [Save] Message sent to parent window
+ Flashcard app [2025-03-23T08:33:21.162Z]: Message from React app: SAVE_DATA
+ MESSAGE RECEIVED
+ {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-23T08:33:21.163Z",
+  "hasData": "yes"
+}
+ Flashcard app [2025-03-23T08:33:21.163Z]: Saving data from React app: Object
+ SAVE_DATA REQUEST RECEIVED
+ {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-23T08:33:21.163Z"
+}
+ Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+ SAVING DATA WITH RECORD ID
+ "67dfc4be3692f602c834b8c8"
+ Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+ Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+ SAVING TO KNACK: DATA STATS
+ {
+  "cardsCount": 0,
+  "colorCount": 0,
+  "spacedRepCount": 5
+}
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ Rendering options in dedicated component: Array(4)
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ ScaledText () length: 15, starting fontSize: 20
+ Flashcard app: Successfully saved user data: 67dfc4be3692f602c834b8c8
+ KNACK SAVE SUCCESS
+ {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67dfc4be3692f602c834b8c8",
+  "timestamp": "2025-03-23T08:33:21.719Z"
+}
+App.js:1191 [Message Handler 2025-03-23T08:33:21.721Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67dfc4be3692f602c834b8c8
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67dfc4be3692f602c834b8c8",
+  "timestamp": "2025-03-23T08:33:21.748Z"
+}
+App.js:1191 [Message Handler 2025-03-23T08:33:21.749Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67dfc4be3692f602c834b8c8
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67dfc4be3692f602c834b8c8",
+  "timestamp": "2025-03-23T08:33:21.763Z"
+}
+App.js:1191 [Message Handler 2025-03-23T08:33:21.765Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67dfc4be3692f602c834b8c8
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67dfc4be3692f602c834b8c8",
+  "timestamp": "2025-03-23T08:33:21.954Z"
+}
+App.js:1191 [Message Handler 2025-03-23T08:33:21.955Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67dfc4be3692f602c834b8c8
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67dfc4be3692f602c834b8c8",
+  "timestamp": "2025-03-23T08:33:21.970Z"
+}
+App.js:1191 [Message Handler 2025-03-23T08:33:21.971Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: Array(4)
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+FlashcardList.jsx:920 Subject color for French: Object
+FlashcardList.jsx:920 Subject color for French: Object
+App.js:1168 Auto-saving data...
+App.js:241 [Save] Starting save operation...
+App.js:245 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-23T08:34:21.086Z
+DataUtils.js:373 Data Stats: Object
+App.js:226 Saved data to localStorage with versioning and backup
+App.js:250 [Save] Preparing data for Knack integration
+App.js:307 [Save] Sending data to Knack (5 cards, record ID: 67dfc4be3692f602c834b8c8)
+App.js:318 [Save] Message sent to parent window
+FlashcardList.jsx:920 Subject color for French: Object
+FlashcardList.jsx:920 Subject color for French: Object
+KnackJavascript4.js:345 Flashcard app [2025-03-23T08:34:21.088Z]: Message from React app: SAVE_DATA
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-23T08:34:21.089Z",
+  "hasData": "yes"
+}
+KnackJavascript4.js:410 Flashcard app [2025-03-23T08:34:21.089Z]: Saving data from React app: Object
+KnackJavascript4.js:188 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4.js:189 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-23T08:34:21.089Z"
+}
+KnackJavascript4.js:1089 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+KnackJavascript4.js:188 SAVING DATA WITH RECORD ID
+KnackJavascript4.js:189 "67dfc4be3692f602c834b8c8"
+KnackJavascript4.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+KnackJavascript4.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+KnackJavascript4.js:188 SAVING TO KNACK: DATA STATS
+KnackJavascript4.js:189 {
+  "cardsCount": 5,
+  "colorCount": 1,
+  "spacedRepCount": 5
+}
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67dfc4be3692f602c834b8c8
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67dfc4be3692f602c834b8c8",
+  "timestamp": "2025-03-23T08:34:21.604Z"
+}
+App.js:1191 [Message Handler 2025-03-23T08:34:21.606Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+FlashcardList.jsx:920 Subject color for French: Object
+FlashcardList.jsx:920 Subject color for French: Object
+FlashcardList.jsx:920 Subject color for French: Object
+FlashcardList.jsx:920 Subject color for French: Object
+
+                
+          
+          
+          
+         Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+App.js:1168 Auto-saving data...
+App.js:241 [Save] Starting save operation...
+App.js:245 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-23T08:35:21.079Z
+DataUtils.js:373 Data Stats: {cards: 5, subjects: 1, version: '1.0'}
+App.js:226 Saved data to localStorage with versioning and backup
+App.js:250 [Save] Preparing data for Knack integration
+App.js:307 [Save] Sending data to Knack (5 cards, record ID: 67dfc4be3692f602c834b8c8)
+App.js:318 [Save] Message sent to parent window
+FlashcardList.jsx:920 Subject color for French: {subjectColor: '#800000', firstCardSubjectColor: '#800000', firstCardBaseColor: '#800000', firstCardCardColor: '#800000', firstCard: {…}}
+KnackJavascript4.js:345 Flashcard app [2025-03-23T08:35:21.081Z]: Message from React app: SAVE_DATA
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-23T08:35:21.081Z",
+  "hasData": "yes"
+}
+KnackJavascript4.js:410 Flashcard app [2025-03-23T08:35:21.082Z]: Saving data from React app: {recordId: '67dfc4be3692f602c834b8c8', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
+FlashcardList.jsx:920 Subject color for French: {subjectColor: '#800000', firstCardSubjectColor: '#800000', firstCardBaseColor: '#800000', firstCardCardColor: '#800000', firstCard: {…}}
+KnackJavascript4.js:188 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4.js:189 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-23T08:35:21.082Z"
+}
+KnackJavascript4.js:1089 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
+KnackJavascript4.js:188 SAVING DATA WITH RECORD ID
+KnackJavascript4.js:189 "67dfc4be3692f602c834b8c8"
+KnackJavascript4.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+KnackJavascript4.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+KnackJavascript4.js:188 SAVING TO KNACK: DATA STATS
+KnackJavascript4.js:189 {
+  "cardsCount": 5,
+  "colorCount": 1,
+  "spacedRepCount": 5
+}
+KnackJavascript4.js:1209 Flashcard app: Successfully saved user data: 67dfc4be3692f602c834b8c8
+KnackJavascript4.js:188 KNACK SAVE SUCCESS
+KnackJavascript4.js:189 {
+  "userId": "630510eb3c91500021a8fad2",
+  "recordId": "67dfc4be3692f602c834b8c8",
+  "timestamp": "2025-03-23T08:35:21.595Z"
+}
+App.js:1191 [Message Handler 2025-03-23T08:35:21.596Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: true
+FlashcardList.jsx:920 Subject color for French: {subjectColor: '#800000', firstCardSubjectColor: '#800000', firstCardBaseColor: '#800000', firstCardCardColor: '#800000', firstCard: {…}}
+FlashcardList.jsx:920 Subject color for French: {subjectColor: '#800000', firstCardSubjectColor: '#800000', firstCardBaseColor: '#800000', firstCardCardColor: '#800000', firstCard: {…}}
+FlashcardList.jsx:920 Subject color for French: {subjectColor: '#800000', firstCardSubjectColor: '#800000', firstCardBaseColor: '#800000', firstCardCardColor: '#800000', firstCard: {…}}
+FlashcardList.jsx:920 Subject color for French: {subjectColor: '#800000', firstCardSubjectColor: '#800000', firstCardBaseColor: '#800000', firstCardCardColor: '#800000', firstCard: {…}}

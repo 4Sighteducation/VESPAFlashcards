@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes } from 'react-icons/fa';
 import './styles.css';
 
 /**
@@ -26,6 +26,8 @@ const TopicHub = ({
   const [hasGenerated, setHasGenerated] = useState(false);
   const [error, setError] = useState(null);
   const [newTopicInput, setNewTopicInput] = useState({ mainTopic: '', subtopic: '' });
+  const [usingFallbackTopics, setUsingFallbackTopics] = useState(false);
+  const [showFallbackNotice, setShowFallbackNotice] = useState(false);
   
   // State for edit functionality
   const [editMode, setEditMode] = useState(null);
@@ -71,16 +73,123 @@ const TopicHub = ({
   // API key - matching the format used in AICardGenerator for consistency
   const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
 
+  // Generate fallback topics using a second API call with a more forceful prompt
+  const generateFallbackTopics = async () => {
+    console.log("Attempting to generate fallback topics for:", subject);
+    
+    try {
+      // Make a second API call with the fallback prompt
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [{
+            role: "user",
+            content: generateFallbackPrompt(examBoard, examType, subject, academicYear)
+          }],
+          max_tokens: 2000,
+          temperature: 0.7 // Higher temperature to encourage creativity if exact data unavailable
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Fallback API call failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error("No content returned from fallback API call");
+      }
+      
+      let content = data.choices[0].message.content;
+      console.log("==== FALLBACK API RESPONSE ====");
+      console.log(content);
+      console.log("==== END FALLBACK API RESPONSE ====");
+      
+      content = content.replace(/```json|```/g, '').trim();
+      
+      let parsedTopics;
+      try {
+        parsedTopics = JSON.parse(content);
+      } catch (e) {
+        console.error("Failed to parse fallback response as JSON:", e);
+        
+        // Try to handle as JavaScript array
+        try {
+          // eslint-disable-next-line no-eval
+          const possibleArray = eval(content);
+          if (Array.isArray(possibleArray) && possibleArray.length > 0) {
+            parsedTopics = possibleArray;
+          } else {
+            return null;
+          }
+        } catch (evalError) {
+          console.error("Failed to evaluate fallback as array:", evalError);
+          return null;
+        }
+      }
+      
+      if (!Array.isArray(parsedTopics)) {
+        if (typeof parsedTopics === 'object' && parsedTopics !== null) {
+          parsedTopics = [parsedTopics];
+        } else {
+          return null;
+        }
+      }
+      
+      // Process array of strings if needed
+      if (parsedTopics.length > 0 && typeof parsedTopics[0] === 'string') {
+        parsedTopics = parsedTopics.map((topicStr, index) => {
+          const [mainTopic, subtopic] = topicStr.includes(':') 
+            ? [topicStr.split(':')[0].trim(), topicStr.split(':').slice(1).join(':').trim()] 
+            : [topicStr, "General"];
+          
+          return {
+            id: `${Math.floor(index / 5) + 1}.${(index % 5) + 1}`,
+            topic: topicStr,
+            mainTopic: mainTopic,
+            subtopic: subtopic || "General"
+          };
+        });
+      }
+      
+      console.log("Fallback topics generated successfully:", parsedTopics.length);
+      setUsingFallbackTopics(true);
+      setShowFallbackNotice(true);
+      return parsedTopics;
+      
+    } catch (error) {
+      console.error("Error generating fallback topics:", error);
+      return null;
+    }
+  };
+
+  // Track fallback notification state for debugging
+  useEffect(() => {
+    if (usingFallbackTopics || showFallbackNotice) {
+      console.log("Fallback notice state changed:", { 
+        usingFallbackTopics, 
+        showFallbackNotice 
+      });
+    }
+  }, [usingFallbackTopics, showFallbackNotice]);
+  
   // Call the API to generate topics
   const generateTopics = async () => {
     setIsGenerating(true);
     setError(null);
+    setUsingFallbackTopics(false);
+    setShowFallbackNotice(false);
     
     try {
       console.log("Starting topic generation for:", examBoard, examType, subject);
       
       // Implement the API call to generate topics
-      // This should use your OpenAI integration and the updated prompt
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -116,47 +225,57 @@ const TopicHub = ({
       console.log(content);
       console.log("==== END RAW API RESPONSE ====");
       
-      content = content.replace(/```json|```/g, '').trim();
+      // Enhanced preprocessing to remove common prefixes that break JSON parsing
+      content = content.replace(/```json|```javascript|```|Option \d+:|[\s\S]*?\[/m, '[').trim();
+      
+      // Find JSON array in response - looking for content between [ and ]
+      const jsonMatch = content.match(/\[([\s\S]*?)\]/m);
+      const potentialJson = jsonMatch ? `[${jsonMatch[1]}]` : content;
+      
+      console.log("Content after preprocessing:", potentialJson.substring(0, 150) + "...");
       
       let parsedTopics;
+      let usedFallback = false;
+      
       try {
-        parsedTopics = JSON.parse(content);
+        parsedTopics = JSON.parse(potentialJson);
         console.log("Successfully parsed JSON response:", parsedTopics);
       } catch (e) {
         console.error("Failed to parse topic response as JSON:", e);
-        console.log("Raw response preview:", content.substring(0, 100));
-
+        usedFallback = true;
+        
         // Check if it's an error message and provide better feedback
         if (content.includes("I'm sorry") || content.includes("Error")) {
           // Extract a more useful error message
           const displayError = content.split('.')[0] || "Error from API";
-          throw new Error(`Invalid JSON: ${displayError}`);
+          console.error("API returned an error message:", displayError);
         }
 
-        // Try to handle the case where we have a valid array of strings but not JSON
-        // This can happen when the model outputs a JavaScript array format
+        // More aggressive JSON extraction
         try {
-          // Try to evaluate as a JS expression (safe because we're not using untrusted data)
-          // eslint-disable-next-line no-eval
-          const possibleArray = eval(content);
-          if (Array.isArray(possibleArray) && possibleArray.length > 0) {
-            console.log("Response was a JavaScript array, not JSON:", possibleArray);
-            parsedTopics = possibleArray;
+          // Find anything that looks like a JSON array using a more aggressive regex
+          const jsonRegex = /\[\s*{[\s\S]*}\s*\]/g;
+          const jsonMatches = content.match(jsonRegex);
+          
+          if (jsonMatches && jsonMatches.length > 0) {
+            console.log("Found potential JSON with aggressive regex:", jsonMatches[0].substring(0, 100));
+            parsedTopics = JSON.parse(jsonMatches[0]);
+            usedFallback = false;
           } else {
-            // Fall back to sample topic
-            parsedTopics = [
-              {
-                id: "1.1",
-                topic: "Sample Topic: Introduction",
-                mainTopic: "Sample Topic",
-                subtopic: "Introduction"
-              }
-            ];
-            console.log("Created fallback topics due to parsing failure");
+            // Try to handle the case where we have a valid array of strings but not JSON
+            // eslint-disable-next-line no-eval
+            const possibleArray = eval(`(${content})`);
+            if (Array.isArray(possibleArray) && possibleArray.length > 0) {
+              console.log("Response was a JavaScript array, not JSON:", possibleArray);
+              parsedTopics = possibleArray;
+              usedFallback = false;
+            } else {
+              throw new Error("Could not extract valid array");
+            }
           }
-        } catch (evalError) {
-          // If eval fails, use fallback
-          console.error("Failed to evaluate as array:", evalError);
+        } catch (innerError) {
+          console.error("All parsing attempts failed:", innerError);
+          // Fall back to sample topic
           parsedTopics = [
             {
               id: "1.1",
@@ -166,7 +285,15 @@ const TopicHub = ({
             }
           ];
           console.log("Created fallback topics due to parsing failure");
+          usedFallback = true;
         }
+      }
+      
+      // If we used a fallback method, update the state
+      if (usedFallback) {
+        console.log("EXPLICITLY SETTING FALLBACK STATE - Parsing required fallback");
+        setUsingFallbackTopics(true);
+        setShowFallbackNotice(true);
       }
       
       if (!Array.isArray(parsedTopics)) {
@@ -199,39 +326,54 @@ const TopicHub = ({
         console.log("Converted topics:", parsedTopics);
       }
       
-      // Handle empty arrays by providing fallback content
+      // Handle empty arrays by trying the fallback approach
       if (parsedTopics.length === 0) {
-        console.log("Received empty topics array, using fallback content for subject:", subject);
+        console.log("Received empty topics array, attempting AI fallback generation");
         
-        // Get fallback topics based on subject
-        const fallbackTopics = getSubjectFallbackTopics(subject, examBoard, examType);
+        // Try the AI fallback function first
+        const fallbackTopics = await generateFallbackTopics();
         
         if (fallbackTopics && fallbackTopics.length > 0) {
-          console.log("Using subject-specific fallbacks:", fallbackTopics.length, "topics");
+          console.log("Using AI-generated fallbacks:", fallbackTopics.length, "topics");
           parsedTopics = fallbackTopics;
+          setUsingFallbackTopics(true);
+          setShowFallbackNotice(true);
         } else {
-          // Generic fallback if no subject-specific fallback available
-          parsedTopics = [
-            {
-              id: "1.1",
-              topic: `${subject}: Core Concepts`,
-              mainTopic: subject,
-              subtopic: "Core Concepts"
-            },
-            {
-              id: "1.2",
-              topic: `${subject}: Key Principles`,
-              mainTopic: subject,
-              subtopic: "Key Principles"
-            },
-            {
-              id: "1.3",
-              topic: `${subject}: Fundamental Applications`,
-              mainTopic: subject,
-              subtopic: "Fundamental Applications"
-            }
-          ];
-          console.log("Using generic fallbacks");
+          // If AI fallback fails, use hard-coded fallbacks or generic ones
+          console.log("AI fallback failed, using hard-coded fallbacks");
+          const hardcodedFallbacks = getSubjectFallbackTopics(subject, examBoard, examType);
+          
+          if (hardcodedFallbacks && hardcodedFallbacks.length > 0) {
+            console.log("Using subject-specific fallbacks:", hardcodedFallbacks.length, "topics");
+            parsedTopics = hardcodedFallbacks;
+            setUsingFallbackTopics(true);
+            setShowFallbackNotice(true);
+          } else {
+            // Generic fallback if no subject-specific fallback available
+            console.log("No subject-specific fallbacks, using generic ones");
+            parsedTopics = [
+              {
+                id: "1.1",
+                topic: `${subject}: Core Concepts`,
+                mainTopic: subject,
+                subtopic: "Core Concepts"
+              },
+              {
+                id: "1.2",
+                topic: `${subject}: Key Principles`,
+                mainTopic: subject,
+                subtopic: "Key Principles"
+              },
+              {
+                id: "1.3",
+                topic: `${subject}: Fundamental Applications`,
+                mainTopic: subject,
+                subtopic: "Fundamental Applications"
+              }
+            ];
+            setUsingFallbackTopics(true);
+            setShowFallbackNotice(true);
+          }
         }
       }
       
@@ -239,6 +381,7 @@ const TopicHub = ({
       console.log("===== FINAL TOPIC LIST BEING USED =====");
       console.log(JSON.stringify(parsedTopics, null, 2));
       console.log("Topic count:", parsedTopics.length);
+      console.log("Using fallback:", usingFallbackTopics);
       console.log("===== END FINAL TOPIC LIST =====");
       
       // Update the topics
@@ -258,6 +401,19 @@ const TopicHub = ({
         console.error("API response data:", error.response.data);
       }
       
+      // Try the fallback approach
+      console.log("Error occurred, attempting fallback generation");
+      const fallbackTopics = await generateFallbackTopics();
+      
+      if (fallbackTopics && fallbackTopics.length > 0) {
+        console.log("Successfully generated fallback topics after error");
+        setTopics(fallbackTopics);
+        setHasGenerated(true);
+        setUsingFallbackTopics(true);
+        setShowFallbackNotice(true);
+        return;
+      }
+      
       // Show a more detailed error message to the user
       let errorMessage = `Failed to generate topics: ${error.message}`;
       if (error.message.includes("API key")) {
@@ -270,6 +426,53 @@ const TopicHub = ({
     } finally {
       setIsGenerating(false);
     }
+  };
+  
+  // Generate fallback prompt for when specific exam topics can't be found
+  const generateFallbackPrompt = (examBoard, examType, subject, academicYear) => {
+    return `You are an education expert. Create a comprehensive list of topics that would TYPICALLY appear in a ${examBoard} ${examType} ${subject} curriculum for the ${academicYear} academic year.
+
+YOUR RESPONSE MUST BE ONLY THE JSON ARRAY WITH NO OTHER TEXT - THIS IS CRITICAL.
+
+Even without the exact specification, provide your best approximation based on standard curricula for this subject at this level.
+
+Choose one format:
+
+Format 1 - If this subject typically has main topics and subtopics:
+[
+  {
+    "id": "1.1",
+    "topic": "Main Topic 1: Subtopic 1",
+    "mainTopic": "Main Topic 1",
+    "subtopic": "Subtopic 1"
+  }
+]
+
+Format 2 - If this subject typically doesn't have a clear main/subtopic structure:
+[
+  "Topic 1",
+  "Topic 2",
+  "Topic 3"
+]
+
+HANDLING OPTIONAL TOPICS:
+If the curriculum typically includes optional topics:
+- Include all optional topics in your response
+- Mark optional topics by adding "[Optional]" at the beginning of the topic name
+- If options are grouped, include the group, e.g. "[Optional - Option 1] Topic Name"
+
+CRITICAL REQUIREMENTS:
+- ENSURE YOUR RESPONSE BEGINS WITH "[" AND ENDS WITH "]"
+- DO NOT ADD ANY TEXT BEFORE OR AFTER THE JSON ARRAY
+- DO NOT INCLUDE "OPTION 1:" OR ANY OTHER LABELS
+- Be comprehensive - include ALL typical topics for this subject
+- Use appropriate subject terminology
+- Organize topics in a logical curriculum sequence
+- Provide 15-30 topics depending on the subject's breadth
+- Format topic strings as "Main Topic: Subtopic" where appropriate
+- Be specific and detailed in topic descriptions
+
+This is a fallback request since the exact curriculum couldn't be found. Your goal is to create a reasonable approximation of standard topics for this subject.`;
   };
   
   // Get fallback topics for specific subjects
@@ -479,13 +682,15 @@ const TopicHub = ({
     return null;
   };
 
-  // Generate the prompt using the flexible structure
+  // Generate the prompt using the flexible structure with explicit formatting requirements
   const generatePrompt = (examBoard, examType, subject, academicYear) => {
     const promptTemplate = `You are an exam syllabus expert. Extract the main topics and subtopics from the ${examBoard} ${examType} ${subject} specification for the ${academicYear} academic year.
 
-FORMAT YOUR RESPONSE AS ONE OF THESE OPTIONS (in order of preference):
+YOUR RESPONSE MUST BE VALID JSON ONLY - DO NOT INCLUDE ANY TEXT BEFORE OR AFTER THE JSON.
 
-OPTION 1 - If the curriculum has clear main topics and subtopics:
+Choose one of these formats (in order of preference):
+
+Format 1 - If the curriculum has clear main topics and subtopics:
 [
   {
     "id": "1.1",
@@ -495,29 +700,42 @@ OPTION 1 - If the curriculum has clear main topics and subtopics:
   }
 ]
 
-OPTION 2 - If the curriculum doesn't have a clear main/subtopic structure, but has distinct topics:
+Format 2 - If the curriculum doesn't have a clear main/subtopic structure:
 [
   "Topic 1",
   "Topic 2",
   "Topic 3"
 ]
 
-OPTION 3 - If you can't find the exact curriculum, create a reasonable set of topics based on standard ${subject} curricula:
+Format 3 - If you can't find the exact curriculum, create topics based on standard ${subject} curricula:
 [
   "Fundamental Concept 1",
   "Fundamental Concept 2"
 ]
 
-IMPORTANT NOTES:
-- Return ONLY the JSON array or string array with NO explanations or other text
-- Include all main curriculum areas and key topics
-- If using Option 1, use "Topic Area: Subtopic" format for the "topic" field
-- Avoid duplicate topics
-- Keep your response focused on the core curriculum content
-- If the subject structure doesn't fit a main/subtopic format, use Option 2
-- If you can't access the specific curriculum, use Option 3 but still make it relevant to ${examBoard} ${examType} level
+HANDLING OPTIONAL TOPICS:
+If the curriculum includes optional topics or modules that schools/students can choose between:
+- Include all optional topics in your response
+- Mark optional topics by adding "[Optional]" at the beginning of the topic name
+- If options are grouped, include the option number, e.g. "[Optional - Option 1] Topic Name"
 
-REFERENCE SOURCES:
+Example for optional topic:
+{
+  "id": "4.1",
+  "topic": "[Optional - Option 2] Ancient History: The Roman Empire",
+  "mainTopic": "[Optional - Option 2] Ancient History",
+  "subtopic": "The Roman Empire"
+}
+
+CRITICAL INSTRUCTIONS:
+- ONLY RETURN THE JSON ARRAY - NO PREFIX TEXT, NO EXPLANATIONS
+- ENSURE YOUR RESPONSE BEGINS WITH "[" AND ENDS WITH "]"
+- Include all main curriculum areas and key topics
+- If using Format 1, use "Topic Area: Subtopic" format for the "topic" field
+- Avoid duplicate topics
+- If you can't access the specific curriculum, use Format 3 but make it relevant to ${examBoard} ${examType} level
+
+You can reference:
 - AQA: https://www.aqa.org.uk/
 - Edexcel/Pearson: https://qualifications.pearson.com/
 - OCR: https://www.ocr.org.uk/
@@ -670,6 +888,11 @@ REFERENCE SOURCES:
     setShowSelectDialog(false);
   };
   
+  // Dismiss the fallback notice
+  const dismissFallbackNotice = () => {
+    setShowFallbackNotice(false);
+  };
+  
   // Render initial generator section
   const renderGenerator = () => {
     return (
@@ -704,167 +927,6 @@ REFERENCE SOURCES:
             </p>
           </div>
         )}
-      </div>
-    );
-  };
-  
-  // Render the main topics and subtopics
-  const renderTopics = () => {
-    if (!mainTopics || mainTopics.length === 0) {
-      return null;
-    }
-    
-    return (
-      <div className="topics-container">
-        <div className="topics-header">
-          <h3>Generated Topics ({topics.length})</h3>
-          <div className="topics-actions">
-            {hasGenerated && (
-              <button 
-                className="regenerate-button" 
-                onClick={handleRegenerateTopics}
-                disabled={isGenerating}
-              >
-                <FaRedo /> Regenerate All Topics
-              </button>
-            )}
-            <button 
-              className="add-topic-button" 
-              onClick={() => setShowSaveDialog(true)}
-              disabled={topics.length === 0}
-            >
-              <FaSave /> Save Topic List
-            </button>
-            <button 
-              className="continue-button" 
-              onClick={() => setShowSelectDialog(true)}
-              disabled={topics.length === 0}
-            >
-              Select Topic to Continue
-            </button>
-          </div>
-        </div>
-        
-        <div className="main-topics-list">
-          {mainTopics.map((mainTopic, index) => (
-            <div key={mainTopic.name} className="main-topic-container">
-              <div 
-                className="main-topic-header"
-                onClick={() => toggleMainTopic(mainTopic.name)}
-              >
-                <span className="main-topic-name">
-                  <FaFolder /> {mainTopic.name}
-                </span>
-                <span className="main-topic-count">
-                  {mainTopic.subtopics.length} subtopics
-                </span>
-                <span className="main-topic-toggle">
-                  {expandedTopics[mainTopic.name] ? <FaChevronUp /> : <FaChevronDown />}
-                </span>
-              </div>
-              
-              {expandedTopics[mainTopic.name] && (
-                <div className="subtopics-list">
-                  {mainTopic.subtopics.map(topic => (
-                    <div key={topic.id} className="subtopic-item">
-                      {editMode === topic.id ? (
-                        <div className="subtopic-edit-form">
-                          <div className="edit-form-inputs">
-                            <input
-                              type="text"
-                              value={editValue.mainTopic}
-                              onChange={(e) => setEditValue({...editValue, mainTopic: e.target.value})}
-                              placeholder="Main Topic"
-                              className="edit-main-topic"
-                            />
-                            <input
-                              type="text"
-                              value={editValue.subtopic}
-                              onChange={(e) => setEditValue({...editValue, subtopic: e.target.value})}
-                              placeholder="Subtopic"
-                              className="edit-subtopic"
-                              autoFocus
-                            />
-                          </div>
-                          <div className="edit-form-actions">
-                            <button onClick={() => saveEdit(topic.id)} className="save-edit-button">
-                              <FaSave />
-                            </button>
-                            <button onClick={cancelEdit} className="cancel-edit-button">
-                              <FaExclamationTriangle />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="subtopic-info">
-                            <span className="subtopic-id">{topic.id}</span>
-                            <span className="subtopic-name">{topic.subtopic}</span>
-                          </div>
-                          <div className="subtopic-actions">
-                            <button
-                              className="generate-button"
-                              onClick={() => {
-                                setSelectedTopic(topic);
-                                setShowSelectDialog(true);
-                              }}
-                              title="Generate Cards from this Topic"
-                            >
-                              <FaBolt />
-                            </button>
-                            <button
-                              className="edit-button"
-                              onClick={() => startEdit(topic)}
-                              title="Edit Topic"
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              className="delete-button"
-                              onClick={() => deleteTopic(topic.id)}
-                              title="Delete Topic"
-                            >
-                              <FaTrash />
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        
-        <div className="add-topic-section">
-          <h4>Add New Topic</h4>
-          <div className="add-topic-form">
-            <div className="add-topic-inputs">
-              <input
-                type="text"
-                value={newTopicInput.mainTopic}
-                onChange={(e) => setNewTopicInput({...newTopicInput, mainTopic: e.target.value})}
-                placeholder="Main Topic"
-                className="add-main-topic"
-              />
-              <input
-                type="text"
-                value={newTopicInput.subtopic}
-                onChange={(e) => setNewTopicInput({...newTopicInput, subtopic: e.target.value})}
-                placeholder="Subtopic"
-                className="add-subtopic"
-              />
-            </div>
-            <button 
-              onClick={addTopic} 
-              className="add-topic-button"
-              disabled={!newTopicInput.mainTopic.trim() || !newTopicInput.subtopic.trim()}
-            >
-              <FaPlus /> Add Topic
-            </button>
-          </div>
-        </div>
       </div>
     );
   };
@@ -955,8 +1017,199 @@ REFERENCE SOURCES:
     );
   };
   
+  // Render the main topics and subtopics
+  const renderTopics = () => {
+    if (!mainTopics || mainTopics.length === 0) {
+      return null;
+    }
+    
+    return (
+      <div className="topics-container">
+        <div className="topics-header">
+          <h3>Generated Topics ({topics.length})</h3>
+          <div className="topics-actions">
+            {hasGenerated && (
+              <button 
+                className="regenerate-button" 
+                onClick={handleRegenerateTopics}
+                disabled={isGenerating}
+              >
+                <FaRedo /> Regenerate All Topics
+              </button>
+            )}
+            <button 
+              className="add-topic-button" 
+              onClick={() => setShowSaveDialog(true)}
+              disabled={topics.length === 0}
+            >
+              <FaSave /> Save Topic List
+            </button>
+            <button 
+              className="continue-button" 
+              onClick={() => setShowSelectDialog(true)}
+              disabled={topics.length === 0}
+            >
+              Select Topic to Continue
+            </button>
+          </div>
+        </div>
+        
+        <div className="main-topics-list">
+          {mainTopics.map((mainTopic, index) => (
+            <div key={mainTopic.name} className="main-topic-container">
+              <div 
+                className="main-topic-header"
+                onClick={() => toggleMainTopic(mainTopic.name)}
+              >
+                <span 
+                  className="main-topic-name"
+                  data-optional={mainTopic.name.includes("[Optional]")}
+                >
+                  <FaFolder /> {mainTopic.name}
+                </span>
+                <span className="main-topic-count">
+                  {mainTopic.subtopics.length} subtopics
+                </span>
+                <span className="main-topic-toggle">
+                  {expandedTopics[mainTopic.name] ? <FaChevronUp /> : <FaChevronDown />}
+                </span>
+              </div>
+              
+              {expandedTopics[mainTopic.name] && (
+                <div className="subtopics-list">
+                  {mainTopic.subtopics.map(topic => (
+                    <div key={topic.id} className="subtopic-item">
+                      {editMode === topic.id ? (
+                        <div className="subtopic-edit-form">
+                          <div className="edit-form-inputs">
+                            <input
+                              type="text"
+                              value={editValue.mainTopic}
+                              onChange={(e) => setEditValue({...editValue, mainTopic: e.target.value})}
+                              placeholder="Main Topic"
+                              className="edit-main-topic"
+                            />
+                            <input
+                              type="text"
+                              value={editValue.subtopic}
+                              onChange={(e) => setEditValue({...editValue, subtopic: e.target.value})}
+                              placeholder="Subtopic"
+                              className="edit-subtopic"
+                              autoFocus
+                            />
+                          </div>
+                          <div className="edit-form-actions">
+                            <button onClick={() => saveEdit(topic.id)} className="save-edit-button">
+                              <FaSave />
+                            </button>
+                            <button onClick={cancelEdit} className="cancel-edit-button">
+                              <FaExclamationTriangle />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="subtopic-info">
+                            <span className="subtopic-id">{topic.id}</span>
+                            <span 
+                              className="subtopic-name"
+                              data-optional={topic.subtopic.includes("[Optional]") || topic.mainTopic.includes("[Optional]")}
+                            >
+                              {topic.subtopic}
+                            </span>
+                          </div>
+                          <div className="subtopic-actions">
+                            <button
+                              className="generate-button"
+                              onClick={() => {
+                                setSelectedTopic(topic);
+                                setShowSelectDialog(true);
+                              }}
+                              title="Generate Cards from this Topic"
+                            >
+                              <FaBolt />
+                            </button>
+                            <button
+                              className="edit-button"
+                              onClick={() => startEdit(topic)}
+                              title="Edit Topic"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              className="delete-button"
+                              onClick={() => deleteTopic(topic.id)}
+                              title="Delete Topic"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        
+        <div className="add-topic-section">
+          <h4>Add New Topic</h4>
+          <div className="add-topic-form">
+            <div className="add-topic-inputs">
+              <input
+                type="text"
+                value={newTopicInput.mainTopic}
+                onChange={(e) => setNewTopicInput({...newTopicInput, mainTopic: e.target.value})}
+                placeholder="Main Topic"
+                className="add-main-topic"
+              />
+              <input
+                type="text"
+                value={newTopicInput.subtopic}
+                onChange={(e) => setNewTopicInput({...newTopicInput, subtopic: e.target.value})}
+                placeholder="Subtopic"
+                className="add-subtopic"
+              />
+            </div>
+            <button 
+              onClick={addTopic} 
+              className="add-topic-button"
+              disabled={!newTopicInput.mainTopic.trim() || !newTopicInput.subtopic.trim()}
+            >
+              <FaPlus /> Add Topic
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Render fallback notice
+  const renderFallbackNotice = () => {
+    if (!showFallbackNotice) return null;
+    
+    return (
+      <div className="fallback-notice">
+        <div className="fallback-notice-content">
+          <FaExclamationTriangle className="fallback-notice-icon" />
+          <p className="fallback-notice-message">
+            We couldn't find the exact topic list for <strong>{examBoard} {examType} {subject}</strong> for {academicYear}.
+            The topics below are typical for this subject/level based on previous years.
+            You can edit any topic for more precision when creating flashcards.
+          </p>
+        </div>
+        <button className="fallback-notice-dismiss" onClick={dismissFallbackNotice} title="Dismiss">
+          <FaTimes />
+        </button>
+      </div>
+    );
+  };
+  
+  // Main render method
   return (
-    <div className="topic-hub">
+    <div className={`topic-hub ${usingFallbackTopics ? 'using-fallback' : ''}`}>
       {/* Display any errors */}
       {error && (
         <div className="error-message">
@@ -964,6 +1217,9 @@ REFERENCE SOURCES:
           <span>{error}</span>
         </div>
       )}
+      
+      {/* Display fallback notice if using fallback topics */}
+      {renderFallbackNotice()}
       
       {/* Show generator only if no topics exist yet */}
       {(!topics || topics.length === 0) && !hasGenerated && renderGenerator()}

@@ -1,1312 +1,1296 @@
+main.js?1742725804132&_=1742725804132:112 VESPA Config initialized: Object
+main.js?1742725804132&_=1742725804132:135 Document ready - checking if flashcard app needs initialization
+main.js?1742725804132&_=1742725804132:125 VESPA Integration script loaded successfully
+index.js?v=1:76 Developed byKsense Technology Group LLCPRODUCTION MODE - Branch: mainKSENSE DEBUG: INJECTED URL: https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1
+index.js?v=1:90 Object
+KnackJavascript4.js:104 Flashcard app: Scene rendered: scene_1206
+KnackJavascript4.js:223 Initializing Flashcard React app
+KnackJavascript4.js:230 Flashcard app: User is authenticated
+KnackJavascript4.js:237 Flashcard app: Basic user info: Object
+KnackJavascript4.js:195 Flashcard app: Getting complete user data for: 604fba9e1bd69a001b48d1a8
+vespa-academy#flashcards/:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+KnackJavascript4.js:207 Flashcard app: Complete user data: Object
+KnackJavascript4.js:188 CONNECTION FIELD IDs
+KnackJavascript4.js:189 {
+  "emailId": "604fba9e1bd69a001b48d1a8",
+  "schoolId": null,
+  "tutorId": null,
+  "roleId": null
+}
+KnackJavascript4.js:277 Flashcard app: First selector failed, trying alternatives
+KnackJavascript4.js:283 Flashcard app: No rich text field found, looking for the view
+KnackJavascript4.js:287 Flashcard app: View found, creating container
+App.js:1395 [Init] Sent ready message to parent
+KnackJavascript4.js:345 Flashcard app [2025-03-23T10:30:05.854Z]: Message from React app: APP_READY
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-23T10:30:05.854Z",
+  "hasData": "no"
+}
+KnackJavascript4.js:363 Flashcard app: React app is ready, sending user info (first time)
+KnackJavascript4.js:491 Flashcard app: Loading user data for: 604fba9e1bd69a001b48d1a8
+KnackJavascript4.js:517 Flashcard app: User data search response: Object
+KnackJavascript4.js:522 Flashcard app: Found existing user data: Object
+KnackJavascript4.js:396 Flashcard app: Sent user info to React app
+App.js:1191 [Message Handler 2025-03-23T10:30:06.137Z] From parent: KNACK_USER_INFO
+App.js:1205 [User Info] First-time processing of user data
+App.js:1261 [User Info] Stored recordId: 67dfe023107d2c02fbadb4eb
+App.js:1288 [User Info] Loaded topic lists from Knack: 0
+App.js:1294 [User Info] Loaded topic metadata from Knack: 0
+App.js:1298 [User Info] Successfully processed user data from Knack
+App.js:1314 [User Info] Sending AUTH_CONFIRMED message
+KnackJavascript4.js:345 Flashcard app [2025-03-23T10:30:06.140Z]: Message from React app: AUTH_CONFIRMED
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "AUTH_CONFIRMED",
+  "timestamp": "2025-03-23T10:30:06.140Z",
+  "hasData": "no"
+}
+KnackJavascript4.js:402 Flashcard app: Authentication confirmed by React app
+App.js:1395 [Init] Sent ready message to parent
+KnackJavascript4.js:345 Flashcard app [2025-03-23T10:30:06.144Z]: Message from React app: APP_READY
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-23T10:30:06.144Z",
+  "hasData": "no"
+}
+KnackJavascript4.js:357 Flashcard app: Ignoring duplicate APP_READY message
+AICardGenerator.jsx:155 User authenticated, loading topic lists from Knack
+AICardGenerator.jsx:190 Loading topic lists from Knack for user: 604fba9e1bd69a001b48d1a8
+TopicPersistenceService.js:22 [TopicPersistenceService] Loading topic lists
+TopicPersistenceService.js:23 {
+  "userId": "604fba9e1bd69a001b48d1a8"
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Looking up record ID for user
+TopicPersistenceService.js:23 {
+  "userId": "604fba9e1bd69a001b48d1a8"
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Found record ID
+TopicPersistenceService.js:23 {
+  "recordId": "67dfe023107d2c02fbadb4eb"
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Fetching user data
+TopicPersistenceService.js:23 {
+  "recordId": "67dfe023107d2c02fbadb4eb"
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] User data fetched successfully
+TopicPersistenceService.js:23 {
+  "fields": [
+    "id",
+    "field_3010",
+    "field_3010_raw",
+    "field_3029_raw",
+    "field_3029",
+    "field_2954",
+    "field_2954_raw",
+    "field_3008",
+    "field_3008_raw",
+    "field_2956",
+    "field_2956_raw",
+    "field_3009",
+    "field_3009_raw",
+    "field_2958",
+    "field_2958_raw",
+    "field_2955_raw",
+    "field_2955",
+    "field_2978_raw",
+    "field_2978",
+    "field_2980_raw",
+    "field_2980",
+    "field_2979",
+    "field_2979_raw",
+    "field_3032_raw",
+    "field_3032",
+    "field_2957",
+    "field_2957_raw",
+    "field_2959_raw",
+    "field_2959",
+    "field_2960",
+    "field_2960_raw",
+    "field_2974",
+    "field_2974_raw",
+    "field_2976",
+    "field_2976_raw",
+    "field_2977_raw",
+    "field_2977",
+    "field_2991",
+    "field_2991_raw",
+    "field_2992",
+    "field_2992_raw",
+    "field_2993",
+    "field_2993_raw",
+    "field_2994",
+    "field_2994_raw",
+    "field_2995",
+    "field_2995_raw",
+    "field_2986",
+    "field_2986_raw",
+    "field_2987",
+    "field_2987_raw",
+    "field_2988",
+    "field_2988_raw",
+    "field_2989",
+    "field_2989_raw",
+    "field_2990",
+    "field_2990_raw",
+    "field_3000",
+    "field_3000_raw",
+    "field_3011",
+    "field_3011_raw",
+    "field_3030",
+    "field_3030_raw",
+    "field_3031_raw",
+    "field_3031"
+  ]
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Loaded topic lists
+TopicPersistenceService.js:23 {
+  "count": 0
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Loaded metadata
+TopicPersistenceService.js:23 {
+  "count": 0
+}
+AICardGenerator.jsx:272 Auto-generating topics for subject: Biology
+index.jsx:80 Starting topic generation for: AQA A-Level Biology
+index.jsx:115 ==== RAW API RESPONSE FROM OPENAI ====
+index.jsx:116 [
+    {
+        "id": "3.1",
+        "topic": "Biological molecules: Carbohydrates",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Carbohydrates"
+    },
+    {
+        "id": "3.2",
+        "topic": "Biological molecules: Proteins",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Proteins"
+    },
+    {
+        "id": "3.3",
+        "topic": "Biological molecules: Lipids",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Lipids"
+    },
+    {
+        "id": "3.4",
+        "topic": "Biological molecules: Water",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Water"
+    },
+    {
+        "id": "3.5",
+        "topic": "Biological molecules: Inorganic ions",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Inorganic ions"
+    },
+    {
+        "id": "3.6",
+        "topic": "Biological molecules: Non-protein nitrogenous substances",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Non-protein nitrogenous substances"
+    },
+    {
+        "id": "3.7",
+        "topic": "Biological molecules: Nucleic acids",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Nucleic acids"
+    },
+    {
+        "id": "3.8",
+        "topic": "Biological molecules: ATP",
+        "mainTopic": "Biological molecules",
+        "subtopic": "ATP"
+    },
+    {
+        "id": "3.9",
+        "topic": "Biological molecules: Water",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Water"
+    },
+    {
+        "id": "3.10",
+        "topic": "Biological molecules: Inorganic ions",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Inorganic ions"
+    },
+    {
+        "id": "3.11",
+        "topic": "Biological molecules: Non-protein nitrogenous substances",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Non-protein nitrogenous substances"
+    },
+    {
+        "id": "3.12",
+        "topic": "Biological molecules: Nucleic acids",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Nucleic acids"
+    },
+    {
+        "id": "3.13",
+        "topic": "Biological molecules: ATP",
+        "mainTopic": "Biological molecules",
+        "subtopic": "ATP"
+    },
+    {
+        "id": "3.14",
+        "topic": "Biological molecules: Water",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Water"
+    },
+    {
+        "id": "3.15",
+        "topic": "Biological molecules: Inorganic ions",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Inorganic ions"
+    },
+    {
+        "id": "3.16",
+        "topic": "Biological molecules: Non-protein nitrogenous substances",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Non-protein nitrogenous substances"
+    },
+    {
+        "id": "3.17",
+        "topic": "Biological molecules: Nucleic acids",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Nucleic acids"
+    },
+    {
+        "id": "3.18",
+        "topic": "Biological molecules: ATP",
+        "mainTopic": "Biological molecules",
+        "subtopic": "ATP"
+    }
+]
+index.jsx:117 ==== END RAW API RESPONSE ====
+index.jsx:124 Successfully parsed JSON response: Array(18)
+index.jsx:203 ===== FINAL TOPIC LIST BEING USED =====
+index.jsx:204 [
+  {
+    "id": "3.1",
+    "topic": "Biological molecules: Carbohydrates",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Carbohydrates"
+  },
+  {
+    "id": "3.2",
+    "topic": "Biological molecules: Proteins",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Proteins"
+  },
+  {
+    "id": "3.3",
+    "topic": "Biological molecules: Lipids",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Lipids"
+  },
+  {
+    "id": "3.4",
+    "topic": "Biological molecules: Water",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Water"
+  },
+  {
+    "id": "3.5",
+    "topic": "Biological molecules: Inorganic ions",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Inorganic ions"
+  },
+  {
+    "id": "3.6",
+    "topic": "Biological molecules: Non-protein nitrogenous substances",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Non-protein nitrogenous substances"
+  },
+  {
+    "id": "3.7",
+    "topic": "Biological molecules: Nucleic acids",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Nucleic acids"
+  },
+  {
+    "id": "3.8",
+    "topic": "Biological molecules: ATP",
+    "mainTopic": "Biological molecules",
+    "subtopic": "ATP"
+  },
+  {
+    "id": "3.9",
+    "topic": "Biological molecules: Water",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Water"
+  },
+  {
+    "id": "3.10",
+    "topic": "Biological molecules: Inorganic ions",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Inorganic ions"
+  },
+  {
+    "id": "3.11",
+    "topic": "Biological molecules: Non-protein nitrogenous substances",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Non-protein nitrogenous substances"
+  },
+  {
+    "id": "3.12",
+    "topic": "Biological molecules: Nucleic acids",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Nucleic acids"
+  },
+  {
+    "id": "3.13",
+    "topic": "Biological molecules: ATP",
+    "mainTopic": "Biological molecules",
+    "subtopic": "ATP"
+  },
+  {
+    "id": "3.14",
+    "topic": "Biological molecules: Water",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Water"
+  },
+  {
+    "id": "3.15",
+    "topic": "Biological molecules: Inorganic ions",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Inorganic ions"
+  },
+  {
+    "id": "3.16",
+    "topic": "Biological molecules: Non-protein nitrogenous substances",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Non-protein nitrogenous substances"
+  },
+  {
+    "id": "3.17",
+    "topic": "Biological molecules: Nucleic acids",
+    "mainTopic": "Biological molecules",
+    "subtopic": "Nucleic acids"
+  },
+  {
+    "id": "3.18",
+    "topic": "Biological molecules: ATP",
+    "mainTopic": "Biological molecules",
+    "subtopic": "ATP"
+  }
+]
+index.jsx:205 Topic count: 18
+index.jsx:206 ===== END FINAL TOPIC LIST =====
+index.jsx:80 Starting topic generation for: AQA A-Level Biology
+index.jsx:115 ==== RAW API RESPONSE FROM OPENAI ====
+index.jsx:116 []
+
+index.jsx:117 ==== END RAW API RESPONSE ====
+index.jsx:124 Successfully parsed JSON response: Array(0)
+index.jsx:203 ===== FINAL TOPIC LIST BEING USED =====
+index.jsx:204 []
+index.jsx:205 Topic count: 0
+index.jsx:206 ===== END FINAL TOPIC LIST =====
+index.jsx:80 Starting topic generation for: AQA A-Level Biology
+AICardGenerator.jsx:2197 Autosave completed successfully
+index.jsx:115 ==== RAW API RESPONSE FROM OPENAI ====
+index.jsx:116 [
+    {
+        "id": "1.1",
+        "topic": "Biological molecules: Carbohydrates",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Carbohydrates"
+    },
+    {
+        "id": "1.2",
+        "topic": "Biological molecules: Proteins",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Proteins"
+    },
+    {
+        "id": "1.3",
+        "topic": "Biological molecules: Lipids",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Lipids"
+    },
+    {
+        "id": "1.4",
+        "topic": "Biological molecules: Water",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Water"
+    },
+    {
+        "id": "1.5",
+        "topic": "Biological molecules: Inorganic ions",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Inorganic ions"
+    },
+    {
+        "id": "1.6",
+        "topic": "Biological molecules: Non-protein nitrogenous substances",
+        "mainTopic": "Biological molecules",
+        "subtopic": "Non-protein nitrogenous substances"
+    },
+    {
+        "id": "2.1",
+        "topic": "Cells: Cell structure",
+        "mainTopic": "Cells",
+        "subtopic": "Cell structure"
+    },
+    {
+        "id": "2.2",
+        "topic": "Cells: Biological membranes",
+        "mainTopic": "Cells",
+        "subtopic": "Biological membranes"
+    },
+    {
+        "id": "2.3",
+        "topic": "Cells: Cell division, cell diversity and cellular organisation",
+        "mainTopic": "Cells",
+        "subtopic": "Cell division, cell diversity and cellular organisation"
+    },
+    {
+        "id": "2.4",
+        "topic": "Cells: Cellular control",
+        "mainTopic": "Cells",
+        "subtopic": "Cellular control"
+    },
+    {
+        "id": "2.5",
+        "topic": "Cells: Microscopy",
+        "mainTopic": "Cells",
+        "subtopic": "Microscopy"
+    },
+    {
+        "id": "3.1",
+        "topic": "Organisms exchange substances with their environment: Surface area to volume ratio",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Surface area to volume ratio"
+    },
+    {
+        "id": "3.2",
+        "topic": "Organisms exchange substances with their environment: Gas exchange in single-celled organisms",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Gas exchange in single-celled organisms"
+    },
+    {
+        "id": "3.3",
+        "topic": "Organisms exchange substances with their environment: Gas exchange in multicellular organisms",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Gas exchange in multicellular organisms"
+    },
+    {
+        "id": "3.4",
+        "topic": "Organisms exchange substances with their environment: Digestion and absorption",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Digestion and absorption"
+    },
+    {
+        "id": "3.5",
+        "topic": "Organisms exchange substances with their environment: Mass transport in animals",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Mass transport in animals"
+    },
+    {
+        "id": "3.6",
+        "topic": "Organisms exchange substances with their environment: Mass transport in plants",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Mass transport in plants"
+    },
+    {
+        "id": "3.7",
+        "topic": "Organisms exchange substances with their environment: Gas exchange in fish",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Gas exchange in fish"
+    },
+    {
+        "id": "3.8",
+        "topic": "Organisms exchange substances with their environment: Transport in plants",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Transport in plants"
+    },
+    {
+        "id": "3.9",
+        "topic": "Organisms exchange substances with their environment: Homeostasis",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Homeostasis"
+    },
+    {
+        "id": "3.10",
+        "topic": "Organisms exchange substances with their environment: Control of blood glucose concentration",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Control of blood glucose concentration"
+    },
+    {
+        "id": "3.11",
+        "topic": "Organisms exchange substances with their environment: Regulation of water content",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Regulation of water content"
+    },
+    {
+        "id": "3.12",
+        "topic": "Organisms exchange substances with their environment: Regulation of body temperature",
+        "mainTopic": "Organisms exchange substances with their environment",
+        "subtopic": "Regulation of body temperature"
+    },
+    {
+        "id": "4.1",
+        "topic": "Genetic information, variation and relationships between organisms: DNA, genes and chromosomes",
+        "mainTopic": "Genetic information, variation and relationships between organisms",
+        "subtopic": "DNA, genes and chromosomes"
+    },
+    {
+        "id": "4.2",
+        "topic": "Genetic information, variation and relationships between organisms: DNA replication",
+        "mainTopic": "Genetic information, variation and relationships between organisms",
+        "subtopic": "DNA replication"
+    },
+    {
+        "id": "4.3",
+        "topic": "Genetic information, variation and relationships between organisms: Gene expression",
+        "mainTopic": "Genetic information, variation and relationships between organisms",
+        "subtopic": "Gene expression"
+    },
+    {
+        "id": "4.4",
+        "topic": "Genetic information, variation and relationships between organisms: Gene mutation",
+        "mainTopic": "Genetic information, variation and relationships between organisms",
+        "subtopic": "Gene mutation"
+    },
+    {
+        "id": "4.5",
+        "topic": "Genetic information, variation and relationships between organisms: Genomics",
+        "mainTopic": "Genetic information, variation and relationships between organisms",
+        "subtopic": "Genomics"
+    },
+    {
+        "id": "4.6",
+        "topic": "Genetic information, variation and relationships between organisms: Recombinant DNA technology",
+        "mainTopic": "Genetic information, variation and relationships between organisms",
+        "subtopic": "Recombinant DNA technology"
+    },
+    {
+        "id": "5.1",
+        "topic": "Energy transfers in and between organisms: Photosynthesis",
+        "mainTopic": "Energy transfers in and between organisms",
+        "subtopic": "Photosynthesis"
+    },
+    {
+        "id": "5.2",
+        "topic": "Energy transfers in and between organisms: Respiration",
+        "mainTopic": "Energy transfers in and between organisms",
+        "subtopic": "Respiration"
+    },
+    {
+        "id": "5.3",
+        "topic": "Energy transfers in and between organisms: Energy and ecosystems",
+        "mainTopic": "Energy transfers in and between organisms",
+        "subtopic": "Energy and ecosystems"
+    },
+    {
+        "id": "5.4",
+        "topic": "Energy transfers in and between organisms: Nutrient cycles",
+        "mainTopic": "Energy transfers in and between organisms",
+        "subtopic": "Nutrient cycles"
+    },
+    {
+        "id": "6.1",
+        "topic": "Organisms respond to changes in their internal and external environments: Stimuli and responses",
+        "mainTopic": "Organisms respond to changes in their internal and external environments",
+        "subtopic": "Stimuli and responses"
+    },
+    {
+        "id": "6.2",
+        "topic": "Organisms respond to changes in their internal and external environments: The nervous system",
+        "mainTopic": "Organisms respond to changes in their internal and external environments",
+        "subtopic": "The nervous system"
+    },
+    {
+        "id": "6.3",
+        "topic": "Organisms respond to changes in their internal and external environments: The hormonal system",
+        "mainTopic": "Organisms respond to changes in their internal and external environments",
+        "subtopic": "The hormonal system"
+    },
+    {
+        "id": "6.4",
+        "topic": "Organisms respond to changes in their internal and external environments: Homeostasis",
+        "mainTopic": "Organisms respond to changes in their internal and external environments",
+        "subtopic": "Homeostasis"
+    },
+    {
+        "id": "6.5",
+        "topic": "Organisms respond to changes
+index.jsx:117 ==== END RAW API RESPONSE ====
+index.jsx:126  Failed to parse topic response as JSON: SyntaxError: Unterminated string in JSON at position 8701 (line 226 column 47)
+    at JSON.parse (<anonymous>)
+    at generateTopics (index.jsx:123:29)
+generateTopics @ index.jsx:126
+index.jsx:127 Raw response preview: [
+    {
+        "id": "1.1",
+        "topic": "Biological molecules: Carbohydrates",
+        "mainTo
+index.jsx:159  Failed to evaluate as array: SyntaxError: Invalid or unexpected token
+    at generateTopics (index.jsx:141:38)
+generateTopics @ index.jsx:159
+index.jsx:168 Created fallback topics due to parsing failure
+index.jsx:203 ===== FINAL TOPIC LIST BEING USED =====
+index.jsx:204 [
+  {
+    "id": "1.1",
+    "topic": "Sample Topic: Introduction",
+    "mainTopic": "Sample Topic",
+    "subtopic": "Introduction"
+  }
+]
+index.jsx:205 Topic count: 1
+index.jsx:206 ===== END FINAL TOPIC LIST =====
+index.jsx:80 Starting topic generation for: AQA A-Level Biology
+index.jsx:115 ==== RAW API RESPONSE FROM OPENAI ====
+index.jsx:116 []
+
+index.jsx:117 ==== END RAW API RESPONSE ====
+index.jsx:124 Successfully parsed JSON response: Array(0)
+index.jsx:203 ===== FINAL TOPIC LIST BEING USED =====
+index.jsx:204 []
+index.jsx:205 Topic count: 0
+index.jsx:206 ===== END FINAL TOPIC LIST =====
+index.jsx:80 Starting topic generation for: AQA A-Level Biology
+index.jsx:115 ==== RAW API RESPONSE FROM OPENAI ====
+index.jsx:116 []
+
+index.jsx:117 ==== END RAW API RESPONSE ====
+index.jsx:124 Successfully parsed JSON response: Array(0)
+index.jsx:203 ===== FINAL TOPIC LIST BEING USED =====
+index.jsx:204 []
+index.jsx:205 Topic count: 0
+index.jsx:206 ===== END FINAL TOPIC LIST =====
+index.jsx:80 Starting topic generation for: AQA A-Level Biology
+index.jsx:115 ==== RAW API RESPONSE FROM OPENAI ====
+index.jsx:116 []
+
+index.jsx:117 ==== END RAW API RESPONSE ====
+index.jsx:124 Successfully parsed JSON response: Array(0)
+index.jsx:203 ===== FINAL TOPIC LIST BEING USED =====
+index.jsx:204 []
+index.jsx:205 Topic count: 0
+index.jsx:206 ===== END FINAL TOPIC LIST =====
+AICardGenerator.jsx:2197 Autosave completed successfully
+AICardGenerator.jsx:2197 Autosave completed successfully
+AICardGenerator.jsx:155 User authenticated, loading topic lists from Knack
+AICardGenerator.jsx:190 Loading topic lists from Knack for user: 604fba9e1bd69a001b48d1a8
+TopicPersistenceService.js:22 [TopicPersistenceService] Loading topic lists
+TopicPersistenceService.js:23 {
+  "userId": "604fba9e1bd69a001b48d1a8"
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Fetching user data
+TopicPersistenceService.js:23 {
+  "recordId": "67dfe023107d2c02fbadb4eb"
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] User data fetched successfully
+TopicPersistenceService.js:23 {
+  "fields": [
+    "id",
+    "field_3010",
+    "field_3010_raw",
+    "field_3029_raw",
+    "field_3029",
+    "field_2954",
+    "field_2954_raw",
+    "field_3008",
+    "field_3008_raw",
+    "field_2956",
+    "field_2956_raw",
+    "field_3009",
+    "field_3009_raw",
+    "field_2958",
+    "field_2958_raw",
+    "field_2955_raw",
+    "field_2955",
+    "field_2978_raw",
+    "field_2978",
+    "field_2980_raw",
+    "field_2980",
+    "field_2979",
+    "field_2979_raw",
+    "field_3032_raw",
+    "field_3032",
+    "field_2957",
+    "field_2957_raw",
+    "field_2959_raw",
+    "field_2959",
+    "field_2960",
+    "field_2960_raw",
+    "field_2974",
+    "field_2974_raw",
+    "field_2976",
+    "field_2976_raw",
+    "field_2977_raw",
+    "field_2977",
+    "field_2991",
+    "field_2991_raw",
+    "field_2992",
+    "field_2992_raw",
+    "field_2993",
+    "field_2993_raw",
+    "field_2994",
+    "field_2994_raw",
+    "field_2995",
+    "field_2995_raw",
+    "field_2986",
+    "field_2986_raw",
+    "field_2987",
+    "field_2987_raw",
+    "field_2988",
+    "field_2988_raw",
+    "field_2989",
+    "field_2989_raw",
+    "field_2990",
+    "field_2990_raw",
+    "field_3000",
+    "field_3000_raw",
+    "field_3011",
+    "field_3011_raw",
+    "field_3030",
+    "field_3030_raw",
+    "field_3031_raw",
+    "field_3031"
+  ]
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Loaded topic lists
+TopicPersistenceService.js:23 {
+  "count": 0
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Loaded metadata
+TopicPersistenceService.js:23 {
+  "count": 0
+}
+AICardGenerator.jsx:272 Auto-generating topics for subject: Dance
+index.jsx:80 Starting topic generation for: AQA A-Level Dance
+index.jsx:115 ==== RAW API RESPONSE FROM OPENAI ====
+index.jsx:116 [
+    {
+        "id": "1.1",
+        "topic": "Rambert Dance Company: Influences and repertoire",
+        "mainTopic": "Rambert Dance Company",
+        "subtopic": "Influences and repertoire"
+    },
+    {
+        "id": "1.2",
+        "topic": "Rambert Dance Company: Choreographic approach",
+        "mainTopic": "Rambert Dance Company",
+        "subtopic": "Choreographic approach"
+    },
+    {
+        "id": "1.3",
+        "topic": "Rambert Dance Company: Performance style",
+        "mainTopic": "Rambert Dance Company",
+        "subtopic": "Performance style"
+    },
+    {
+        "id": "2.1",
+        "topic": "Professional works: Influences and intentions",
+        "mainTopic": "Professional works",
+        "subtopic": "Influences and intentions"
+    },
+    {
+        "id": "2.2",
+        "topic": "Professional works: Choreographic approach",
+        "mainTopic": "Professional works",
+        "subtopic": "Choreographic approach"
+    },
+    {
+        "id": "2.3",
+        "topic": "Professional works: Performance style",
+        "mainTopic": "Professional works",
+        "subtopic": "Performance style"
+    },
+    {
+        "id": "3.1",
+        "topic": "Technical and expressive skills: Physical skills",
+        "mainTopic": "Technical and expressive skills",
+        "subtopic": "Physical skills"
+    },
+    {
+        "id": "3.2",
+        "topic": "Technical and expressive skills: Interpretative skills",
+        "mainTopic": "Technical and expressive skills",
+        "subtopic": "Interpretative skills"
+    },
+    {
+        "id": "4.1",
+        "topic": "Choreographic approach: The process of choreography",
+        "mainTopic": "Choreographic approach",
+        "subtopic": "The process of choreography"
+    },
+    {
+        "id": "4.2",
+        "topic": "Choreographic approach: Choreographic devices and structures",
+        "mainTopic": "Choreographic approach",
+        "subtopic": "Choreographic devices and structures"
+    },
+    {
+        "id": "4.3",
+        "topic": "Choreographic approach: Style and intention",
+        "mainTopic": "Choreographic approach",
+        "subtopic": "Style and intention"
+    },
+    {
+        "id": "5.1",
+        "topic": "Professional works: The process of reconstruction",
+        "mainTopic": "Professional works",
+        "subtopic": "The process of reconstruction"
+    },
+    {
+        "id": "5.2",
+        "topic": "Professional works: Interpretation and performance",
+        "mainTopic": "Professional works",
+        "subtopic": "Interpretation and performance"
+    }
+]
+index.jsx:117 ==== END RAW API RESPONSE ====
+index.jsx:124 Successfully parsed JSON response: Array(13)
+index.jsx:203 ===== FINAL TOPIC LIST BEING USED =====
+index.jsx:204 [
+  {
+    "id": "1.1",
+    "topic": "Rambert Dance Company: Influences and repertoire",
+    "mainTopic": "Rambert Dance Company",
+    "subtopic": "Influences and repertoire"
+  },
+  {
+    "id": "1.2",
+    "topic": "Rambert Dance Company: Choreographic approach",
+    "mainTopic": "Rambert Dance Company",
+    "subtopic": "Choreographic approach"
+  },
+  {
+    "id": "1.3",
+    "topic": "Rambert Dance Company: Performance style",
+    "mainTopic": "Rambert Dance Company",
+    "subtopic": "Performance style"
+  },
+  {
+    "id": "2.1",
+    "topic": "Professional works: Influences and intentions",
+    "mainTopic": "Professional works",
+    "subtopic": "Influences and intentions"
+  },
+  {
+    "id": "2.2",
+    "topic": "Professional works: Choreographic approach",
+    "mainTopic": "Professional works",
+    "subtopic": "Choreographic approach"
+  },
+  {
+    "id": "2.3",
+    "topic": "Professional works: Performance style",
+    "mainTopic": "Professional works",
+    "subtopic": "Performance style"
+  },
+  {
+    "id": "3.1",
+    "topic": "Technical and expressive skills: Physical skills",
+    "mainTopic": "Technical and expressive skills",
+    "subtopic": "Physical skills"
+  },
+  {
+    "id": "3.2",
+    "topic": "Technical and expressive skills: Interpretative skills",
+    "mainTopic": "Technical and expressive skills",
+    "subtopic": "Interpretative skills"
+  },
+  {
+    "id": "4.1",
+    "topic": "Choreographic approach: The process of choreography",
+    "mainTopic": "Choreographic approach",
+    "subtopic": "The process of choreography"
+  },
+  {
+    "id": "4.2",
+    "topic": "Choreographic approach: Choreographic devices and structures",
+    "mainTopic": "Choreographic approach",
+    "subtopic": "Choreographic devices and structures"
+  },
+  {
+    "id": "4.3",
+    "topic": "Choreographic approach: Style and intention",
+    "mainTopic": "Choreographic approach",
+    "subtopic": "Style and intention"
+  },
+  {
+    "id": "5.1",
+    "topic": "Professional works: The process of reconstruction",
+    "mainTopic": "Professional works",
+    "subtopic": "The process of reconstruction"
+  },
+  {
+    "id": "5.2",
+    "topic": "Professional works: Interpretation and performance",
+    "mainTopic": "Professional works",
+    "subtopic": "Interpretation and performance"
+  }
+]
+index.jsx:205 Topic count: 13
+index.jsx:206 ===== END FINAL TOPIC LIST =====
+AICardGenerator.jsx:446 Saving topic lists to Knack for user: 604fba9e1bd69a001b48d1a8
+TopicPersistenceService.js:22 [TopicPersistenceService] Saving topic lists
+TopicPersistenceService.js:23 {
+  "count": 1,
+  "userId": "604fba9e1bd69a001b48d1a8",
+  "hasMetadata": false,
+  "timestamp": "2025-03-23T10:32:34.218Z"
+}
+AICardGenerator.jsx:1375 Topic list saved: Dance - AQA A-Level
+TopicPersistenceService.js:22 [TopicPersistenceService] Fetching user data
+TopicPersistenceService.js:23 {
+  "recordId": "67dfe023107d2c02fbadb4eb"
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] User data fetched successfully
+TopicPersistenceService.js:23 {
+  "fields": [
+    "id",
+    "field_3010",
+    "field_3010_raw",
+    "field_3029_raw",
+    "field_3029",
+    "field_2954",
+    "field_2954_raw",
+    "field_3008",
+    "field_3008_raw",
+    "field_2956",
+    "field_2956_raw",
+    "field_3009",
+    "field_3009_raw",
+    "field_2958",
+    "field_2958_raw",
+    "field_2955_raw",
+    "field_2955",
+    "field_2978_raw",
+    "field_2978",
+    "field_2980_raw",
+    "field_2980",
+    "field_2979",
+    "field_2979_raw",
+    "field_3032_raw",
+    "field_3032",
+    "field_2957",
+    "field_2957_raw",
+    "field_2959_raw",
+    "field_2959",
+    "field_2960",
+    "field_2960_raw",
+    "field_2974",
+    "field_2974_raw",
+    "field_2976",
+    "field_2976_raw",
+    "field_2977_raw",
+    "field_2977",
+    "field_2991",
+    "field_2991_raw",
+    "field_2992",
+    "field_2992_raw",
+    "field_2993",
+    "field_2993_raw",
+    "field_2994",
+    "field_2994_raw",
+    "field_2995",
+    "field_2995_raw",
+    "field_2986",
+    "field_2986_raw",
+    "field_2987",
+    "field_2987_raw",
+    "field_2988",
+    "field_2988_raw",
+    "field_2989",
+    "field_2989_raw",
+    "field_2990",
+    "field_2990_raw",
+    "field_3000",
+    "field_3000_raw",
+    "field_3011",
+    "field_3011_raw",
+    "field_3030",
+    "field_3030_raw",
+    "field_3031_raw",
+    "field_3031"
+  ]
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Topic lists saved successfully (direct API)
+TopicPersistenceService.js:23 {
+  "count": 1,
+  "recordId": "67dfe023107d2c02fbadb4eb"
+}
+AICardGenerator.jsx:459 Topic lists saved to Knack successfully: 1 lists
+TopicPersistenceService.js:22 [TopicPersistenceService] Attempting to save topic lists via postMessage
+TopicPersistenceService.js:23 {
+  "count": 1,
+  "userId": "604fba9e1bd69a001b48d1a8",
+  "timestamp": "2025-03-23T10:32:35.387Z"
+}
+KnackJavascript4.js:345 Flashcard app [2025-03-23T10:32:35.395Z]: Message from React app: SAVE_DATA
+KnackJavascript4.js:188 MESSAGE RECEIVED
+KnackJavascript4.js:189 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-23T10:32:35.395Z",
+  "hasData": "yes"
+}
+KnackJavascript4.js:410 Flashcard app [2025-03-23T10:32:35.395Z]: Saving data from React app: Object
+KnackJavascript4.js:188 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4.js:189 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-23T10:32:35.395Z"
+}
+KnackJavascript4.js:1089 Flashcard app: Saving flashcard data for user: 604fba9e1bd69a001b48d1a8
+KnackJavascript4.js:188 SAVING DATA WITH RECORD ID
+KnackJavascript4.js:189 "604fba9e1bd69a001b48d1a8"
+KnackJavascript4.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
+KnackJavascript4.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
+KnackJavascript4.js:188 SAVING TO KNACK: DATA STATS
+KnackJavascript4.js:189 {
+  "cardsCount": 0,
+  "colorCount": 0,
+  "spacedRepCount": 0
+}
+api.knack.com/v1/objects/object_102/records/604fba9e1bd69a001b48d1a8:1 
+            
+            
+            Failed to load resource: the server responded with a status of 400 ()
+KnackJavascript4.js:1218  Flashcard app: Error saving user data: Object
+error @ KnackJavascript4.js:1218
+KnackJavascript4.js:188 KNACK SAVE ERROR
+KnackJavascript4.js:189 {
+  "readyState": 4,
+  "responseText": "{\"errors\":[{\"field\":\"field_2958\",\"fieldType\":\"short_text\",\"isUserField\":false,\"type\":\"unique\",\"message\":\"email address must be unique. \\\"stu5@vespa.academy\\\" is already being used.\"}]}",
+  "status": 400,
+  "statusText": "error"
+}
+App.js:1191 [Message Handler 2025-03-23T10:32:35.950Z] From parent: SAVE_RESULT
+App.js:1320 [Save Result] Received: false
+TopicPersistenceService.js:366  [2025-03-23T10:32:35.950Z] Failed to save topic list via postMessage
+o @ TopicPersistenceService.js:366
+TopicPersistenceService.js:386  [2025-03-23T10:32:45.388Z] No save response received within timeout period
+(anonymous) @ TopicPersistenceService.js:386
+AICardGenerator.jsx:155 User authenticated, loading topic lists from Knack
+AICardGenerator.jsx:190 Loading topic lists from Knack for user: 604fba9e1bd69a001b48d1a8
+TopicPersistenceService.js:22 [TopicPersistenceService] Loading topic lists
+TopicPersistenceService.js:23 {
+  "userId": "604fba9e1bd69a001b48d1a8"
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Fetching user data
+TopicPersistenceService.js:23 {
+  "recordId": "67dfe023107d2c02fbadb4eb"
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] User data fetched successfully
+TopicPersistenceService.js:23 {
+  "fields": [
+    "id",
+    "field_3010",
+    "field_3010_raw",
+    "field_3029_raw",
+    "field_3029",
+    "field_2954",
+    "field_2954_raw",
+    "field_3008",
+    "field_3008_raw",
+    "field_2956",
+    "field_2956_raw",
+    "field_3009",
+    "field_3009_raw",
+    "field_2958",
+    "field_2958_raw",
+    "field_2955_raw",
+    "field_2955",
+    "field_2978_raw",
+    "field_2978",
+    "field_2980_raw",
+    "field_2980",
+    "field_2979",
+    "field_2979_raw",
+    "field_3032_raw",
+    "field_3032",
+    "field_2957",
+    "field_2957_raw",
+    "field_2959_raw",
+    "field_2959",
+    "field_2960",
+    "field_2960_raw",
+    "field_2974",
+    "field_2974_raw",
+    "field_2976",
+    "field_2976_raw",
+    "field_2977_raw",
+    "field_2977",
+    "field_2991",
+    "field_2991_raw",
+    "field_2992",
+    "field_2992_raw",
+    "field_2993",
+    "field_2993_raw",
+    "field_2994",
+    "field_2994_raw",
+    "field_2995",
+    "field_2995_raw",
+    "field_2986",
+    "field_2986_raw",
+    "field_2987",
+    "field_2987_raw",
+    "field_2988",
+    "field_2988_raw",
+    "field_2989",
+    "field_2989_raw",
+    "field_2990",
+    "field_2990_raw",
+    "field_3000",
+    "field_3000_raw",
+    "field_3011",
+    "field_3011_raw",
+    "field_3030",
+    "field_3030_raw",
+    "field_3031_raw",
+    "field_3031"
+  ]
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Loaded topic lists
+TopicPersistenceService.js:23 {
+  "count": 1
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Loaded metadata
+TopicPersistenceService.js:23 {
+  "count": 0
+}
+AICardGenerator.jsx:196 Successfully loaded topic lists from Knack: Array(1)
+AICardGenerator.jsx:161 Loaded topic lists from Knack: Array(1)
+AICardGenerator.jsx:576 Loaded topic list for card generation: Dance - AQA A-Level
+AICardGenerator.jsx:155 User authenticated, loading topic lists from Knack
+AICardGenerator.jsx:190 Loading topic lists from Knack for user: 604fba9e1bd69a001b48d1a8
+TopicPersistenceService.js:22 [TopicPersistenceService] Loading topic lists
+TopicPersistenceService.js:23 {
+  "userId": "604fba9e1bd69a001b48d1a8"
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Fetching user data
+TopicPersistenceService.js:23 {
+  "recordId": "67dfe023107d2c02fbadb4eb"
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] User data fetched successfully
+TopicPersistenceService.js:23 {
+  "fields": [
+    "id",
+    "field_3010",
+    "field_3010_raw",
+    "field_3029_raw",
+    "field_3029",
+    "field_2954",
+    "field_2954_raw",
+    "field_3008",
+    "field_3008_raw",
+    "field_2956",
+    "field_2956_raw",
+    "field_3009",
+    "field_3009_raw",
+    "field_2958",
+    "field_2958_raw",
+    "field_2955_raw",
+    "field_2955",
+    "field_2978_raw",
+    "field_2978",
+    "field_2980_raw",
+    "field_2980",
+    "field_2979",
+    "field_2979_raw",
+    "field_3032_raw",
+    "field_3032",
+    "field_2957",
+    "field_2957_raw",
+    "field_2959_raw",
+    "field_2959",
+    "field_2960",
+    "field_2960_raw",
+    "field_2974",
+    "field_2974_raw",
+    "field_2976",
+    "field_2976_raw",
+    "field_2977_raw",
+    "field_2977",
+    "field_2991",
+    "field_2991_raw",
+    "field_2992",
+    "field_2992_raw",
+    "field_2993",
+    "field_2993_raw",
+    "field_2994",
+    "field_2994_raw",
+    "field_2995",
+    "field_2995_raw",
+    "field_2986",
+    "field_2986_raw",
+    "field_2987",
+    "field_2987_raw",
+    "field_2988",
+    "field_2988_raw",
+    "field_2989",
+    "field_2989_raw",
+    "field_2990",
+    "field_2990_raw",
+    "field_3000",
+    "field_3000_raw",
+    "field_3011",
+    "field_3011_raw",
+    "field_3030",
+    "field_3030_raw",
+    "field_3031_raw",
+    "field_3031"
+  ]
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Loaded topic lists
+TopicPersistenceService.js:23 {
+  "count": 1
+}
+TopicPersistenceService.js:22 [TopicPersistenceService] Loaded metadata
+TopicPersistenceService.js:23 {
+  "count": 0
+}
+AICardGenerator.jsx:196 Successfully loaded topic lists from Knack: Array(1)
+AICardGenerator.jsx:161 Loaded topic lists from Knack: Array(1)
+AICardGenerator.jsx:272 Auto-generating topics for subject: Chemistry
+index.jsx:80 Starting topic generation for: AQA A-Level Chemistry
+index.jsx:115 ==== RAW API RESPONSE FROM OPENAI ====
+index.jsx:116 []
+
+index.jsx:117 ==== END RAW API RESPONSE ====
+index.jsx:124 Successfully parsed JSON response: Array(0)
+index.jsx:203 ===== FINAL TOPIC LIST BEING USED =====
+index.jsx:204 []
+index.jsx:205 Topic count: 0
+index.jsx:206 ===== END FINAL TOPIC LIST =====
+index.jsx:80 Starting topic generation for: AQA A-Level Chemistry
+index.jsx:115 ==== RAW API RESPONSE FROM OPENAI ====
+index.jsx:116 []
+
+index.jsx:117 ==== END RAW API RESPONSE ====
+index.jsx:124 Successfully parsed JSON response: Array(0)
+index.jsx:203 ===== FINAL TOPIC LIST BEING USED =====
+index.jsx:204 []
+index.jsx:205 Topic count: 0
+index.jsx:206 ===== END FINAL TOPIC LIST =====
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
 
                 
           
           
           
          Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
-vespa-academy#flashcards/:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
-main.js?1742561114280&_=1742561114281:112 VESPA Config initialized: {knackAppId: '5ee90912c38ae7001510c1a9', knackApiKey: '8f733aa5-dd35-4464-8348-64824d1f5f0d', appUrl: 'https://vespa-flashcards-e7f31e9ff3c9.herokuapp.com/'}
-main.js?1742561114280&_=1742561114281:135 Document ready - checking if flashcard app needs initialization
-main.js?1742561114280&_=1742561114281:125 VESPA Integration script loaded successfully
-index.js?v=1:76 Developed byKsense Technology Group LLCPRODUCTION MODE - Branch: mainKSENSE DEBUG: INJECTED URL: https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1
-index.js?v=1:90 (index)Value(index)ValueisDevUserfalsetunnelUrlundefineddevBranch'main'projectRoute'knack_projects/vespa'currentUserundefinedinjectURL'https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1'useLocalRoutesfalseuseStagingServerfalsecssFiles''isHostedOnNexustrueObject
-KnackIntegrationScript2.js:104 Flashcard app: Scene rendered: scene_1206
-KnackIntegrationScript2.js:223 Initializing Flashcard React app
-KnackIntegrationScript2.js:448  Flashcard app: User is not authenticated
-initializeFlashcardApp @ KnackIntegrationScript2.js:448
-(anonymous) @ KnackIntegrationScript2.js:105
-dispatch @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-s @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-trigger @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-(anonymous) @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-each @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-each @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-trigger @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-renderCompletedScene @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-renderLoginScene @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-no_cookie @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-checkCookie @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-checkAuthentication @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-render @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-viewScene @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-execute @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-(anonymous) @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-(anonymous) @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-o @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-loadUrl @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-start @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-(anonymous) @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-script.onload @ index.js?v=1:92
-script
-injectScript @ index.js?v=1:70
-ksenseKnackFramework @ index.js?v=1:102
-(anonymous) @ main.js?1742561114280&_=1742561114281:74
-n @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-y @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-script
-t @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-i @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-js @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-KnackInitAsync @ main.js?1742561114280&_=1742561114281:5
-(anonymous) @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-u @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-fireWith @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-z @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-t.onload.t.onreadystatechange @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-script
-send @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-ajax @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-v.each.v.<computed> @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-getScript @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-(anonymous) @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-renderApp @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-(anonymous) @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-n @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-a @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-setTimeout
-a @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-setTimeout
-a @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-i @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-css @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-loadStyles @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-loadJS @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-handleLoadApp @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-u @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-fireWith @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-z @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-t.onload.t.onreadystatechange @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-script
-send @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-ajax @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-loadApp @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-init @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-(anonymous) @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-(anonymous) @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-Promise.then
-(anonymous) @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-(anonymous) @ k_3ea0046cdd302288fb3be48ac3d0bbbfc147e305.js:2
-main.js?v=1:2 logged in  true
-main.js?v=1:2 assist false
-main.js?v=1:2 resource role false
-KnackIntegrationScript2.js:104 Flashcard app: Scene rendered: scene_1206
-KnackIntegrationScript2.js:223 Initializing Flashcard React app
-KnackIntegrationScript2.js:230 Flashcard app: User is authenticated
-KnackIntegrationScript2.js:237 Flashcard app: Basic user info: {id: '630510eb3c91500021a8fad2', values: {…}, roles: Array(1), email: 'aramsey@vespa.academy', name: 'Alena Ramsey'}
-KnackIntegrationScript2.js:195 Flashcard app: Getting complete user data for: 630510eb3c91500021a8fad2
-KnackIntegrationScript2.js:207 Flashcard app: Complete user data: {id: '630510eb3c91500021a8fad2', account_status: 'active', approval_status: 'approved', utility_key: '17255243733681lvgwmb', profile_keys: 'Student', …}
-KnackIntegrationScript2.js:188 CONNECTION FIELD IDs
-KnackIntegrationScript2.js:189 {
-  "emailId": "630510eb3c91500021a8fad2",
-  "schoolId": null,
-  "tutorId": null,
-  "roleId": null
-}
-KnackIntegrationScript2.js:277 Flashcard app: First selector failed, trying alternatives
-KnackIntegrationScript2.js:283 Flashcard app: No rich text field found, looking for the view
-KnackIntegrationScript2.js:287 Flashcard app: View found, creating container
-App.js:1358 [Init] Sent ready message to parent
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:45:21.944Z]: Message from React app: APP_READY
-KnackIntegrationScript2.js:358 Flashcard app: React app is ready, sending user info (first time)
-KnackIntegrationScript2.js:454 Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
-KnackIntegrationScript2.js:480 Flashcard app: User data search response: {total_pages: 0, current_page: 1, total_records: 0, records: Array(0)}
-KnackIntegrationScript2.js:597 Flashcard app: No existing user data found, creating new record
-KnackIntegrationScript2.js:629 Flashcard app: Creating new flashcard user record for: 630510eb3c91500021a8fad2
-KnackIntegrationScript2.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
-KnackIntegrationScript2.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
-KnackIntegrationScript2.js:188 CREATING NEW RECORD
-KnackIntegrationScript2.js:189 {
-  "field_2954": "630510eb3c91500021a8fad2",
-  "field_2958": "aramsey@vespa.academy",
-  "field_2957": "2025-03-21T12:45:22.369Z",
-  "field_2979": "[]",
-  "field_2986": "[]",
-  "field_2987": "[]",
-  "field_2988": "[]",
-  "field_2989": "[]",
-  "field_2990": "[]",
-  "field_3000": "{}",
-  "field_3011": "[]",
-  "field_3030": "[]",
-  "field_3010": "Alena Ramsey",
-  "field_2956": "630510eb3c91500021a8fad2",
-  "field_3008": "603e9f97cb8481001b31183d"
-}
-KnackIntegrationScript2.js:695 Flashcard app: Successfully created user record: {id: '67dd5f63bda47802ddf1ff8e', field_3010: '', field_3010_raw: '', field_3029_raw: '', field_3029: '', …}
-KnackIntegrationScript2.js:391 Flashcard app: Sent user info to React app
-App.js:1182 [Message Handler 2025-03-21T12:45:22.857Z] From parent: KNACK_USER_INFO
-App.js:1196 [User Info] First-time processing of user data
-App.js:1252 [User Info] Stored recordId: 67dd5f63bda47802ddf1ff8e
-App.js:1277 [User Info] Successfully processed user data from Knack
-App.js:1293 [User Info] Sending AUTH_CONFIRMED message
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:45:22.858Z]: Message from React app: AUTH_CONFIRMED
-KnackIntegrationScript2.js:397 Flashcard app: Authentication confirmed by React app
-App.js:1358 [Init] Sent ready message to parent
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:45:22.860Z]: Message from React app: APP_READY
-KnackIntegrationScript2.js:352 Flashcard app: Ignoring duplicate APP_READY message
-AICardGenerator.jsx:153 User authenticated, loading topic lists from Knack
-AICardGenerator.jsx:188 Loading topic lists from Knack for user: 630510eb3c91500021a8fad2
-AICardGenerator.jsx:57 LOADED USER DATA FROM KNACK
-AICardGenerator.jsx:58 {
-  "total_pages": 0,
-  "current_page": 1,
-  "total_records": 0,
-  "records": [],
-  "recast": true
-}
-AICardGenerator.jsx:313 Auto-generating topics for subject: Dance
-AICardGenerator.jsx:334 Generating topics for: AQA A-Level Dance
-AICardGenerator.jsx:367 Raw topic response: [
-    "Performance: Physical Skills",
-    "Performance: Expressive Skills",
-    "Performance: Technical Skills",
-    "Performance: Mental Skills",
-    "Performance: Safe Practice",
-    "Choreography: Stimulus",
-    "Choreography: Research",
-    "Choreography: Choreographic Process",
-    "Choreography: Structuring Devices",
-    "Choreography: Choreographic Devices",
-    "Choreography: Communication of Choreographic Intention",
-    "Critical Engagement: Knowledge and Understanding",
-    "Critical Engagement: Analysis and Interpretation",
-    "Critical Engagement: Contextual Understanding",
-    "Critical Engagement: Critical Appreciation of Own Work",
-    "Critical Engagement: Critical Appreciation of Professional Works"
-]
-AICardGenerator.jsx:387 Generated topics: (16) ['Performance: Physical Skills', 'Performance: Expressive Skills', 'Performance: Technical Skills', 'Performance: Mental Skills', 'Performance: Safe Practice', 'Choreography: Stimulus', 'Choreography: Research', 'Choreography: Choreographic Process', 'Choreography: Structuring Devices', 'Choreography: Choreographic Devices', 'Choreography: Communication of Choreographic Intention', 'Critical Engagement: Knowledge and Understanding', 'Critical Engagement: Analysis and Interpretation', 'Critical Engagement: Contextual Understanding', 'Critical Engagement: Critical Appreciation of Own Work', 'Critical Engagement: Critical Appreciation of Professional Works']
-AICardGenerator.jsx:1526 Generated topics: (16) ['Performance: Physical Skills', 'Performance: Expressive Skills', 'Performance: Technical Skills', 'Performance: Mental Skills', 'Performance: Safe Practice', 'Choreography: Stimulus', 'Choreography: Research', 'Choreography: Choreographic Process', 'Choreography: Structuring Devices', 'Choreography: Choreographic Devices', 'Choreography: Communication of Choreographic Intention', 'Critical Engagement: Knowledge and Understanding', 'Critical Engagement: Analysis and Interpretation', 'Critical Engagement: Contextual Understanding', 'Critical Engagement: Critical Appreciation of Own Work', 'Critical Engagement: Critical Appreciation of Professional Works']
-AICardGenerator.jsx:1532 Showing options explanation modal
-AICardGenerator.jsx:1927 Selected topic: Choreography: Stimulus
-AICardGenerator.jsx:1949 Selected topic: Choreography: Stimulus
-AICardGenerator.jsx:1056 Generate cards function called with state: {isGenerating: false, currentStep: 6, formData: {…}}
-AICardGenerator.jsx:1079 Explicit metadata for cards: {finalSubject: 'Dance', finalTopic: 'Choreography: Stimulus', finalExamType: 'A-Level', finalExamBoard: 'AQA'}
-AICardGenerator.jsx:1116 Selected new color #00CED1 for subject Dance
-AICardGenerator.jsx:1190 Generating cards with prompt: Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). 
-Generate 5 high-quality AQA A-Level Dance flashcards for the specific topic "Choreography: Stimulus".
-Make these appropriate for A-Level students (age 16-18). Questions should be challenging and involve deeper thinking. Include sufficient detail in answers and use appropriate technical language.
-
-Before generating questions, scrape the latest AQA A-Level Dance specification to ensure the content matches the current curriculum exactly.
-
-Use this format for different question types:
-[
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "Clear, focused question based on the curriculum",
-    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-    "correctAnswer": "The correct option exactly as written in options array",
-    "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
-  }
-]
-AICardGenerator.jsx:1215 Raw AI response: [
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "What is the primary purpose of a stimulus in the choreographic process?",
-    "options": ["To dictate the movements", "To inspire creativity", "To provide a theme only", "To limit the choreographer's choices"],
-    "correctAnswer": "To inspire creativity",
-    "detailedAnswer": "A stimulus in choreography serves as a source of inspiration, encouraging creativity and innovation in movement and thematic development. It helps choreographers explore new ideas and directions without restricting their artistic freedom."
-  },
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "Which of the following would be considered an external stimulus for choreography?",
-    "options": ["A dancer's personal experience", "A piece of music", "The choreographer's mood", "A dancer's physical ability"],
-    "correctAnswer": "A piece of music",
-    "detailedAnswer": "External stimuli are elements outside of the individual that can inspire movement and thematic content. Music is a common external stimulus that can shape the rhythm, mood, and structure of a dance piece."
-  },
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "How can a choreographer effectively use a visual art piece as a stimulus for a dance composition?",
-    "options": ["By replicating the art piece in dance form", "By interpreting the themes and emotions it conveys", "By ignoring the art piece's context", "By using it as a backdrop for the performance"],
-    "correctAnswer": "By interpreting the themes and emotions it conveys",
-    "detailedAnswer": "Using a visual art piece as a stimulus involves understanding and translating its themes and emotions into movement and expression. This approach allows dancers to convey the essence of the art piece through their performance, creating a deeper connection between the visual and performing arts."
-  },
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "What role does abstraction play when using a stimulus in dance choreography?",
-    "options": ["It simplifies the stimulus to basic movements", "It removes all meaning from the stimulus", "It allows the choreographer to explore deeper meanings", "It makes the stimulus irrelevant"],
-    "correctAnswer": "It allows the choreographer to explore deeper meanings",
-    "detailedAnswer": "Abstraction in choreography involves distilling a stimulus to its core elements and exploring its deeper meanings. This process encourages creative interpretation and innovation, enabling choreographers to convey complex concepts and emotions through movement."
-  },
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "Why is it important for a choreographer to consider different interpretations of a stimulus?",
-    "options": ["To ensure the dance is universally understood", "To challenge their own creative boundaries", "To make the dance more entertaining", "To limit the audience's interpretation"],
-    "correctAnswer": "To challenge their own creative boundaries",
-    "detailedAnswer": "Considering different interpretations of a stimulus encourages choreographers to push their creative limits and explore diverse perspectives. This process not only enhances the richness and depth of the choreography but also fosters innovation and originality in dance composition."
-  }
-]
-AICardGenerator.jsx:1237 Generating card #1 with metadata: {subject: 'Dance', topic: 'Choreography: Stimulus', examType: 'A-Level', examBoard: 'AQA', color: '#00CED1'}
-AICardGenerator.jsx:1237 Generating card #2 with metadata: {subject: 'Dance', topic: 'Choreography: Stimulus', examType: 'A-Level', examBoard: 'AQA', color: '#00CED1'}
-AICardGenerator.jsx:1237 Generating card #3 with metadata: {subject: 'Dance', topic: 'Choreography: Stimulus', examType: 'A-Level', examBoard: 'AQA', color: '#00CED1'}
-AICardGenerator.jsx:1237 Generating card #4 with metadata: {subject: 'Dance', topic: 'Choreography: Stimulus', examType: 'A-Level', examBoard: 'AQA', color: '#00CED1'}
-AICardGenerator.jsx:1237 Generating card #5 with metadata: {subject: 'Dance', topic: 'Choreography: Stimulus', examType: 'A-Level', examBoard: 'AQA', color: '#00CED1'}
-AICardGenerator.jsx:1338 FINAL PROCESSED CARDS: (5) [{…}, {…}, {…}, {…}, {…}]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-App.js:365 Updating color for subject: Dance, topic: Choreography: Stimulus, color: #00CED1, updateTopics: false
-App.js:365 Updating color for subject: Dance, topic: Choreography: Stimulus, color: #00CED1, updateTopics: false
-App.js:365 Updating color for subject: Dance, topic: Choreography: Stimulus, color: #00CED1, updateTopics: false
-App.js:365 Updating color for subject: Dance, topic: Choreography: Stimulus, color: #00CED1, updateTopics: false
-App.js:365 Updating color for subject: Dance, topic: Choreography: Stimulus, color: #00CED1, updateTopics: false
-AICardGenerator.jsx:1437 Triggered explicit save after adding all cards
-App.js:468 Sample cards after color update: [{…}]
-App.js:468 Sample cards after color update: (2) [{…}, {…}]
-App.js:468 Sample cards after color update: (3) [{…}, {…}, {…}]
-App.js:468 Sample cards after color update: (3) [{…}, {…}, {…}]
-App.js:468 Sample cards after color update: (3) [{…}, {…}, {…}]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-App.js:1358 [Init] Sent ready message to parent
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:45:55.381Z]: Message from React app: TRIGGER_SAVE
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:45:55.381Z]: Message from React app: APP_READY
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-KnackIntegrationScript2.js:352 Flashcard app: Ignoring duplicate APP_READY message
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-03-21T12:45:55.476Z
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-App.js:220 Saved data to localStorage with versioning and backup
-App.js:235 [Save] Starting save operation...
-App.js:239 [Save] Saving to localStorage first
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-03-21T12:45:55.477Z
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-App.js:220 Saved data to localStorage with versioning and backup
-App.js:244 [Save] Preparing data for Knack integration
-App.js:298 [Save] Sending data to Knack (0 cards, record ID: 67dd5f63bda47802ddf1ff8e)
-App.js:309 [Save] Message sent to parent window
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-03-21T12:45:55.478Z
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-App.js:220 Saved data to localStorage with versioning and backup
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:45:55.478Z]: Message from React app: SAVE_DATA
-App.js:235 [Save] Starting save operation...
-App.js:239 [Save] Saving to localStorage first
-KnackIntegrationScript2.js:405 Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(0), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-03-21T12:45:55.478Z
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-App.js:220 Saved data to localStorage with versioning and backup
-App.js:244 [Save] Preparing data for Knack integration
-KnackIntegrationScript2.js:950 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
-App.js:298 [Save] Sending data to Knack (0 cards, record ID: 67dd5f63bda47802ddf1ff8e)
-KnackIntegrationScript2.js:188 SAVING DATA WITH RECORD ID
-App.js:309 [Save] Message sent to parent window
-KnackIntegrationScript2.js:189 "67dd5f63bda47802ddf1ff8e"
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-03-21T12:45:55.478Z
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-App.js:220 Saved data to localStorage with versioning and backup
-App.js:235 [Save] Starting save operation...
-App.js:239 [Save] Saving to localStorage first
-DataUtils.js:369 📥 Save Operation: localStorage
-KnackIntegrationScript2.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
-DataUtils.js:370 Timestamp: 2025-03-21T12:45:55.478Z
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-KnackIntegrationScript2.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
-KnackIntegrationScript2.js:188 SAVING TO KNACK: DATA STATS
-KnackIntegrationScript2.js:189 {
-  "cardsCount": 0,
-  "colorCount": 0,
-  "spacedRepCount": 5
-}
-App.js:220 Saved data to localStorage with versioning and backup
-App.js:244 [Save] Preparing data for Knack integration
-App.js:298 [Save] Sending data to Knack (0 cards, record ID: 67dd5f63bda47802ddf1ff8e)
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:45:55.479Z]: Message from React app: SAVE_DATA
-App.js:309 [Save] Message sent to parent window
-KnackIntegrationScript2.js:405 Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(0), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
-KnackIntegrationScript2.js:950 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
-DataUtils.js:369 📥 Save Operation: localStorage
-KnackIntegrationScript2.js:188 SAVING DATA WITH RECORD ID
-DataUtils.js:370 Timestamp: 2025-03-21T12:45:55.479Z
-KnackIntegrationScript2.js:189 "67dd5f63bda47802ddf1ff8e"
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-KnackIntegrationScript2.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
-KnackIntegrationScript2.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
-KnackIntegrationScript2.js:188 SAVING TO KNACK: DATA STATS
-App.js:220 Saved data to localStorage with versioning and backup
-KnackIntegrationScript2.js:189 {
-  "cardsCount": 0,
-  "colorCount": 0,
-  "spacedRepCount": 5
-}
-App.js:235 [Save] Starting save operation...
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:45:55.479Z]: Message from React app: SAVE_DATA
-App.js:239 [Save] Saving to localStorage first
-DataUtils.js:369 📥 Save Operation: localStorage
-KnackIntegrationScript2.js:405 Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(0), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
-DataUtils.js:370 Timestamp: 2025-03-21T12:45:55.479Z
-KnackIntegrationScript2.js:950 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-KnackIntegrationScript2.js:188 SAVING DATA WITH RECORD ID
-KnackIntegrationScript2.js:189 "67dd5f63bda47802ddf1ff8e"
-KnackIntegrationScript2.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
-KnackIntegrationScript2.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
-KnackIntegrationScript2.js:188 SAVING TO KNACK: DATA STATS
-App.js:220 Saved data to localStorage with versioning and backup
-KnackIntegrationScript2.js:189 {
-  "cardsCount": 0,
-  "colorCount": 0,
-  "spacedRepCount": 5
-}
-App.js:244 [Save] Preparing data for Knack integration
-App.js:298 [Save] Sending data to Knack (0 cards, record ID: 67dd5f63bda47802ddf1ff8e)
-App.js:309 [Save] Message sent to parent window
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-03-21T12:45:55.479Z
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:45:55.479Z]: Message from React app: SAVE_DATA
-App.js:220 Saved data to localStorage with versioning and backup
-KnackIntegrationScript2.js:405 Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(0), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
-App.js:235 [Save] Starting save operation...
-KnackIntegrationScript2.js:950 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
-App.js:239 [Save] Saving to localStorage first
-KnackIntegrationScript2.js:188 SAVING DATA WITH RECORD ID
-DataUtils.js:369 📥 Save Operation: localStorage
-KnackIntegrationScript2.js:189 "67dd5f63bda47802ddf1ff8e"
-DataUtils.js:370 Timestamp: 2025-03-21T12:45:55.479Z
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-KnackIntegrationScript2.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
-KnackIntegrationScript2.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
-KnackIntegrationScript2.js:188 SAVING TO KNACK: DATA STATS
-KnackIntegrationScript2.js:189 {
-  "cardsCount": 0,
-  "colorCount": 0,
-  "spacedRepCount": 5
-}
-App.js:220 Saved data to localStorage with versioning and backup
-App.js:244 [Save] Preparing data for Knack integration
-App.js:298 [Save] Sending data to Knack (0 cards, record ID: 67dd5f63bda47802ddf1ff8e)
-App.js:309 [Save] Message sent to parent window
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:45:55.480Z]: Message from React app: SAVE_DATA
-KnackIntegrationScript2.js:405 Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(0), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
-KnackIntegrationScript2.js:950 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
-KnackIntegrationScript2.js:188 SAVING DATA WITH RECORD ID
-KnackIntegrationScript2.js:189 "67dd5f63bda47802ddf1ff8e"
-KnackIntegrationScript2.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
-KnackIntegrationScript2.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
-KnackIntegrationScript2.js:188 SAVING TO KNACK: DATA STATS
-KnackIntegrationScript2.js:189 {
-  "cardsCount": 0,
-  "colorCount": 0,
-  "spacedRepCount": 5
-}
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-KnackIntegrationScript2.js:1070 Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
-KnackIntegrationScript2.js:188 KNACK SAVE SUCCESS
-KnackIntegrationScript2.js:189 {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:45:56.093Z"
-}
-App.js:1182 [Message Handler 2025-03-21T12:45:56.093Z] From parent: SAVE_RESULT
-App.js:1299 [Save Result] Received: true
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-KnackIntegrationScript2.js:1070 Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
-KnackIntegrationScript2.js:188 KNACK SAVE SUCCESS
-KnackIntegrationScript2.js:189 {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:45:56.116Z"
-}
-App.js:1182 [Message Handler 2025-03-21T12:45:56.116Z] From parent: SAVE_RESULT
-App.js:1299 [Save Result] Received: true
-KnackIntegrationScript2.js:1070 Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
-KnackIntegrationScript2.js:188 KNACK SAVE SUCCESS
-KnackIntegrationScript2.js:189 {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:45:56.136Z"
-}
-App.js:1182 [Message Handler 2025-03-21T12:45:56.136Z] From parent: SAVE_RESULT
-App.js:1299 [Save Result] Received: true
-KnackIntegrationScript2.js:1070 Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
-KnackIntegrationScript2.js:188 KNACK SAVE SUCCESS
-KnackIntegrationScript2.js:189 {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:45:56.159Z"
-}
-App.js:1182 [Message Handler 2025-03-21T12:45:56.159Z] From parent: SAVE_RESULT
-App.js:1299 [Save Result] Received: true
-KnackIntegrationScript2.js:1070 Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
-KnackIntegrationScript2.js:188 KNACK SAVE SUCCESS
-KnackIntegrationScript2.js:189 {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:45:56.173Z"
-}
-App.js:1182 [Message Handler 2025-03-21T12:45:56.174Z] From parent: SAVE_RESULT
-App.js:1299 [Save Result] Received: true
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
-MultipleChoiceOptions.jsx:23 Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
-TopicListModal.jsx:121 Checking metadata for subject: Dance
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-TopicListModal.jsx:178 No subject metadata found in user data
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-App.js:235 [Save] Starting save operation...
-App.js:239 [Save] Saving to localStorage first
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-03-21T12:46:18.886Z
-DataUtils.js:373 Data Stats: {cards: 5, subjects: 1, version: '1.0'}
-App.js:220 Saved data to localStorage with versioning and backup
-App.js:244 [Save] Preparing data for Knack integration
-App.js:298 [Save] Sending data to Knack (5 cards, record ID: 67dd5f63bda47802ddf1ff8e)
-App.js:309 [Save] Message sent to parent window
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:46:18.889Z]: Message from React app: SAVE_DATA
-KnackIntegrationScript2.js:405 Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
-KnackIntegrationScript2.js:950 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
-KnackIntegrationScript2.js:188 SAVING DATA WITH RECORD ID
-KnackIntegrationScript2.js:189 "67dd5f63bda47802ddf1ff8e"
-KnackIntegrationScript2.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
-KnackIntegrationScript2.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
-KnackIntegrationScript2.js:188 SAVING TO KNACK: DATA STATS
-KnackIntegrationScript2.js:189 {
-  "cardsCount": 5,
-  "colorCount": 1,
-  "spacedRepCount": 5
-}
-KnackIntegrationScript2.js:1070 Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
-KnackIntegrationScript2.js:188 KNACK SAVE SUCCESS
-KnackIntegrationScript2.js:189 {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:46:19.598Z"
-}
-App.js:1182 [Message Handler 2025-03-21T12:46:19.598Z] From parent: SAVE_RESULT
-App.js:1299 [Save Result] Received: true
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-App.js:235 [Save] Starting save operation...
-App.js:239 [Save] Saving to localStorage first
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-03-21T12:46:20.597Z
-DataUtils.js:373 Data Stats: {cards: 5, subjects: 1, version: '1.0'}
-App.js:220 Saved data to localStorage with versioning and backup
-App.js:244 [Save] Preparing data for Knack integration
-App.js:298 [Save] Sending data to Knack (5 cards, record ID: 67dd5f63bda47802ddf1ff8e)
-App.js:309 [Save] Message sent to parent window
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:46:20.599Z]: Message from React app: SAVE_DATA
-KnackIntegrationScript2.js:405 Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
-KnackIntegrationScript2.js:950 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
-KnackIntegrationScript2.js:188 SAVING DATA WITH RECORD ID
-KnackIntegrationScript2.js:189 "67dd5f63bda47802ddf1ff8e"
-KnackIntegrationScript2.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
-KnackIntegrationScript2.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
-KnackIntegrationScript2.js:188 SAVING TO KNACK: DATA STATS
-KnackIntegrationScript2.js:189 {
-  "cardsCount": 5,
-  "colorCount": 1,
-  "spacedRepCount": 5
-}
-KnackIntegrationScript2.js:1070 Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
-KnackIntegrationScript2.js:188 KNACK SAVE SUCCESS
-KnackIntegrationScript2.js:189 {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:46:21.081Z"
-}
-App.js:1182 [Message Handler 2025-03-21T12:46:21.081Z] From parent: SAVE_RESULT
-App.js:1299 [Save Result] Received: true
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-TopicListModal.jsx:121 Checking metadata for subject: Dance
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-TopicListModal.jsx:178 No subject metadata found in user data
-TopicListModal.jsx:242 Loading topic list for subject: Dance (AQA A-Level)
-TopicListModal.jsx:297 No existing topic list found, generating new topics
-TopicListModal.jsx:432 Generating topics for Dance (AQA A-Level)
-TopicListModal.jsx:495 Generated topics: (20) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-TopicListModal.jsx:528 Saving topic list for Dance with 20 topics
-TopicListModal.jsx:538 Searching for user record ID...
-TopicListModal.jsx:563 Found matching record ID: 67dd5f63bda47802ddf1ff8e
-TopicListModal.jsx:588 Fetching complete user data to preserve all fields
-TopicListModal.jsx:600 Successfully retrieved complete user data
-TopicListModal.jsx:683 Sending topic list data to parent window via postMessage
-TopicListModal.jsx:720 Sent data with preserveFields flag to maintain other data
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:46:52.467Z]: Message from React app: SAVE_DATA
-KnackIntegrationScript2.js:405 Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', topicLists: Array(1), topicMetadata: Array(1), preserveFields: true, completeData: {…}}
-KnackIntegrationScript2.js:409 Flashcard app: Using data preservation mode for saving
-KnackIntegrationScript2.js:782 Flashcard app: Saving with field preservation for user: 630510eb3c91500021a8fad2
-KnackIntegrationScript2.js:188 UPDATING ONLY THESE FIELDS (PRESERVING OTHERS)
-KnackIntegrationScript2.js:189 {
-  "topicListsCount": 1,
-  "topicMetadataCount": 1,
-  "recordId": "67dd5f63bda47802ddf1ff8e"
-}
-KnackIntegrationScript2.js:827 Flashcard app: Successfully saved topic list data: 67dd5f63bda47802ddf1ff8e
-App.js:1182 [Message Handler 2025-03-21T12:46:52.932Z] From parent: SAVE_RESULT
-App.js:1299 [Save Result] Received: true
-TopicListModal.jsx:692 Topic list saved successfully via postMessage
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-App.js:1159 Auto-saving data...
-App.js:235 [Save] Starting save operation...
-App.js:239 [Save] Saving to localStorage first
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-03-21T12:46:55.389Z
-DataUtils.js:373 Data Stats: {cards: 5, subjects: 1, version: '1.0'}
-App.js:220 Saved data to localStorage with versioning and backup
-App.js:244 [Save] Preparing data for Knack integration
-App.js:298 [Save] Sending data to Knack (5 cards, record ID: 67dd5f63bda47802ddf1ff8e)
-App.js:309 [Save] Message sent to parent window
-KnackIntegrationScript2.js:345 Flashcard app [2025-03-21T12:46:55.389Z]: Message from React app: SAVE_DATA
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-KnackIntegrationScript2.js:405 Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
-KnackIntegrationScript2.js:950 Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
-KnackIntegrationScript2.js:188 SAVING DATA WITH RECORD ID
-KnackIntegrationScript2.js:189 "67dd5f63bda47802ddf1ff8e"
-KnackIntegrationScript2.js:150 Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-KnackIntegrationScript2.js:155 Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
-KnackIntegrationScript2.js:188 SAVING TO KNACK: DATA STATS
-KnackIntegrationScript2.js:189 {
-  "cardsCount": 5,
-  "colorCount": 1,
-  "spacedRepCount": 5
-}
-KnackIntegrationScript2.js:1070 Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
-KnackIntegrationScript2.js:188 KNACK SAVE SUCCESS
-KnackIntegrationScript2.js:189 {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:46:55.866Z"
-}
-App.js:1182 [Message Handler 2025-03-21T12:46:55.866Z] From parent: SAVE_RESULT
-App.js:1299 [Save Result] Received: true
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
-FlashcardList.jsx:920 Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
- Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
- Checking metadata for subject: Dance
- Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
- No subject metadata found in user data
- Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
- Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
- Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
- Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
- Subject color for Dance: {subjectColor: '#00CED1', firstCardSubjectColor: '#00CED1', firstCardBaseColor: '#00CED1', firstCardCardColor: '#00CED1', firstCard: {…}}
- User authenticated, loading topic lists from Knack
- Loading topic lists from Knack for user: 630510eb3c91500021a8fad2
- LOADED USER DATA FROM KNACK
- {
-  "total_pages": 0,
-  "current_page": 1,
-  "total_records": 0,
-  "records": [],
-  "recast": true
-}
- Auto-generating topics for subject: Dance
- Generating topics for: AQA A-Level Dance
- Auto-saving data...
- [Save] Starting save operation...
- [Save] Saving to localStorage first
- 📥 Save Operation: localStorage
- Timestamp: 2025-03-21T12:47:55.384Z
- Data Stats: {cards: 5, subjects: 1, version: '1.0'}
- Saved data to localStorage with versioning and backup
- [Save] Preparing data for Knack integration
- [Save] Sending data to Knack (5 cards, record ID: 67dd5f63bda47802ddf1ff8e)
- [Save] Message sent to parent window
- Flashcard app [2025-03-21T12:47:55.384Z]: Message from React app: SAVE_DATA
- Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
- Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
- SAVING DATA WITH RECORD ID
- "67dd5f63bda47802ddf1ff8e"
- Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
- Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
- SAVING TO KNACK: DATA STATS
- {
-  "cardsCount": 5,
-  "colorCount": 1,
-  "spacedRepCount": 5
-}
- Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
- KNACK SAVE SUCCESS
- {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:47:55.916Z"
-}
- [Message Handler 2025-03-21T12:47:55.916Z] From parent: SAVE_RESULT
- [Save Result] Received: true
- Raw topic response: [
-    "Performance: Physical Skills",
-    "Performance: Technical Skills",
-    "Performance: Expressive Skills",
-    "Performance: Mental Skills",
-    "Choreography: Stimulus",
-    "Choreography: Research",
-    "Choreography: Structuring Devices",
-    "Choreography: Choreographic Devices",
-    "Choreography: Aural Settings",
-    "Choreography: Performance Environment",
-    "Choreography: Communication of Choreographic Intention",
-    "Critical Engagement: Knowledge and Understanding of Choreographic Processes",
-    "Critical Engagement: Knowledge and Understanding of Performance",
-    "Critical Engagement: Knowledge and Understanding of Dance Styles",
-    "Critical Engagement: Knowledge and Understanding of Professional Works",
-    "Critical Engagement: Analysis and Interpretation of Professional Works",
-    "Critical Engagement: Contextual Understanding of Professional Works"
-]
- Generated topics: (17) ['Performance: Physical Skills', 'Performance: Technical Skills', 'Performance: Expressive Skills', 'Performance: Mental Skills', 'Choreography: Stimulus', 'Choreography: Research', 'Choreography: Structuring Devices', 'Choreography: Choreographic Devices', 'Choreography: Aural Settings', 'Choreography: Performance Environment', 'Choreography: Communication of Choreographic Intention', 'Critical Engagement: Knowledge and Understanding of Choreographic Processes', 'Critical Engagement: Knowledge and Understanding of Performance', 'Critical Engagement: Knowledge and Understanding of Dance Styles', 'Critical Engagement: Knowledge and Understanding of Professional Works', 'Critical Engagement: Analysis and Interpretation of Professional Works', 'Critical Engagement: Contextual Understanding of Professional Works']
- Generated topics: (17) ['Performance: Physical Skills', 'Performance: Technical Skills', 'Performance: Expressive Skills', 'Performance: Mental Skills', 'Choreography: Stimulus', 'Choreography: Research', 'Choreography: Structuring Devices', 'Choreography: Choreographic Devices', 'Choreography: Aural Settings', 'Choreography: Performance Environment', 'Choreography: Communication of Choreographic Intention', 'Critical Engagement: Knowledge and Understanding of Choreographic Processes', 'Critical Engagement: Knowledge and Understanding of Performance', 'Critical Engagement: Knowledge and Understanding of Dance Styles', 'Critical Engagement: Knowledge and Understanding of Professional Works', 'Critical Engagement: Analysis and Interpretation of Professional Works', 'Critical Engagement: Contextual Understanding of Professional Works']
- Showing options explanation modal
- Selected topic: Choreography: Stimulus
- Selected topic: Choreography: Stimulus
- Generate cards function called with state: {isGenerating: false, currentStep: 6, formData: {…}}
- Explicit metadata for cards: {finalSubject: 'Dance', finalTopic: 'Choreography: Stimulus', finalExamType: 'A-Level', finalExamBoard: 'AQA'}
- Selected new color #d2f53c for subject Dance
- Generating cards with prompt: Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). 
-Generate 5 high-quality AQA A-Level Dance flashcards for the specific topic "Choreography: Stimulus".
-Make these appropriate for A-Level students (age 16-18). Questions should be challenging and involve deeper thinking. Include sufficient detail in answers and use appropriate technical language.
-
-Before generating questions, scrape the latest AQA A-Level Dance specification to ensure the content matches the current curriculum exactly.
-
-Use this format for different question types:
-[
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "Clear, focused question based on the curriculum",
-    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-    "correctAnswer": "The correct option exactly as written in options array",
-    "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
-  }
-]
- Raw AI response: [
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "Which of the following best describes the role of a stimulus in dance choreography?",
-    "options": ["A starting point for generating movement ideas", "A tool for counting beats", "A method of stage lighting", "A type of dance costume"],
-    "correctAnswer": "A starting point for generating movement ideas",
-    "detailedAnswer": "A stimulus in dance serves as the initial inspiration for a choreographer to generate movement ideas. It can be anything from music, art, literature, or personal experiences. This is essential as it provides direction and a foundation for the creative process in dance choreography."
-  },
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "How can a choreographer effectively use abstract stimuli to create a dance piece?",
-    "options": ["By translating the stimulus directly into literal movement", "By ignoring the stimulus once the piece begins", "By exploring different interpretations and responses to the stimulus", "By using the stimulus solely for costume design"],
-    "correctAnswer": "By exploring different interpretations and responses to the stimulus",
-    "detailedAnswer": "When using abstract stimuli, a choreographer should explore various interpretations and responses. This involves engaging with the stimulus on multiple levels, considering emotional, conceptual, and physical responses to create a rich and layered dance piece. It encourages creative exploration and depth in the choreography."
-  },
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "What is a potential challenge when working with a stimulus based on a complex theme?",
-    "options": ["Finding appropriate music", "Achieving clarity and coherence in the thematic representation", "Selecting costumes", "Deciding on lighting design"],
-    "correctAnswer": "Achieving clarity and coherence in the thematic representation",
-    "detailedAnswer": "When dealing with a complex theme as a stimulus, one challenge is to maintain clarity and coherence in the thematic representation. This requires the choreographer to thoroughly understand the theme and develop a structured approach to ensure that the audience can grasp the intended message or concept through the dance work."
-  },
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "Which technique can help a choreographer to deepen their exploration of a stimulus?",
-    "options": ["Improvisation", "Ignoring the stimulus", "Focusing only on technical skills", "Replicating another choreographer's work"],
-    "correctAnswer": "Improvisation",
-    "detailedAnswer": "Improvisation allows a choreographer to explore a stimulus more deeply by encouraging spontaneous and organic movement creation. This can lead to unexpected and innovative interpretations, helping to unlock new ideas and directions for the choreography that might not emerge through structured planning alone."
-  },
-  {
-    "subject": "Dance",
-    "topic": "Choreography: Stimulus",
-    "questionType": "multiple_choice",
-    "question": "Why is it important for a choreographer to consider the audience's perspective when developing a piece from a stimulus?",
-    "options": ["To ensure the dance is performed correctly", "To align the dance with traditional styles", "To enhance the audience's understanding and engagement with the work", "To make the dance easier to teach"],
-    "correctAnswer": "To enhance the audience's understanding and engagement with the work",
-    "detailedAnswer": "Considering the audience's perspective is crucial as it helps the choreographer shape the piece in a way that enhances the audience's understanding and engagement. This involves making intentional choices about how the stimulus is represented, ensuring the thematic and emotional content is accessible and resonant, which can lead to a more impactful and memorable performance."
-  }
-]
- Generating card #1 with metadata: {subject: 'Dance', topic: 'Choreography: Stimulus', examType: 'A-Level', examBoard: 'AQA', color: '#d2f53c'}
- Generating card #2 with metadata: {subject: 'Dance', topic: 'Choreography: Stimulus', examType: 'A-Level', examBoard: 'AQA', color: '#d2f53c'}
- Generating card #3 with metadata: {subject: 'Dance', topic: 'Choreography: Stimulus', examType: 'A-Level', examBoard: 'AQA', color: '#d2f53c'}
- Generating card #4 with metadata: {subject: 'Dance', topic: 'Choreography: Stimulus', examType: 'A-Level', examBoard: 'AQA', color: '#d2f53c'}
- Generating card #5 with metadata: {subject: 'Dance', topic: 'Choreography: Stimulus', examType: 'A-Level', examBoard: 'AQA', color: '#d2f53c'}
- FINAL PROCESSED CARDS: (5) [{…}, {…}, {…}, {…}, {…}]
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Updating color for subject: Dance, topic: Choreography: Stimulus, color: #d2f53c, updateTopics: false
- Updating color for subject: Dance, topic: Choreography: Stimulus, color: #d2f53c, updateTopics: false
- Updating color for subject: Dance, topic: Choreography: Stimulus, color: #d2f53c, updateTopics: false
- Updating color for subject: Dance, topic: Choreography: Stimulus, color: #d2f53c, updateTopics: false
- Updating color for subject: Dance, topic: Choreography: Stimulus, color: #d2f53c, updateTopics: false
- Triggered explicit save after adding all cards
- Sample cards after color update: (3) [{…}, {…}, {…}]
- Sample cards after color update: (3) [{…}, {…}, {…}]
- Sample cards after color update: (3) [{…}, {…}, {…}]
- Sample cards after color update: (3) [{…}, {…}, {…}]
- Sample cards after color update: (3) [{…}, {…}, {…}]
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- [Init] Sent ready message to parent
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Flashcard app [2025-03-21T12:48:16.356Z]: Message from React app: TRIGGER_SAVE
- Flashcard app [2025-03-21T12:48:16.356Z]: Message from React app: APP_READY
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Flashcard app: Ignoring duplicate APP_READY message
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- 📥 Save Operation: localStorage
- Timestamp: 2025-03-21T12:48:16.460Z
- Data Stats: {cards: 5, subjects: 1, version: '1.0'}
- Saved data to localStorage with versioning and backup
- [Save] Starting save operation...
- [Save] Saving to localStorage first
- 📥 Save Operation: localStorage
- Timestamp: 2025-03-21T12:48:16.461Z
- Data Stats: {cards: 5, subjects: 1, version: '1.0'}
- Saved data to localStorage with versioning and backup
- [Save] Preparing data for Knack integration
- [Save] Sending data to Knack (5 cards, record ID: 67dd5f63bda47802ddf1ff8e)
- [Save] Message sent to parent window
- 📥 Save Operation: localStorage
- Timestamp: 2025-03-21T12:48:16.461Z
- Data Stats: {cards: 5, subjects: 1, version: '1.0'}
- Saved data to localStorage with versioning and backup
- [Save] Starting save operation...
- [Save] Saving to localStorage first
- 📥 Save Operation: localStorage
- Timestamp: 2025-03-21T12:48:16.462Z
- Data Stats: {cards: 5, subjects: 1, version: '1.0'}
- Flashcard app [2025-03-21T12:48:16.462Z]: Message from React app: SAVE_DATA
- Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
- Saved data to localStorage with versioning and backup
- [Save] Preparing data for Knack integration
- Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
- [Save] Sending data to Knack (5 cards, record ID: 67dd5f63bda47802ddf1ff8e)
- SAVING DATA WITH RECORD ID
- [Save] Message sent to parent window
- "67dd5f63bda47802ddf1ff8e"
- 📥 Save Operation: localStorage
- Timestamp: 2025-03-21T12:48:16.462Z
- Data Stats: {cards: 5, subjects: 1, version: '1.0'}
- Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
- Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
- SAVING TO KNACK: DATA STATS
- {
-  "cardsCount": 5,
-  "colorCount": 1,
-  "spacedRepCount": 10
-}
- Saved data to localStorage with versioning and backup
- [Save] Starting save operation...
- [Save] Saving to localStorage first
- 📥 Save Operation: localStorage
- Timestamp: 2025-03-21T12:48:16.462Z
- Flashcard app [2025-03-21T12:48:16.462Z]: Message from React app: SAVE_DATA
- Data Stats: {cards: 5, subjects: 1, version: '1.0'}
- Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
- Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
- SAVING DATA WITH RECORD ID
- "67dd5f63bda47802ddf1ff8e"
- Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
- Saved data to localStorage with versioning and backup
- Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
- [Save] Preparing data for Knack integration
- SAVING TO KNACK: DATA STATS
- {
-  "cardsCount": 5,
-  "colorCount": 1,
-  "spacedRepCount": 10
-}
- [Save] Sending data to Knack (5 cards, record ID: 67dd5f63bda47802ddf1ff8e)
- [Save] Message sent to parent window
- 📥 Save Operation: localStorage
- Timestamp: 2025-03-21T12:48:16.463Z
- Data Stats: {cards: 5, subjects: 1, version: '1.0'}
- Saved data to localStorage with versioning and backup
- [Save] Starting save operation...
- [Save] Saving to localStorage first
- 📥 Save Operation: localStorage
- Timestamp: 2025-03-21T12:48:16.463Z
- Data Stats: {cards: 5, subjects: 1, version: '1.0'}
- Saved data to localStorage with versioning and backup
- [Save] Preparing data for Knack integration
- [Save] Sending data to Knack (5 cards, record ID: 67dd5f63bda47802ddf1ff8e)
- [Save] Message sent to parent window
- 📥 Save Operation: localStorage
- Timestamp: 2025-03-21T12:48:16.463Z
- Data Stats: {cards: 5, subjects: 1, version: '1.0'}
- Saved data to localStorage with versioning and backup
- [Save] Starting save operation...
- [Save] Saving to localStorage first
- 📥 Save Operation: localStorage
- Flashcard app [2025-03-21T12:48:16.463Z]: Message from React app: SAVE_DATA
- Timestamp: 2025-03-21T12:48:16.463Z
- Data Stats: {cards: 5, subjects: 1, version: '1.0'}
- Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
- Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
- SAVING DATA WITH RECORD ID
- "67dd5f63bda47802ddf1ff8e"
- Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
- Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
- Saved data to localStorage with versioning and backup
- SAVING TO KNACK: DATA STATS
- [Save] Preparing data for Knack integration
- {
-  "cardsCount": 5,
-  "colorCount": 1,
-  "spacedRepCount": 10
-}
- [Save] Sending data to Knack (5 cards, record ID: 67dd5f63bda47802ddf1ff8e)
- [Save] Message sent to parent window
- Flashcard app [2025-03-21T12:48:16.464Z]: Message from React app: SAVE_DATA
- Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
- Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
- SAVING DATA WITH RECORD ID
- "67dd5f63bda47802ddf1ff8e"
- Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
- Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
- SAVING TO KNACK: DATA STATS
- {
-  "cardsCount": 5,
-  "colorCount": 1,
-  "spacedRepCount": 10
-}
- Flashcard app [2025-03-21T12:48:16.464Z]: Message from React app: SAVE_DATA
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Flashcard app: Saving data from React app: {recordId: '67dd5f63bda47802ddf1ff8e', cards: Array(5), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
- Flashcard app: Saving flashcard data for user: 630510eb3c91500021a8fad2
- SAVING DATA WITH RECORD ID
- "67dd5f63bda47802ddf1ff8e"
- Flashcard app: Cleaning HTML from ID: <span class="603e9f97cb8481001b31183d">VESPA ACADEMY</span>
- Flashcard app: Extracted ID from span class: 603e9f97cb8481001b31183d
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- SAVING TO KNACK: DATA STATS
- {
-  "cardsCount": 5,
-  "colorCount": 1,
-  "spacedRepCount": 10
-}
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
- KNACK SAVE SUCCESS
- {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:48:17.020Z"
-}
- [Message Handler 2025-03-21T12:48:17.021Z] From parent: SAVE_RESULT
- [Save Result] Received: true
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
- KNACK SAVE SUCCESS
- {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:48:17.071Z"
-}
- [Message Handler 2025-03-21T12:48:17.071Z] From parent: SAVE_RESULT
- [Save Result] Received: true
- Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
- KNACK SAVE SUCCESS
- {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:48:17.119Z"
-}
- [Message Handler 2025-03-21T12:48:17.120Z] From parent: SAVE_RESULT
- [Save Result] Received: true
- Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
- KNACK SAVE SUCCESS
- {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:48:17.126Z"
-}
- [Message Handler 2025-03-21T12:48:17.126Z] From parent: SAVE_RESULT
- [Save Result] Received: true
- Flashcard app: Successfully saved user data: 67dd5f63bda47802ddf1ff8e
- KNACK SAVE SUCCESS
- {
-  "userId": "630510eb3c91500021a8fad2",
-  "recordId": "67dd5f63bda47802ddf1ff8e",
-  "timestamp": "2025-03-21T12:48:17.175Z"
-}
- [Message Handler 2025-03-21T12:48:17.176Z] From parent: SAVE_RESULT
- [Save Result] Received: true
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Subject color for Dance: {subjectColor: '#d2f53c', firstCardSubjectColor: '#d2f53c', firstCardBaseColor: '#d2f53c', firstCardCardColor: '#d2f53c', firstCard: {…}}
- Subject color for Dance: {subjectColor: '#d2f53c', firstCardSubjectColor: '#d2f53c', firstCardBaseColor: '#d2f53c', firstCardCardColor: '#d2f53c', firstCard: {…}}
- Subject color for Dance: {subjectColor: '#d2f53c', firstCardSubjectColor: '#d2f53c', firstCardBaseColor: '#d2f53c', firstCardCardColor: '#d2f53c', firstCard: {…}}
- Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
- Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
- Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
- Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
- Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Subject color for Dance: {subjectColor: '#d2f53c', firstCardSubjectColor: '#d2f53c', firstCardBaseColor: '#d2f53c', firstCardCardColor: '#d2f53c', firstCard: {…}}
- Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
- Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
- Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
- Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
- Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Subject color for Dance: {subjectColor: '#d2f53c', firstCardSubjectColor: '#d2f53c', firstCardBaseColor: '#d2f53c', firstCardCardColor: '#d2f53c', firstCard: {…}}
- Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
- Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
- Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
- Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
- Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Subject color for Dance: {subjectColor: '#d2f53c', firstCardSubjectColor: '#d2f53c', firstCardBaseColor: '#d2f53c', firstCardCardColor: '#d2f53c', firstCard: {…}}
- Subject color for Dance: {subjectColor: '#d2f53c', firstCardSubjectColor: '#d2f53c', firstCardBaseColor: '#d2f53c', firstCardCardColor: '#d2f53c', firstCard: {…}}
- Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
- Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
- Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
- Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
- Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- Subject color for Dance: {subjectColor: '#d2f53c', firstCardSubjectColor: '#d2f53c', firstCardBaseColor: '#d2f53c', firstCardCardColor: '#d2f53c', firstCard: {…}}
- Rendering options in dedicated component: (4) ['To dictate the movements', 'To inspire creativity', 'To provide a theme only', "To limit the choreographer's choices"]
- Rendering options in dedicated component: (4) ["A dancer's personal experience", 'A piece of music', "The choreographer's mood", "A dancer's physical ability"]
- Rendering options in dedicated component: (4) ['By replicating the art piece in dance form', 'By interpreting the themes and emotions it conveys', "By ignoring the art piece's context", 'By using it as a backdrop for the performance']
- Rendering options in dedicated component: (4) ['It simplifies the stimulus to basic movements', 'It removes all meaning from the stimulus', 'It allows the choreographer to explore deeper meanings', 'It makes the stimulus irrelevant']
- Rendering options in dedicated component: (4) ['To ensure the dance is universally understood', 'To challenge their own creative boundaries', 'To make the dance more entertaining', "To limit the audience's interpretation"]
- Rendering options in dedicated component: (4) ['A starting point for generating movement ideas', 'A tool for counting beats', 'A method of stage lighting', 'A type of dance costume']
- Rendering options in dedicated component: (4) ['By translating the stimulus directly into literal movement', 'By ignoring the stimulus once the piece begins', 'By exploring different interpretations and responses to the stimulus', 'By using the stimulus solely for costume design']
- Rendering options in dedicated component: (4) ['Finding appropriate music', 'Achieving clarity and coherence in the thematic representation', 'Selecting costumes', 'Deciding on lighting design']
- Rendering options in dedicated component: (4) ['Improvisation', 'Ignoring the stimulus', 'Focusing only on technical skills', "Replicating another choreographer's work"]
- Rendering options in dedicated component: (4) ['To ensure the dance is performed correctly', 'To align the dance with traditional styles', "To enhance the audience's understanding and engagement with the work", 'To make the dance easier to teach']
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
- ScaledText () length: 15, starting fontSize: 20
+AICardGenerator.jsx:2197 Autosave completed successfully
+AICardGenerator.jsx:2197 Autosave completed successfully
+AICardGenerator.jsx:2197 Autosave completed successfully
+AICardGenerator.jsx:2197 Autosave completed successfully
+AICardGenerator.jsx:2197 Autosave completed successfully
+AICardGenerator.jsx:2197 Autosave completed successfully
+AICardGenerator.jsx:2197 Autosave completed successfully
+AICardGenerator.jsx:2197 Autosave completed successfully
+AICardGenerator.jsx:2197 Autosave completed successfully
