@@ -110,11 +110,18 @@ const TopicHub = ({
       
       // Parse and process the topics from the API response
       let content = data.choices[0].message.content;
+      
+      // Log the raw API response
+      console.log("==== RAW API RESPONSE FROM OPENAI ====");
+      console.log(content);
+      console.log("==== END RAW API RESPONSE ====");
+      
       content = content.replace(/```json|```/g, '').trim();
       
       let parsedTopics;
       try {
         parsedTopics = JSON.parse(content);
+        console.log("Successfully parsed JSON response:", parsedTopics);
       } catch (e) {
         console.error("Failed to parse topic response as JSON:", e);
         console.log("Raw response preview:", content.substring(0, 100));
@@ -126,17 +133,40 @@ const TopicHub = ({
           throw new Error(`Invalid JSON: ${displayError}`);
         }
 
-        // If not a recognizable error, try to recover by creating a sample topic structure
-        // This will allow the user to at least have some functionality
-        parsedTopics = [
-          {
-            id: "1.1",
-            topic: "Sample Topic: Introduction",
-            mainTopic: "Sample Topic",
-            subtopic: "Introduction"
+        // Try to handle the case where we have a valid array of strings but not JSON
+        // This can happen when the model outputs a JavaScript array format
+        try {
+          // Try to evaluate as a JS expression (safe because we're not using untrusted data)
+          // eslint-disable-next-line no-eval
+          const possibleArray = eval(content);
+          if (Array.isArray(possibleArray) && possibleArray.length > 0) {
+            console.log("Response was a JavaScript array, not JSON:", possibleArray);
+            parsedTopics = possibleArray;
+          } else {
+            // Fall back to sample topic
+            parsedTopics = [
+              {
+                id: "1.1",
+                topic: "Sample Topic: Introduction",
+                mainTopic: "Sample Topic",
+                subtopic: "Introduction"
+              }
+            ];
+            console.log("Created fallback topics due to parsing failure");
           }
-        ];
-        console.log("Created fallback topics due to parsing failure");
+        } catch (evalError) {
+          // If eval fails, use fallback
+          console.error("Failed to evaluate as array:", evalError);
+          parsedTopics = [
+            {
+              id: "1.1",
+              topic: "Sample Topic: Introduction",
+              mainTopic: "Sample Topic",
+              subtopic: "Introduction"
+            }
+          ];
+          console.log("Created fallback topics due to parsing failure");
+        }
       }
       
       if (!Array.isArray(parsedTopics)) {
@@ -148,6 +178,32 @@ const TopicHub = ({
           throw new Error("Unexpected response format: not an array");
         }
       }
+      
+      // Process array of strings if needed (convert to required object format)
+      if (parsedTopics.length > 0 && typeof parsedTopics[0] === 'string') {
+        console.log("Converting array of strings to topic objects...");
+        parsedTopics = parsedTopics.map((topicStr, index) => {
+          // Check if the string contains a colon (Main Topic: Subtopic format)
+          const [mainTopic, subtopic] = topicStr.includes(':') 
+            ? [topicStr.split(':')[0].trim(), topicStr.split(':').slice(1).join(':').trim()] 
+            : [topicStr, "General"];
+          
+          // Create a properly formatted topic object
+          return {
+            id: `${Math.floor(index / 5) + 1}.${(index % 5) + 1}`, // Create sections of 5 items
+            topic: topicStr,
+            mainTopic: mainTopic,
+            subtopic: subtopic || "General" // Fallback if subtopic is empty
+          };
+        });
+        console.log("Converted topics:", parsedTopics);
+      }
+      
+      // Final logging of topics before updating state
+      console.log("===== FINAL TOPIC LIST BEING USED =====");
+      console.log(JSON.stringify(parsedTopics, null, 2));
+      console.log("Topic count:", parsedTopics.length);
+      console.log("===== END FINAL TOPIC LIST =====");
       
       // Update the topics
       setTopics(parsedTopics);
