@@ -145,15 +145,53 @@ const TopicHub = ({
       // Process array of strings if needed
       if (parsedTopics.length > 0 && typeof parsedTopics[0] === 'string') {
         parsedTopics = parsedTopics.map((topicStr, index) => {
-          const [mainTopic, subtopic] = topicStr.includes(':') 
-            ? [topicStr.split(':')[0].trim(), topicStr.split(':').slice(1).join(':').trim()] 
-            : [topicStr, "General"];
+          // Check if the topic string has an "Option X:" prefix and extract it
+          let optionalPrefix = "";
+          let processedTopicStr = topicStr;
+          
+          const optionMatch = topicStr.match(/^Option\s+(\d+|[A-Z]):\s*(.*)/i);
+          if (optionMatch) {
+            optionalPrefix = `[Optional - Option ${optionMatch[1]}] `;
+            processedTopicStr = optionMatch[2].trim();
+          }
+          
+          // Check if the string contains a colon or section number pattern (like 3.2.1)
+          const hasColon = processedTopicStr.includes(':');
+          const hasSectionNumber = /\d+\.\d+(\.\d+)?/.test(processedTopicStr);
+          
+          let mainTopic, subtopic;
+          
+          if (hasColon) {
+            // Process string with a colon format (Main Topic: Subtopic)
+            [mainTopic, subtopic] = [processedTopicStr.split(':')[0].trim(), processedTopicStr.split(':').slice(1).join(':').trim()];
+          } else if (hasSectionNumber) {
+            // Try to extract a section number (e.g., 3.2, 1.1) and use it as part of main topic
+            const sectionMatch = processedTopicStr.match(/(\d+\.\d+(\.\d+)?)\s*(.*)/);
+            if (sectionMatch) {
+              const [, sectionNum, , content] = sectionMatch;
+              mainTopic = content.trim() || processedTopicStr;
+              subtopic = mainTopic; // Use main topic as subtopic if no clear division
+            } else {
+              mainTopic = processedTopicStr;
+              subtopic = processedTopicStr; // Use the whole topic as both main and subtopic
+            }
+          } else {
+            // No clear subtopic indicator - use the whole string as both
+            mainTopic = processedTopicStr;
+            subtopic = processedTopicStr; // Use main topic as subtopic
+          }
+          
+          // Add optional prefix if found
+          if (optionalPrefix) {
+            mainTopic = optionalPrefix + mainTopic;
+            // Keep the subtopic as is, since we want [Optional] to show in the main topic grouping only
+          }
           
           return {
             id: `${Math.floor(index / 5) + 1}.${(index % 5) + 1}`,
-            topic: topicStr,
+            topic: optionalPrefix + processedTopicStr,
             mainTopic: mainTopic,
-            subtopic: subtopic || "General"
+            subtopic: subtopic || mainTopic // Use main topic as fallback instead of "General"
           };
         });
       }
@@ -310,17 +348,53 @@ const TopicHub = ({
       if (parsedTopics.length > 0 && typeof parsedTopics[0] === 'string') {
         console.log("Converting array of strings to topic objects...");
         parsedTopics = parsedTopics.map((topicStr, index) => {
-          // Check if the string contains a colon (Main Topic: Subtopic format)
-          const [mainTopic, subtopic] = topicStr.includes(':') 
-            ? [topicStr.split(':')[0].trim(), topicStr.split(':').slice(1).join(':').trim()] 
-            : [topicStr, "General"];
+          // Check for Option prefix and extract it
+          let optionalPrefix = "";
+          let processedTopicStr = topicStr;
+          
+          const optionMatch = topicStr.match(/^Option\s+(\d+|[A-Z]):\s*(.*)/i);
+          if (optionMatch) {
+            optionalPrefix = `[Optional - Option ${optionMatch[1]}] `;
+            processedTopicStr = optionMatch[2].trim();
+          }
+          
+          // Check if the string contains a colon or section number pattern
+          const hasColon = processedTopicStr.includes(':');
+          const hasSectionNumber = /\d+\.\d+(\.\d+)?/.test(processedTopicStr);
+          
+          let mainTopic, subtopic;
+          
+          if (hasColon) {
+            // Process string with a colon format (Main Topic: Subtopic)
+            [mainTopic, subtopic] = [processedTopicStr.split(':')[0].trim(), processedTopicStr.split(':').slice(1).join(':').trim()];
+          } else if (hasSectionNumber) {
+            // Try to extract a section number and use it as part of main topic
+            const sectionMatch = processedTopicStr.match(/(\d+\.\d+(\.\d+)?)\s*(.*)/);
+            if (sectionMatch) {
+              const [, sectionNum, , content] = sectionMatch;
+              mainTopic = content.trim() || processedTopicStr;
+              subtopic = mainTopic; // Use main topic as subtopic
+            } else {
+              mainTopic = processedTopicStr;
+              subtopic = processedTopicStr; // Use the whole string as both
+            }
+          } else {
+            // No clear structure - use the whole string as both
+            mainTopic = processedTopicStr;
+            subtopic = processedTopicStr;
+          }
+          
+          // Add the optional prefix if found
+          if (optionalPrefix) {
+            mainTopic = optionalPrefix + mainTopic;
+          }
           
           // Create a properly formatted topic object
           return {
             id: `${Math.floor(index / 5) + 1}.${(index % 5) + 1}`, // Create sections of 5 items
-            topic: topicStr,
+            topic: optionalPrefix + processedTopicStr,
             mainTopic: mainTopic,
-            subtopic: subtopic || "General" // Fallback if subtopic is empty
+            subtopic: subtopic || mainTopic // Use main topic instead of "General"
           };
         });
         console.log("Converted topics:", parsedTopics);
@@ -713,11 +787,13 @@ Format 3 - If you can't find the exact curriculum, create topics based on standa
   "Fundamental Concept 2"
 ]
 
-HANDLING OPTIONAL TOPICS:
-If the curriculum includes optional topics or modules that schools/students can choose between:
-- Include all optional topics in your response
-- Mark optional topics by adding "[Optional]" at the beginning of the topic name
-- If options are grouped, include the option number, e.g. "[Optional - Option 1] Topic Name"
+HANDLING OPTIONAL TOPICS (IMPORTANT - PRIORITIZE THIS):
+You MUST include ALL optional content in your response:
+- INCLUDE ALL optional topics in your response - this is essential
+- Mark optional topics clearly by adding "[Optional]" at the beginning of the topic name
+- For topics that belong to specific option groups, include the option group info: "[Optional - Option 1]"
+- If you see "Option 1:" or "Option A:" or similar in the source material, convert this to "[Optional - Option 1]" format
+- NEVER use "Option 1:" format in your responses - always use "[Optional - Option X]" format
 
 Example for optional topic:
 {
@@ -732,6 +808,7 @@ CRITICAL INSTRUCTIONS:
 - ENSURE YOUR RESPONSE BEGINS WITH "[" AND ENDS WITH "]"
 - Include all main curriculum areas and key topics
 - If using Format 1, use "Topic Area: Subtopic" format for the "topic" field
+- If you find "Option 1:" or similar in the curriculum, CONVERT it to "[Optional - Option 1]" format
 - Avoid duplicate topics
 - If you can't access the specific curriculum, use Format 3 but make it relevant to ${examBoard} ${examType} level
 

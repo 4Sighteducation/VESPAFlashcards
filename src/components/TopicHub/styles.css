@@ -546,11 +546,23 @@
 .subtopic-item .subtopic-name[data-optional="true"] {
   color: #e74c3c;
   font-weight: 500;
+  position: relative;
+  padding-left: 5px;
+  border-left: 3px solid #e74c3c;
+}
+
+.subtopic-item .subtopic-name[data-optional="true"]::before {
+  content: "[Optional] ";
+  font-style: italic;
+  font-size: 0.9em;
 }
 
 .main-topic-name[data-optional="true"] {
   color: #e74c3c;
   font-weight: 500;
+  padding: 2px 8px;
+  background-color: rgba(231, 76, 60, 0.1);
+  border-radius: 4px;
 }
 
 @media (max-width: 768px) {
