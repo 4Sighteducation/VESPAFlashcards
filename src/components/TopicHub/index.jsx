@@ -629,6 +629,72 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
     // Convert to lowercase for case-insensitive matching
     const subjectLower = subject.toLowerCase();
     
+    // Geography fallbacks (added to resolve the current issue)
+    if (subjectLower.includes('geography')) {
+      return [
+        {
+          id: "1.1",
+          topic: "Physical Geography: Water and Carbon Cycles",
+          mainTopic: "Physical Geography",
+          subtopic: "Water and Carbon Cycles"
+        },
+        {
+          id: "1.2",
+          topic: "Physical Geography: Coastal Systems and Landscapes",
+          mainTopic: "Physical Geography",
+          subtopic: "Coastal Systems and Landscapes"
+        },
+        {
+          id: "1.3",
+          topic: "Physical Geography: Hazards and Natural Disasters",
+          mainTopic: "Physical Geography",
+          subtopic: "Hazards and Natural Disasters"
+        },
+        {
+          id: "2.1",
+          topic: "Human Geography: Global Systems and Governance",
+          mainTopic: "Human Geography",
+          subtopic: "Global Systems and Governance"
+        },
+        {
+          id: "2.2",
+          topic: "Human Geography: Changing Places",
+          mainTopic: "Human Geography",
+          subtopic: "Changing Places"
+        },
+        {
+          id: "2.3",
+          topic: "Human Geography: Population and Migration",
+          mainTopic: "Human Geography",
+          subtopic: "Population and Migration"
+        },
+        {
+          id: "3.1",
+          topic: "Human Geography: Resource Security",
+          mainTopic: "Human Geography",
+          subtopic: "Resource Security"
+        },
+        {
+          id: "3.2",
+          topic: "Human Geography: Contemporary Urban Environments",
+          mainTopic: "Human Geography",
+          subtopic: "Contemporary Urban Environments"
+        },
+        {
+          id: "4.1",
+          topic: "Skills and Techniques: Fieldwork and Investigation",
+          mainTopic: "Skills and Techniques",
+          subtopic: "Fieldwork and Investigation"
+        },
+        {
+          id: "4.2",
+          topic: "Skills and Techniques: Geographical Information Systems (GIS)",
+          mainTopic: "Skills and Techniques",
+          subtopic: "Geographical Information Systems (GIS)"
+        }
+      ];
+    }
+    
     // Chemistry fallbacks
     if (subjectLower.includes('chemistry')) {
       return [
@@ -791,7 +857,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
       ];
     }
     
-    // Dance fallbacks (since this was mentioned specifically)
+    // Dance fallbacks
     if (subjectLower.includes('dance')) {
       return [
         {
@@ -827,8 +893,39 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
       ];
     }
     
-    // Return null for subjects not in our fallback database
-    return null;
+    // Generic fallback for any other subject
+    return [
+      {
+        id: "1.1",
+        topic: `${subject}: Core Concepts`,
+        mainTopic: subject,
+        subtopic: "Core Concepts"
+      },
+      {
+        id: "1.2",
+        topic: `${subject}: Key Principles`,
+        mainTopic: subject,
+        subtopic: "Key Principles"
+      },
+      {
+        id: "1.3",
+        topic: `${subject}: Fundamental Applications`,
+        mainTopic: subject,
+        subtopic: "Fundamental Applications"
+      },
+      {
+        id: "1.4",
+        topic: `${subject}: Historical Development`,
+        mainTopic: subject,
+        subtopic: "Historical Development"
+      },
+      {
+        id: "1.5",
+        topic: `${subject}: Contemporary Issues`,
+        mainTopic: subject,
+        subtopic: "Contemporary Issues"
+      }
+    ];
   };
 
   // Use the imported generateTopicPrompt function
