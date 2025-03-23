@@ -301,43 +301,56 @@
 }
 
 .subtopic-actions {
-  display: flex;
+  display: flex !important; /* Force display regardless of other styles */
   gap: 8px;
   flex-shrink: 0; /* Don't allow buttons to shrink */
   margin-left: 8px; /* Add some space between text and buttons */
+  position: relative; /* Establish stacking context */
+  z-index: 5; /* Ensure buttons appear above other elements */
+  min-width: 120px; /* Minimum width to ensure buttons have space */
+  justify-content: flex-end; /* Align buttons to the right */
 }
 
 .generate-button, .edit-button, .delete-button, .save-edit-button, .cancel-edit-button, .select-optional-button {
-  background-color: transparent;
-  border: none;
+  background-color: #f8f9fa; /* Light background for visibility */
+  border: 1px solid #dee2e6; /* Add border to make buttons visible */
   cursor: pointer;
-  display: flex;
+  display: flex !important; /* Force display */
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px; /* Increased size */
+  height: 36px; /* Increased size */
   border-radius: 4px;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  margin: 0 2px; /* Add margin between buttons */
+  position: relative; /* For proper stacking */
+  visibility: visible !important; /* Force visibility */
+  opacity: 1 !important; /* Full opacity */
 }
 
 .generate-button {
   color: #007bff;
+  border-color: #007bff;
 }
 
 .edit-button {
   color: #17a2b8;
+  border-color: #17a2b8;
 }
 
 .delete-button {
   color: #dc3545;
+  border-color: #dc3545;
 }
 
 .save-edit-button {
   color: #28a745;
+  border-color: #28a745;
 }
 
 .cancel-edit-button {
   color: #dc3545;
+  border-color: #dc3545;
 }
 
 .select-optional-button {
@@ -356,7 +369,20 @@
 .delete-button:hover,
 .save-edit-button:hover,
 .cancel-edit-button:hover {
-  background-color: #f8f9fa;
+  background-color: #e9ecef; /* Darker background on hover for better feedback */
+  transform: translateY(-1px); /* Slight lift effect on hover */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Add shadow on hover */
+}
+
+/* Ensure icons inside buttons are visible */
+.generate-button svg, 
+.edit-button svg, 
+.delete-button svg,
+.save-edit-button svg,
+.cancel-edit-button svg,
+.select-optional-button svg {
+  font-size: 16px; /* Slightly larger icons */
+  display: block !important; /* Force display */
 }
 
 .subtopic-edit-form {
@@ -707,7 +733,16 @@
   .subtopic-actions {
     margin-top: 10px;
     align-self: flex-end;
-    display: flex; /* Ensure buttons are visible */
+    width: 100%; /* Full width on mobile */
+    display: flex !important; /* Force display */
+    justify-content: flex-end;
+  }
+  
+  /* Make action buttons more prominent on mobile */
+  .generate-button, .edit-button, .delete-button {
+    width: 44px; /* Larger touch targets on mobile */
+    height: 44px;
+    margin: 0 3px; /* Slightly more spacing */
   }
   
   .add-topic-inputs {
@@ -745,17 +780,30 @@
   
   .subtopic-item {
     padding: 10px 16px;
+    position: relative; /* Ensure positioning context */
   }
   
   .subtopic-actions {
-    display: flex; /* Ensure buttons are visible */
+    display: flex !important; /* Force display */
+    position: relative;
+    right: 0;
+    z-index: 10;
+  }
+  
+  /* Ensure action buttons are visible on medium screens */
+  .subtopic-actions .generate-button,
+  .subtopic-actions .edit-button,
+  .subtopic-actions .delete-button {
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 }
 
 /* Large devices (desktops, 768px and up) */
 @media (min-width: 768px) {
   .subtopic-actions {
-    display: flex; /* Ensure buttons are visible on all screen sizes */
+    display: flex !important; /* Force display on all screen sizes */
+    visibility: visible !important;
   }
   
   .main-topic-header {
@@ -764,5 +812,11 @@
   
   .subtopic-item {
     padding: 12px 18px;
+    position: relative; /* Ensure proper stacking context */
+  }
+  
+  /* Ensure action buttons remain visible on hover */
+  .subtopic-item:hover .subtopic-actions {
+    background-color: rgba(248, 249, 250, 0.8); /* Light background to help buttons stand out */
   }
 }
