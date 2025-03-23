@@ -112,7 +112,10 @@ const TopicHub = ({
       console.log(content);
       console.log("==== END FALLBACK API RESPONSE ====");
       
-      content = content.replace(/```json|```/g, '').trim();
+      // Enhanced preprocessing similar to main processing function
+      content = content.replace(/```json|```javascript|```|\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
+        .replace(/^[\s\S]*?\[/m, '[')  // Remove any text before first opening bracket
+        .trim();
       
       let parsedTopics;
       try {
@@ -264,8 +267,10 @@ const TopicHub = ({
       console.log(content);
       console.log("==== END RAW API RESPONSE ====");
       
-      // Enhanced preprocessing to remove common prefixes that break JSON parsing
-      content = content.replace(/```json|```javascript|```|Option \d+:|[\s\S]*?\[/m, '[').trim();
+      // Enhanced preprocessing for GPT-4's verbose responses - more aggressive cleanup
+      content = content.replace(/```json|```javascript|```|\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
+        .replace(/^[\s\S]*?\[/m, '[')  // Remove any text before first opening bracket
+        .trim();
       
       // Find JSON array in response - looking for content between [ and ]
       const jsonMatch = content.match(/\[([\s\S]*?)\]/m);
@@ -279,6 +284,52 @@ const TopicHub = ({
       try {
         parsedTopics = JSON.parse(potentialJson);
         console.log("Successfully parsed JSON response:", parsedTopics);
+        
+        // Check if the API returned an error object
+        const hasErrorObject = Array.isArray(parsedTopics) && 
+          parsedTopics.length === 1 && 
+          parsedTopics[0] && 
+          parsedTopics[0].hasOwnProperty('error');
+        
+        if (hasErrorObject) {
+          console.log("API returned an error object:", parsedTopics[0].error);
+          console.log("Switching to fallback topics");
+          usedFallback = true;
+          
+          // Use subject-specific fallbacks
+          const hardcodedFallbacks = getSubjectFallbackTopics(subject, examBoard, examType);
+          
+          if (hardcodedFallbacks && hardcodedFallbacks.length > 0) {
+            console.log("Using subject-specific fallbacks");
+            parsedTopics = hardcodedFallbacks;
+          } else {
+            // If no subject-specific fallbacks available, use generic ones
+            console.log("No subject-specific fallbacks, using generic fallbacks");
+            parsedTopics = [
+              {
+                id: "1.1",
+                topic: `${subject}: Core Concepts`,
+                mainTopic: subject,
+                subtopic: "Core Concepts"
+              },
+              {
+                id: "1.2",
+                topic: `${subject}: Key Principles`,
+                mainTopic: subject,
+                subtopic: "Key Principles"
+              },
+              {
+                id: "1.3",
+                topic: `${subject}: Fundamental Applications`,
+                mainTopic: subject,
+                subtopic: "Fundamental Applications"
+              }
+            ];
+          }
+          
+          setUsingFallbackTopics(true);
+          setShowFallbackNotice(true);
+        }
       } catch (e) {
         console.error("Failed to parse topic response as JSON:", e);
         usedFallback = true;
@@ -1127,9 +1178,10 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
                             <span className="subtopic-id">{topic.id}</span>
                             <span 
                               className="subtopic-name"
-                              data-optional={topic.subtopic.includes("[Optional]") || topic.mainTopic.includes("[Optional]")}
+                              data-optional={(topic.subtopic && topic.subtopic.includes("[Optional]")) || 
+                                            (topic.mainTopic && topic.mainTopic.includes("[Optional]"))}
                             >
-                              {topic.subtopic}
+                              {topic.subtopic || "Unknown Subtopic"}
                             </span>
                           </div>
                           <div className="subtopic-actions">
