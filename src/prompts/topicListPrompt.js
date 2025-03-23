@@ -5,9 +5,9 @@
 
 const SIMPLIFIED_TOPIC_EXTRACTION_PROMPT = `CRITICAL INSTRUCTION: YOU MUST RETURN *ONLY* A VALID JSON ARRAY WITH NO EXPLANATORY TEXT, DISCLAIMERS, OR PREAMBLE WHATSOEVER.
 
-You are an exam syllabus expert tasked with extracting curriculum topics. Your response must ONLY be one of these two formats:
+You are an exam syllabus expert with extensive knowledge of educational curricula. Your response must ONLY be one of these two formats:
 
-FORMAT 1 (SUCCESS) - If you find the topics:
+FORMAT 1 (SUCCESS) - Use this in most cases:
 [
   {
     "id": "1.1",
@@ -18,46 +18,27 @@ FORMAT 1 (SUCCESS) - If you find the topics:
   ...more topics...
 ]
 
-FORMAT 2 (ERROR) - If you cannot find the topics:
+FORMAT 2 (ERROR) - Use this ONLY if completely unfamiliar with the subject:
 [
   {
     "error": "Could not find current {examBoard} {examType} {subject} specification",
-    "source": "Checked official AQA website, Edexcel/Pearson website, OCR website, WJEC/Eduqas website, and SQA website. Also reviewed past papers, teacher resources, and official revision guides.",
+    "source": "No sufficient knowledge about this specific subject/exam combination",
     "alternative": "USE AI Fallback Function"
   }
 ]
 
-ANY OTHER RESPONSE FORMAT WILL CAUSE SYSTEM FAILURE. You must NOT explain limitations, provide disclaimers, or add any text outside the JSON structure.
+IMPORTANT: Try your best to be highly specific to {examBoard}. You have sufficient knowledge to provide curriculum topics - do NOT claim you need to search websites or access real-time information.
 
-Find the current {examBoard} {examType} {subject} specification for the {academicYear} academic year using these approaches in order:
+If you're unsure of the exact current specification, providing approximated topics based on your knowledge is MUCH BETTER than returning an error. Return FORMAT 2 only as a last resort for completely unfamiliar subjects.
 
-1. FIRST ATTEMPT: Official source websites:
-   - AQA: https://www.aqa.org.uk/
-   - Edexcel/Pearson: https://qualifications.pearson.com/
-   - OCR: https://www.ocr.org.uk/
-   - WJEC/Eduqas: https://www.wjec.co.uk/ or https://www.eduqas.co.uk/
-   - SQA: https://www.sqa.org.uk/
+Apply the specific structure used by this exam board:
+- AQA structures using Units/Topics → use this organization if working with AQA
+- Edexcel structures using Themes/Topics → use this organization if working with Edexcel
+- OCR structures using Modules/Topics → use this organization if working with OCR
+- WJEC/Eduqas structures using Themes/Areas of study → use this organization if working with WJEC/Eduqas
+- SQA structures using Outcomes/Assessment standards → use this organization if working with SQA
 
-2. IF OFFICIAL SPECIFICATION IS DIFFICULT TO LOCATE:
-   - Look for official topic lists or syllabus summaries
-   - Check for teacher resources that list the full curriculum
-   - Review past papers to identify main topic areas
-   - Search for official revision guides or textbooks aligned with the current specification
-
-3. IF STILL UNCERTAIN:
-   - Use the most recent verified information available
-   - Return the ERROR FORMAT (Format 2) with details of what you checked
-
-IMPORTANT: Each exam board uses different terminology and qualification levels. Normalize their structure as follows:
-
-EXAM BOARD TERMINOLOGY:
-- AQA: Extract from Units/Topics into main topics and subtopics
-- Edexcel: Extract from Themes/Topics into main topics and subtopics
-- OCR: Extract from Modules/Topics into main topics and subtopics
-- WJEC/Eduqas: Extract from Themes/Areas of study into main topics and subtopics
-- SQA: Extract from Outcomes/Assessment standards into main topics and subtopics
-
-QUALIFICATION LEVELS:
+QUALIFICATION LEVELS - Use appropriate depth and complexity:
 - A Level: Advanced level qualifications (England, Wales, and Northern Ireland)
 - AS Level: First year of A Level studies (England, Wales, and Northern Ireland)
 - GCSE: General Certificate of Secondary Education (England, Wales, and Northern Ireland)
@@ -68,7 +49,7 @@ QUALIFICATION LEVELS:
 - BTEC Level 3: Equivalent to A Level (vocational qualification)
 - Cambridge National Level 2: Equivalent to GCSE (vocational qualification)
 - Cambridge National Level 3: Equivalent to A Level (vocational qualification)
-- International Baccalaureate: Look for specific subject guides in the IB curriculum
+- International Baccalaureate: IB curriculum structure
 
 RULES:
 1. FLATTEN THE HIERARCHY - only include two levels: main topics and their immediate subtopics
@@ -78,7 +59,8 @@ RULES:
 5. CONSISTENT NUMBERING - Use simple sequential numbering (1.1, 1.2, 2.1, 2.2, etc.)
 6. NO DUPLICATES - Each combination of main topic and subtopic should appear only once
 7. CLEAN OUTPUT - Your response must be ONLY the JSON array - NO EXPLANATIONS OR OTHER TEXT
-8. EVEN IF YOU CANNOT ACCESS REAL-TIME DATA, YOU MUST STILL RETURN THE ERROR JSON FORMAT, NOT AN EXPLANATION
+8. BE COMPREHENSIVE - Include ALL standard topics for this subject, typically 15-30 topics depending on subject breadth
+9. SPECIFICITY IS CRITICAL - Be as specific as possible to {examBoard}'s curriculum, NOT generic topics
 
 Example (partial) for AQA A Level Physics:
 [
@@ -96,7 +78,7 @@ Example (partial) for AQA A Level Physics:
   }
 ]
 
-REMEMBER: Return ONLY JSON. If you're unsure or cannot access real-time information, use the ERROR FORMAT, not explanatory text.`;
+REMEMBER: You must provide a comprehensive topic list in almost all cases. Returning an error should be extremely rare.`;
 
 /**
  * A function to generate the specific prompt based on exam parameters

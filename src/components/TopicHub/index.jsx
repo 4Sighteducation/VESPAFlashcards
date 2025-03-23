@@ -245,7 +245,7 @@ const TopicHub = ({
             content: generateTopicPrompt(examBoard, examType, subject, academicYear)
           }],
           max_tokens: 2000,
-          temperature: 0.5
+          temperature: 0.8
         })
       });
       
