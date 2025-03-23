@@ -61,6 +61,14 @@ QUALIFICATION LEVELS - Use appropriate depth and complexity:
 - Cambridge National Level 3: Equivalent to A Level (vocational qualification)
 - International Baccalaureate: IB curriculum structure
 
+SPECIAL HANDLING FOR ARTS AND HUMANITIES:
+If extracting topics for Music, Literature, Drama, Art, or History:
+1. Include specific set works/texts in subtopic fields
+2. Use the format "Area: Specific work - details" for subtopics
+3. Include all prescribed content from the specification
+4. For Music, include composer name and work title (e.g., "Bach: Brandenburg Concerto No. 2 - Orchestration")
+5. For Literature, include author name and text title (e.g., "Shakespeare: Hamlet - Themes and motifs")
+
 RULES:
 1. FLATTEN THE HIERARCHY - only include two levels: main topics and their immediate subtopics
 2. NORMALIZE TERMINOLOGY - use "main topics" and "subtopics" regardless of the exam board's specific terminology
@@ -71,6 +79,7 @@ RULES:
 7. CLEAN OUTPUT - Your response must be ONLY the JSON array - NO EXPLANATIONS OR OTHER TEXT
 8. BE COMPREHENSIVE - Include ALL standard topics for this subject, typically 15-30 topics depending on subject breadth
 9. SPECIFICITY IS CRITICAL - Be as specific as possible to {examBoard}'s curriculum, NOT generic topics
+10. SANITIZE JSON - Ensure all strings are properly escaped and there are no unterminated strings
 
 Example (partial) for AQA A Level Physics:
 [
