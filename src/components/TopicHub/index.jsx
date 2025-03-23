@@ -87,7 +87,7 @@ const TopicHub = ({
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
+          model: "gpt-4",
           messages: [{
             role: "user",
             content: generateFallbackPrompt(examBoard, examType, subject, academicYear)
@@ -236,7 +236,7 @@ const TopicHub = ({
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
+          model: "gpt-4",
           messages: [{
             role: "user",
             content: generateTopicPrompt(examBoard, examType, subject, academicYear)
