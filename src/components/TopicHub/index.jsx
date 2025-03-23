@@ -199,6 +199,42 @@ const TopicHub = ({
         console.log("Converted topics:", parsedTopics);
       }
       
+      // Handle empty arrays by providing fallback content
+      if (parsedTopics.length === 0) {
+        console.log("Received empty topics array, using fallback content for subject:", subject);
+        
+        // Get fallback topics based on subject
+        const fallbackTopics = getSubjectFallbackTopics(subject, examBoard, examType);
+        
+        if (fallbackTopics && fallbackTopics.length > 0) {
+          console.log("Using subject-specific fallbacks:", fallbackTopics.length, "topics");
+          parsedTopics = fallbackTopics;
+        } else {
+          // Generic fallback if no subject-specific fallback available
+          parsedTopics = [
+            {
+              id: "1.1",
+              topic: `${subject}: Core Concepts`,
+              mainTopic: subject,
+              subtopic: "Core Concepts"
+            },
+            {
+              id: "1.2",
+              topic: `${subject}: Key Principles`,
+              mainTopic: subject,
+              subtopic: "Key Principles"
+            },
+            {
+              id: "1.3",
+              topic: `${subject}: Fundamental Applications`,
+              mainTopic: subject,
+              subtopic: "Fundamental Applications"
+            }
+          ];
+          console.log("Using generic fallbacks");
+        }
+      }
+      
       // Final logging of topics before updating state
       console.log("===== FINAL TOPIC LIST BEING USED =====");
       console.log(JSON.stringify(parsedTopics, null, 2));
@@ -236,49 +272,257 @@ const TopicHub = ({
     }
   };
   
-  // Generate the prompt using the improved structure
+  // Get fallback topics for specific subjects
+  const getSubjectFallbackTopics = (subject, examBoard, examType) => {
+    // Convert to lowercase for case-insensitive matching
+    const subjectLower = subject.toLowerCase();
+    
+    // Chemistry fallbacks
+    if (subjectLower.includes('chemistry')) {
+      return [
+        {
+          id: "1.1",
+          topic: "Atomic Structure and Periodicity: Atomic Models and Electronic Configuration",
+          mainTopic: "Atomic Structure and Periodicity",
+          subtopic: "Atomic Models and Electronic Configuration"
+        },
+        {
+          id: "1.2",
+          topic: "Atomic Structure and Periodicity: Periodic Trends",
+          mainTopic: "Atomic Structure and Periodicity",
+          subtopic: "Periodic Trends"
+        },
+        {
+          id: "2.1",
+          topic: "Chemical Bonding: Ionic Bonding",
+          mainTopic: "Chemical Bonding",
+          subtopic: "Ionic Bonding"
+        },
+        {
+          id: "2.2",
+          topic: "Chemical Bonding: Covalent Bonding",
+          mainTopic: "Chemical Bonding",
+          subtopic: "Covalent Bonding"
+        },
+        {
+          id: "2.3",
+          topic: "Chemical Bonding: Metallic Bonding",
+          mainTopic: "Chemical Bonding",
+          subtopic: "Metallic Bonding"
+        },
+        {
+          id: "3.1",
+          topic: "Energetics: Enthalpy Changes",
+          mainTopic: "Energetics",
+          subtopic: "Enthalpy Changes"
+        },
+        {
+          id: "3.2",
+          topic: "Energetics: Bond Enthalpies",
+          mainTopic: "Energetics",
+          subtopic: "Bond Enthalpies"
+        }
+      ];
+    }
+    
+    // Biology fallbacks
+    if (subjectLower.includes('biology')) {
+      return [
+        {
+          id: "1.1",
+          topic: "Cell Biology: Cell Structure",
+          mainTopic: "Cell Biology",
+          subtopic: "Cell Structure"
+        },
+        {
+          id: "1.2",
+          topic: "Cell Biology: Cell Transport",
+          mainTopic: "Cell Biology",
+          subtopic: "Cell Transport"
+        },
+        {
+          id: "1.3",
+          topic: "Cell Biology: Cell Division",
+          mainTopic: "Cell Biology",
+          subtopic: "Cell Division"
+        },
+        {
+          id: "2.1",
+          topic: "Genetics: DNA Structure and Replication",
+          mainTopic: "Genetics",
+          subtopic: "DNA Structure and Replication"
+        },
+        {
+          id: "2.2",
+          topic: "Genetics: Protein Synthesis",
+          mainTopic: "Genetics",
+          subtopic: "Protein Synthesis"
+        },
+        {
+          id: "2.3",
+          topic: "Genetics: Inheritance",
+          mainTopic: "Genetics",
+          subtopic: "Inheritance"
+        }
+      ];
+    }
+    
+    // Physics fallbacks
+    if (subjectLower.includes('physics')) {
+      return [
+        {
+          id: "1.1",
+          topic: "Mechanics: Forces and Motion",
+          mainTopic: "Mechanics",
+          subtopic: "Forces and Motion"
+        },
+        {
+          id: "1.2",
+          topic: "Mechanics: Energy and Work",
+          mainTopic: "Mechanics",
+          subtopic: "Energy and Work"
+        },
+        {
+          id: "1.3",
+          topic: "Mechanics: Momentum",
+          mainTopic: "Mechanics",
+          subtopic: "Momentum"
+        },
+        {
+          id: "2.1",
+          topic: "Waves: Wave Properties",
+          mainTopic: "Waves",
+          subtopic: "Wave Properties"
+        },
+        {
+          id: "2.2",
+          topic: "Waves: Wave Behavior",
+          mainTopic: "Waves",
+          subtopic: "Wave Behavior"
+        }
+      ];
+    }
+    
+    // Mathematics fallbacks
+    if (subjectLower.includes('math') || subjectLower.includes('maths')) {
+      return [
+        {
+          id: "1.1",
+          topic: "Algebra: Equations and Inequalities",
+          mainTopic: "Algebra",
+          subtopic: "Equations and Inequalities"
+        },
+        {
+          id: "1.2",
+          topic: "Algebra: Functions and Graphs",
+          mainTopic: "Algebra",
+          subtopic: "Functions and Graphs"
+        },
+        {
+          id: "1.3",
+          topic: "Algebra: Sequences and Series",
+          mainTopic: "Algebra",
+          subtopic: "Sequences and Series"
+        },
+        {
+          id: "2.1",
+          topic: "Calculus: Differentiation",
+          mainTopic: "Calculus",
+          subtopic: "Differentiation"
+        },
+        {
+          id: "2.2",
+          topic: "Calculus: Integration",
+          mainTopic: "Calculus",
+          subtopic: "Integration"
+        }
+      ];
+    }
+    
+    // Dance fallbacks (since this was mentioned specifically)
+    if (subjectLower.includes('dance')) {
+      return [
+        {
+          id: "1.1",
+          topic: "Choreography: Choreographic Process",
+          mainTopic: "Choreography",
+          subtopic: "Choreographic Process"
+        },
+        {
+          id: "1.2",
+          topic: "Choreography: Composition Techniques",
+          mainTopic: "Choreography",
+          subtopic: "Composition Techniques"
+        },
+        {
+          id: "2.1",
+          topic: "Performance: Technical Skills",
+          mainTopic: "Performance",
+          subtopic: "Technical Skills"
+        },
+        {
+          id: "2.2",
+          topic: "Performance: Expressive Skills",
+          mainTopic: "Performance",
+          subtopic: "Expressive Skills"
+        },
+        {
+          id: "3.1",
+          topic: "Dance Appreciation: Critical Analysis",
+          mainTopic: "Dance Appreciation",
+          subtopic: "Critical Analysis"
+        }
+      ];
+    }
+    
+    // Return null for subjects not in our fallback database
+    return null;
+  };
+
+  // Generate the prompt using the flexible structure
   const generatePrompt = (examBoard, examType, subject, academicYear) => {
-    const promptTemplate = `You are an exam syllabus expert. Return ONLY a valid JSON array with no additional text, explanations, or prefixes.
+    const promptTemplate = `You are an exam syllabus expert. Extract the main topics and subtopics from the ${examBoard} ${examType} ${subject} specification for the ${academicYear} academic year.
 
-Find the current ${examBoard} ${examType} ${subject} specification for the ${academicYear} academic year from the official source:
-- AQA: https://www.aqa.org.uk/
-- Edexcel/Pearson: https://qualifications.pearson.com/
-- OCR: https://www.ocr.org.uk/
-- WJEC/Eduqas: https://www.wjec.co.uk/ or https://www.eduqas.co.uk/
-- SQA: https://www.sqa.org.uk/
+FORMAT YOUR RESPONSE AS ONE OF THESE OPTIONS (in order of preference):
 
-Extract ALL topics and subtopics in this exact format:
+OPTION 1 - If the curriculum has clear main topics and subtopics:
 [
   {
     "id": "1.1",
-    "topic": "Topic Area 1: Subtopic 1",
-    "mainTopic": "Topic Area 1",
-    "subtopic": "Subtopic 1"
-  },
-  {
-    "id": "1.2",
-    "topic": "Topic Area 1: Subtopic 2",
-    "mainTopic": "Topic Area 1",
-    "subtopic": "Subtopic 2"
-  },
-  {
-    "id": "2.1",
-    "topic": "Topic Area 2: Subtopic 1",
-    "mainTopic": "Topic Area 2",
+    "topic": "Main Topic 1: Subtopic 1",
+    "mainTopic": "Main Topic 1",
     "subtopic": "Subtopic 1"
   }
 ]
 
-FORMAT RULES:
-1. Each string must follow the pattern "Main Topic: Subtopic"
-2. Include EVERY subtopic from the official specification
-3. Repeat the main topic name for each of its subtopics
-4. Use the exact topic and subtopic names from the official specification
-5. No duplicates allowed
-6. No extra explanations outside the JSON array
-7. Return properly formatted, valid JSON only
+OPTION 2 - If the curriculum doesn't have a clear main/subtopic structure, but has distinct topics:
+[
+  "Topic 1",
+  "Topic 2",
+  "Topic 3"
+]
 
-SOURCE: Use only the latest official ${examBoard} specification document.`;
+OPTION 3 - If you can't find the exact curriculum, create a reasonable set of topics based on standard ${subject} curricula:
+[
+  "Fundamental Concept 1",
+  "Fundamental Concept 2"
+]
+
+IMPORTANT NOTES:
+- Return ONLY the JSON array or string array with NO explanations or other text
+- Include all main curriculum areas and key topics
+- If using Option 1, use "Topic Area: Subtopic" format for the "topic" field
+- Avoid duplicate topics
+- Keep your response focused on the core curriculum content
+- If the subject structure doesn't fit a main/subtopic format, use Option 2
+- If you can't access the specific curriculum, use Option 3 but still make it relevant to ${examBoard} ${examType} level
+
+REFERENCE SOURCES:
+- AQA: https://www.aqa.org.uk/
+- Edexcel/Pearson: https://qualifications.pearson.com/
+- OCR: https://www.ocr.org.uk/
+- WJEC/Eduqas: https://www.wjec.co.uk/ or https://www.eduqas.co.uk/
+- SQA: https://www.sqa.org.uk/`;
     
     return promptTemplate;
   };
