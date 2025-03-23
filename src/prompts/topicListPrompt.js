@@ -3,7 +3,31 @@
  * Provides detailed guidance for finding and structuring curriculum content
  */
 
-const SIMPLIFIED_TOPIC_EXTRACTION_PROMPT = `You are an exam syllabus expert. Return ONLY a valid JSON array with no additional text, explanations, or prefixes.
+const SIMPLIFIED_TOPIC_EXTRACTION_PROMPT = `CRITICAL INSTRUCTION: YOU MUST RETURN *ONLY* A VALID JSON ARRAY WITH NO EXPLANATORY TEXT, DISCLAIMERS, OR PREAMBLE WHATSOEVER.
+
+You are an exam syllabus expert tasked with extracting curriculum topics. Your response must ONLY be one of these two formats:
+
+FORMAT 1 (SUCCESS) - If you find the topics:
+[
+  {
+    "id": "1.1",
+    "topic": "Main Topic: Subtopic",
+    "mainTopic": "Main Topic",
+    "subtopic": "Subtopic"
+  },
+  ...more topics...
+]
+
+FORMAT 2 (ERROR) - If you cannot find the topics:
+[
+  {
+    "error": "Could not find current {examBoard} {examType} {subject} specification",
+    "source": "Checked official AQA website, Edexcel/Pearson website, OCR website, WJEC/Eduqas website, and SQA website. Also reviewed past papers, teacher resources, and official revision guides.",
+    "alternative": "USE AI Fallback Function"
+  }
+]
+
+ANY OTHER RESPONSE FORMAT WILL CAUSE SYSTEM FAILURE. You must NOT explain limitations, provide disclaimers, or add any text outside the JSON structure.
 
 Find the current {examBoard} {examType} {subject} specification for the {academicYear} academic year using these approaches in order:
 
@@ -22,7 +46,7 @@ Find the current {examBoard} {examType} {subject} specification for the {academi
 
 3. IF STILL UNCERTAIN:
    - Use the most recent verified information available
-   - Make note of the source and year in the error message
+   - Return the ERROR FORMAT (Format 2) with details of what you checked
 
 IMPORTANT: Each exam board uses different terminology and qualification levels. Normalize their structure as follows:
 
@@ -46,32 +70,17 @@ QUALIFICATION LEVELS:
 - Cambridge National Level 3: Equivalent to A Level (vocational qualification)
 - International Baccalaureate: Look for specific subject guides in the IB curriculum
 
-Extract ONLY main topics and their immediate subtopics in this exact format:
-[
-  {
-    "id": "1.1",  // Simple sequential numbering
-    "topic": "Main Topic: Subtopic",  // Combined for display
-    "mainTopic": "Main Topic",  // The primary topic area only
-    "subtopic": "Subtopic"  // First-level subtopic only
-  },
-  ...
-]
-
 RULES:
 1. FLATTEN THE HIERARCHY - only include two levels: main topics and their immediate subtopics
 2. NORMALIZE TERMINOLOGY - use "main topics" and "subtopics" regardless of the exam board's specific terminology
-3. PRESERVE EXACT SUBTOPIC STRUCTURE - If the specification lists items as separate subtopics, keep them separate. If listed as a single subtopic with multiple elements, keep as one subtopic. Do not split or combine subtopics differently than shown in the official specification.
-4. HANDLE COMPOUND SUBTOPICS - When a subtopic contains multiple elements separated by commas or "and" (e.g., "Daily life, cultural life and festivals"), preserve it exactly as written in the specification without splitting.
-5. CONSISTENT NUMBERING - Use simple sequential numbering (1.1, 1.2, 2.1, 2.2, etc.) regardless of the original specification
+3. PRESERVE EXACT SUBTOPIC STRUCTURE - If the specification lists items as separate subtopics, keep them separate
+4. HANDLE COMPOUND SUBTOPICS - When a subtopic contains multiple elements separated by commas or "and", preserve it exactly
+5. CONSISTENT NUMBERING - Use simple sequential numbering (1.1, 1.2, 2.1, 2.2, etc.)
 6. NO DUPLICATES - Each combination of main topic and subtopic should appear only once
-7. CLEAN OUTPUT - The response must be ONLY the JSON array - no explanations or other text
-8. ERROR HANDLING - If you cannot find the specific syllabus, return: 
-   [{"error": "Could not find current {examBoard} {examType} {subject} specification", 
-     "source": "Describe what sources you checked",
-     "alternative": "USE AI Fallback Function"}]
+7. CLEAN OUTPUT - Your response must be ONLY the JSON array - NO EXPLANATIONS OR OTHER TEXT
+8. EVEN IF YOU CANNOT ACCESS REAL-TIME DATA, YOU MUST STILL RETURN THE ERROR JSON FORMAT, NOT AN EXPLANATION
 
-// ADD EXAMPLE OUTPUT FOR CLARITY
-Example output for AQA A Level Physics (partial):
+Example (partial) for AQA A Level Physics:
 [
   {
     "id": "1.1", 
@@ -87,7 +96,7 @@ Example output for AQA A Level Physics (partial):
   }
 ]
 
-SOURCE: Use only the latest official {examBoard} specification document from their website.`;
+REMEMBER: Return ONLY JSON. If you're unsure or cannot access real-time information, use the ERROR FORMAT, not explanatory text.`;
 
 /**
  * A function to generate the specific prompt based on exam parameters
