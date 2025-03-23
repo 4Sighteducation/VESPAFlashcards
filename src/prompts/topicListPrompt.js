@@ -46,12 +46,6 @@ QUALIFICATION LEVELS:
 - Cambridge National Level 3: Equivalent to A Level (vocational qualification)
 - International Baccalaureate: Look for specific subject guides in the IB curriculum
 
-HANDLING OPTIONAL TOPICS:
-1. Mark optional topics with "[Optional]" prefix in both mainTopic and subtopic fields
-2. For optional topics that belong to specific groups, use "[Optional - Group X]" format
-3. NEVER use formats like "Option 1:" - always use "[Optional]" prefix instead
-4. Include ALL optional topics/routes in your response - do not omit any content
-
 Extract ONLY main topics and their immediate subtopics in this exact format:
 [
   {
@@ -71,20 +65,13 @@ RULES:
 5. CONSISTENT NUMBERING - Use simple sequential numbering (1.1, 1.2, 2.1, 2.2, etc.) regardless of the original specification
 6. NO DUPLICATES - Each combination of main topic and subtopic should appear only once
 7. CLEAN OUTPUT - The response must be ONLY the JSON array - no explanations or other text
+8. ERROR HANDLING - If you cannot find the specific syllabus, return: 
+   [{"error": "Could not find current {examBoard} {examType} {subject} specification", 
+     "source": "Describe what sources you checked",
+     "alternative": "USE AI Fallback Function"}]
 
-CRITICAL OUTPUT REQUIREMENTS:
-1. ONLY return the JSON array - absolutely no text before or after
-2. Ensure proper JSON syntax with double quotes around keys and string values
-3. No trailing commas after the last item in arrays or objects
-4. Each topic must have all required fields: id, topic, mainTopic, subtopic
-
-ERROR HANDLING:
-If you cannot find the specific syllabus, return: 
-[{"error": "Could not find current {examBoard} {examType} {subject} specification", 
-  "source": "Describe what sources you checked",
-  "alternative": "USE AI Fallback Function"}]
-
-// Example output for AQA A Level Physics (partial):
+// ADD EXAMPLE OUTPUT FOR CLARITY
+Example output for AQA A Level Physics (partial):
 [
   {
     "id": "1.1", 
