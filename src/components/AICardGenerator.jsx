@@ -280,7 +280,132 @@ const AICardGenerator = ({
     }
   }, [formData.subject, formData.examBoard, formData.examType]);
 
-  // Generate topics using AI
+  // Get fallback topics for specific subjects (to use when API calls fail)
+  const getFallbackTopics = (examBoard, examType, subject) => {
+    // Convert to lowercase for case-insensitive matching
+    const subjectLower = typeof subject === 'string' ? subject.toLowerCase() : '';
+    
+    // Chemistry fallbacks 
+    if (subjectLower.includes('chemistry')) {
+      return [
+        "Atomic Structure and Periodicity: Atomic Models and Electronic Configuration",
+        "Atomic Structure and Periodicity: Periodic Trends",
+        "Chemical Bonding: Ionic Bonding", 
+        "Chemical Bonding: Covalent Bonding",
+        "Chemical Bonding: Metallic Bonding",
+        "Energetics: Enthalpy Changes",
+        "Energetics: Bond Enthalpies",
+        "Energetics: Hess's Law",
+        "Reaction Kinetics: Rate of Reaction",
+        "Reaction Kinetics: Rate Equations",
+        "Reaction Kinetics: Catalysis",
+        "Chemical Equilibria: Dynamic Equilibrium",
+        "Chemical Equilibria: Le Chatelier's Principle",
+        "Acid-Base Equilibria: Brønsted-Lowry Theory",
+        "Acid-Base Equilibria: Strong and Weak Acids",
+        "Redox Reactions: Oxidation Numbers",
+        "Redox Reactions: Electrochemical Cells"
+      ];
+    }
+    
+    // Biology fallbacks
+    if (subjectLower.includes('biology')) {
+      return [
+        "Cell Biology: Cell Structure",
+        "Cell Biology: Cell Transport",
+        "Cell Biology: Cell Division",
+        "Genetics: DNA Structure and Replication",
+        "Genetics: Protein Synthesis",
+        "Genetics: Inheritance",
+        "Ecology: Ecosystems and Energy Flow",
+        "Ecology: Carbon and Nitrogen Cycles",
+        "Ecology: Population Dynamics",
+        "Physiology: Respiration",
+        "Physiology: Circulation",
+        "Physiology: Digestion",
+        "Physiology: Nervous System",
+        "Physiology: Hormonal Regulation"
+      ];
+    }
+    
+    // Physics fallbacks
+    if (subjectLower.includes('physics')) {
+      return [
+        "Mechanics: Forces and Motion",
+        "Mechanics: Energy and Work",
+        "Mechanics: Momentum",
+        "Waves: Wave Properties",
+        "Waves: Wave Behavior",
+        "Optics: Reflection and Refraction",
+        "Optics: Lenses and Mirrors",
+        "Electricity: DC Circuits",
+        "Electricity: Electric Fields",
+        "Magnetism: Magnetic Fields",
+        "Magnetism: Electromagnetic Induction",
+        "Quantum Physics: Photoelectric Effect",
+        "Quantum Physics: Wave-Particle Duality",
+        "Nuclear Physics: Radioactive Decay"
+      ];
+    }
+    
+    // Geography fallbacks
+    if (subjectLower.includes('geography')) {
+      return [
+        "Physical Geography: Water and Carbon Cycles",
+        "Physical Geography: Coastal Systems and Landscapes",
+        "Physical Geography: Hazards and Natural Disasters",
+        "Human Geography: Global Systems and Governance",
+        "Human Geography: Changing Places",
+        "Human Geography: Population and Migration",
+        "Human Geography: Resource Security",
+        "Human Geography: Contemporary Urban Environments",
+        "Skills and Techniques: Fieldwork and Investigation",
+        "Skills and Techniques: Geographical Information Systems (GIS)",
+        "Climate Change: Evidence and Causes",
+        "Climate Change: Impacts and Adaptation",
+        "Conservation and Biodiversity: Ecosystem Services",
+        "Development: Economic Development and Quality of Life",
+        "Globalization: Transnational Corporations and Trade"
+      ];
+    }
+    
+    // Mathematics fallbacks
+    if (subjectLower.includes('math') || subjectLower.includes('maths')) {
+      return [
+        "Algebra: Equations and Inequalities",
+        "Algebra: Functions and Graphs",
+        "Algebra: Sequences and Series",
+        "Calculus: Differentiation",
+        "Calculus: Integration",
+        "Calculus: Differential Equations",
+        "Trigonometry: Sine and Cosine Rules",
+        "Trigonometry: Identities and Equations",
+        "Geometry: Coordinate Geometry",
+        "Geometry: Vectors",
+        "Statistics: Probability",
+        "Statistics: Distributions",
+        "Statistics: Hypothesis Testing",
+        "Mechanics: Kinematics",
+        "Mechanics: Forces and Newton's Laws"
+      ];
+    }
+    
+    // Generic fallbacks for any subject
+    return [
+      `${subject}: Core Concepts and Principles`,
+      `${subject}: Key Theories and Models`,
+      `${subject}: Historical Development`,
+      `${subject}: Modern Applications`,
+      `${subject}: Research Methods and Analysis`,
+      `${subject}: Critical Evaluation Techniques`,
+      `${subject}: Contemporary Issues and Debates`,
+      `${subject}: Case Studies and Examples`,
+      `${subject}: Practical Skills and Techniques`,
+      `${subject}: Ethical Considerations`
+    ];
+  };
+
+  // Generate topics using AI with improved fallback handling
   const generateTopics = async (examBoard, examType, subject) => {
     try {
       if (!examBoard || !examType || !subject) {
@@ -292,62 +417,79 @@ const AICardGenerator = ({
       
       console.log("Generating topics for:", examBoard, examType, subjectName);
       
-      // Get the prompt from our new prompt file
-      const prompt = generateTopicPrompt(examBoard, examType, subjectName);
-      
-      // Make API call to OpenAI
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 800,
-          temperature: 0.5
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API call failed: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error("No content returned from API");
-      }
-      
-      // Extract and clean the content
-      let content = data.choices[0].message.content;
-      content = content.replace(/```json|```/g, '').trim();
-      console.log("Raw topic response:", content);
-      
-      // Try to parse as JSON
-      let topics;
       try {
-        topics = JSON.parse(content);
-      } catch (e) {
-        console.error("Failed to parse topic response as JSON:", e);
-        // Fall back to text processing if JSON parsing fails
-        topics = content.split('\n')
-          .filter(line => line.trim().length > 0)
-          .map(line => line.replace(/^[-*•]\s*/, '').trim());
+        // Get the prompt from our new prompt file
+        const prompt = generateTopicPrompt(examBoard, examType, subjectName);
+        
+        // Make API call to OpenAI
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 800,
+            temperature: 0.5
+          })
+        });
+        
+        if (!response.ok) {
+          // If we get a 429 (rate limit), immediately use fallback data
+          if (response.status === 429) {
+            console.log("Rate limit hit, using fallback data for", subjectName);
+            return getFallbackTopics(examBoard, examType, subjectName);
+          }
+          throw new Error(`API call failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.choices || data.choices.length === 0) {
+          throw new Error("No content returned from API");
+        }
+        
+        // Extract and clean the content
+        let content = data.choices[0].message.content;
+        content = content.replace(/```json|```/g, '').trim();
+        console.log("Raw topic response:", content);
+        
+        // Try to parse as JSON
+        let topics;
+        try {
+          topics = JSON.parse(content);
+        } catch (e) {
+          console.error("Failed to parse topic response as JSON:", e);
+          // Fall back to text processing if JSON parsing fails
+          topics = content.split('\n')
+            .filter(line => line.trim().length > 0)
+            .map(line => line.replace(/^[-*•]\s*/, '').trim());
+        }
+        
+        // Ensure we have an array
+        if (!Array.isArray(topics)) {
+          console.error("Unexpected response format:", topics);
+          throw new Error("Invalid topic format received");
+        }
+        
+        console.log("Generated topics:", topics);
+        return topics;
+      } catch (apiError) {
+        // Log the error but recover with fallback data
+        console.warn("API error, using fallback data:", apiError.message);
+        
+        // Get pre-defined topics for this subject
+        const fallbackTopics = getFallbackTopics(examBoard, examType, subjectName);
+        console.log("Using fallback topics:", fallbackTopics);
+        
+        return fallbackTopics;
       }
-      
-      // Ensure we have an array
-      if (!Array.isArray(topics)) {
-        console.error("Unexpected response format:", topics);
-        throw new Error("Invalid topic format received");
-      }
-      
-      console.log("Generated topics:", topics);
-      return topics;
     } catch (error) {
-      console.error("Error generating topics:", error);
-      throw new Error(`Failed to generate topics: ${error.message}`);
+      console.error("Error in generateTopics:", error);
+      // Even in case of a catastrophic error, return some generic topics
+      return [`${subject}: Core Concepts`, `${subject}: Key Principles`, `${subject}: Applications`];
     }
   };
 
