@@ -61,6 +61,31 @@ QUALIFICATION LEVELS - Use appropriate depth and complexity:
 - Cambridge National Level 3: Equivalent to A Level (vocational qualification)
 - International Baccalaureate: IB curriculum structure
 
+SUBJECT DISAMBIGUATION - PREVENT CROSS-CONTAMINATION:
+When generating topics for a specific subject, ensure content is strictly relevant to that subject only.
+
+1. For Dance:
+   - DO include: Critical engagement, choreography analysis, dance theory, historical dance movements
+   - DO NOT include: Sports science, fitness testing, PE theory, acting techniques, musical composition
+
+2. For Physical Education:
+   - DO include: Exercise physiology, sports psychology, biomechanics, skill acquisition, health/fitness
+   - DO NOT include: Dance choreography, performance analysis, artistic expression, musical elements
+
+3. For Music:
+   - DO include: Music theory, composition, set works analysis, historical periods, musical elements
+   - DO NOT include: Drama techniques, dance choreography, technical stage production, general performing arts
+
+4. For Drama/Theatre Studies:
+   - DO include: Performance theory, theatre history, practitioners, staging, technical elements, script analysis
+   - DO NOT include: Literary criticism methods from English, dance technique, musical composition, film production techniques
+
+5. For Art & Design:
+   - DO include: Art history, visual elements, techniques, media experimentation, contextual studies
+   - DO NOT include: Photography technical specifications, media production processes, commercial advertising techniques
+
+CRITICAL FOR DANCE SUBJECTS: Ensure ZERO contamination with Physical Education content. Dance topics must focus on artistic, theoretical, and analytical aspects, NOT on fitness components, sports science, or training principles.
+
 SPECIAL HANDLING FOR PRACTICAL SUBJECTS:
 IMPORTANT: For practical subjects (Dance, Music, Art & Design, PE, Drama, etc.), prioritize EXAM CONTENT over practical components:
 1. Focus on the theoretical knowledge that will be tested in written exams rather than practical skills
@@ -146,6 +171,8 @@ Example (partial) for AQA A Level Dance:
     "subtopic": "Elements of dance - space, dynamics, and relationships"
   }
 ]
+
+FINAL VERIFICATION: Before returning your response, verify that ALL topics are strictly relevant to {subject} and do not contain content from other subjects. If you detect ANY cross-subject contamination, regenerate the entire topic list.
 
 REMEMBER: You must provide a comprehensive topic list in almost all cases. Returning an error should be extremely rare.`;
 
