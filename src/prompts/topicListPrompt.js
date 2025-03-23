@@ -61,6 +61,21 @@ QUALIFICATION LEVELS - Use appropriate depth and complexity:
 - Cambridge National Level 3: Equivalent to A Level (vocational qualification)
 - International Baccalaureate: IB curriculum structure
 
+SPECIAL HANDLING FOR PRACTICAL SUBJECTS:
+IMPORTANT: For practical subjects (Dance, Music, Art & Design, PE, Drama, etc.), prioritize EXAM CONTENT over practical components:
+1. Focus on the theoretical knowledge that will be tested in written exams rather than practical skills
+2. Identify and prioritize theoretical components that appear in written exams
+3. Include all content related to analysis, evaluation, criticism, and knowledge
+4. De-prioritize or minimize practical performance instructions, techniques, and skill development content
+5. Label any practical components as "[Practical]" to distinguish them from exam content
+6. For each subject, prioritize these theoretical aspects:
+   - Dance: "Critical engagement", "Analysis", "Appreciation", "Dance theory", "Historical context"
+   - Music: "Appraising", "Analysis", "Set works", "Music theory", "Aural perception"
+   - Art & Design: "Art history", "Critical studies", "Contextual understanding", "Visual analysis"
+   - PE: "Anatomy and physiology", "Sport psychology", "Biomechanics", "Contemporary issues"
+   - Drama: "Theatre history", "Analysis of performance", "Critical evaluation", "Written examination"
+   - Design Technology: "Technical principles", "Design theory", "Materials knowledge", "Manufacturing processes"
+
 SPECIAL HANDLING FOR ARTS AND HUMANITIES:
 If extracting topics for Music, Literature, Drama, Art, or History:
 1. Include specific set works/texts in subtopic fields
@@ -68,6 +83,7 @@ If extracting topics for Music, Literature, Drama, Art, or History:
 3. Include all prescribed content from the specification
 4. For Music, include composer name and work title (e.g., "Bach: Brandenburg Concerto No. 2 - Orchestration")
 5. For Literature, include author name and text title (e.g., "Shakespeare: Hamlet - Themes and motifs")
+6. When a practical component must be included, prefix with "[Practical]" (e.g., "[Practical] Performance: Solo dance technique")
 
 RULES:
 1. FLATTEN THE HIERARCHY - only include two levels: main topics and their immediate subtopics
@@ -100,6 +116,34 @@ Example (partial) for AQA A Level Physics:
     "topic": "[Optional] Nuclear Physics: Properties of the nucleus",
     "mainTopic": "[Optional] Nuclear Physics",
     "subtopic": "Properties of the nucleus"
+  }
+]
+
+Example (partial) for AQA A Level Dance:
+[
+  {
+    "id": "1.1",
+    "topic": "Critical engagement: Features of genre - historical context",
+    "mainTopic": "Critical engagement",
+    "subtopic": "Features of genre - historical context"
+  },
+  {
+    "id": "1.2",
+    "topic": "Critical engagement: Analysis of set work - Rooster by Christopher Bruce",
+    "mainTopic": "Critical engagement",
+    "subtopic": "Analysis of set work - Rooster by Christopher Bruce"
+  },
+  {
+    "id": "2.1",
+    "topic": "[Practical] Performance: Solo performance",
+    "mainTopic": "[Practical] Performance",
+    "subtopic": "Solo performance"
+  },
+  {
+    "id": "3.1",
+    "topic": "Dance theory: Elements of dance - space, dynamics, and relationships",
+    "mainTopic": "Dance theory",
+    "subtopic": "Elements of dance - space, dynamics, and relationships"
   }
 ]
 
