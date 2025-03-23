@@ -31,6 +31,16 @@ IMPORTANT: Try your best to be highly specific to {examBoard}. You have sufficie
 
 If you're unsure of the exact current specification, providing approximated topics based on your knowledge is MUCH BETTER than returning an error. Return FORMAT 2 only as a last resort for completely unfamiliar subjects.
 
+HANDLING OPTIONAL TOPICS:
+1. If a topic or subtopic is marked as "optional," "non-compulsory," or similar in the curriculum:
+   - Add "[Optional]" at the beginning of the mainTopic field
+   - Example: "[Optional] Media Production" instead of just "Media Production"
+2. If optional topics are grouped into options or routes:
+   - Use "[Optional - Group X]" format, where X is the option group identifier
+   - Example: "[Optional - Paper 2] Modern Foreign Policy" for topics that are part of Paper 2 options
+3. Do NOT change the format otherwise - maintain all the same fields and structure
+4. Include ALL optional topics/routes to give users a complete view of the curriculum
+
 Apply the specific structure used by this exam board:
 - AQA structures using Units/Topics → use this organization if working with AQA
 - Edexcel structures using Themes/Topics → use this organization if working with Edexcel
@@ -75,6 +85,12 @@ Example (partial) for AQA A Level Physics:
     "topic": "Measurements and their errors: Limitations of physical measurements", 
     "mainTopic": "Measurements and their errors",
     "subtopic": "Limitations of physical measurements"
+  },
+  {
+    "id": "5.1",
+    "topic": "[Optional] Nuclear Physics: Properties of the nucleus",
+    "mainTopic": "[Optional] Nuclear Physics",
+    "subtopic": "Properties of the nucleus"
   }
 ]
 

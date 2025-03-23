@@ -33,6 +33,12 @@ const TopicHub = ({
   // State for edit functionality
   const [editMode, setEditMode] = useState(null);
   const [editValue, setEditValue] = useState({ mainTopic: '', subtopic: '' });
+  const [editMainTopicMode, setEditMainTopicMode] = useState(null);
+  const [editMainTopicValue, setEditMainTopicValue] = useState('');
+  
+  // State for deletion confirmation
+  const [showDeleteMainTopicDialog, setShowDeleteMainTopicDialog] = useState(false);
+  const [mainTopicToDelete, setMainTopicToDelete] = useState(null);
   
   // State for save/proceed functionality
   const [listName, setListName] = useState(`${subject} - ${examBoard} ${examType}`);
@@ -915,6 +921,60 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
     setEditValue({ mainTopic: '', subtopic: '' });
   };
   
+  // Start editing a main topic
+  const startMainTopicEdit = (mainTopicName) => {
+    setEditMainTopicMode(mainTopicName);
+    setEditMainTopicValue(mainTopicName);
+  };
+  
+  // Save main topic edit
+  const saveMainTopicEdit = (oldMainTopicName) => {
+    if (!editMainTopicValue.trim()) {
+      setError("Main Topic name cannot be empty");
+      return;
+    }
+    
+    // Update all topics with this main topic name
+    setTopics(prev => prev.map(topic => {
+      if (topic.mainTopic === oldMainTopicName) {
+        return {
+          ...topic,
+          topic: `${editMainTopicValue}: ${topic.subtopic}`,
+          mainTopic: editMainTopicValue
+        };
+      }
+      return topic;
+    }));
+    
+    setEditMainTopicMode(null);
+    setEditMainTopicValue('');
+    setError(null);
+  };
+  
+  // Cancel main topic edit
+  const cancelMainTopicEdit = () => {
+    setEditMainTopicMode(null);
+    setEditMainTopicValue('');
+  };
+  
+  // Show delete main topic confirmation dialog
+  const showDeleteMainTopicConfirmation = (mainTopicName) => {
+    setMainTopicToDelete(mainTopicName);
+    setShowDeleteMainTopicDialog(true);
+  };
+  
+  // Delete a main topic and all its subtopics
+  const deleteMainTopic = () => {
+    if (!mainTopicToDelete) return;
+    
+    // Remove all topics with this main topic name
+    setTopics(prev => prev.filter(topic => topic.mainTopic !== mainTopicToDelete));
+    
+    // Close the dialog and reset state
+    setShowDeleteMainTopicDialog(false);
+    setMainTopicToDelete(null);
+  };
+  
   // Handle regenerating all topics
   const handleRegenerateTopics = () => {
     if (window.confirm("This will replace all topics. Are you sure?")) {
@@ -1122,22 +1182,67 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
         <div className="main-topics-list">
           {mainTopics.map((mainTopic, index) => (
             <div key={mainTopic.name} className="main-topic-container">
-              <div 
-                className="main-topic-header"
-                onClick={() => toggleMainTopic(mainTopic.name)}
-              >
-                <span 
-                  className="main-topic-name"
-                  data-optional={mainTopic.name.includes("[Optional]")}
-                >
-                  <FaFolder /> {mainTopic.name}
-                </span>
-                <span className="main-topic-count">
-                  {mainTopic.subtopics.length} subtopics
-                </span>
-                <span className="main-topic-toggle">
-                  {expandedTopics[mainTopic.name] ? <FaChevronUp /> : <FaChevronDown />}
-                </span>
+              <div className="main-topic-header-container">
+                {editMainTopicMode === mainTopic.name ? (
+                  <div className="main-topic-edit-form">
+                    <input
+                      type="text"
+                      value={editMainTopicValue}
+                      onChange={(e) => setEditMainTopicValue(e.target.value)}
+                      placeholder="Main Topic Name"
+                      className="edit-main-topic-name"
+                      autoFocus
+                    />
+                    <div className="edit-form-actions">
+                      <button onClick={() => saveMainTopicEdit(mainTopic.name)} className="save-edit-button">
+                        <FaSave />
+                      </button>
+                      <button onClick={cancelMainTopicEdit} className="cancel-edit-button">
+                        <FaExclamationTriangle />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div 
+                    className="main-topic-header"
+                    onClick={() => toggleMainTopic(mainTopic.name)}
+                  >
+                    <span 
+                      className="main-topic-name"
+                      data-optional={mainTopic.name.includes("[Optional]")}
+                    >
+                      <FaFolder /> {mainTopic.name}
+                    </span>
+                    <span className="main-topic-count">
+                      {mainTopic.subtopics.length} subtopics
+                    </span>
+                    <div className="main-topic-actions">
+                      <button
+                        className="edit-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startMainTopicEdit(mainTopic.name);
+                        }}
+                        title="Edit Main Topic"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        className="delete-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showDeleteMainTopicConfirmation(mainTopic.name);
+                        }}
+                        title="Delete Main Topic and All Subtopics"
+                      >
+                        <FaTrash />
+                      </button>
+                      <span className="main-topic-toggle">
+                        {expandedTopics[mainTopic.name] ? <FaChevronUp /> : <FaChevronDown />}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
               
               {expandedTopics[mainTopic.name] && (
@@ -1313,6 +1418,35 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
       {/* Dialogs */}
       {renderSaveDialog()}
       {renderSelectDialog()}
+      
+      {/* Delete Main Topic Confirmation Dialog */}
+      {showDeleteMainTopicDialog && mainTopicToDelete && (
+        <div className="modal-overlay">
+          <div className="delete-topic-dialog">
+            <h3>Delete Main Topic</h3>
+            <p>
+              Are you sure you want to delete the main topic <strong>{mainTopicToDelete}</strong> and 
+              all of its subtopics? This action cannot be undone.
+            </p>
+            <p className="warning-text">
+              {mainTopics.find(m => m.name === mainTopicToDelete)?.subtopics.length || 0} subtopics 
+              will be permanently deleted.
+            </p>
+            
+            <div className="delete-topic-actions">
+              <button onClick={() => setShowDeleteMainTopicDialog(false)} className="cancel-button">
+                Cancel
+              </button>
+              <button 
+                onClick={deleteMainTopic} 
+                className="delete-button danger-button"
+              >
+                <FaTrash /> Delete Main Topic
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
