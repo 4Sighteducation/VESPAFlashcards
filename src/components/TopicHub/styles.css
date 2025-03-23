@@ -300,7 +300,7 @@
   gap: 8px;
 }
 
-.generate-button, .edit-button, .delete-button, .save-edit-button, .cancel-edit-button {
+.generate-button, .edit-button, .delete-button, .save-edit-button, .cancel-edit-button, .select-optional-button {
   background-color: transparent;
   border: none;
   cursor: pointer;
@@ -331,6 +331,17 @@
 
 .cancel-edit-button {
   color: #dc3545;
+}
+
+.select-optional-button {
+  color: #6c757d;
+  border: 1px solid #6c757d;
+}
+
+.select-optional-button.selected {
+  color: #28a745;
+  border: 1px solid #28a745;
+  background-color: rgba(40, 167, 69, 0.1);
 }
 
 .generate-button:hover, 

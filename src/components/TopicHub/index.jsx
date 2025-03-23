@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes } from 'react-icons/fa';
+import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck } from 'react-icons/fa';
 import './styles.css';
 import { generateTopicPrompt } from '../../prompts/topicListPrompt';
 
@@ -46,6 +46,9 @@ const TopicHub = ({
   const [showSelectDialog, setShowSelectDialog] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [contentGuidance, setContentGuidance] = useState('');
+  
+  // State for tracking selected optional topics
+  const [selectedOptionalTopics, setSelectedOptionalTopics] = useState({});
   
   // Process topics into main topic groupings when topics change
   useEffect(() => {
@@ -970,6 +973,47 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
     setEditMainTopicValue('');
   };
   
+  // Toggle optional status for a topic
+  const toggleOptionalStatus = (topicId) => {
+    setSelectedOptionalTopics(prev => {
+      const newState = { ...prev };
+      // If topic is already selected, unselect it, otherwise select it
+      if (newState[topicId]) {
+        delete newState[topicId];
+      } else {
+        newState[topicId] = true;
+      }
+      return newState;
+    });
+    
+    // When a topic is selected (marked as non-optional), update the topics state
+    // to reflect this in the UI and when saved
+    setTopics(prev => prev.map(topic => {
+      if (topic.id === topicId) {
+        const isCurrentlySelected = selectedOptionalTopics[topicId];
+        
+        if (isCurrentlySelected) {
+          // If it's currently selected, we're toggling it back to optional
+          return topic;
+        } else {
+          // We're selecting it, so remove [Optional] from the name if present
+          const newMainTopic = topic.mainTopic.replace(/\[\s*Optional[^\]]*\]\s*/gi, '').trim();
+          const newSubtopic = topic.subtopic.replace(/\[\s*Optional[^\]]*\]\s*/gi, '').trim();
+          const newTopic = `${newMainTopic}: ${newSubtopic}`;
+          
+          return {
+            ...topic,
+            topic: newTopic,
+            mainTopic: newMainTopic,
+            subtopic: newSubtopic,
+            isSelected: true
+          };
+        }
+      }
+      return topic;
+    }));
+  };
+  
   // Show delete main topic confirmation dialog
   const showDeleteMainTopicConfirmation = (mainTopicName) => {
     setMainTopicToDelete(mainTopicName);
@@ -1336,6 +1380,17 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
                             </span>
                           </div>
                           <div className="subtopic-actions">
+                            {/* Optional topic selection button - only show for optional topics */}
+                            {((topic.subtopic && topic.subtopic.includes("[Optional]")) || 
+                              (topic.mainTopic && topic.mainTopic.includes("[Optional]"))) && (
+                              <button
+                                className={`select-optional-button ${selectedOptionalTopics[topic.id] ? 'selected' : ''}`}
+                                onClick={() => toggleOptionalStatus(topic.id)}
+                                title={selectedOptionalTopics[topic.id] ? "Mark as Optional" : "Select as Required"}
+                              >
+                                <FaCheck />
+                              </button>
+                            )}
                             <button
                               className="generate-button"
                               onClick={() => {
