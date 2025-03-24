@@ -1,6 +1,31 @@
 // Enhanced Message Handler for Knack Integration
 // Implementation for handling messages from the React app iframe
 
+// Define constants needed for Knack API interactions
+const KNACK_API_URL = 'https://api.knack.com/v1';
+const FLASHCARD_OBJECT = 'object_102';
+const knackAppId = window.VESPA_CONFIG?.knackAppId;
+const knackApiKey = window.VESPA_CONFIG?.knackApiKey;
+
+// Field mapping for Knack fields
+const FIELD_MAPPING = {
+  userId: 'field_2954',           // User ID
+  userEmail: 'field_2958',        // User email
+  accountConnection: 'field_2956', // Connection to account
+  vespaCustomer: 'field_3008',    // VESPA Customer Connection
+  tutorConnection: 'field_3009',  // Tutor Connection
+  cardBankData: 'field_2979',     // Flashcard Bank JSON Store
+  lastSaved: 'field_2957',        // Date Last Saved
+  box1: 'field_2986',             // Box 1 JSON
+  box2: 'field_2987',             // Box 2 JSON
+  box3: 'field_2988',             // Box 3 JSON
+  box4: 'field_2989',             // Box 4 JSON
+  box5: 'field_2990',             // Box 5 JSON
+  colorMapping: 'field_3000',     // Color Mapping
+  topicLists: 'field_3011',       // Topic Lists JSON
+  topicMetadata: 'field_3030'     // Topic Metadata JSON
+};
+
 // Listen for messages from the React app iframe
 window.addEventListener('message', function(event) {
   // Ensure message is from our React app iframe
