@@ -4,8 +4,22 @@
 // Define constants needed for Knack API interactions
 const KNACK_API_URL = 'https://api.knack.com/v1';
 const FLASHCARD_OBJECT = 'object_102';
-const knackAppId = window.VESPA_CONFIG?.knackAppId;
-const knackApiKey = window.VESPA_CONFIG?.knackApiKey;
+
+// Get API keys from VESPA_CONFIG (Knack environment) or React environment variables
+const knackAppId = 
+  (window.VESPA_CONFIG && window.VESPA_CONFIG.knackAppId) || 
+  (typeof process !== 'undefined' && process.env && process.env.REACT_APP_KNACK_APP_KEY);
+  
+const knackApiKey = 
+  (window.VESPA_CONFIG && window.VESPA_CONFIG.knackApiKey) || 
+  (typeof process !== 'undefined' && process.env && process.env.REACT_APP_KNACK_API_KEY);
+
+// Log configuration status for debugging
+console.log(`[${new Date().toISOString()}] Knack Message Handler: Configuration loaded`);
+console.log(`[${new Date().toISOString()}] Using API URL: ${KNACK_API_URL}`);
+console.log(`[${new Date().toISOString()}] Using Flashcard Object: ${FLASHCARD_OBJECT}`);
+console.log(`[${new Date().toISOString()}] App ID available: ${!!knackAppId}`);
+console.log(`[${new Date().toISOString()}] API Key available: ${!!knackApiKey}`);
 
 // Field mapping for Knack fields
 const FIELD_MAPPING = {
