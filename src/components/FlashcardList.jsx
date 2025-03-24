@@ -3,7 +3,7 @@ import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
 import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
-import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes } from 'react-icons/fa';
+import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes, FaBolt } from 'react-icons/fa';
 import ColorEditor from "./ColorEditor";
 import { getContrastColor } from '../helper';
 
@@ -134,23 +134,65 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     }));
   };
   
-  // Group cards by subject and topic
+  // Group cards by subject and topic, with special handling for topic shells
   const groupedCards = useMemo(() => {
     const bySubjectAndTopic = {};
+    const topicShells = {}; // Track topic shells by ID
     
-    cards.forEach(card => {
-      const subject = card.subject || "General";
-      const topic = card.topic || "General";
-      
-      if (!bySubjectAndTopic[subject]) {
-        bySubjectAndTopic[subject] = {};
+    // First pass: identify and separate topic shells from regular cards
+    cards.forEach(item => {
+      if (item.type === 'topic' && item.isShell) {
+        // This is a topic shell - store it separately for proper handling
+        const subject = item.subject || "General";
+        
+        if (!topicShells[subject]) {
+          topicShells[subject] = {};
+        }
+        
+        // Use the topic's name as the topic key
+        const topicName = item.name || item.topic || "Unknown Topic";
+        topicShells[subject][item.id] = {
+          ...item,
+          topicName, // Store the name for reference
+        };
+        
+        // Initialize the subject and topic structure if needed
+        if (!bySubjectAndTopic[subject]) {
+          bySubjectAndTopic[subject] = {};
+        }
+        
+        if (!bySubjectAndTopic[subject][topicName]) {
+          bySubjectAndTopic[subject][topicName] = [];
+        }
       }
-      
-      if (!bySubjectAndTopic[subject][topic]) {
-        bySubjectAndTopic[subject][topic] = [];
+    });
+    
+    // Second pass: organize regular cards into their topics
+    cards.forEach(item => {
+      if (item.type !== 'topic') { // Only process regular cards, not topic shells
+        const subject = item.subject || "General";
+        const topic = item.topic || "General";
+        
+        if (!bySubjectAndTopic[subject]) {
+          bySubjectAndTopic[subject] = {};
+        }
+        
+        if (!bySubjectAndTopic[subject][topic]) {
+          bySubjectAndTopic[subject][topic] = [];
+        }
+        
+        bySubjectAndTopic[subject][topic].push(item);
       }
-      
-      bySubjectAndTopic[subject][topic].push(card);
+    });
+    
+    console.log("FlashcardList processed items with special topic shell handling:", {
+      topicShellCount: Object.keys(topicShells).reduce((count, subject) => 
+        count + Object.keys(topicShells[subject]).length, 0),
+      regularCardCount: Object.keys(bySubjectAndTopic).reduce((count, subject) => {
+        return count + Object.keys(bySubjectAndTopic[subject]).reduce((subCount, topic) => 
+          subCount + bySubjectAndTopic[subject][topic].length, 0);
+      }, 0),
+      topicShells
     });
 
     return bySubjectAndTopic;
@@ -960,7 +1002,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
                     return (
                       <div key={topic} className="topic-group">
                         <div 
-                          className="topic-header" 
+                          className={`topic-header ${topicCards.length === 0 ? 'empty-topic' : ''}`}
                           onClick={() => toggleTopic(subject, topic)}
                           style={{ 
                             backgroundColor: topicColor,
@@ -974,17 +1016,33 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
                             {topicDate && <span className="topic-date" style={{ color: topicTextColor }}>Added: {topicDate}</span>}
                           </div>
                           <div className="topic-actions">
-                            <button
-                              className="slideshow-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSetShowModalAndSelectedCard(topicCards[0]);
-                              }}
-                              title="Start slideshow"
-                              style={{ color: topicTextColor, backgroundColor: `${topicTextColor}20` }}
-                            >
-                              <span role="img" aria-label="Slideshow">▶️</span>
-                            </button>
+                            {topicCards.length === 0 ? (
+                              <button
+                                className="ai-generator-button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // TODO: Implement AI card generation for empty topic
+                                  console.log(`Generate AI cards for empty topic: ${subject} - ${topic}`);
+                                  // This would connect to the AICardGenerator component
+                                }}
+                                title="Generate cards using AI"
+                                style={{ color: 'white' }}
+                              >
+                                <FaBolt />
+                              </button>
+                            ) : (
+                              <button
+                                className="slideshow-button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSetShowModalAndSelectedCard(topicCards[0]);
+                                }}
+                                title="Start slideshow"
+                                style={{ color: topicTextColor, backgroundColor: `${topicTextColor}20` }}
+                              >
+                                <span role="img" aria-label="Slideshow">▶️</span>
+                              </button>
+                            )}
                             <button
                               className="print-topic-button"
                               onClick={(e) => {
@@ -1072,5 +1130,3 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
 };
 
 export default FlashcardList;
-
-

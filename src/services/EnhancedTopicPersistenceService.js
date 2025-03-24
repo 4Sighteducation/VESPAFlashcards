@@ -60,7 +60,8 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
     const topicShells = topics.map(topic => ({
       id: topic.id,
       type: 'topic',
-      name: topic.name,
+      name: topic.topic || topic.name || "Unknown Topic", // Ensure name is properly set
+      topic: topic.topic || topic.name || "Unknown Topic", // Include both name AND topic properties
       subject: subject,
       examBoard: examBoard,
       examType: examType,
@@ -72,6 +73,10 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
       created: new Date().toISOString(),
       updated: new Date().toISOString()
     }));
+    
+    debugLog("Topic shells with name/topic properties", { 
+      sampleTopicShell: topicShells[0] || null 
+    });
     
     debugLog("Converting topics to topic shells", { 
       count: topicShells.length,

@@ -247,15 +247,31 @@ async function handleAddToBank(data, callback) {
       };
     });
     
+    // Enhanced logging to debug card processing
+    debugLog("PROCESSED CARDS FOR ADD_TO_BANK", {
+      sample: processedCards[0],
+      count: processedCards.length,
+      topicId: topicId
+    });
+    
     // If we have a topicId, use UnifiedDataService to add cards to topic
     if (topicId) {
       const UnifiedDataService = getUnifiedDataService();
+      console.log(`[${new Date().toISOString()}] Using UnifiedDataService to add cards to topic ${topicId}`);
+      
       const success = await UnifiedDataService.addCardsToTopic(
         processedCards, 
         topicId, 
         userId, 
         auth
       );
+      
+      // Enhanced logging after the operation is completed
+      debugLog("ADD_TO_TOPIC_RESULT", {
+        success: success,
+        topicId: topicId,
+        cardCount: processedCards.length
+      });
       
       callback(success);
       return;
@@ -271,6 +287,7 @@ async function handleAddToBank(data, callback) {
 
 // Fallback function to add cards to the card bank (used when no topic ID is provided)
 function addCardsToCardBank(recordId, processedCards, callback) {
+  console.log(`[${new Date().toISOString()}] Adding cards to card bank without topic association`);
   // Get current data
   getCurrentData(recordId, function(existingData) {
     if (!existingData) {
@@ -288,6 +305,13 @@ function addCardsToCardBank(recordId, processedCards, callback) {
       console.error('Error parsing existing cards', e);
       existingCards = [];
     }
+    
+    // Enhanced logging for better diagnostics
+    debugLog("PARSED EXISTING CARDS", {
+      count: existingCards.length,
+      topicShellCount: existingCards.filter(item => item.type === 'topic').length,
+      cardCount: existingCards.filter(item => item.type !== 'topic').length,
+    });
     
     // Parse existing Box 1 (field_2986)
     let box1Cards = [];
@@ -335,6 +359,7 @@ function addCardsToCardBank(recordId, processedCards, callback) {
 // Fallback implementation of addCardsToTopic
 async function addCardsToTopicFallback(cards, topicId, userId, auth) {
   return new Promise((resolve, reject) => {
+    console.log(`[${new Date().toISOString()}] Fallback: Adding cards to topic ${topicId} for user ${userId}`);
     // First get the record ID
     // We'll use the local Knack API to find the record
     $.ajax({
@@ -377,6 +402,13 @@ async function addCardsToTopicFallback(cards, topicId, userId, auth) {
             existingCards = [];
           }
           
+          // Enhanced logging for better diagnostics
+          debugLog("PARSED EXISTING CARDS (FALLBACK)", {
+            count: existingCards.length,
+            topicShellCount: existingCards.filter(item => item.type === 'topic').length,
+            cardCount: existingCards.filter(item => item.type !== 'topic').length,
+          });
+          
           // Parse existing Box 1
           let box1Cards = [];
           try {
@@ -399,6 +431,14 @@ async function addCardsToTopicFallback(cards, topicId, userId, auth) {
           }
           
           const topicShell = existingCards[topicIndex];
+          
+          // Debug log of topic shell
+          debugLog("TOPIC SHELL FOUND", {
+            id: topicShell.id,
+            name: topicShell.name || topicShell.topic,
+            subject: topicShell.subject,
+            isEmpty: topicShell.isEmpty
+          });
           
           // Prepare cards for adding
           const processedCards = cards.map(card => {
@@ -434,6 +474,14 @@ async function addCardsToTopicFallback(cards, topicId, userId, auth) {
           
           // Update the topic in the existing cards
           existingCards[topicIndex] = topicShell;
+          
+          // Enhanced logging to verify the topic shell update
+          debugLog("UPDATED TOPIC SHELL", {
+            id: topicShell.id,
+            name: topicShell.name || topicShell.topic,
+            cardIds: topicShell.cards,
+            isEmpty: topicShell.isEmpty
+          });
           
           // Add new cards to the data
           const updatedCards = [...existingCards, ...processedCards];
@@ -654,94 +702,21 @@ function verifyDataSave(recordId) {
             const cards = safeParseJSON(response[FIELD_MAPPING.cardBankData]);
             if (Array.isArray(cards) && cards.length > 0) {
               console.log(`[${new Date().toISOString()}] Verification successful: Cards present with ${cards.length} items`);
+              
+              // Enhanced logging to verify topic shells in the card data
+              const topicShells = cards.filter(item => item.type === 'topic' && item.isShell);
+              const regularCards = cards.filter(item => item.type !== 'topic');
+              
+              debugLog("CARD BANK CONTENT STATS", {
+                totalItems: cards.length,
+                topicShellCount: topicShells.length,
+                regularCardCount: regularCards.length,
+                topicShellSample: topicShells.length > 0 ? topicShells[0].name || 'Unknown Topic' : 'None'
+              });
+              
               cardsValid = true;
             } else {
               console.error(`[${new Date().toISOString()}] Verification warning: Cards empty or malformed`);
             }
           } catch (e) {
-            console.error(`[${new Date().toISOString()}] Error parsing cards during verification:`, e);
-          }
-        } else {
-          console.error(`[${new Date().toISOString()}] Verification warning: No cards field found`);
-        }
-        
-        // Push the verification result back to the React app
-        // Attempt to find the iframe and send a message
-        try {
-          // First try using window.frames
-          if (window.frames.length > 0 && window.frames[0].postMessage) {
-            window.frames[0].postMessage({
-              type: 'VERIFICATION_RESULT',
-              success: topicListsValid,
-              data: {
-                topicListsValid,
-                cardsValid,
-                timestamp: new Date().toISOString()
-              }
-            }, '*');
-          } 
-          // If that fails, try searching for the iframe
-          else {
-            const iframe = document.getElementById('flashcard-app-iframe');
-            if (iframe && iframe.contentWindow) {
-              iframe.contentWindow.postMessage({
-                type: 'VERIFICATION_RESULT',
-                success: topicListsValid,
-                data: {
-                  topicListsValid,
-                  cardsValid,
-                  timestamp: new Date().toISOString()
-                }
-              }, '*');
-            } else {
-              console.warn('[Verification] Failed to find iframe for messaging');
-            }
-          }
-        } catch (error) {
-          console.error('[Verification] Error sending verification result:', error);
-        }
-      },
-      error: function(error) {
-        console.error(`[${new Date().toISOString()}] Verification error:`, error);
-        
-        // Push the error back to the React app
-        if (window.frames.length > 0 && window.frames[0].postMessage) {
-          window.frames[0].postMessage({
-            type: 'VERIFICATION_ERROR',
-            error: error.statusText || 'Unknown error',
-            timestamp: new Date().toISOString()
-          }, '*');
-        }
-      }
-    });
-  }, 5000); // Wait 5 seconds before verification to ensure data is committed
-}
-
-// Safe JSON parse helper function (in case it's not defined elsewhere)
-function safeParseJSON(jsonString) {
-  if (!jsonString) return null;
-  
-  try {
-    // If it's already an object, just return it
-    if (typeof jsonString === 'object') return jsonString;
-    
-    // Regular JSON parse
-    return JSON.parse(jsonString);
-  } catch (error) {
-    console.error("Error parsing JSON:", error, "String:", jsonString ? jsonString.substring(0, 100) : "null");
-    
-    // Return empty array as fallback for arrays
-    return [];
-  }
-}
-
-// Debug log helper (in case it's not defined elsewhere)
-function debugLog(title, data) {
-  if (typeof console.groupCollapsed === 'function') {
-    console.groupCollapsed(`%c${title}`, 'color: #5d00ff; font-weight: bold;');
-    console.log(JSON.stringify(data, null, 2));
-    console.groupEnd();
-  } else {
-    console.log(`[${title}]`, JSON.stringify(data));
-  }
-}
+            console.error(`[${new Date().toISOString()}] Error parsing cards
