@@ -148,6 +148,9 @@ const AICardGenerator = ({
   
   // New state for options explanation modal
   const [showOptionsExplanationModal, setShowOptionsExplanationModal] = useState(false);
+  
+  // State for selected topic
+  const [selectedTopic, setSelectedTopic] = useState(null);
 
   // Load saved topic lists from both localStorage and Knack on mount
   useEffect(() => {
@@ -1542,6 +1545,7 @@ Use this format for different question types:
               }}
               onSelectTopic={(topic) => {
                 // Set the selected topic and move to the next step
+                setSelectedTopic(topic); // Add this line to set the selected topic
                 setFormData(prev => ({
                   ...prev,
                   topic: topic.topic,
