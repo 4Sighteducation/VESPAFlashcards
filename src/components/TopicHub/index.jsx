@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaDatabase } from 'react-icons/fa';
 import './styles.css';
 import { generateTopicPrompt } from '../../prompts/topicListPrompt';
 
@@ -27,9 +27,22 @@ const TopicHub = ({
   const [hasGenerated, setHasGenerated] = useState(false);
   const [error, setError] = useState(null);
   const [newTopicInput, setNewTopicInput] = useState({ mainTopic: '', subtopic: '' });
+  const [useExistingMainTopic, setUseExistingMainTopic] = useState(true);
+  
+  // State for error modal
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [errorDetails, setErrorDetails] = useState('');
+  
+  // State for fallback topics
   const [usingFallbackTopics, setUsingFallbackTopics] = useState(false);
   const [showFallbackNotice, setShowFallbackNotice] = useState(false);
-  const [useExistingMainTopic, setUseExistingMainTopic] = useState(true);
+  
+  // Cache system
+  const topicCache = useRef({});
+  const [usingCache, setUsingCache] = useState(false);
+  const lastRequestTimestamp = useRef(0);
+  const MIN_REQUEST_INTERVAL = 3000; // 3 seconds between API calls
   
   // State for edit functionality
   const [editMode, setEditMode] = useState(null);
@@ -97,164 +110,75 @@ const TopicHub = ({
   // API key - matching the format used in AICardGenerator for consistency
   const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
 
-  // Generate fallback topics using a second API call with a more forceful prompt
-  const generateFallbackTopics = async () => {
-    console.log("Attempting to generate fallback topics for:", subject);
+  // Check cache for existing topics
+  const checkTopicCache = (examBoard, examType, subject) => {
+    const cacheKey = `${examBoard}-${examType}-${subject}`.toLowerCase();
     
-    try {
-      // Make a second API call with the fallback prompt
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-4",
-          messages: [{
-            role: "user",
-            content: generateFallbackPrompt(examBoard, examType, subject, academicYear)
-          }],
-          max_tokens: 2000,
-          temperature: 0.7 // Higher temperature to encourage creativity if exact data unavailable
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Fallback API call failed: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error("No content returned from fallback API call");
-      }
-      
-      let content = data.choices[0].message.content;
-      console.log("==== FALLBACK API RESPONSE ====");
-      console.log(content);
-      console.log("==== END FALLBACK API RESPONSE ====");
-      
-      // Enhanced preprocessing similar to main processing function
-      content = content.replace(/```json|```javascript|```|\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
-        .replace(/^[\s\S]*?\[/m, '[')  // Remove any text before first opening bracket
-        .trim();
-      
-      let parsedTopics;
-      try {
-        parsedTopics = JSON.parse(content);
-      } catch (e) {
-        console.error("Failed to parse fallback response as JSON:", e);
-        
-        // Try to handle as JavaScript array
-        try {
-          // eslint-disable-next-line no-eval
-          const possibleArray = eval(content);
-          if (Array.isArray(possibleArray) && possibleArray.length > 0) {
-            parsedTopics = possibleArray;
-          } else {
-            return null;
-          }
-        } catch (evalError) {
-          console.error("Failed to evaluate fallback as array:", evalError);
-          return null;
-        }
-      }
-      
-      if (!Array.isArray(parsedTopics)) {
-        if (typeof parsedTopics === 'object' && parsedTopics !== null) {
-          parsedTopics = [parsedTopics];
-        } else {
-          return null;
-        }
-      }
-      
-      // Process array of strings if needed
-      if (parsedTopics.length > 0 && typeof parsedTopics[0] === 'string') {
-        parsedTopics = parsedTopics.map((topicStr, index) => {
-          // Check if the topic string has an "Option X:" prefix and extract it
-          let optionalPrefix = "";
-          let processedTopicStr = topicStr;
-          
-          const optionMatch = topicStr.match(/^Option\s+(\d+|[A-Z]):\s*(.*)/i);
-          if (optionMatch) {
-            optionalPrefix = `[Optional - Option ${optionMatch[1]}] `;
-            processedTopicStr = optionMatch[2].trim();
-          }
-          
-          // Check if the string contains a colon or section number pattern (like 3.2.1)
-          const hasColon = processedTopicStr.includes(':');
-          const hasSectionNumber = /\d+\.\d+(\.\d+)?/.test(processedTopicStr);
-          
-          let mainTopic, subtopic;
-          
-          if (hasColon) {
-            // Process string with a colon format (Main Topic: Subtopic)
-            [mainTopic, subtopic] = [processedTopicStr.split(':')[0].trim(), processedTopicStr.split(':').slice(1).join(':').trim()];
-          } else if (hasSectionNumber) {
-            // Try to extract a section number (e.g., 3.2, 1.1) and use it as part of main topic
-            const sectionMatch = processedTopicStr.match(/(\d+\.\d+(\.\d+)?)\s*(.*)/);
-            if (sectionMatch) {
-              const [, sectionNum, , content] = sectionMatch;
-              mainTopic = content.trim() || processedTopicStr;
-              subtopic = mainTopic; // Use main topic as subtopic if no clear division
-            } else {
-              mainTopic = processedTopicStr;
-              subtopic = processedTopicStr; // Use the whole topic as both main and subtopic
-            }
-          } else {
-            // No clear subtopic indicator - use the whole string as both
-            mainTopic = processedTopicStr;
-            subtopic = processedTopicStr; // Use main topic as subtopic
-          }
-          
-          // Add optional prefix if found
-          if (optionalPrefix) {
-            mainTopic = optionalPrefix + mainTopic;
-            // Keep the subtopic as is, since we want [Optional] to show in the main topic grouping only
-          }
-          
-          return {
-            id: `${Math.floor(index / 5) + 1}.${(index % 5) + 1}`,
-            topic: optionalPrefix + processedTopicStr,
-            mainTopic: mainTopic,
-            subtopic: subtopic || mainTopic // Use main topic as fallback instead of "General"
-          };
-        });
-      }
-      
-      console.log("Fallback topics generated successfully:", parsedTopics.length);
-      setUsingFallbackTopics(true);
-      setShowFallbackNotice(true);
-      return parsedTopics;
-      
-    } catch (error) {
-      console.error("Error generating fallback topics:", error);
-      return null;
+    if (topicCache.current[cacheKey] && topicCache.current[cacheKey].length > 0) {
+      console.log("✅ Using cached topics for:", cacheKey);
+      return topicCache.current[cacheKey];
     }
+    
+    console.log("❌ No cached topics found for:", cacheKey);
+    return null;
   };
-
-  // Track fallback notification state for debugging
-  useEffect(() => {
-    if (usingFallbackTopics || showFallbackNotice) {
-      console.log("Fallback notice state changed:", { 
-        usingFallbackTopics, 
-        showFallbackNotice 
-      });
+  
+  // Store topics in cache
+  const storeTopicsInCache = (examBoard, examType, subject, topicsArray) => {
+    const cacheKey = `${examBoard}-${examType}-${subject}`.toLowerCase();
+    console.log("📦 Storing topics in cache:", cacheKey);
+    topicCache.current[cacheKey] = topicsArray;
+  };
+  
+  // Check if we should throttle API requests
+  const shouldThrottleRequest = () => {
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTimestamp.current;
+    
+    if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+      console.log(`⏱️ Throttling API request, only ${timeSinceLastRequest}ms since last request`);
+      return true;
     }
-  }, [usingFallbackTopics, showFallbackNotice]);
+    
+    return false;
+  };
   
   // Call the API to generate topics
   const generateTopics = async () => {
     setIsGenerating(true);
     setError(null);
+    setUsingCache(false);
     setUsingFallbackTopics(false);
     setShowFallbackNotice(false);
     
     try {
       console.log("Starting topic generation for:", examBoard, examType, subject);
       
-      // Implement the API call to generate topics
+      // Check cache first before making API call
+      const cachedTopics = checkTopicCache(examBoard, examType, subject);
+      if (cachedTopics) {
+        console.log("Using cached topics instead of making API call");
+        setTopics(cachedTopics);
+        setHasGenerated(true);
+        setUsingCache(true);
+        setIsGenerating(false);
+        return;
+      }
+      
+      // Check if we should throttle this request
+      if (shouldThrottleRequest()) {
+        console.log("Request throttled, showing error modal");
+        setErrorMessage("Too many requests in a short time period");
+        setErrorDetails("Please wait a moment before generating more topics. We limit requests to prevent API rate limits.");
+        setShowErrorModal(true);
+        setIsGenerating(false);
+        return;
+      }
+      
+      // Update the last request timestamp
+      lastRequestTimestamp.current = Date.now();
+      
+      // Make the API call to generate topics
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -475,54 +399,43 @@ const TopicHub = ({
         console.log("Converted topics:", parsedTopics);
       }
       
-      // Handle empty arrays by trying the fallback approach
+      // Handle empty arrays by using hardcoded fallbacks
       if (parsedTopics.length === 0) {
-        console.log("Received empty topics array, attempting AI fallback generation");
+        console.log("Received empty topics array, using hardcoded fallbacks");
         
-        // Try the AI fallback function first
-        const fallbackTopics = await generateFallbackTopics();
+        // Use hard-coded fallbacks
+        const hardcodedFallbacks = getSubjectFallbackTopics(subject, examBoard, examType);
         
-        if (fallbackTopics && fallbackTopics.length > 0) {
-          console.log("Using AI-generated fallbacks:", fallbackTopics.length, "topics");
-          parsedTopics = fallbackTopics;
+        if (hardcodedFallbacks && hardcodedFallbacks.length > 0) {
+          console.log("Using subject-specific fallbacks:", hardcodedFallbacks.length, "topics");
+          parsedTopics = hardcodedFallbacks;
           setUsingFallbackTopics(true);
           setShowFallbackNotice(true);
         } else {
-          // If AI fallback fails, use hard-coded fallbacks or generic ones
-          console.log("AI fallback failed, using hard-coded fallbacks");
-          const hardcodedFallbacks = getSubjectFallbackTopics(subject, examBoard, examType);
-          
-          if (hardcodedFallbacks && hardcodedFallbacks.length > 0) {
-            console.log("Using subject-specific fallbacks:", hardcodedFallbacks.length, "topics");
-            parsedTopics = hardcodedFallbacks;
-            setUsingFallbackTopics(true);
-            setShowFallbackNotice(true);
-          } else {
-            // Generic fallback if no subject-specific fallback available
-            console.log("No subject-specific fallbacks, using generic ones");
-            parsedTopics = [
-              {
-                id: "1.1",
-                topic: `${subject}: Core Concepts`,
-                mainTopic: subject,
-                subtopic: "Core Concepts"
-              },
-              {
-                id: "1.2",
-                topic: `${subject}: Key Principles`,
-                mainTopic: subject,
-                subtopic: "Key Principles"
-              },
-              {
-                id: "1.3",
-                topic: `${subject}: Fundamental Applications`,
-                mainTopic: subject,
-                subtopic: "Fundamental Applications"
-              }
-            ];
-            setUsingFallbackTopics(true);
-            setShowFallbackNotice(true);
-          }
+          // Generic fallback if no subject-specific fallback available
+          console.log("No subject-specific fallbacks, using generic ones");
+          parsedTopics = [
+            {
+              id: "1.1",
+              topic: `${subject}: Core Concepts`,
+              mainTopic: subject,
+              subtopic: "Core Concepts"
+            },
+            {
+              id: "1.2",
+              topic: `${subject}: Key Principles`,
+              mainTopic: subject,
+              subtopic: "Key Principles"
+            },
+            {
+              id: "1.3",
+              topic: `${subject}: Fundamental Applications`,
+              mainTopic: subject,
+              subtopic: "Fundamental Applications"
+            }
+          ];
+          setUsingFallbackTopics(true);
+          setShowFallbackNotice(true);
         }
       }
       
@@ -532,6 +445,9 @@ const TopicHub = ({
       console.log("Topic count:", parsedTopics.length);
       console.log("Using fallback:", usingFallbackTopics);
       console.log("===== END FINAL TOPIC LIST =====");
+      
+      // Store the topics in cache
+      storeTopicsInCache(examBoard, examType, subject, parsedTopics);
       
       // Update the topics
       setTopics(parsedTopics);
@@ -550,20 +466,32 @@ const TopicHub = ({
         console.error("API response data:", error.response.data);
       }
       
-      // Try the fallback approach
-      console.log("Error occurred, attempting fallback generation");
-      const fallbackTopics = await generateFallbackTopics();
-      
-      if (fallbackTopics && fallbackTopics.length > 0) {
-        console.log("Successfully generated fallback topics after error");
-        setTopics(fallbackTopics);
-        setHasGenerated(true);
-        setUsingFallbackTopics(true);
-        setShowFallbackNotice(true);
+      // Check specifically for rate limit error (HTTP 429)
+      if (error.message && error.message.includes('429')) {
+        console.error("Rate limit error detected!");
+        setErrorMessage("Rate limit exceeded");
+        setErrorDetails("We've hit the API rate limit. Please try again in a few minutes.");
+        setShowErrorModal(true);
         return;
       }
       
-      // Show a more detailed error message to the user
+      // Use hardcoded fallbacks for any error
+      console.log("Error occurred, using hardcoded fallbacks");
+      const hardcodedFallbacks = getSubjectFallbackTopics(subject, examBoard, examType);
+      
+      if (hardcodedFallbacks && hardcodedFallbacks.length > 0) {
+        console.log("Using hardcoded fallbacks after error");
+        setTopics(hardcodedFallbacks);
+        setHasGenerated(true);
+        setUsingFallbackTopics(true);
+        setShowFallbackNotice(true);
+        
+        // Also store these in the cache to prevent future API errors
+        storeTopicsInCache(examBoard, examType, subject, hardcodedFallbacks);
+        return;
+      }
+      
+      // Show a more detailed error message to the user if fallbacks didn't work
       let errorMessage = `Failed to generate topics: ${error.message}`;
       if (error.message.includes("API key")) {
         errorMessage = "API key error. Please check your OpenAI API key configuration.";
@@ -1617,6 +1545,28 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
     );
   };
   
+  // Render error modal for API rate limits
+  const renderErrorModal = () => {
+    if (!showErrorModal) return null;
+    
+    return (
+      <div className="modal-overlay">
+        <div className="error-modal">
+          <h3><FaExclamationTriangle /> {errorMessage}</h3>
+          <p>{errorDetails}</p>
+          <div className="error-actions">
+            <button 
+              onClick={() => setShowErrorModal(false)} 
+              className="close-button"
+            >
+              <FaTimes /> Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
   // Main render method
   return (
     <div className={`topic-hub ${usingFallbackTopics ? 'using-fallback' : ''}`}>
@@ -1627,6 +1577,9 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
           <span>{error}</span>
         </div>
       )}
+      
+      {/* Display error modal */}
+      {renderErrorModal()}
       
       {/* Display fallback notice if using fallback topics */}
       {renderFallbackNotice()}
