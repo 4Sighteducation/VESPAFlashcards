@@ -429,7 +429,7 @@ const AICardGenerator = ({
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "gpt-4o",
+          model: "gpt-3.5-turbo",
             messages: [{ role: "user", content: prompt }],
             max_tokens: 800,
             temperature: 0.5
@@ -1022,7 +1022,7 @@ Use this format for different question types:
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "gpt-4o",
+          model: "gpt-3.5-turbo",
           messages: [{ role: "user", content: prompt }],
           max_tokens: 2000,
           temperature: 0.7

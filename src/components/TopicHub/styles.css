@@ -318,11 +318,11 @@
   display: flex !important; /* Force display */
   align-items: center;
   justify-content: center;
-  width: 36px; /* Increased size */
-  height: 36px; /* Increased size */
+  width: 44px; /* Increased size */
+  height: 44px; /* Increased size */
   border-radius: 4px;
   transition: all 0.2s;
-  margin: 0 2px; /* Add margin between buttons */
+  margin: 0 4px; /* Add margin between buttons */
   position: relative; /* For proper stacking */
   visibility: visible !important; /* Force visibility */
   opacity: 1 !important; /* Full opacity */
@@ -381,7 +381,7 @@
 .save-edit-button svg,
 .cancel-edit-button svg,
 .select-optional-button svg {
-  font-size: 16px; /* Slightly larger icons */
+  font-size: 20px; /* Larger icons for better visibility */
   display: block !important; /* Force display */
 }
 
