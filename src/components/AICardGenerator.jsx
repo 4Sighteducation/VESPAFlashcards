@@ -1236,7 +1236,7 @@ Use this format for different question types:
     }, 3000);
 
     // Get the selected topic ID if available
-    const topicId = selectedTopic?.id;
+    const topicId = selectedTopic ? selectedTopic.id : null;
     console.log("Adding card with topicId:", topicId);
 
     // Send message to parent window to add card to bank
@@ -1292,7 +1292,7 @@ Use this format for different question types:
     }, 3000);
     
     // Get the selected topic ID if available
-    const topicId = selectedTopic?.id;
+    const topicId = selectedTopic ? selectedTopic.id : null;
     console.log("Adding all cards with topicId:", topicId);
     
     // Trigger an explicit save operation to ensure cards are saved to the database

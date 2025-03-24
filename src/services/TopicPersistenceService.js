@@ -2,8 +2,13 @@
  * TopicPersistenceService.js
  * 
  * Centralized service to handle all topic list persistence across the application.
- * This ensures consistent saving/loading of topic lists to/from Knack field_3011.
+ * This service now implements the "single source of truth" architecture by:
+ * 1. Saving topic lists to field_3011 (for reference/backward compatibility)
+ * 2. Creating topic shells in field_2979 (the new single source of truth)
  */
+
+// Import the UnifiedDataService for topic shell creation
+import { saveTopicShells } from './UnifiedDataService';
 
 // API keys and constants
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
@@ -233,6 +238,53 @@ export const saveTopicLists = async (topicLists, userId, auth, metadata = null) 
     // Add metadata if provided
     if (metadata && Array.isArray(metadata)) {
       updateData.field_3030 = JSON.stringify(metadata);
+    }
+    
+    // IMPORTANT: Create topic shells in field_2979 (the new single source of truth)
+    try {
+      // Convert topic lists to topic shells format
+      const topicShells = [];
+      
+      topicLists.forEach(list => {
+        if (Array.isArray(list.topics)) {
+          list.topics.forEach(topic => {
+            // Create a topic shell for each topic
+            const topicShell = {
+              id: topic.id || `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              type: 'topic',
+              name: topic.name || topic.topic || 'Unknown Topic',
+              subject: list.subject,
+              examBoard: list.examBoard,
+              examType: list.examType,
+              color: topic.color || '#3cb44b', // Default green if no color specified
+              cards: [], // Initially empty, will be populated when cards are created
+              isShell: true,
+              created: new Date().toISOString(),
+              updated: new Date().toISOString()
+            };
+            
+            topicShells.push(topicShell);
+          });
+        }
+      });
+      
+      // If we have topic shells to save, save them to field_2979 using UnifiedDataService
+      if (topicShells.length > 0) {
+        debugLog("Creating topic shells in field_2979", { 
+          count: topicShells.length,
+          topicLists: topicLists.length
+        });
+        
+        // This is non-blocking - we don't wait for it to complete
+        // If it fails, we still want to save to field_3011 for backward compatibility
+        saveTopicShells(topicShells, userId, auth).catch(error => {
+          console.error("Error saving topic shells to field_2979:", error);
+          // We continue with the normal save process even if this fails
+        });
+      }
+    } catch (error) {
+      console.error("Error preparing topic shells:", error);
+      // Continue with normal save process even if shell creation fails
     }
 
     // Preserve existing fields
