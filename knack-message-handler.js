@@ -170,19 +170,108 @@ window.addEventListener('message', function(event) {
   }
 });
 
-// Function to handle "Add to Bank" functionality
-function handleAddToBank(data, callback) {
-  // Extract needed information
-  const recordId = data.recordId;
-  const newCards = data.cards || [];
-  
-  if (!recordId || newCards.length === 0) {
-    console.error('Invalid data for Add to Bank');
-    callback(false);
-    return;
+// Import the UnifiedDataService functions
+// This import is dynamically injected at runtime so we access it through window
+function getUnifiedDataService() {
+  // In production, UnifiedDataService should be available through the main app
+  if (window.UnifiedDataService) {
+    return window.UnifiedDataService;
   }
   
-  // First, get the current data from Knack
+  // If not directly available, define a minimal version here for reliability
+  return {
+    addCardsToTopic: async (cards, topicId, userId, auth) => {
+      console.log("Using fallback addCardsToTopic implementation");
+      return addCardsToTopicFallback(cards, topicId, userId, auth);
+    }
+  };
+}
+
+// Function to handle "Add to Bank" functionality using UnifiedDataService
+async function handleAddToBank(data, callback) {
+  try {
+    // Extract needed information
+    const recordId = data.recordId;
+    const newCards = data.cards || [];
+    const topicId = data.topicId; // Topic ID for associating cards with a topic
+    
+    // Validate input
+    if (newCards.length === 0) {
+      console.error('No cards provided for Add to Bank');
+      callback(false);
+      return;
+    }
+    
+    // Look up user ID from recordId if needed
+    let userId = data.userId;
+    if (!userId && recordId) {
+      try {
+        const userData = await new Promise((resolve, reject) => {
+          getCurrentData(recordId, function(data) {
+            if (data) resolve(data);
+            else reject(new Error('Failed to get user data'));
+          });
+        });
+        
+        // Extract userId from user data
+        userId = userData.field_2954;
+      } catch (error) {
+        console.error('Failed to get userId from record:', error);
+      }
+    }
+    
+    if (!userId) {
+      console.error('Missing userId for Add to Bank');
+      callback(false);
+      return;
+    }
+    
+    // Log operation
+    console.log(`[${new Date().toISOString()}] Adding cards to bank with UnifiedDataService`, {
+      cardCount: newCards.length,
+      hasTopicId: !!topicId,
+      userId
+    });
+    
+    // Get auth token - Using Knack's built-in token
+    const auth = { token: Knack.getUserToken() };
+    
+    // Process the cards to ensure they have required fields
+    const processedCards = newCards.map(card => {
+      return {
+        ...card,
+        type: 'card',
+        created: card.created || new Date().toISOString(),
+        updated: new Date().toISOString(),
+        id: card.id || `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+      };
+    });
+    
+    // If we have a topicId, use UnifiedDataService to add cards to topic
+    if (topicId) {
+      const UnifiedDataService = getUnifiedDataService();
+      const success = await UnifiedDataService.addCardsToTopic(
+        processedCards, 
+        topicId, 
+        userId, 
+        auth
+      );
+      
+      callback(success);
+      return;
+    }
+    
+    // If no topicId, use the traditional approach
+    addCardsToCardBank(recordId, processedCards, callback);
+  } catch (error) {
+    console.error('Error in handleAddToBank:', error);
+    callback(false);
+  }
+}
+
+// Fallback function to add cards to the card bank (used when no topic ID is provided)
+function addCardsToCardBank(recordId, processedCards, callback) {
+  // Get current data
   getCurrentData(recordId, function(existingData) {
     if (!existingData) {
       console.error('Failed to get current data');
@@ -211,13 +300,13 @@ function handleAddToBank(data, callback) {
     }
     
     // Add new cards to card bank
-    const updatedCards = [...existingCards, ...newCards];
+    const updatedCards = [...existingCards, ...processedCards];
     
-    // Create Box 1 references for new cards (just need IDs and review dates)
-    const newBox1Items = newCards.map(card => ({
+    // Create Box 1 references for new cards
+    const newBox1Items = processedCards.map(card => ({
       cardId: card.id,
-      lastReviewed: new Date().toISOString(),
-      nextReviewDate: new Date().toISOString()
+      lastReviewed: card.lastReviewed || new Date().toISOString(),
+      nextReviewDate: card.nextReviewDate || new Date().toISOString()
     }));
     
     // Add new items to Box 1
@@ -230,8 +319,161 @@ function handleAddToBank(data, callback) {
       field_2957: new Date().toISOString()      // Last Saved timestamp
     };
     
+    // Preserve other fields from existing data
+    if (existingData.field_3011) dataToSave.field_3011 = existingData.field_3011; // Topic Lists
+    if (existingData.field_3030) dataToSave.field_3030 = existingData.field_3030; // Topic Metadata
+    if (existingData.field_2987) dataToSave.field_2987 = existingData.field_2987; // Box 2
+    if (existingData.field_2988) dataToSave.field_2988 = existingData.field_2988; // Box 3
+    if (existingData.field_2989) dataToSave.field_2989 = existingData.field_2989; // Box 4
+    if (existingData.field_2990) dataToSave.field_2990 = existingData.field_2990; // Box 5
+    
     // Save to Knack
     saveToKnack(recordId, dataToSave, callback);
+  });
+}
+
+// Fallback implementation of addCardsToTopic
+async function addCardsToTopicFallback(cards, topicId, userId, auth) {
+  return new Promise((resolve, reject) => {
+    // First get the record ID
+    // We'll use the local Knack API to find the record
+    $.ajax({
+      url: `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records`,
+      type: 'GET',
+      headers: {
+        'X-Knack-Application-Id': knackAppId,
+        'X-Knack-REST-API-Key': knackApiKey,
+        'Authorization': Knack.getUserToken(),
+        'Content-Type': 'application/json'
+      },
+      success: function(response) {
+        const userRecord = response.records.find(record => 
+          record.field_2954 === userId
+        );
+        
+        if (!userRecord) {
+          console.error('Could not find user record for userId:', userId);
+          resolve(false);
+          return;
+        }
+        
+        const recordId = userRecord.id;
+        
+        // Now get the current data
+        getCurrentData(recordId, function(existingData) {
+          if (!existingData) {
+            console.error('Failed to get current data');
+            resolve(false);
+            return;
+          }
+          
+          // Parse existing cards
+          let existingCards = [];
+          try {
+            existingCards = JSON.parse(existingData.field_2979 || '[]');
+            if (!Array.isArray(existingCards)) existingCards = [];
+          } catch (e) {
+            console.error('Error parsing existing cards', e);
+            existingCards = [];
+          }
+          
+          // Parse existing Box 1
+          let box1Cards = [];
+          try {
+            box1Cards = JSON.parse(existingData.field_2986 || '[]');
+            if (!Array.isArray(box1Cards)) box1Cards = [];
+          } catch (e) {
+            console.error('Error parsing box 1 cards', e);
+            box1Cards = [];
+          }
+          
+          // Find topic shell
+          const topicIndex = existingCards.findIndex(item => 
+            item.type === 'topic' && item.id === topicId
+          );
+          
+          if (topicIndex === -1) {
+            console.error('Topic not found:', topicId);
+            resolve(false);
+            return;
+          }
+          
+          const topicShell = existingCards[topicIndex];
+          
+          // Prepare cards for adding
+          const processedCards = cards.map(card => {
+            // Ensure ID and type
+            card.id = card.id || `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+            card.type = 'card';
+            
+            // Add topic references
+            card.topicId = topicId;
+            
+            // Use topic metadata if not provided
+            if (!card.subject) card.subject = topicShell.subject;
+            if (!card.topic) card.topic = topicShell.name || topicShell.topic;
+            if (!card.examBoard) card.examBoard = topicShell.examBoard;
+            if (!card.examType) card.examType = topicShell.examType;
+            
+            // Add timestamps
+            if (!card.created) card.created = new Date().toISOString();
+            card.updated = new Date().toISOString();
+            
+            return card;
+          });
+          
+          // Update topic shell card references
+          topicShell.cards = [...(topicShell.cards || []), ...processedCards.map(card => card.id)];
+          topicShell.isEmpty = false; // No longer empty
+          topicShell.updated = new Date().toISOString();
+          
+          // If topic has a baseColor, ensure color is set (not greyed out)
+          if (topicShell.baseColor) {
+            topicShell.color = topicShell.baseColor;
+          }
+          
+          // Update the topic in the existing cards
+          existingCards[topicIndex] = topicShell;
+          
+          // Add new cards to the data
+          const updatedCards = [...existingCards, ...processedCards];
+          
+          // Create Box 1 entries for the new cards
+          const newBox1Items = processedCards.map(card => ({
+            cardId: card.id,
+            lastReviewed: card.lastReviewed || new Date().toISOString(),
+            nextReviewDate: card.nextReviewDate || new Date().toISOString()
+          }));
+          
+          // Add to Box 1
+          const updatedBox1 = [...box1Cards, ...newBox1Items];
+          
+          // Prepare data to save
+          const dataToSave = {
+            field_2979: JSON.stringify(updatedCards), // Card Bank
+            field_2986: JSON.stringify(updatedBox1),  // Box 1
+            field_2957: new Date().toISOString()      // Last Saved timestamp
+          };
+          
+          // Preserve other fields
+          if (existingData.field_3011) dataToSave.field_3011 = existingData.field_3011; // Topic Lists
+          if (existingData.field_3030) dataToSave.field_3030 = existingData.field_3030; // Topic Metadata
+          if (existingData.field_2987) dataToSave.field_2987 = existingData.field_2987; // Box 2
+          if (existingData.field_2988) dataToSave.field_2988 = existingData.field_2988; // Box 3
+          if (existingData.field_2989) dataToSave.field_2989 = existingData.field_2989; // Box 4
+          if (existingData.field_2990) dataToSave.field_2990 = existingData.field_2990; // Box 5
+          
+          // Save to Knack
+          saveToKnack(recordId, dataToSave, function(success) {
+            resolve(success);
+          });
+        });
+      },
+      error: function(error) {
+        console.error('Error finding user record:', error);
+        resolve(false);
+      }
+    });
   });
 }
 

@@ -1247,6 +1247,7 @@ Use this format for different question types:
         data: {
           cards: [card],
           recordId: auth?.recordId || window.recordId,
+          userId: userId, // Include userId for UnifiedDataService
           topicId: topicId // Include the topicId for association
         }
       }, "*");
@@ -1304,6 +1305,7 @@ Use this format for different question types:
         data: {
           cards: unadded,
           recordId: auth?.recordId || window.recordId,
+          userId: userId, // Include userId for UnifiedDataService
           topicId: topicId // Include the topicId for association
         }
       }, "*");
