@@ -170,6 +170,7 @@ window.addEventListener('message', function(event) {
   }
 });
 
+
 // Import the UnifiedDataService functions
 // This import is dynamically injected at runtime so we access it through window
 function getUnifiedDataService() {
@@ -247,31 +248,15 @@ async function handleAddToBank(data, callback) {
       };
     });
     
-    // Enhanced logging to debug card processing
-    debugLog("PROCESSED CARDS FOR ADD_TO_BANK", {
-      sample: processedCards[0],
-      count: processedCards.length,
-      topicId: topicId
-    });
-    
     // If we have a topicId, use UnifiedDataService to add cards to topic
     if (topicId) {
       const UnifiedDataService = getUnifiedDataService();
-      console.log(`[${new Date().toISOString()}] Using UnifiedDataService to add cards to topic ${topicId}`);
-      
       const success = await UnifiedDataService.addCardsToTopic(
         processedCards, 
         topicId, 
         userId, 
         auth
       );
-      
-      // Enhanced logging after the operation is completed
-      debugLog("ADD_TO_TOPIC_RESULT", {
-        success: success,
-        topicId: topicId,
-        cardCount: processedCards.length
-      });
       
       callback(success);
       return;
@@ -297,20 +282,24 @@ function addCardsToCardBank(recordId, processedCards, callback) {
     }
     
     // Parse existing card bank (field_2979)
-    let existingCards = [];
+    let existingItems = [];
     try {
-      existingCards = JSON.parse(existingData.field_2979 || '[]');
-      if (!Array.isArray(existingCards)) existingCards = [];
+      existingItems = JSON.parse(existingData.field_2979 || '[]');
+      if (!Array.isArray(existingItems)) existingItems = [];
     } catch (e) {
-      console.error('Error parsing existing cards', e);
-      existingCards = [];
+      console.error('Error parsing existing items', e);
+      existingItems = [];
     }
     
+    // CRITICAL: Split items by type to preserve topic shells
+    const topicShells = existingItems.filter(item => item.type === 'topic');
+    const existingCards = existingItems.filter(item => item.type !== 'topic');
+    
     // Enhanced logging for better diagnostics
-    debugLog("PARSED EXISTING CARDS", {
-      count: existingCards.length,
-      topicShellCount: existingCards.filter(item => item.type === 'topic').length,
-      cardCount: existingCards.filter(item => item.type !== 'topic').length,
+    debugLog("SPLIT BANK ITEMS BY TYPE", {
+      totalItems: existingItems.length,
+      topicShellCount: topicShells.length,
+      cardCount: existingCards.length
     });
     
     // Parse existing Box 1 (field_2986)
@@ -323,8 +312,11 @@ function addCardsToCardBank(recordId, processedCards, callback) {
       box1Cards = [];
     }
     
-    // Add new cards to card bank
+    // Add new cards to existing cards (not replacing topic shells)
     const updatedCards = [...existingCards, ...processedCards];
+    
+    // CRITICAL: Create final data by combining topic shells and cards
+    const finalBankData = [...topicShells, ...updatedCards];
     
     // Create Box 1 references for new cards
     const newBox1Items = processedCards.map(card => ({
@@ -338,7 +330,7 @@ function addCardsToCardBank(recordId, processedCards, callback) {
     
     // Prepare data to save
     const dataToSave = {
-      field_2979: JSON.stringify(updatedCards), // Card Bank
+      field_2979: JSON.stringify(finalBankData), // Card Bank with preserved topic shells
       field_2986: JSON.stringify(updatedBox1),  // Box 1
       field_2957: new Date().toISOString()      // Last Saved timestamp
     };
@@ -356,10 +348,46 @@ function addCardsToCardBank(recordId, processedCards, callback) {
   });
 }
 
+// Helper function to get the topic card sync service
+function getTopicCardSyncService() {
+  // If TopicCardSyncService is available in the window object, use it
+  if (window.TopicCardSyncService) {
+    return window.TopicCardSyncService;
+  }
+  
+  // Fallback implementation
+  return {
+    splitByType: (items) => {
+      if (!Array.isArray(items)) {
+        return { topics: [], cards: [] };
+      }
+      
+      // Ensure each item has a type property
+      const typedItems = items.map(item => {
+        if (item.type) return item;
+        
+        if (item.topicId || item.question || item.front || item.back || item.boxNum) {
+          return {...item, type: 'card'};
+        } else if (item.name || item.topic || item.isShell === true) {
+          return {...item, type: 'topic'};
+        }
+        
+        // Default to card type
+        return {...item, type: 'card'};
+      });
+      
+      // Split by type
+      const topics = typedItems.filter(item => item.type === 'topic');
+      const cards = typedItems.filter(item => item.type !== 'topic');
+      
+      return { topics, cards };
+    }
+  };
+}
+
 // Fallback implementation of addCardsToTopic
 async function addCardsToTopicFallback(cards, topicId, userId, auth) {
   return new Promise((resolve, reject) => {
-    console.log(`[${new Date().toISOString()}] Fallback: Adding cards to topic ${topicId} for user ${userId}`);
     // First get the record ID
     // We'll use the local Knack API to find the record
     $.ajax({
@@ -402,13 +430,6 @@ async function addCardsToTopicFallback(cards, topicId, userId, auth) {
             existingCards = [];
           }
           
-          // Enhanced logging for better diagnostics
-          debugLog("PARSED EXISTING CARDS (FALLBACK)", {
-            count: existingCards.length,
-            topicShellCount: existingCards.filter(item => item.type === 'topic').length,
-            cardCount: existingCards.filter(item => item.type !== 'topic').length,
-          });
-          
           // Parse existing Box 1
           let box1Cards = [];
           try {
@@ -419,97 +440,102 @@ async function addCardsToTopicFallback(cards, topicId, userId, auth) {
             box1Cards = [];
           }
           
-          // Find topic shell
-          const topicIndex = existingCards.findIndex(item => 
-            item.type === 'topic' && item.id === topicId
-          );
-          
-          if (topicIndex === -1) {
-            console.error('Topic not found:', topicId);
-            resolve(false);
-            return;
-          }
-          
-          const topicShell = existingCards[topicIndex];
-          
-          // Debug log of topic shell
-          debugLog("TOPIC SHELL FOUND", {
-            id: topicShell.id,
-            name: topicShell.name || topicShell.topic,
-            subject: topicShell.subject,
-            isEmpty: topicShell.isEmpty
-          });
-          
-          // Prepare cards for adding
-          const processedCards = cards.map(card => {
-            // Ensure ID and type
-            card.id = card.id || `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-            card.type = 'card';
-            
-            // Add topic references
-            card.topicId = topicId;
-            
-            // Use topic metadata if not provided
-            if (!card.subject) card.subject = topicShell.subject;
-            if (!card.topic) card.topic = topicShell.name || topicShell.topic;
-            if (!card.examBoard) card.examBoard = topicShell.examBoard;
-            if (!card.examType) card.examType = topicShell.examType;
-            
-            // Add timestamps
-            if (!card.created) card.created = new Date().toISOString();
-            card.updated = new Date().toISOString();
-            
-            return card;
-          });
-          
-          // Update topic shell card references
-          topicShell.cards = [...(topicShell.cards || []), ...processedCards.map(card => card.id)];
-          topicShell.isEmpty = false; // No longer empty
-          topicShell.updated = new Date().toISOString();
-          
-          // If topic has a baseColor, ensure color is set (not greyed out)
-          if (topicShell.baseColor) {
-            topicShell.color = topicShell.baseColor;
-          }
-          
-          // Update the topic in the existing cards
-          existingCards[topicIndex] = topicShell;
-          
-          // Enhanced logging to verify the topic shell update
-          debugLog("UPDATED TOPIC SHELL", {
-            id: topicShell.id,
-            name: topicShell.name || topicShell.topic,
-            cardIds: topicShell.cards,
-            isEmpty: topicShell.isEmpty
-          });
-          
-          // Add new cards to the data
-          const updatedCards = [...existingCards, ...processedCards];
-          
-          // Create Box 1 entries for the new cards
-          const newBox1Items = processedCards.map(card => ({
-            cardId: card.id,
-            lastReviewed: card.lastReviewed || new Date().toISOString(),
-            nextReviewDate: card.nextReviewDate || new Date().toISOString()
-          }));
-          
-          // Add to Box 1
-          const updatedBox1 = [...box1Cards, ...newBox1Items];
-          
-          // Prepare data to save
-          const dataToSave = {
-            field_2979: JSON.stringify(updatedCards), // Card Bank
-            field_2986: JSON.stringify(updatedBox1),  // Box 1
-            field_2957: new Date().toISOString()      // Last Saved timestamp
-          };
-          
-          // Preserve other fields
-          if (existingData.field_3011) dataToSave.field_3011 = existingData.field_3011; // Topic Lists
-          if (existingData.field_3030) dataToSave.field_3030 = existingData.field_3030; // Topic Metadata
-          if (existingData.field_2987) dataToSave.field_2987 = existingData.field_2987; // Box 2
-          if (existingData.field_2988) dataToSave.field_2988 = existingData.field_2988; // Box 3
-          if (existingData.field_2989) dataToSave.field_2989 = existingData.field_2989; // Box 4
-          if (existingData.field_2990) dataToSave.field_2990 = existingData.field_2990; // Box 5
+        // Find topic shell
+const topicIndex = existingCards.findIndex(item => 
+  item.type === 'topic' && item.id === topicId
+);
+
+if (topicIndex === -1) {
+  console.error('Topic not found:', topicId);
+  resolve(false);
+  return;
+}
+
+const topicShell = existingCards[topicIndex];
+
+// Debug log of topic shell
+debugLog("TOPIC SHELL FOUND", {
+  id: topicShell.id,
+  name: topicShell.name || topicShell.topic,
+  subject: topicShell.subject,
+  isEmpty: topicShell.isEmpty
+});
+
+// Prepare cards for adding
+const processedCards = cards.map(card => {
+  // Ensure ID and type
+  card.id = card.id || `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  card.type = 'card';
+  
+  // Add topic references
+  card.topicId = topicId;
+  
+  // Use topic metadata if not provided
+  if (!card.subject) card.subject = topicShell.subject;
+  if (!card.topic) card.topic = topicShell.name || topicShell.topic;
+  if (!card.examBoard) card.examBoard = topicShell.examBoard;
+  if (!card.examType) card.examType = topicShell.examType;
+  
+  // Add timestamps
+  if (!card.created) card.created = new Date().toISOString();
+  card.updated = new Date().toISOString();
+  
+  return card;
+});
+
+// Update topic shell card references
+topicShell.cards = [...(topicShell.cards || []), ...processedCards.map(card => card.id)];
+topicShell.isEmpty = false; // No longer empty
+topicShell.updated = new Date().toISOString();
+
+// If topic has a baseColor, ensure color is set (not greyed out)
+if (topicShell.baseColor) {
+  topicShell.color = topicShell.baseColor;
+}
+
+// Update the topic in the existing cards
+existingCards[topicIndex] = topicShell;
+
+// Get the TopicCardSyncService
+const syncService = getTopicCardSyncService();
+
+// Split existing items by type
+const { topics, cards } = syncService.splitByType(existingCards);
+
+// Ensure topics are preserved and not overwritten
+const topicShellsToPreserve = topics;
+
+// Add new cards to the existing cards (not topic shells)
+const updatedNonTopicCards = [...cards, ...processedCards];
+
+// Combine topics and cards back together
+const finalBankData = [...topicShellsToPreserve, ...updatedNonTopicCards];
+
+// Create Box 1 entries for the new cards
+const newBox1Items = processedCards.map(card => ({
+  cardId: card.id,
+  lastReviewed: card.lastReviewed || new Date().toISOString(),
+  nextReviewDate: card.nextReviewDate || new Date().toISOString()
+}));
+
+// Add to Box 1
+const updatedBox1 = [...box1Cards, ...newBox1Items];
+
+// Prepare data to save
+const dataToSave = {
+  field_2979: JSON.stringify(finalBankData), // Card Bank with preserved topic shells
+  field_2986: JSON.stringify(updatedBox1),  // Box 1
+  field_2957: new Date().toISOString()      // Last Saved timestamp
+};
+
+// Preserve other fields
+if (existingData.field_3011) dataToSave.field_3011 = existingData.field_3011; // Topic Lists
+if (existingData.field_3030) dataToSave.field_3030 = existingData.field_3030; // Topic Metadata
+if (existingData.field_2987) dataToSave.field_2987 = existingData.field_2987; // Box 2
+if (existingData.field_2988) dataToSave.field_2988 = existingData.field_2988; // Box 3
+if (existingData.field_2989) dataToSave.field_2989 = existingData.field_2989; // Box 4
+if (existingData.field_2990) dataToSave.field_2990 = existingData.field_2990; // Box 5
+
           
           // Save to Knack
           saveToKnack(recordId, dataToSave, function(success) {
@@ -702,21 +728,94 @@ function verifyDataSave(recordId) {
             const cards = safeParseJSON(response[FIELD_MAPPING.cardBankData]);
             if (Array.isArray(cards) && cards.length > 0) {
               console.log(`[${new Date().toISOString()}] Verification successful: Cards present with ${cards.length} items`);
-              
-              // Enhanced logging to verify topic shells in the card data
-              const topicShells = cards.filter(item => item.type === 'topic' && item.isShell);
-              const regularCards = cards.filter(item => item.type !== 'topic');
-              
-              debugLog("CARD BANK CONTENT STATS", {
-                totalItems: cards.length,
-                topicShellCount: topicShells.length,
-                regularCardCount: regularCards.length,
-                topicShellSample: topicShells.length > 0 ? topicShells[0].name || 'Unknown Topic' : 'None'
-              });
-              
               cardsValid = true;
             } else {
               console.error(`[${new Date().toISOString()}] Verification warning: Cards empty or malformed`);
             }
           } catch (e) {
-            console.error(`[${new Date().toISOString()}] Error parsing cards
+            console.error(`[${new Date().toISOString()}] Error parsing cards during verification:`, e);
+          }
+        } else {
+          console.error(`[${new Date().toISOString()}] Verification warning: No cards field found`);
+        }
+        
+        // Push the verification result back to the React app
+        // Attempt to find the iframe and send a message
+        try {
+          // First try using window.frames
+          if (window.frames.length > 0 && window.frames[0].postMessage) {
+            window.frames[0].postMessage({
+              type: 'VERIFICATION_RESULT',
+              success: topicListsValid,
+              data: {
+                topicListsValid,
+                cardsValid,
+                timestamp: new Date().toISOString()
+              }
+            }, '*');
+          } 
+          // If that fails, try searching for the iframe
+          else {
+            const iframe = document.getElementById('flashcard-app-iframe');
+            if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'VERIFICATION_RESULT',
+                success: topicListsValid,
+                data: {
+                  topicListsValid,
+                  cardsValid,
+                  timestamp: new Date().toISOString()
+                }
+              }, '*');
+            } else {
+              console.warn('[Verification] Failed to find iframe for messaging');
+            }
+          }
+        } catch (error) {
+          console.error('[Verification] Error sending verification result:', error);
+        }
+      },
+      error: function(error) {
+        console.error(`[${new Date().toISOString()}] Verification error:`, error);
+        
+        // Push the error back to the React app
+        if (window.frames.length > 0 && window.frames[0].postMessage) {
+          window.frames[0].postMessage({
+            type: 'VERIFICATION_ERROR',
+            error: error.statusText || 'Unknown error',
+            timestamp: new Date().toISOString()
+          }, '*');
+        }
+      }
+    });
+  }, 5000); // Wait 5 seconds before verification to ensure data is committed
+}
+
+// Safe JSON parse helper function (in case it's not defined elsewhere)
+function safeParseJSON(jsonString) {
+  if (!jsonString) return null;
+  
+  try {
+    // If it's already an object, just return it
+    if (typeof jsonString === 'object') return jsonString;
+    
+    // Regular JSON parse
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error("Error parsing JSON:", error, "String:", jsonString ? jsonString.substring(0, 100) : "null");
+    
+    // Return empty array as fallback for arrays
+    return [];
+  }
+}
+
+// Debug log helper (in case it's not defined elsewhere)
+function debugLog(title, data) {
+  if (typeof console.groupCollapsed === 'function') {
+    console.groupCollapsed(`%c${title}`, 'color: #5d00ff; font-weight: bold;');
+    console.log(JSON.stringify(data, null, 2));
+    console.groupEnd();
+  } else {
+    console.log(`[${title}]`, JSON.stringify(data));
+  }
+}

@@ -132,6 +132,50 @@ if (typeof value === 'string') {
 return null;
 }
 
+// Helper function to ensure an item has a type and split items by type
+function getSyncService() {
+  // If TopicCardSyncService is available in the window object, use it
+  if (window.TopicCardSyncService) {
+    return window.TopicCardSyncService;
+  }
+  
+  // Fallback implementation
+  return {
+    ensureItemType: (item) => {
+      if (!item) return item;
+      
+      if (item.type) return item;
+      
+      if (item.topicId || item.question || item.front || item.back || item.boxNum) {
+        return {...item, type: 'card'};
+      } else if (item.name || item.topic || item.isShell === true) {
+        return {...item, type: 'topic'};
+      }
+      
+      return {...item, type: 'card'};
+    },
+    splitByType: (items) => {
+      if (!Array.isArray(items)) {
+        return { topics: [], cards: [] };
+      }
+      
+      const ensureType = (item) => {
+        if (!item.type) {
+          return getSyncService().ensureItemType(item);
+        }
+        return item;
+      };
+      
+      const typedItems = items.map(ensureType);
+      
+      const topics = typedItems.filter(item => item.type === 'topic');
+      const cards = typedItems.filter(item => item.type !== 'topic');
+      
+      return { topics, cards };
+    }
+  };
+}
+
 // Helper function to clean HTML from IDs
 function cleanHtmlFromId(idString) {
 if (!idString) return null;
@@ -1001,14 +1045,24 @@ function handleAddToBank(data, callback) {
       
       try {
         // Parse existing card bank data
-        let existingCards = [];
+        let existingItems = [];
         if (existingData[FIELD_MAPPING.cardBankData]) {
           let cardData = existingData[FIELD_MAPPING.cardBankData];
           if (typeof cardData === 'string' && cardData.includes('%')) {
             cardData = safeDecodeURIComponent(cardData);
           }
-          existingCards = safeParseJSON(cardData) || [];
+          existingItems = safeParseJSON(cardData) || [];
         }
+        
+        // CRITICAL: Split by type to preserve topic shells
+        const topicShells = existingItems.filter(item => item.type === 'topic');
+        const existingCards = existingItems.filter(item => item.type !== 'topic');
+        
+        debugLog("SPLIT BANK ITEMS BY TYPE", {
+          totalItems: existingItems.length,
+          topicShellCount: topicShells.length,
+          cardCount: existingCards.length
+        });
         
         // Parse existing Box 1 data
         let box1Cards = [];
@@ -1023,8 +1077,11 @@ function handleAddToBank(data, callback) {
         // Standardize and ensure the new cards are properly formatted
         const standardizedNewCards = standardizeCards(newCards);
         
-        // Add new cards to the card bank
+        // Add new cards to the existing cards
         const updatedCards = [...existingCards, ...standardizedNewCards];
+        
+        // CRITICAL: Create final data by combining topic shells and cards
+        const finalBankData = [...topicShells, ...updatedCards];
         
         // Create Box 1 entries for the new cards
         const newBox1Items = standardizedNewCards.map(card => ({
@@ -1039,7 +1096,7 @@ function handleAddToBank(data, callback) {
         // Prepare data to save - preserve all existing fields
         const updateData = {
           ...existingData, // Preserve all existing fields
-          [FIELD_MAPPING.cardBankData]: JSON.stringify(updatedCards),
+          [FIELD_MAPPING.cardBankData]: JSON.stringify(finalBankData),
           [FIELD_MAPPING.box1Data]: JSON.stringify(updatedBox1),
           [FIELD_MAPPING.lastSaved]: new Date().toISOString()
         };
@@ -1050,7 +1107,8 @@ function handleAddToBank(data, callback) {
           newCardsCount: standardizedNewCards.length,
           totalCardsCount: updatedCards.length,
           existingBox1Count: box1Cards.length,
-          newBox1Count: newBox1Items.length
+          newBox1Count: newBox1Items.length,
+          topicShellCount: topicShells.length
         });
         
         // Save the updated data
@@ -1086,144 +1144,183 @@ function handleAddToBank(data, callback) {
 }
 
 function saveFlashcardUserData(userId, data, callback) {
-console.log("Flashcard app: Saving flashcard data for user:", userId);
-debugLog("SAVING DATA WITH RECORD ID", data.recordId);
+  console.log("Flashcard app: Saving flashcard data for user:", userId);
+  debugLog("SAVING DATA WITH RECORD ID", data.recordId);
 
-// Check if we have a record ID
-if (!data.recordId) {
-  // No record ID, try to load the user data first
-  loadFlashcardUserData(userId, function(userData) {
-    if (userData && userData.recordId) {
-      // Now we have a record ID, save the data
-      data.recordId = userData.recordId;
-      saveFlashcardUserData(userId, data, callback);
-    } else {
-      console.error("Flashcard app: Cannot save data - no record ID found");
-      callback(false);
-    }
-  });
-  return;
-}
-
-// Get the current user for additional field data
-const user = window.currentKnackUser || {};
-
-try {
-  // Ensure cards are in standard format before saving
-  const standardizedCards = standardizeCards(data.cards || []);
-  
-  // Make sure data is serializable (no circular references)
-  const cleanCards = ensureDataIsSerializable(standardizedCards);
-  const cleanColorMapping = ensureDataIsSerializable(data.colorMapping || {});
-  const cleanSpacedRepetition = ensureDataIsSerializable(data.spacedRepetition || {
-    box1: [], box2: [], box3: [], box4: [], box5: []
-  });
-  const cleanTopicLists = ensureDataIsSerializable(data.topicLists || []);
-  const cleanTopicMetadata = ensureDataIsSerializable(data.topicMetadata || []);
-  
-  // Prepare the update data
-  const updateData = {
-    [FIELD_MAPPING.lastSaved]: new Date().toISOString(),
-    [FIELD_MAPPING.cardBankData]: JSON.stringify(cleanCards),
-    [FIELD_MAPPING.colorMapping]: JSON.stringify(cleanColorMapping)
-  };
-  
-  // Add any extra fields passed from the React app
-  if (data.additionalFields && typeof data.additionalFields === 'object') {
-    // Merge in additional fields
-    Object.entries(data.additionalFields).forEach(([key, value]) => {
-      // Ensure sanitization for text fields
-      updateData[key] = typeof value === 'string' ? sanitizeField(value) : value;
+  // Check if we have a record ID
+  if (!data.recordId) {
+    // No record ID, try to load the user data first
+    loadFlashcardUserData(userId, function(userData) {
+      if (userData && userData.recordId) {
+        // Now we have a record ID, save the data
+        data.recordId = userData.recordId;
+        saveFlashcardUserData(userId, data, callback);
+      } else {
+        console.error("Flashcard app: Cannot save data - no record ID found");
+        callback(false);
+      }
     });
+    return;
   }
-  
-  // Add topic lists if available
-  updateData[FIELD_MAPPING.topicLists] = JSON.stringify(cleanTopicLists);
-  
-  // Add topic metadata if available
-  updateData[FIELD_MAPPING.topicMetadata] = JSON.stringify(cleanTopicMetadata);
-  
-  // Add user name (not a connection field)
-  if (user.name) updateData[FIELD_MAPPING.userName] = sanitizeField(user.name);
-  
-  // Add non-connection fields
-  if (user.tutorGroup) updateData[FIELD_MAPPING.tutorGroup] = sanitizeField(user.tutorGroup);
-  if (user.yearGroup) updateData[FIELD_MAPPING.yearGroup] = sanitizeField(user.yearGroup);
-  
-  // Add regular text email (not a connection)
-  if (user.email) updateData[FIELD_MAPPING.userEmail] = sanitizeField(user.email);
-  
-  // Only add connection fields if they have valid IDs
-  // Email connection field (field_2956) - only add if it's a valid ID
-  const emailId = extractValidRecordId(user.id); // User's own ID is used for email connection
-  if (emailId) {
-    updateData[FIELD_MAPPING.accountConnection] = emailId;
-  }
-  
-  // VESPA Customer/school (field_3008) - only add if it's a valid ID 
-  const schoolId = extractValidRecordId(user.school || user.field_122);
-  if (schoolId) {
-    updateData[FIELD_MAPPING.vespaCustomer] = schoolId;
-  }
-  
-  // Tutor connection (field_3009) - only add if it's a valid ID
-  const tutorId = extractValidRecordId(user.tutor);
-  if (tutorId) {
-    updateData[FIELD_MAPPING.tutorConnection] = tutorId;
-  }
-  
-  // User Role (field_73) - only add if it's a valid ID
-  const roleId = extractValidRecordId(user.role);
-  if (roleId) {
-    updateData[FIELD_MAPPING.userRole] = roleId;
-  }
-  
-  // Add spaced repetition data
-  updateData[FIELD_MAPPING.box1Data] = JSON.stringify(cleanSpacedRepetition.box1 || []);
-  updateData[FIELD_MAPPING.box2Data] = JSON.stringify(cleanSpacedRepetition.box2 || []);
-  updateData[FIELD_MAPPING.box3Data] = JSON.stringify(cleanSpacedRepetition.box3 || []);
-  updateData[FIELD_MAPPING.box4Data] = JSON.stringify(cleanSpacedRepetition.box4 || []);
-  updateData[FIELD_MAPPING.box5Data] = JSON.stringify(cleanSpacedRepetition.box5 || []);
-  
-  // Log the data we're sending
-  debugLog("SAVING TO KNACK: DATA STATS", {
-    cardsCount: cleanCards.length,
-    colorCount: Object.keys(cleanColorMapping).length,
-    spacedRepCount: Object.values(cleanSpacedRepetition).flat().length
-  });
-  
-  // Pause briefly before saving to ensure any UI updates have completed
-  setTimeout(function() {
-    // Update the record
+
+  // Get the current user for additional field data
+  const user = window.currentKnackUser || {};
+
+  try {
+    // Ensure cards are in standard format before saving
+    const standardizedCards = standardizeCards(data.cards || []);
+    
+    // Make sure data is serializable (no circular references)
+    const cleanCards = ensureDataIsSerializable(standardizedCards);
+    const cleanColorMapping = ensureDataIsSerializable(data.colorMapping || {});
+    const cleanSpacedRepetition = ensureDataIsSerializable(data.spacedRepetition || {
+      box1: [], box2: [], box3: [], box4: [], box5: []
+    });
+    const cleanTopicLists = ensureDataIsSerializable(data.topicLists || []);
+    const cleanTopicMetadata = ensureDataIsSerializable(data.topicMetadata || []);
+    
+    // Get current data first to preserve topic shells
     $.ajax({
       url: KNACK_API_URL + '/objects/' + FLASHCARD_OBJECT + '/records/' + data.recordId,
-      type: 'PUT',
+      type: 'GET',
       headers: {
         'X-Knack-Application-Id': knackAppId,
         'X-Knack-REST-API-Key': knackApiKey,
         'Authorization': Knack.getUserToken(),
         'Content-Type': 'application/json'
       },
-      data: JSON.stringify(updateData),
-      success: function(response) {
-        console.log("Flashcard app: Successfully saved user data:", response.id);
-        debugLog("KNACK SAVE SUCCESS", {
-          userId: userId,
-          recordId: response.id,
-          timestamp: new Date().toISOString()
+      success: function(existingData) {
+        // Parse existing card bank data
+        let existingItems = [];
+        if (existingData[FIELD_MAPPING.cardBankData]) {
+          existingItems = safeParseJSON(existingData[FIELD_MAPPING.cardBankData], []);
+        }
+        
+        // Get the sync service for type handling
+        const syncService = getSyncService();
+        
+        // Split by type to preserve topic shells
+        const { topics: topicShells, cards: existingCards } = syncService.splitByType(existingItems);
+        
+        debugLog("SPLIT BANK ITEMS BY TYPE FOR SAVE", {
+          totalItems: existingItems.length,
+          topicShellCount: topicShells.length,
+          cardCount: existingCards.length
         });
-        callback(true);
+        
+        // CRITICAL: Combine topic shells with new cards
+        const finalBankData = [...topicShells, ...cleanCards];
+        
+        // Prepare the update data
+        const updateData = {
+          [FIELD_MAPPING.lastSaved]: new Date().toISOString(),
+          [FIELD_MAPPING.cardBankData]: JSON.stringify(finalBankData),
+          [FIELD_MAPPING.colorMapping]: JSON.stringify(cleanColorMapping)
+        };
+        
+        // Add any extra fields passed from the React app
+        if (data.additionalFields && typeof data.additionalFields === 'object') {
+          // Merge in additional fields
+          Object.entries(data.additionalFields).forEach(([key, value]) => {
+            // Ensure sanitization for text fields
+            updateData[key] = typeof value === 'string' ? sanitizeField(value) : value;
+          });
+        }
+        
+        // Add topic lists if available
+        updateData[FIELD_MAPPING.topicLists] = JSON.stringify(cleanTopicLists);
+        
+        // Add topic metadata if available
+        updateData[FIELD_MAPPING.topicMetadata] = JSON.stringify(cleanTopicMetadata);
+        
+        // Add user name (not a connection field)
+        if (user.name) updateData[FIELD_MAPPING.userName] = sanitizeField(user.name);
+        
+        // Add non-connection fields
+        if (user.tutorGroup) updateData[FIELD_MAPPING.tutorGroup] = sanitizeField(user.tutorGroup);
+        if (user.yearGroup) updateData[FIELD_MAPPING.yearGroup] = sanitizeField(user.yearGroup);
+        
+        // Add regular text email (not a connection)
+        if (user.email) updateData[FIELD_MAPPING.userEmail] = sanitizeField(user.email);
+        
+        // Only add connection fields if they have valid IDs
+        // Email connection field (field_2956) - only add if it's a valid ID
+        const emailId = extractValidRecordId(user.id); // User's own ID is used for email connection
+        if (emailId) {
+          updateData[FIELD_MAPPING.accountConnection] = emailId;
+        }
+        
+        // VESPA Customer/school (field_3008) - only add if it's a valid ID 
+        const schoolId = extractValidRecordId(user.school || user.field_122);
+        if (schoolId) {
+          updateData[FIELD_MAPPING.vespaCustomer] = schoolId;
+        }
+        
+        // Tutor connection (field_3009) - only add if it's a valid ID
+        const tutorId = extractValidRecordId(user.tutor);
+        if (tutorId) {
+          updateData[FIELD_MAPPING.tutorConnection] = tutorId;
+        }
+        
+        // User Role (field_73) - only add if it's a valid ID
+        const roleId = extractValidRecordId(user.role);
+        if (roleId) {
+          updateData[FIELD_MAPPING.userRole] = roleId;
+        }
+        
+        // Add spaced repetition data
+        updateData[FIELD_MAPPING.box1Data] = JSON.stringify(cleanSpacedRepetition.box1 || []);
+        updateData[FIELD_MAPPING.box2Data] = JSON.stringify(cleanSpacedRepetition.box2 || []);
+        updateData[FIELD_MAPPING.box3Data] = JSON.stringify(cleanSpacedRepetition.box3 || []);
+        updateData[FIELD_MAPPING.box4Data] = JSON.stringify(cleanSpacedRepetition.box4 || []);
+        updateData[FIELD_MAPPING.box5Data] = JSON.stringify(cleanSpacedRepetition.box5 || []);
+        
+        // Log the data we're sending
+        debugLog("SAVING TO KNACK: DATA STATS", {
+          topicShellCount: topicShells.length,
+          cardsCount: cleanCards.length,
+          colorCount: Object.keys(cleanColorMapping).length,
+          spacedRepCount: Object.values(cleanSpacedRepetition).flat().length
+        });
+        
+        // Pause briefly before saving to ensure any UI updates have completed
+        setTimeout(function() {
+          // Update the record
+          $.ajax({
+            url: KNACK_API_URL + '/objects/' + FLASHCARD_OBJECT + '/records/' + data.recordId,
+            type: 'PUT',
+            headers: {
+              'X-Knack-Application-Id': knackAppId,
+              'X-Knack-REST-API-Key': knackApiKey,
+              'Authorization': Knack.getUserToken(),
+              'Content-Type': 'application/json'
+            },
+            data: JSON.stringify(updateData),
+            success: function(response) {
+              console.log("Flashcard app: Successfully saved user data:", response.id);
+              debugLog("KNACK SAVE SUCCESS", {
+                userId: userId,
+                recordId: response.id,
+                timestamp: new Date().toISOString()
+              });
+              callback(true);
+            },
+            error: function(error) {
+              console.error("Flashcard app: Error saving user data:", error);
+              debugLog("KNACK SAVE ERROR", error);
+              callback(false);
+            }
+          });
+        }, 100);
       },
       error: function(error) {
-        console.error("Flashcard app: Error saving user data:", error);
-        debugLog("KNACK SAVE ERROR", error);
+        console.error("Flashcard app: Error retrieving existing data:", error);
         callback(false);
       }
     });
-  }, 100);
-} catch (error) {
-  console.error("Flashcard app: Error preparing data for saving:", error);
-  callback(false);
+  } catch (error) {
+    console.error("Flashcard app: Error preparing data for saving:", error);
+    callback(false);
+  }
 }
-}
-})();
+})
