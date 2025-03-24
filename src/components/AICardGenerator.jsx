@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
-import { saveTopicLists, loadTopicLists, safeParseJSON } from '../services/TopicPersistenceService';
+import { loadTopicLists, safeParseJSON } from '../services/TopicPersistenceService';
+import { saveTopicsUnified } from '../services/EnhancedTopicPersistenceService';
 import TopicHub from '../components/TopicHub';
 
 // Constants for question types and exam boards
@@ -575,7 +576,7 @@ const AICardGenerator = ({
     return `${prefix}_${timestamp}_${randomStr}`;
   };
   
-  // Save topic list to Knack using our centralized service
+  // Save topic list to Knack using our unified service
   const saveTopicListToKnack = async (topicLists) => {
     try {
       // Check if we're authenticated or have a user ID
@@ -594,16 +595,29 @@ const AICardGenerator = ({
         return false;
       }
 
-      // Use our centralized service to save topic lists
-      const success = await saveTopicLists(topicLists, userId, auth);
-      
-      if (success) {
-        console.log("Topic lists saved to Knack successfully:", topicLists.length, "lists");
-        return true;
-      } else {
-        setError("Failed to save topic lists");
-        return false;
+      // Process each topic list individually to create topic shells
+      for (const list of topicLists) {
+        // Extract the topics from the list
+        const topics = list.topics.map(topic => ({
+          id: topic.id || generateId('topic'),
+          topic: topic.topic || topic.name || 'Unknown Topic'
+        }));
+
+        // Use our enhanced service to save topics to both storage fields
+        console.log(`Saving topic list "${list.name}" with ${topics.length} topics`);
+        
+        await saveTopicsUnified(
+          topics, 
+          list.subject, 
+          list.examBoard, 
+          list.examType, 
+          userId, 
+          auth
+        );
       }
+      
+      console.log("Topic lists saved to unified storage successfully:", topicLists.length, "lists");
+      return true;
     } catch (error) {
       console.error("Error in saveTopicListToKnack:", error);
       setError(`Error saving topic lists: ${error.message || "Unknown error"}`);
@@ -1195,7 +1209,7 @@ Use this format for different question types:
     return text.replace(/```json\s*/g, "").replace(/```/g, "").trim();
   };
 
-  // Add a single card to the bank
+  // Add a single card to the bank and associate it with the selected topic
   const handleAddCard = (card) => {
     if (!card || !card.id) {
       console.error("Invalid card data:", card);
@@ -1218,14 +1232,19 @@ Use this format for different question types:
       setSuccessModal(prev => ({...prev, show: false}));
     }, 3000);
 
+    // Get the selected topic ID if available
+    const topicId = selectedTopic?.id;
+    console.log("Adding card with topicId:", topicId);
+
     // Send message to parent window to add card to bank
     if (window.parent && window.parent.postMessage) {
-      // First add the card to the bank
+      // First add the card to the bank, with topic reference if available
       window.parent.postMessage({ 
         type: "ADD_TO_BANK",
         data: {
           cards: [card],
-          recordId: auth?.recordId || window.recordId
+          recordId: auth?.recordId || window.recordId,
+          topicId: topicId // Include the topicId for association
         }
       }, "*");
       console.log("Added card to bank:", card);
@@ -1269,15 +1288,20 @@ Use this format for different question types:
       setSuccessModal(prev => ({...prev, show: false}));
     }, 3000);
     
+    // Get the selected topic ID if available
+    const topicId = selectedTopic?.id;
+    console.log("Adding all cards with topicId:", topicId);
+    
     // Trigger an explicit save operation to ensure cards are saved to the database
     // This is important to prevent data loss if the user refreshes the page
     if (window.parent && window.parent.postMessage) {
-      // First add all cards to the bank
+      // First add all cards to the bank, with topic reference if available
       window.parent.postMessage({ 
         type: "ADD_TO_BANK",
         data: {
           cards: unadded,
-          recordId: auth?.recordId || window.recordId
+          recordId: auth?.recordId || window.recordId,
+          topicId: topicId // Include the topicId for association
         }
       }, "*");
       console.log("Added all cards to bank:", unadded);

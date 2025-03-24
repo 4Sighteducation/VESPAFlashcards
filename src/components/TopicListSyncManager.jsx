@@ -8,10 +8,10 @@ import {
   setupPageUnloadProtection
 } from './TopicsPersistenceManager';
 import {
-  saveTopicList,
   loadTopicLists,
   formatTopicList
 } from '../services/TopicListService';
+import { saveTopicsUnified } from '../services/EnhancedTopicPersistenceService';
 
 // API keys for topic generation if needed
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
@@ -214,7 +214,7 @@ const TopicListSyncManager = ({
     }
   };
   
-  // Save topics - uses the dedicated service to ensure correct field persistence
+  // Save topics - uses the enhanced service to save to both field_3011 and field_2979
   const saveTopics = async (topicsList) => {
     try {
       // First save to local cache to protect against issues during server save
@@ -223,8 +223,8 @@ const TopicListSyncManager = ({
         console.log(`Protected ${topicsList.length} topics in local cache`);
       }
       
-      // Use our dedicated service to save topics
-      const success = await saveTopicList(
+      // Use our enhanced service to save topics to both field_3011 and field_2979
+      const success = await saveTopicsUnified(
         topicsList, 
         subject, 
         examBoard, 
@@ -234,7 +234,7 @@ const TopicListSyncManager = ({
       );
       
       if (success) {
-        console.log("Topics saved successfully to Knack field_3011");
+        console.log("Topics saved successfully to both field_3011 and field_2979");
         setLastUpdated(new Date().toISOString());
         
         // Clear from local cache only if successfully saved to server
