@@ -25,6 +25,7 @@ const FLASHCARD_OBJECT = "object_102";
 // Field mappings
 const FIELD_MAPPING = {
   unifiedData: 'field_2979',         // Store the entire unified data model here
+  cardBankData: 'field_2979',        // FIXED: Added missing mapping for card bank data
   topicLists: 'field_3011',          // Legacy topic lists (reference only)
   colorMapping: 'field_3000',        // Color mapping for subjects
   box1: 'field_2986',                // Box 1 (reference)
@@ -722,15 +723,26 @@ export const saveTopicShells = async (topicShells, userId, auth) => {
     if (existingData[FIELD_MAPPING.cardBankData]) {
       try {
         existingBankData = parseSafeJSON(existingData[FIELD_MAPPING.cardBankData], []);
+        debugLog("Successfully parsed existing card bank data", { 
+          length: existingBankData.length,
+          fieldName: FIELD_MAPPING.cardBankData
+        });
       } catch (error) {
         console.error("[UnifiedDataService] Error parsing existing bank data:", error);
+        console.error("Raw data was:", existingData[FIELD_MAPPING.cardBankData]?.substring(0, 100) + "...");
         existingBankData = [];
       }
+    } else {
+      console.log("[UnifiedDataService] No existing card bank data found in field_2979");
     }
     
     // Split existing data into topic shells and cards
-    const existingTopicShells = existingBankData.filter(item => item.type === 'topic');
-    const existingCards = existingBankData.filter(item => item.type !== 'topic');
+    const existingTopicShells = Array.isArray(existingBankData) 
+      ? existingBankData.filter(item => item && item.type === 'topic')
+      : [];
+    const existingCards = Array.isArray(existingBankData)
+      ? existingBankData.filter(item => item && item.type !== 'topic')
+      : [];
     
     debugLog("Split existing data", {
       totalItems: existingBankData.length,
@@ -741,12 +753,34 @@ export const saveTopicShells = async (topicShells, userId, auth) => {
     // Create a map of existing topic shells by ID for quick lookup
     const existingTopicMap = new Map();
     existingTopicShells.forEach(topic => {
-      existingTopicMap.set(topic.id, topic);
+      if (topic && topic.id) {
+        existingTopicMap.set(topic.id, topic);
+      }
+    });
+    
+    // Create a map of new topic shells by subject+examBoard+examType+name for duplicate detection
+    const newTopicsByKey = new Map();
+    topicShells.forEach(newTopic => {
+      if (newTopic) {
+        const key = `${newTopic.subject}|${newTopic.examBoard}|${newTopic.examType}|${newTopic.name}`;
+        newTopicsByKey.set(key, newTopic);
+      }
+    });
+    
+    // Also check existing topics against this key to prevent duplicate topics with different IDs
+    const existingTopicKeys = new Set();
+    existingTopicShells.forEach(topic => {
+      if (topic) {
+        const key = `${topic.subject}|${topic.examBoard}|${topic.examType}|${topic.name}`;
+        existingTopicKeys.add(key);
+      }
     });
     
     // Process the new topic shells, updating existing ones if they exist
     const updatedTopicShells = [];
     topicShells.forEach(newTopic => {
+      if (!newTopic) return; // Skip invalid topics
+      
       if (existingTopicMap.has(newTopic.id)) {
         // Update existing topic shell
         const existingTopic = existingTopicMap.get(newTopic.id);
@@ -759,30 +793,70 @@ export const saveTopicShells = async (topicShells, userId, auth) => {
           updated: new Date().toISOString()
         });
       } else {
-        // Add new topic shell
-        updatedTopicShells.push({
-          ...newTopic,
-          updated: new Date().toISOString()
-        });
+        // Check if we already have a topic with the same subject+examBoard+examType+name
+        const key = `${newTopic.subject}|${newTopic.examBoard}|${newTopic.examType}|${newTopic.name}`;
+        if (existingTopicKeys.has(key)) {
+          console.log(`[UnifiedDataService] Topic already exists with key ${key}, skipping duplicate`);
+          // We don't add this to updatedTopicShells to avoid duplicates
+        } else {
+          // Add new topic shell
+          updatedTopicShells.push({
+            ...newTopic,
+            updated: new Date().toISOString()
+          });
+          // Add to our set to prevent adding more duplicates
+          existingTopicKeys.add(key);
+        }
       }
     });
     
     // Add any remaining existing topic shells that weren't updated
     existingTopicMap.forEach(remainingTopic => {
-      updatedTopicShells.push(remainingTopic);
+      if (remainingTopic) {
+        updatedTopicShells.push(remainingTopic);
+      }
+    });
+    
+    // Safety check - ensure all topics have required fields
+    const validatedTopicShells = updatedTopicShells.filter(topic => {
+      if (!topic || !topic.id) {
+        console.error("[UnifiedDataService] Invalid topic - missing ID, skipping", topic);
+        return false;
+      }
+      return true;
+    }).map(topic => {
+      // Ensure all topics have required fields
+      return {
+        ...topic,
+        type: topic.type || 'topic',
+        cards: topic.cards || [],
+        isShell: topic.isShell || true,
+        isEmpty: topic.isEmpty || true,
+        created: topic.created || new Date().toISOString(),
+        updated: new Date().toISOString()
+      };
     });
     
     // Combine updated topic shells with existing cards
-    const updatedBankData = [...updatedTopicShells, ...existingCards];
+    const updatedBankData = [...validatedTopicShells, ...existingCards];
     
     debugLog("Updated bank data", {
       totalItems: updatedBankData.length,
-      updatedTopics: updatedTopicShells.length,
+      updatedTopics: validatedTopicShells.length,
       existingCards: existingCards.length
     });
     
     // Update the record
     try {
+      const updateData = {};
+      updateData[FIELD_MAPPING.cardBankData] = JSON.stringify(updatedBankData);
+      updateData[FIELD_MAPPING.lastSaved] = new Date().toISOString();
+      
+      debugLog("Field mapping being used", { 
+        cardBankData: FIELD_MAPPING.cardBankData,
+        lastSaved: FIELD_MAPPING.lastSaved 
+      });
+      
       const updateUrl = `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records/${recordId}`;
       const updateResponse = await fetch(updateUrl, {
         method: "PUT",
@@ -792,10 +866,7 @@ export const saveTopicShells = async (topicShells, userId, auth) => {
           "X-Knack-REST-API-Key": KNACK_API_KEY,
           "Authorization": `Bearer ${auth.token}`
         },
-        body: JSON.stringify({
-          [FIELD_MAPPING.cardBankData]: JSON.stringify(updatedBankData),
-          [FIELD_MAPPING.lastSaved]: new Date().toISOString()
-        })
+        body: JSON.stringify(updateData)
       });
 
       if (!updateResponse.ok) {
@@ -803,7 +874,7 @@ export const saveTopicShells = async (topicShells, userId, auth) => {
       }
 
       debugLog("Topic shells saved successfully", {
-        count: updatedTopicShells.length,
+        count: validatedTopicShells.length,
         recordId
       });
       
