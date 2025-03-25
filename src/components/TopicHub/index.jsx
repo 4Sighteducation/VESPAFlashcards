@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaDatabase } from 'react-icons/fa';
+import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaDatabase, FaFlash, FaInfo, FaCheckCircle } from 'react-icons/fa';
 import './styles.css';
 import { generateTopicPrompt } from '../../prompts/topicListPrompt';
 
@@ -63,6 +63,9 @@ const TopicHub = ({
   
   // State for tracking selected optional topics
   const [selectedOptionalTopics, setSelectedOptionalTopics] = useState({});
+  
+  // State for success modal
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   
   // Process topics into main topic groupings when topics change
   useEffect(() => {
@@ -1083,6 +1086,9 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
     });
     
     setShowSaveDialog(false);
+    
+    // Show success modal instead of continuing to card generation
+    setShowSuccessModal(true);
   };
   
   // Handle selecting a topic to continue with card generation
@@ -1567,6 +1573,58 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
     );
   };
   
+  // Render success modal
+  const renderSuccessModal = () => {
+    if (!showSuccessModal) return null;
+    
+    return (
+      <div className="modal-overlay">
+        <div className="topic-success-dialog">
+          <div className="success-header">
+            <FaCheckCircle className="success-icon" />
+            <h3>Topic List Saved Successfully!</h3>
+          </div>
+          
+          <div className="success-content">
+            <p>Your topic list has been saved and <strong>empty topic shells have been created</strong> for all your topics.</p>
+            
+            <div className="topic-shell-explanation">
+              <h4>What happens next?</h4>
+              <p>Your topics will now appear in the Flashcard Manager under their respective subject.</p>
+              
+              <div className="flash-icon-instructions">
+                <div className="flash-icon-example">
+                  <FaFlash className="flash-icon" />
+                </div>
+                <p>To generate flashcards for a specific topic, click the <strong>green flash icon</strong> on the topic header in the Flashcard Manager.</p>
+              </div>
+              
+              <div className="topic-shell-visual">
+                <div className="topic-shell-example">
+                  <div className="example-topic-header">
+                    <span className="example-topic-name">Chemistry: Atomic Structure</span>
+                    <span className="example-topic-actions">
+                      <FaFlash className="example-flash-icon" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="success-actions">
+            <button 
+              onClick={() => setShowSuccessModal(false)} 
+              className="finish-button"
+            >
+              Finish
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
   // Main render method
   return (
     <div className={`topic-hub ${usingFallbackTopics ? 'using-fallback' : ''}`}>
@@ -1610,6 +1668,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
       {/* Dialogs */}
       {renderSaveDialog()}
       {renderSelectDialog()}
+      {renderSuccessModal()}
       
       {/* Delete Main Topic Confirmation Dialog */}
       {showDeleteMainTopicDialog && mainTopicToDelete && (

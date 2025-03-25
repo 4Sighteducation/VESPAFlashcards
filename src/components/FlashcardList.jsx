@@ -3,9 +3,10 @@ import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
 import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
-import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes, FaBolt } from 'react-icons/fa';
+import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes, FaBolt, FaFlash } from 'react-icons/fa';
 import ColorEditor from "./ColorEditor";
 import { getContrastColor } from '../helper';
+import AICardGenerator from "./AICardGenerator";
 
 // ScrollManager component to handle scrolling to elements
 const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRefs }) => {
@@ -105,6 +106,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // Add new state for mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState({});
   const menuRef = useRef({});
+  
+  // New state for topic-specific card generation
+  const [showTopicCardGenerator, setShowTopicCardGenerator] = useState(false);
+  const [selectedTopicForCards, setSelectedTopicForCards] = useState(null);
   
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -910,6 +915,32 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     closeColorEditor();
   };
 
+  // Add this new function to handle clicking the flash icon
+  const handleGenerateCardsForTopic = (subject, topicName, topicId, e) => {
+    e.stopPropagation(); // Prevent the topic from toggling open/closed
+    
+    // Get the exam information for this subject
+    const { examType, examBoard } = getExamInfo(subject);
+    
+    // Set the selected topic data
+    setSelectedTopicForCards({
+      id: topicId,
+      name: topicName,
+      subject: subject,
+      examType: examType,
+      examBoard: examBoard
+    });
+    
+    // Show the AICardGenerator for this topic
+    setShowTopicCardGenerator(true);
+  };
+
+  // Add this new function to handle closing the card generator
+  const handleCloseTopicCardGenerator = () => {
+    setShowTopicCardGenerator(false);
+    setSelectedTopicForCards(null);
+  };
+
   // Render the accordion structure with subjects and topics
   return (
     <div className="flashcard-list">
@@ -927,6 +958,35 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
           title={printTitle} 
           onClose={() => setPrintModalOpen(false)} 
         />
+      )}
+      
+      {/* Topic-specific Card Generator */}
+      {showTopicCardGenerator && selectedTopicForCards && (
+        <div className="topic-card-generator-modal">
+          <div className="topic-card-generator-wrapper">
+            <button 
+              className="close-generator-button"
+              onClick={handleCloseTopicCardGenerator}
+            >
+              <FaTimes />
+            </button>
+            <AICardGenerator
+              onClose={handleCloseTopicCardGenerator}
+              onAddCard={(card) => {
+                // Handle adding the new card
+                // This will typically be handled by the AICardGenerator's internal functions
+                handleCloseTopicCardGenerator();
+              }}
+              initialSubject={selectedTopicForCards.subject}
+              initialTopic={selectedTopicForCards.name}
+              examBoard={selectedTopicForCards.examBoard}
+              examType={selectedTopicForCards.examType}
+              subjects={[selectedTopicForCards.subject]}
+              auth={true} // Assuming the user is authenticated if they can access this
+              userId="current_user" // This should be passed from the parent component
+            />
+          </div>
+        </div>
       )}
       
       <div className="subjects-accordion">
@@ -999,6 +1059,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
                     const topicColor = firstCardInTopic?.cardColor || firstCardInTopic?.baseColor || '#e0e0e0';
                     const topicTextColor = getContrastColor(topicColor);
                     
+                    // Find the topicId if this is a topic shell
+                    const topicShell = topicCards.find(card => card.type === 'topic' && card.isShell);
+                    const topicId = topicShell ? topicShell.id : null;
+                    
                     return (
                       <div key={topic} className="topic-group">
                         <div 
@@ -1018,17 +1082,11 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
                           <div className="topic-actions">
                             {topicCards.length === 0 ? (
                               <button
-                                className="ai-generator-button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // TODO: Implement AI card generation for empty topic
-                                  console.log(`Generate AI cards for empty topic: ${subject} - ${topic}`);
-                                  // This would connect to the AICardGenerator component
-                                }}
-                                title="Generate cards using AI"
-                                style={{ color: 'white' }}
+                                className="generate-cards-button"
+                                onClick={(e) => handleGenerateCardsForTopic(subject, topic, topicId, e)}
+                                title="Generate flashcards for this topic"
                               >
-                                <FaBolt />
+                                <FaFlash />
                               </button>
                             ) : (
                               <button

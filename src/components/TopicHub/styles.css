@@ -855,3 +855,145 @@
     background-color: rgba(248, 249, 250, 0.8); /* Light background to help buttons stand out */
   }
 }
+
+/* New Success Modal Styles */
+.topic-success-dialog {
+  background-color: white;
+  border-radius: 8px;
+  padding: 24px;
+  width: 100%;
+  max-width: 550px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.success-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.success-icon {
+  color: #28a745;
+  font-size: 28px;
+  margin-right: 12px;
+}
+
+.success-header h3 {
+  margin: 0;
+  color: #28a745;
+  font-size: 20px;
+}
+
+.success-content {
+  margin-bottom: 24px;
+}
+
+.topic-shell-explanation {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.topic-shell-explanation h4 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #495057;
+}
+
+.topic-shell-explanation p {
+  margin-bottom: 16px;
+  color: #6c757d;
+  line-height: 1.5;
+}
+
+.flash-icon-instructions {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  background-color: #fff;
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.flash-icon-example {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.flash-icon {
+  color: #28a745;
+  font-size: 24px;
+}
+
+.topic-shell-visual {
+  margin-top: 16px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.topic-shell-example {
+  width: 100%;
+}
+
+.example-topic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 12px 16px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.example-topic-name {
+  font-weight: 600;
+  color: #495057;
+}
+
+.example-topic-actions {
+  display: flex;
+  align-items: center;
+}
+
+.example-flash-icon {
+  color: #28a745;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  background-color: rgba(40, 167, 69, 0.1);
+  transition: all 0.2s ease;
+}
+
+.success-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+}
+
+.finish-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.finish-button:hover {
+  background-color: #218838;
+}

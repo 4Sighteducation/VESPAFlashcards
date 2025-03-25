@@ -2410,6 +2410,40 @@ Use this format for different question types:
     }
   };
 
+  // Effect to set initial step when specific topic is provided via props
+  useEffect(() => {
+    // If we have a specific topic directly passed in from props,
+    // and the topic is non-empty, skip directly to step 5 (num cards)
+    if (initialTopic && initialSubject && examBoard && examType) {
+      console.log("Direct topic provided, skipping to step 5:", {
+        initialTopic,
+        initialSubject,
+        examBoard,
+        examType
+      });
+      
+      // Set form data with the provided topic info
+      setFormData(prev => ({
+        ...prev,
+        subject: initialSubject,
+        topic: initialTopic,
+        examBoard: examBoard,
+        examType: examType
+      }));
+      
+      // Skip directly to step 5 (num cards)
+      setCurrentStep(5);
+      
+      // Mark previous steps as completed
+      setCompletedSteps({
+        1: true, // Exam Type
+        2: true, // Exam Board
+        3: true, // Subject
+        4: true  // Topic
+      });
+    }
+  }, [initialTopic, initialSubject, examBoard, examType]);
+
   return (
     <div className="ai-card-generator">
       <div className="generator-header">
