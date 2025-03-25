@@ -1080,15 +1080,18 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
                             {topicDate && <span className="topic-date" style={{ color: topicTextColor }}>Added: {topicDate}</span>}
                           </div>
                           <div className="topic-actions">
-                            {topicCards.length === 0 ? (
-                              <button
-                                className="generate-cards-button"
-                                onClick={(e) => handleGenerateCardsForTopic(subject, topic, topicId, e)}
-                                title="Generate flashcards for this topic"
-                              >
-                                <FaBolt />
-                              </button>
-                            ) : (
+                            {/* Always show the generate cards button */}
+                            <button
+                              className="generate-cards-button"
+                              onClick={(e) => handleGenerateCardsForTopic(subject, topic, topicId, e)}
+                              title="Generate flashcards for this topic"
+                              style={{ color: topicTextColor, backgroundColor: `${topicTextColor}20` }}
+                            >
+                              <FaBolt />
+                            </button>
+                            
+                            {/* Show slideshow button only when cards exist */}
+                            {topicCards.length > 0 && (
                               <button
                                 className="slideshow-button"
                                 onClick={(e) => {

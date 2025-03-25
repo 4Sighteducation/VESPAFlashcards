@@ -17,7 +17,8 @@ const TopicHub = ({
   onSaveTopicList,
   onSelectTopic,
   onGenerateCards,
-  academicYear = "2024-2025"
+  academicYear = "2024-2025",
+  onClose
 }) => {
   // State for topic management
   const [topics, setTopics] = useState(initialTopics);
@@ -66,6 +67,11 @@ const TopicHub = ({
   
   // State for success modal
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  // Additional state for UI and loading
+  const [darkMode, setDarkMode] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState('');
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   
   // Process topics into main topic groupings when topics change
   useEffect(() => {
@@ -1070,25 +1076,72 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
   
   // Handle saving topic list
   const handleSaveTopicList = () => {
-    if (!listName.trim()) {
-      setError("Please enter a name for the topic list");
-      return;
-    }
-    
-    if (!topics || topics.length === 0) {
-      setError("Cannot save an empty topic list");
-      return;
-    }
-    
-    onSaveTopicList && onSaveTopicList({
-      name: listName,
-      topics: topics
-    });
-    
+    // Toggle save dialog visibility
     setShowSaveDialog(false);
     
-    // Show success modal instead of continuing to card generation
-    setShowSuccessModal(true);
+    // Check if we have at least one topics
+    if (!topics || topics.length === 0) {
+      setErrorMessage("No topics to save");
+      setErrorDetails("Please generate or add topics before saving.");
+      setShowErrorModal(true);
+      return;
+    }
+    
+    // Format topics for saving
+    const topicListForSave = topics.map(topic => ({
+      id: topic.id,
+      name: `${topic.mainTopic}: ${topic.subtopic}`,
+      mainTopic: topic.mainTopic,
+      subtopic: topic.subtopic,
+      topic: `${topic.mainTopic}: ${topic.subtopic}`
+    }));
+    
+    // Call the parent's onSaveTopicList callback with the formatted topics
+    if (onSaveTopicList) {
+      setLoadingStatus("Saving your topic list...");
+      setShowLoadingOverlay(true);
+      
+      try {
+        // Call the save callback (returns a promise)
+        onSaveTopicList(topicListForSave, {
+          subject,
+          examBoard,
+          examType
+        }).then((result) => {
+          console.log("Topic save result:", result);
+          setShowLoadingOverlay(false);
+          
+          // Skip confirmation modal for debugging
+          if (result && result.success) {
+            // Show success modal
+            setShowSuccessModal(true);
+            
+            // Close the parent modal when showing the success modal
+            if (onClose) {
+              // We don't call onClose here as we want to keep the topic hub
+              // open until the user clicks Finish on the success modal
+            }
+          } else {
+            // Handle error
+            setErrorMessage("Error saving topic list");
+            setErrorDetails(result?.error || "An unknown error occurred.");
+            setShowErrorModal(true);
+          }
+        }).catch((error) => {
+          console.error("Error saving topic list:", error);
+          setShowLoadingOverlay(false);
+          setErrorMessage("Error saving topic list");
+          setErrorDetails(error?.message || "An unknown error occurred.");
+          setShowErrorModal(true);
+        });
+      } catch (error) {
+        console.error("Exception saving topic list:", error);
+        setShowLoadingOverlay(false);
+        setErrorMessage("Error saving topic list");
+        setErrorDetails(error?.message || "An unknown error occurred.");
+        setShowErrorModal(true);
+      }
+    }
   };
   
   // Handle selecting a topic to continue with card generation
@@ -1579,7 +1632,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
     
     return (
       <div className="modal-overlay">
-        <div className="topic-success-dialog">
+        <div className="success-modal">
           <div className="success-header">
             <FaCheckCircle className="success-icon" />
             <h3>Topic List Saved Successfully!</h3>
@@ -1589,32 +1642,30 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
             <p>Your topic list has been saved and <strong>empty topic shells have been created</strong> for all your topics.</p>
             
             <div className="topic-shell-explanation">
-              <h4>What happens next?</h4>
-              <p>Your topics will now appear in the Flashcard Manager under their respective subject.</p>
-              
-              <div className="flash-icon-instructions">
-                <div className="flash-icon-example">
-                  <FaBolt className="flash-icon" />
-                </div>
-                <p>To generate flashcards for a specific topic, click the <strong>green flash icon</strong> on the topic header in the Flashcard Manager.</p>
-              </div>
-              
-              <div className="topic-shell-visual">
-                <div className="topic-shell-example">
-                  <div className="example-topic-header">
-                    <span className="example-topic-name">Chemistry: Atomic Structure</span>
-                    <span className="example-topic-actions">
-                      <FaBolt className="example-flash-icon" />
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <h4><FaInfo /> What are topic shells?</h4>
+              <p>Topic shells are empty containers where your flashcards will be stored. You can now:</p>
+              <ul>
+                <li>Add flashcards to these topics using the AI generator</li>
+                <li>Create flashcards manually within each topic</li>
+                <li>Import flashcards from other sources</li>
+              </ul>
+            </div>
+            
+            <div className="next-steps">
+              <h4>Next Steps</h4>
+              <p>Click "Finish" to return to your flashcard collection, where you'll see your new topics ready for cards.</p>
             </div>
           </div>
           
           <div className="success-actions">
             <button 
-              onClick={() => setShowSuccessModal(false)} 
+              onClick={() => {
+                setShowSuccessModal(false);
+                // Completely exit the Topic Hub
+                onClose && onClose();
+                // Force reload the page to refresh data
+                setTimeout(() => window.location.reload(), 100);
+              }} 
               className="finish-button"
             >
               Finish
@@ -1627,77 +1678,14 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
   
   // Main render method
   return (
-    <div className={`topic-hub ${usingFallbackTopics ? 'using-fallback' : ''}`}>
-      {/* Display any errors */}
-      {error && (
-        <div className="error-message">
-          <FaExclamationTriangle />
-          <span>{error}</span>
-        </div>
-      )}
-      
-      {/* Display error modal */}
-      {renderErrorModal()}
-      
-      {/* Display fallback notice if using fallback topics */}
-      {renderFallbackNotice()}
-      
-      {/* Show generator only if no topics exist yet */}
-      {(!topics || topics.length === 0) && !hasGenerated && renderGenerator()}
-      
-      {/* Show topics list if topics exist or generation has been attempted */}
-      {(topics && topics.length > 0 || hasGenerated) && renderTopics()}
-      
-      {/* Topic generation section if no topics yet but generation attempted */}
-      {topics && topics.length === 0 && hasGenerated && !isGenerating && (
-        <div className="empty-topics-message">
-          <p>No topics were generated. Please try again or add topics manually.</p>
-          <button 
-            className="generation-button" 
-            onClick={generateTopics}
-            disabled={isGenerating}
-          >
-            <FaMagic /> Try Again
-          </button>
-        </div>
-      )}
-      
-      {/* Show loaders if generating */}
-      {isGenerating && renderGenerator()}
-      
-      {/* Dialogs */}
+    <div className={`topic-hub ${darkMode ? 'dark-mode' : ''}`}>
+      {renderGenerator()}
       {renderSaveDialog()}
       {renderSelectDialog()}
+      {renderTopics()}
+      {renderFallbackNotice()}
+      {renderErrorModal()}
       {renderSuccessModal()}
-      
-      {/* Delete Main Topic Confirmation Dialog */}
-      {showDeleteMainTopicDialog && mainTopicToDelete && (
-        <div className="modal-overlay">
-          <div className="delete-topic-dialog">
-            <h3>Delete Main Topic</h3>
-            <p>
-              Are you sure you want to delete the main topic <strong>{mainTopicToDelete}</strong> and 
-              all of its subtopics? This action cannot be undone.
-            </p>
-            <p className="warning-text">
-              {mainTopics.find(m => m.name === mainTopicToDelete)?.subtopics.length || 0} subtopics 
-              will be permanently deleted.
-            </p>
-            
-            <div className="delete-topic-actions">
-              <button onClick={() => setShowDeleteMainTopicDialog(false)} className="cancel-button">
-                Cancel
-              </button>
-              <button 
-                onClick={deleteMainTopic} 
-                className="delete-button danger-button"
-              >
-                <FaTrash /> Delete Main Topic
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

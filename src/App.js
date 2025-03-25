@@ -1389,6 +1389,38 @@ function App() {
             }
             break;
 
+          case "ADD_TO_BANK_RESULT":
+            console.log("[Add To Bank Result] Received:", event.data);
+            if (event.data.success) {
+              showStatus("Cards added to bank successfully!");
+              
+              // If shouldReload flag is set, reload the page to display updated cards
+              if (event.data.shouldReload) {
+                console.log("[Add To Bank Result] Reloading page to refresh data...");
+                setTimeout(() => window.location.reload(), 1000);
+              }
+            } else {
+              showStatus("Error adding cards to bank.");
+            }
+            break;
+            
+          case "TOPIC_SHELLS_CREATED":
+            console.log("[Topic Shells] Created successfully:", event.data);
+            showStatus(`Created ${event.data.count} topic shells!`);
+            
+            // If shouldReload flag is set, reload the page to display the new topic shells
+            if (event.data.shouldReload) {
+              console.log("[Topic Shells] Reloading page to refresh data...");
+              setTimeout(() => window.location.reload(), 1000);
+            }
+            break;
+            
+          case "RELOAD_APP_DATA":
+            console.log("[Reload] Explicit reload request received");
+            showStatus("Refreshing data...");
+            setTimeout(() => window.location.reload(), 500);
+            break;
+
           default:
             console.log("[Message Handler] Unknown message type:", event.data.type);
         }
