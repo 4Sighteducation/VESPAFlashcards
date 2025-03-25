@@ -40,26 +40,126 @@ function verifyDataSave(recordId, sourceWindow) {
           }
         }
         
-        // Check if cards (field_2979) exists and has content
-        let cardsValid = false;
+        // NEW: Verify card bank data and check multiple choice options
         if (response && response[FIELD_MAPPING.cardBankData]) {
           try {
-            const cardsJson = response[FIELD_MAPPING.cardBankData];
-            const cards = safeParseJSON(cardsJson);
+            const cardBankJson = response[FIELD_MAPPING.cardBankData];
+            const cardBank = safeParseJSON(cardBankJson);
             
-            if (Array.isArray(cards) && cards.length > 0) {
-              console.log(`[${new Date().toISOString()}] Cards verification successful: ${cards.length} cards found`);
-              cardsValid = true;
+            if (Array.isArray(cardBank) && cardBank.length > 0) {
+              console.log(`[${new Date().toISOString()}] Card bank verification: ${cardBank.length} items found`);
               
-              // Log the types of items found to help with debugging
-              if (window.TopicCardSyncService) {
-                const { topics, cards: nonTopicCards } = window.TopicCardSyncService.splitByType(cards);
-                console.log(`[${new Date().toISOString()}] Data breakdown: ${topics.length} topic shells, ${nonTopicCards.length} cards`);
+              // Check for multiple choice cards with missing options
+              const multipleChoiceCards = cardBank.filter(card => 
+                card.type === 'card' && 
+                (card.questionType === 'multiple_choice' || 
+                 (card.answer && card.answer.includes('Correct Answer:')) ||
+                 (card.correctAnswer && card.correctAnswer.trim() !== ''))
+              );
+              
+              const cardsWithOptions = multipleChoiceCards.filter(card => 
+                card.options && Array.isArray(card.options) && card.options.length > 0
+              );
+              
+              const cardsWithSavedOptions = multipleChoiceCards.filter(card => 
+                card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0
+              );
+              
+              const cardsWithCorrectAnswers = multipleChoiceCards.filter(card =>
+                card.correctAnswer && card.correctAnswer.trim() !== ''
+              );
+              
+              console.log(`[${new Date().toISOString()}] Multiple choice verification:`, {
+                totalMultipleChoice: multipleChoiceCards.length,
+                withOptions: cardsWithOptions.length,
+                withSavedOptions: cardsWithSavedOptions.length,
+                withCorrectAnswers: cardsWithCorrectAnswers.length
+              });
+              
+              let needsCorrection = false;
+              
+              // Fix options that come from saved options
+              if (multipleChoiceCards.length > 0 && 
+                  cardsWithOptions.length < multipleChoiceCards.length && 
+                  cardsWithSavedOptions.length > 0) {
+                needsCorrection = true;
               }
+              
+              // Fix answers with "Correct Answer:" format but missing options
+              if (cardsWithCorrectAnswers.length > 0 && 
+                  cardsWithCorrectAnswers.some(card => 
+                    (!card.options || !Array.isArray(card.options) || card.options.length === 0) &&
+                    (!card.savedOptions || !Array.isArray(card.savedOptions) || card.savedOptions.length === 0)
+                  )) {
+                needsCorrection = true;
+              }
+              
+              // If any issues were found, fix them
+              if (needsCorrection) {
+                console.log(`[${new Date().toISOString()}] Found multiple choice cards with issues, attempting to fix...`);
+                
+                // Process with our comprehensive correction function
+                const restoredCardBank = ensureOptionsPreserved(cardBank);
+                
+                // Check if any changes were made by the correction
+                const changeMade = JSON.stringify(restoredCardBank) !== JSON.stringify(cardBank);
+                
+                if (changeMade) {
+                  console.log(`[${new Date().toISOString()}] Fixed multiple choice issues, saving corrected data`);
+                  
+                  // Save the corrected card bank
+                  const updateData = {
+                    [FIELD_MAPPING.cardBankData]: JSON.stringify(restoredCardBank),
+                    [FIELD_MAPPING.lastSaved]: new Date().toISOString()
+                  };
+                  
+                  // Save the update
+                  $.ajax({
+                    url: KNACK_API_URL + '/objects/' + FLASHCARD_OBJECT + '/records/' + recordId,
+                    type: 'PUT',
+                    headers: {
+                      'X-Knack-Application-Id': knackAppId,
+                      'X-Knack-REST-API-Key': knackApiKey,
+                      'Authorization': Knack.getUserToken(),
+                      'Content-Type': 'application/json'
+                    },
+                    data: JSON.stringify(updateData),
+                    success: function(restoreResponse) {
+                      console.log(`[${new Date().toISOString()}] Successfully restored options for multiple choice cards`);
+                      
+                      // Send updated data to iframe now
+                      try {
+                        // Create a copy of response with the updated card bank
+                        const updatedResponse = {...response};
+                        updatedResponse[FIELD_MAPPING.cardBankData] = JSON.stringify(restoredCardBank);
+                        
+                        if (sourceWindow) {
+                          console.log(`[${new Date().toISOString()}] Sending updated data to React app after correction`);
+                          sourceWindow.postMessage({
+                            type: 'LOAD_SAVED_DATA',
+                            data: updatedResponse
+                          }, '*');
+                        }
+                      } catch (error) {
+                        console.error(`[${new Date().toISOString()}] Error sending updated data:`, error);
+                      }
+                    },
+                    error: function(error) {
+                      console.error(`[${new Date().toISOString()}] Error restoring options:`, error);
+                    }
+                  });
+                } else {
+                  console.log(`[${new Date().toISOString()}] No changes made by correction function`);
+                }
+              }
+            } else {
+              console.warn(`[${new Date().toISOString()}] Card bank is empty or malformed`);
             }
           } catch (e) {
-            console.error(`[${new Date().toISOString()}] Error parsing cards during verification:`, e);
+            console.error(`[${new Date().toISOString()}] Error parsing card bank during verification:`, e);
           }
+        } else {
+          console.warn(`[${new Date().toISOString()}] No card bank field found during verification`);
         }
         
         // ENHANCED: Process the data to ensure topic shells are properly synchronized between
@@ -152,19 +252,71 @@ function ensureOptionsPreserved(cards) {
       return card;
     }
     
-    // For multiple choice questions, ensure options are preserved
-    if (card.questionType === 'multiple_choice') {
+    // Detect if this should be a multiple choice card
+    const hasOptions = card.options && Array.isArray(card.options) && card.options.length > 0;
+    const hasSavedOptions = card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0;
+    const hasCorrectAnswer = card.correctAnswer && typeof card.correctAnswer === 'string' && card.correctAnswer.trim() !== '';
+    const explicitQuestionType = card.questionType === 'multiple_choice';
+    
+    // Card should be multiple choice if any of these conditions are true
+    const shouldBeMultipleChoice = hasOptions || hasSavedOptions || hasCorrectAnswer || explicitQuestionType;
+    
+    if (shouldBeMultipleChoice) {
+      // First, set the question type explicitly
+      card.questionType = 'multiple_choice';
+      
       // If options are missing but savedOptions exist, restore them
-      if ((!card.options || !Array.isArray(card.options) || card.options.length === 0) && 
-          card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+      if ((!hasOptions) && hasSavedOptions) {
+        console.log(`[${new Date().toISOString()}] Restoring options from savedOptions for card:`, card.id);
+        card.options = [...card.savedOptions];
+      }
+      
+      // If no options or savedOptions, but has correctAnswer, create default options
+      if (!hasOptions && !hasSavedOptions && hasCorrectAnswer) {
+        console.log(`[${new Date().toISOString()}] Creating default options for card with correctAnswer:`, card.id);
         
-        console.log(`[${new Date().toISOString()}] Restoring options for card:`, card.id);
-        return { ...card, options: [...card.savedOptions] };
+        const correctAns = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
+        
+        // Create three wrong options as placeholders
+        card.options = [
+          correctAns,
+          `Alternative answer 1 (placeholder)`,
+          `Alternative answer 2 (placeholder)`,
+          `Alternative answer 3 (placeholder)`
+        ];
+        
+        // Save for future reference
+        card.savedOptions = [...card.options];
+      }
+      
+      // If multiple choice is explicit but no options exist, create empty array
+      if (explicitQuestionType && !hasOptions && !hasSavedOptions && !hasCorrectAnswer) {
+        console.log(`[${new Date().toISOString()}] Creating empty options array for explicit multiple choice card:`, card.id);
+        card.options = [];
+        card.savedOptions = [];
       }
       
       // Always backup options as savedOptions for future recovery
-      if (card.options && Array.isArray(card.options) && card.options.length > 0) {
-        return { ...card, savedOptions: [...card.options] };
+      if (hasOptions && !hasSavedOptions) {
+        console.log(`[${new Date().toISOString()}] Backing up options to savedOptions for card:`, card.id);
+        card.savedOptions = [...card.options];
+      }
+      
+      // Add correctAnswer if missing but options are present
+      if (!hasCorrectAnswer && (hasOptions || hasSavedOptions)) {
+        const optionsToUse = hasOptions ? card.options : card.savedOptions;
+        if (optionsToUse.length > 0) {
+          console.log(`[${new Date().toISOString()}] Setting default correctAnswer for card:`, card.id);
+          card.correctAnswer = optionsToUse[0];
+        }
+      }
+      
+      // If we have a better formatted answer but it's missing the "Correct Answer:" prefix
+      if (hasCorrectAnswer && !card.correctAnswer.startsWith("Correct Answer:") && 
+          !card.answer.startsWith("Correct Answer:")) {
+        // Update the answer field to include proper multiple choice format
+        const correct = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
+        card.answer = `Correct Answer: ${correct}`;
       }
     }
     

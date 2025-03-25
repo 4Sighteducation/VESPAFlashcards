@@ -2,18 +2,23 @@ import React, { useEffect, useState } from 'react';
 import './Flashcard.css';
 
 /**
- * Standalone component for rendering multiple choice options
- * This ensures consistent appearance across all views
+ * Enhanced MultipleChoiceOptions component
+ * - Better integration with unified data model
+ * - Improved recovery from missing options
+ * - Better error handling and fallbacks
  */
 const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, card }) => {
   const [optionsToDisplay, setOptionsToDisplay] = useState([]);
+  const [error, setError] = useState(null);
   
   // Attempt to initialize options from props or recover from card
   useEffect(() => {
     try {
+      setError(null);
+      
       // First check if valid options were passed directly
       if (options && Array.isArray(options) && options.length > 0) {
-        console.log("Using provided options:", options.length);
+        console.log("MultipleChoiceOptions: Using provided options array:", options.length);
         setOptionsToDisplay(options);
         return;
       }
@@ -22,22 +27,72 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
       if (card) {
         // Try savedOptions if options are missing
         if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
-          console.log("Recovered options from savedOptions:", card.savedOptions.length);
+          console.log("MultipleChoiceOptions: Recovered options from savedOptions:", card.savedOptions.length);
           setOptionsToDisplay(card.savedOptions);
           return;
         }
         
         // Try card.options directly if not passed in props
         if (card.options && Array.isArray(card.options) && card.options.length > 0) {
-          console.log("Recovered options from card.options:", card.options.length);
+          console.log("MultipleChoiceOptions: Using card.options directly:", card.options.length);
           setOptionsToDisplay(card.options);
           return;
+        }
+        
+        // Try to generate options from correctAnswer if available
+        if (card.correctAnswer && typeof card.correctAnswer === 'string') {
+          console.log("MultipleChoiceOptions: Generating options from correctAnswer");
+          const correctAnswer = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
+          
+          const generatedOptions = [
+            correctAnswer,
+            "Alternative answer 1",
+            "Alternative answer 2",
+            "Alternative answer 3"
+          ];
+          
+          setOptionsToDisplay(generatedOptions);
+          
+          // Store these for future use
+          if (card.onUpdateOptions) {
+            card.onUpdateOptions(generatedOptions);
+          }
+          
+          return;
+        }
+        
+        // If answer has "Correct Answer:" format, extract it
+        if (card.answer && typeof card.answer === 'string' && 
+            card.answer.includes("Correct Answer:")) {
+          console.log("MultipleChoiceOptions: Extracting options from answer format");
+          const match = card.answer.match(/Correct Answer:\s*([^\n]+)/);
+          if (match && match[1]) {
+            const correctAnswer = match[1].trim();
+            
+            const generatedOptions = [
+              correctAnswer,
+              "Alternative answer 1",
+              "Alternative answer 2",
+              "Alternative answer 3"
+            ];
+            
+            setOptionsToDisplay(generatedOptions);
+            
+            // Store these for future use
+            if (card.onUpdateOptions) {
+              card.onUpdateOptions(generatedOptions);
+            }
+            
+            return;
+          }
         }
       }
       
       // Create default options if nothing is available
-      if ((!optionsToDisplay || optionsToDisplay.length === 0) && card && card.questionType === 'multiple_choice') {
-        console.warn("No options available for multiple choice card, creating defaults");
+      if ((!optionsToDisplay || optionsToDisplay.length === 0) && 
+          card && (card.questionType === 'multiple_choice' || 
+                  (card.answer && card.answer.startsWith("Correct Answer:")))) {
+        console.warn("MultipleChoiceOptions: No options available, creating defaults");
         const defaultOptions = [
           "Option A (placeholder)", 
           "Option B (placeholder)", 
@@ -45,13 +100,20 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
           "Option D (placeholder)"
         ];
         setOptionsToDisplay(defaultOptions);
+        
+        // Store these for future use
+        if (card.onUpdateOptions) {
+          card.onUpdateOptions(defaultOptions);
+        }
       }
     } catch (error) {
       console.error("Error processing options in MultipleChoiceOptions:", error);
+      setError(error.message || "Error processing options");
+      
       // Set fallback options in case of error
       setOptionsToDisplay(["Option A", "Option B", "Option C", "Option D"]);
     }
-  }, [options, card]);
+  }, [options, card, optionsToDisplay.length]);
 
   // Clean option text by removing letter prefixes (a., a), etc.)
   const cleanOptionText = (option) => {
@@ -60,6 +122,22 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
     const prefixRegex = /^([a-z][\.\)\-\:]|\([a-z]\))\s*/i;
     return option.replace(prefixRegex, '').trim();
   };
+
+  // Render error message if there was a problem
+  if (error) {
+    return (
+      <div className="options-container" style={{
+        padding: '12px',
+        backgroundColor: 'rgba(255, 0, 0, 0.1)',
+        borderRadius: '5px',
+        marginTop: '10px',
+      }}>
+        <div className="error-message" style={{textAlign: 'center', padding: '10px', color: 'red'}}>
+          Error loading options: {error}
+        </div>
+      </div>
+    );
+  }
 
   // Render placeholder if no options available
   if (!optionsToDisplay || !Array.isArray(optionsToDisplay) || optionsToDisplay.length === 0) {

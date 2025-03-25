@@ -811,70 +811,112 @@ try {
 
 // Standardize card data before saving
 function standardizeCards(cards) {
-if (!Array.isArray(cards)) return [];
+  if (!Array.isArray(cards)) return [];
 
-return cards.map(card => {
-  // If it's already a standard card, just return it
-  if (card.createdAt && card.updatedAt && card.examBoard !== undefined) {
-    return card;
-  }
-  
-  // For multiple choice questions, ensure options are preserved
-  const hasOptions = card.options && Array.isArray(card.options) && card.options.length > 0;
-  const hasSavedOptions = card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0;
-  
-  // Use existing options or fall back to savedOptions if present
-  const finalOptions = hasOptions ? card.options : (hasSavedOptions ? card.savedOptions : []);
-  
-  // Determine question type, default to short_answer if not specified
-  const questionType = card.questionType || (hasOptions || hasSavedOptions ? 'multiple_choice' : 'short_answer');
-  
-  // Determine correctAnswer for multiple choice questions
-  const correctAnswer = card.correctAnswer || (hasOptions && card.options.length > 0 ? card.options[0] : '');
-  
-  // Otherwise, standardize it
-  return {
-    // Core identification
-    id: card.id,
+  return cards.map(card => {
+    // If it's already a standard card, just return it
+    if (card.createdAt && card.updatedAt && card.examBoard !== undefined) {
+      // Check options need to be fixed
+      if (card.questionType === 'multiple_choice' && 
+          (!card.options || !Array.isArray(card.options) || card.options.length === 0) &&
+          card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+        
+        // Restore options from savedOptions
+        card.options = [...card.savedOptions];
+        console.log(`KnackJavascript4: Restored options for card ${card.id}`);
+      }
+      
+      // Always backup options as savedOptions
+      if (card.questionType === 'multiple_choice' && 
+          card.options && Array.isArray(card.options) && card.options.length > 0 &&
+          (!card.savedOptions || !Array.isArray(card.savedOptions) || card.savedOptions.length === 0)) {
+        
+        card.savedOptions = [...card.options];
+        console.log(`KnackJavascript4: Backed up options for card ${card.id}`);
+      }
+      
+      return card;
+    }
     
-    // Subject and topic information
-    subject: card.subject || 'General',
-    topic: card.topic || 'General',
-    examBoard: card.examBoard || '',
-    examType: card.examType || '',
-    topicPriority: card.topicPriority || 0,
+    // For multiple choice questions, ensure options are preserved
+    const hasOptions = card.options && Array.isArray(card.options) && card.options.length > 0;
+    const hasSavedOptions = card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0;
+    const hasCorrectAnswer = card.correctAnswer && card.correctAnswer.trim() !== '';
+    const answerIndicatesMultipleChoice = card.answer && typeof card.answer === 'string' && 
+                                         card.answer.includes('Correct Answer:');
     
-    // Content fields
-    question: card.question || card.front || '',
-    answer: card.answer || card.back || '',
-    keyPoints: card.keyPoints || [],
-    detailedAnswer: card.detailedAnswer || '',
-    additionalInfo: card.additionalInfo || '',
+    // Determine if this is a multiple choice card
+    const isMultipleChoice = hasOptions || hasSavedOptions || hasCorrectAnswer || 
+                             answerIndicatesMultipleChoice || card.questionType === 'multiple_choice';
     
-    // Multiple choice fields
-    questionType: questionType,
-    options: finalOptions,
-    // Always save a backup of options if they exist
-    savedOptions: hasOptions ? [...card.options] : (hasSavedOptions ? [...card.savedOptions] : []),
-    correctAnswer: correctAnswer,
+    // Use existing options or fall back to savedOptions if present
+    const finalOptions = hasOptions ? card.options : (hasSavedOptions ? card.savedOptions : []);
     
-    // Card type
-    type: card.type || 'card',
+    // Determine question type, default to short_answer if not multiple choice
+    const questionType = isMultipleChoice ? 'multiple_choice' : (card.questionType || 'short_answer');
     
-    // Visual properties
-    cardColor: card.cardColor || card.color || '#3cb44b',
-    textColor: card.textColor || '',
+    // Determine correctAnswer for multiple choice questions
+    let correctAnswer = '';
+    if (hasCorrectAnswer) {
+      correctAnswer = card.correctAnswer;
+    } else if (isMultipleChoice && finalOptions.length > 0) {
+      correctAnswer = finalOptions[0];
+    } else if (answerIndicatesMultipleChoice) {
+      // Try to extract correct answer from formatted answer string
+      const match = card.answer.match(/Correct Answer:\s*([^\n]+)/);
+      if (match && match[1]) {
+        correctAnswer = match[1].trim();
+      }
+    }
     
-    // Spaced repetition
-    boxNum: card.boxNum || 1,
-    lastReviewed: card.lastReviewed || null,
-    nextReviewDate: card.nextReviewDate || new Date().toISOString(),
+    // Fix answer format for multiple choice if needed
+    let answer = card.answer || card.back || '';
+    if (isMultipleChoice && correctAnswer && !answer.includes('Correct Answer:')) {
+      answer = `Correct Answer: ${correctAnswer}`;
+    }
     
-    // Metadata
-    createdAt: card.createdAt || card.timestamp || new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-});
+    // Otherwise, standardize it
+    return {
+      // Core identification
+      id: card.id || generateId(),
+      
+      // Subject and topic information
+      subject: card.subject || 'General',
+      topic: card.topic || 'General',
+      examBoard: card.examBoard || '',
+      examType: card.examType || '',
+      topicPriority: card.topicPriority || 0,
+      
+      // Content fields
+      question: card.question || card.front || '',
+      answer: answer,
+      keyPoints: card.keyPoints || [],
+      detailedAnswer: card.detailedAnswer || '',
+      additionalInfo: card.additionalInfo || '',
+      
+      // Multiple choice fields - explicitly include these for all cards
+      questionType: questionType,
+      options: finalOptions,
+      savedOptions: hasOptions ? [...card.options] : (hasSavedOptions ? [...card.savedOptions] : []),
+      correctAnswer: correctAnswer,
+      
+      // Card type
+      type: card.type || 'card',
+      
+      // Visual properties
+      cardColor: card.cardColor || card.color || '#3cb44b',
+      textColor: card.textColor || '',
+      
+      // Spaced repetition
+      boxNum: card.boxNum || 1,
+      lastReviewed: card.lastReviewed || null,
+      nextReviewDate: card.nextReviewDate || new Date().toISOString(),
+      
+      // Metadata
+      createdAt: card.createdAt || card.timestamp || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  });
 }
 
 // Save flashcard user data

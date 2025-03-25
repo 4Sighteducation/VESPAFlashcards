@@ -344,7 +344,25 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                   marginTop: '10px',
                   position: 'relative'
                 }}>
-                  <MultipleChoiceOptions options={card.options || []} preview={preview} isInModal={isInModal} card={card} />
+                  <MultipleChoiceOptions 
+                    options={card.options || []} 
+                    preview={preview} 
+                    isInModal={isInModal} 
+                    card={{
+                      ...card,
+                      onUpdateOptions: (newOptions) => {
+                        if (onUpdateCard && newOptions && newOptions.length > 0) {
+                          // Update card with recovered options
+                          onUpdateCard({
+                            ...card,
+                            options: newOptions,
+                            savedOptions: newOptions,
+                            questionType: 'multiple_choice'
+                          });
+                        }
+                      }
+                    }} 
+                  />
                 </div>
               </>
             ) : (

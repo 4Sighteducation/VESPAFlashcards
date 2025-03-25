@@ -1,10 +1,12 @@
 /**
  * UnifiedDataService.js
  * 
- * A unified service for managing both topic shells and flashcards in field_2979.
- * This service implements the "single source of truth" architecture, storing
- * both topic structures and their cards in a single field.
+ * A unified service for managing both topic shells and flashcards in a single source of truth
+ * Now updated to use the new unified data model
  */
+
+import UnifiedDataModel from '../utils/UnifiedDataModel';
+import { safeParseJSON } from '../utils/DataUtils';
 
 // Color palette for subject/topic assignment
 const BRIGHT_COLORS = [
@@ -22,15 +24,15 @@ const FLASHCARD_OBJECT = "object_102";
 
 // Field mappings
 const FIELD_MAPPING = {
-  cardBankData: 'field_2979',      // Unified card bank + topic shells
-  topicLists: 'field_3011',        // Legacy topic lists (reference only)
-  colorMapping: 'field_3000',      // Color mapping for subjects
-  box1: 'field_2986',              // Box 1 (reference)
-  box2: 'field_2987',              // Box 2 (reference)
-  box3: 'field_2988',              // Box 3 (reference)
-  box4: 'field_2989',              // Box 4 (reference)
-  box5: 'field_2990',              // Box 5 (reference)
-  lastSaved: 'field_2957'          // Last saved timestamp
+  unifiedData: 'field_2979',         // Store the entire unified data model here
+  topicLists: 'field_3011',          // Legacy topic lists (reference only)
+  colorMapping: 'field_3000',        // Color mapping for subjects
+  box1: 'field_2986',                // Box 1 (reference)
+  box2: 'field_2987',                // Box 2 (reference)
+  box3: 'field_2988',                // Box 3 (reference)
+  box4: 'field_2989',                // Box 4 (reference)
+  box5: 'field_2990',                // Box 5 (reference)
+  lastSaved: 'field_2957'            // Last saved timestamp
 };
 
 /**
@@ -219,7 +221,7 @@ const getUserData = async (recordId, auth) => {
     }
 
     const userData = await getResponse.json();
-    debugLog("User data fetched successfully", { recordId });
+    debugLog("User data fetched successfully", { fields: Object.keys(userData) });
     return userData;
   } catch (error) {
     console.error("[UnifiedDataService] Error getting user data:", error);
@@ -228,556 +230,300 @@ const getUserData = async (recordId, auth) => {
 };
 
 /**
- * Save data to Knack with retry mechanism
+ * Load user data with the unified data model
+ * @param {string} userId - User ID
+ * @param {Object} auth - Auth object with token
+ * @returns {Promise<Object>} - User data in unified model format
+ */
+export const loadUserData = async (userId, auth) => {
+  try {
+    // Get the user's record ID
+    const recordId = await getUserRecordId(userId, auth);
+    
+    // Get the user's data
+    const userData = await getUserData(recordId, auth);
+    
+    // Check if unified data exists
+    if (userData[FIELD_MAPPING.unifiedData]) {
+      // Parse the unified data
+      const unifiedData = safeParseJSON(userData[FIELD_MAPPING.unifiedData], null);
+      
+      if (unifiedData && unifiedData.version === UnifiedDataModel.SCHEMA_VERSION) {
+        debugLog("Loaded unified data", { 
+          subjects: unifiedData.subjects.length,
+          topics: unifiedData.topics.length,
+          cards: unifiedData.cards.length
+        });
+        
+        return {
+          recordId,
+          unifiedData
+        };
+      }
+    }
+    
+    // If no unified data, convert from old format
+    const oldCards = userData[FIELD_MAPPING.cardBankData] 
+      ? safeParseJSON(userData[FIELD_MAPPING.cardBankData], [])
+      : [];
+      
+    const colorMapping = userData[FIELD_MAPPING.colorMapping]
+      ? safeParseJSON(userData[FIELD_MAPPING.colorMapping], {})
+      : {};
+      
+    // Convert old format to unified model
+    const unifiedData = UnifiedDataModel.convertFromOldFormat(oldCards, colorMapping);
+    
+    debugLog("Converted from old format", {
+      oldCards: oldCards.length,
+      subjects: unifiedData.subjects.length,
+      topics: unifiedData.topics.length,
+      cards: unifiedData.cards.length
+    });
+    
+    return {
+      recordId,
+      unifiedData,
+      oldFormatData: {
+        cards: oldCards,
+        colorMapping
+      }
+    };
+  } catch (error) {
+    console.error("[UnifiedDataService] Error loading user data:", error);
+    throw error;
+  }
+};
+
+/**
+ * Save user data with the unified data model
  * @param {string} recordId - Record ID
- * @param {Object} updateData - Data to update
+ * @param {Object} unifiedData - Data in unified model format
  * @param {Object} auth - Auth object with token
  * @returns {Promise<boolean>} - Success status
  */
-const saveWithRetry = async (recordId, updateData, auth) => {
-  const maxRetries = 3;
-  let retryCount = 0;
+export const saveUserData = async (recordId, unifiedData, auth) => {
+  try {
+    debugLog("Saving unified data", {
+      recordId,
+      subjects: unifiedData.subjects.length,
+      topics: unifiedData.topics.length,
+      cards: unifiedData.cards.length
+    });
+    
+    // Update timestamp
+    unifiedData.lastUpdated = new Date().toISOString();
+    
+    // Convert to old format for backward compatibility
+    const oldFormatCards = UnifiedDataModel.convertToOldFormat(unifiedData);
+    
+    // Create color mapping from subjects and topics
+    const colorMapping = {};
+    unifiedData.subjects.forEach(subject => {
+      colorMapping[subject.name] = {
+        base: subject.color,
+        topics: {}
+      };
+      
+      // Add topic colors
+      const topicsForSubject = unifiedData.topics.filter(topic => topic.subjectId === subject.id);
+      topicsForSubject.forEach(topic => {
+        colorMapping[subject.name].topics[topic.name] = topic.color;
+      });
+    });
+    
+    // Prepare update data
+    const updateData = {
+      [FIELD_MAPPING.unifiedData]: JSON.stringify(unifiedData),
+      [FIELD_MAPPING.cardBankData]: JSON.stringify(oldFormatCards),
+      [FIELD_MAPPING.colorMapping]: JSON.stringify(colorMapping),
+      [FIELD_MAPPING.lastSaved]: new Date().toISOString()
+    };
+    
+    // Update the record
+    const updateUrl = `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records/${recordId}`;
+    const updateResponse = await fetch(updateUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Knack-Application-ID": KNACK_APP_ID,
+        "X-Knack-REST-API-Key": KNACK_API_KEY,
+        "Authorization": `Bearer ${auth.token}`
+      },
+      body: JSON.stringify(updateData)
+    });
+    
+    if (!updateResponse.ok) {
+      throw new Error(`Failed to update user data: ${await updateResponse.text()}`);
+    }
+    
+    debugLog("Saved unified data successfully", { recordId });
+    return true;
+  } catch (error) {
+    console.error("[UnifiedDataService] Error saving user data:", error);
+    return false;
+  }
+};
+
+/**
+ * Add cards to both the unified data model and convert to old format for backward compatibility
+ * @param {Object} unifiedData - Current unified data model
+ * @param {Array} newCards - New cards in the old format
+ * @returns {Object} - Updated unified data model
+ */
+export const addCardsToUnifiedData = (unifiedData, newCards) => {
+  if (!unifiedData || !Array.isArray(newCards) || newCards.length === 0) {
+    return unifiedData;
+  }
   
-  while (retryCount <= maxRetries) {
-    try {
-      debugLog(`Save attempt ${retryCount + 1}/${maxRetries + 1}`, {
-        recordId
-      });
-      
-      const updateUrl = `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records/${recordId}`;
-      const updateResponse = await fetch(updateUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY,
-          "Authorization": `Bearer ${auth.token}`
-        },
-        body: JSON.stringify(updateData)
-      });
-      
-      if (updateResponse.ok) {
-        const result = await updateResponse.json();
-        debugLog("Save successful", { recordId: result.id });
-        return true;
-      }
-      
-      // If we get here, the request failed but didn't throw
-      const errorData = await updateResponse.json().catch(() => ({ message: "Unknown error" }));
-      console.error(`[UnifiedDataService] Save attempt ${retryCount + 1}/${maxRetries + 1} failed:`, errorData);
-      
-      // Increment retry count
-      retryCount++;
-      
-      // Wait before retrying (exponential backoff)
-      if (retryCount <= maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount - 1)));
-      }
-    } catch (error) {
-      console.error(`[UnifiedDataService] Save attempt ${retryCount + 1}/${maxRetries + 1} failed with exception:`, error);
-      retryCount++;
-      
-      // Wait before retrying
-      if (retryCount <= maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount - 1)));
-      }
-    }
-  }
+  // Create a copy of the unified data
+  const updatedData = {
+    ...unifiedData,
+    subjects: [...unifiedData.subjects],
+    topics: [...unifiedData.topics],
+    cards: [...unifiedData.cards]
+  };
   
-  // All retries failed
-  return false;
+  // Create maps for quick lookups
+  const subjectMap = new Map();
+  updatedData.subjects.forEach(subject => {
+    subjectMap.set(subject.name, subject);
+  });
+  
+  const topicMap = new Map();
+  updatedData.topics.forEach(topic => {
+    const key = `${topic.subjectId}:${topic.name}`;
+    topicMap.set(key, topic);
+  });
+  
+  // Process new cards
+  newCards.forEach(card => {
+    if (!card) return;
+    
+    const subjectName = card.subject || 'General';
+    const topicName = card.topic || 'General';
+    
+    // Find or create subject
+    let subject = updatedData.subjects.find(s => s.name === subjectName);
+    if (!subject) {
+      subject = UnifiedDataModel.createSubject(subjectName, card.cardColor || '#3cb44b', {
+        examBoard: card.examBoard || '',
+        examType: card.examType || ''
+      });
+      updatedData.subjects.push(subject);
+      subjectMap.set(subjectName, subject);
+    }
+    
+    // Find or create topic
+    const topicKey = `${subject.id}:${topicName}`;
+    let topic = null;
+    
+    for (const t of updatedData.topics) {
+      if (t.subjectId === subject.id && t.name === topicName) {
+        topic = t;
+        break;
+      }
+    }
+    
+    if (!topic) {
+      topic = UnifiedDataModel.createTopic(topicName, subject.id, null, {
+        color: card.cardColor || subject.color,
+        fullName: topicName
+      });
+      updatedData.topics.push(topic);
+      topicMap.set(topicKey, topic);
+    }
+    
+    // Create the new card in unified format
+    const newCard = UnifiedDataModel.createCard(
+      card.question || card.front || '',
+      card.answer || card.back || '',
+      topic.id,
+      subject.id,
+      {
+        subject: subjectName,
+        topic: topicName,
+        examBoard: card.examBoard || '',
+        examType: card.examType || '',
+        detailedAnswer: card.detailedAnswer || '',
+        additionalInfo: card.additionalInfo || '',
+        questionType: card.questionType || 'short_answer',
+        options: card.options || [],
+        savedOptions: card.savedOptions || card.options || [],
+        correctAnswer: card.correctAnswer || '',
+        cardColor: card.cardColor || card.color || subject.color,
+        textColor: card.textColor || '',
+        boxNum: card.boxNum || 1
+      }
+    );
+    
+    // Preserve original ID if it exists
+    if (card.id) {
+      newCard.id = card.id;
+    }
+    
+    // Add card to unified data
+    updatedData.cards.push(newCard);
+    
+    // Update topic's cards array and isEmpty flag
+    topic.cards.push(newCard.id);
+    topic.isEmpty = false;
+    topic.updated = new Date().toISOString();
+  });
+  
+  // Update lastUpdated timestamp
+  updatedData.lastUpdated = new Date().toISOString();
+  
+  return updatedData;
 };
 
 /**
- * Save topic shells to field_2979
- * @param {Array} topicShells - Array of topic shell objects
- * @param {string} userId - User ID
- * @param {Object} auth - Auth object containing token
- * @returns {Promise<boolean>} - Success status
+ * Create a backup of the unified data in localStorage
+ * @param {Object} unifiedData - Unified data model
+ * @param {string} key - Storage key
  */
-export const saveTopicShells = async (topicShells, userId, auth) => {
+export const backupToLocalStorage = (unifiedData, key = 'unified_data_backup') => {
   try {
-    debugLog("Saving topic shells", { 
-      count: topicShells.length,
-      userId
-    });
-    
-    // Input validation
-    if (!Array.isArray(topicShells) || topicShells.length === 0) {
-      throw new Error("Invalid topic shells format or empty array");
-    }
-    
-    // Get user's record ID
-    const recordId = await getUserRecordId(userId, auth);
-    
-    // Get existing data
-    const userData = await getUserData(recordId, auth);
-    
-    // Get existing color mapping from field_3000
-    const colorMapping = getColorMapping(userData);
-    debugLog("Existing color mapping", colorMapping);
-    
-    // Create a new color map for any new subjects
-    const newColorMap = {};
-    
-    // Process each topic shell before saving
-    topicShells.forEach(shell => {
-      // Ensure each topic shell has required properties
-      if (!shell.id) shell.id = generateId('topic');
-      if (!shell.type) shell.type = 'topic';
-      if (!shell.isShell) shell.isShell = true;
-      if (!shell.cards) shell.cards = [];
-      if (!shell.created) shell.created = new Date().toISOString();
-      shell.updated = new Date().toISOString();
-      
-      // Mark as empty if it has no cards
-      shell.isEmpty = shell.cards.length === 0;
-      
-      // If subject doesn't have a color in the mapping yet, assign one
-      if (!shell.baseColor && shell.subject) {
-        if (colorMapping[shell.subject]) {
-          // Use existing color from mapping
-          shell.baseColor = colorMapping[shell.subject];
-        } else if (newColorMap[shell.subject]) {
-          // Use color assigned in this batch
-          shell.baseColor = newColorMap[shell.subject];
-        } else {
-          // Assign a new color
-          const randomColor = BRIGHT_COLORS[Math.floor(Math.random() * BRIGHT_COLORS.length)];
-          newColorMap[shell.subject] = randomColor;
-          shell.baseColor = randomColor;
-        }
-      }
-      
-      // Apply color based on isEmpty status
-      if (shell.isEmpty) {
-        shell.color = createGreyedOutColor(shell.baseColor);
-      } else {
-        shell.color = shell.baseColor;
-      }
-    });
-    
-    // Parse existing field_2979 data
-    let existingData = [];
-    if (userData[FIELD_MAPPING.cardBankData]) {
-      existingData = safeParseJSON(userData[FIELD_MAPPING.cardBankData], []);
-    }
-
-    // Filter out non-topic items (cards) and topic shells that we'll replace
-    const cardsOnly = existingData.filter(item => 
-      item.type !== 'topic' || 
-      (item.type === 'topic' && !topicShells.some(shell => 
-        shell.id === item.id || 
-        (shell.subject === item.subject && 
-         shell.name === item.name && 
-         shell.examBoard === item.examBoard &&
-         shell.examType === item.examType)
-      ))
-    );
-    
-    // Create updated array with cards and new topic shells
-    const updatedData = [...cardsOnly, ...topicShells];
-    
-    // Prepare data to save
-    const updateData = {
-      [FIELD_MAPPING.cardBankData]: JSON.stringify(updatedData),
-      [FIELD_MAPPING.lastSaved]: new Date().toISOString()
+    const timestamp = new Date().toISOString();
+    const backup = {
+      timestamp,
+      data: unifiedData
     };
     
-    // Update color mapping in field_3000 if we have new colors
-    if (Object.keys(newColorMap).length > 0) {
-      updateData[FIELD_MAPPING.colorMapping] = updateColorMapping(userData, newColorMap);
-      debugLog("Updated color mapping", { newColors: newColorMap });
-    } else if (userData[FIELD_MAPPING.colorMapping]) {
-      // Preserve existing color mapping
-      updateData[FIELD_MAPPING.colorMapping] = userData[FIELD_MAPPING.colorMapping];
-    }
-    
-    // Preserve other fields
-    if (userData[FIELD_MAPPING.topicLists]) updateData[FIELD_MAPPING.topicLists] = userData[FIELD_MAPPING.topicLists];
-    if (userData[FIELD_MAPPING.box1]) updateData[FIELD_MAPPING.box1] = userData[FIELD_MAPPING.box1];
-    if (userData[FIELD_MAPPING.box2]) updateData[FIELD_MAPPING.box2] = userData[FIELD_MAPPING.box2];
-    if (userData[FIELD_MAPPING.box3]) updateData[FIELD_MAPPING.box3] = userData[FIELD_MAPPING.box3];
-    if (userData[FIELD_MAPPING.box4]) updateData[FIELD_MAPPING.box4] = userData[FIELD_MAPPING.box4];
-    if (userData[FIELD_MAPPING.box5]) updateData[FIELD_MAPPING.box5] = userData[FIELD_MAPPING.box5];
-    
-    // Save to Knack
-    return await saveWithRetry(recordId, updateData, auth);
+    localStorage.setItem(key, JSON.stringify(backup));
+    console.log(`[UnifiedDataService] Backed up unified data to localStorage (${unifiedData.cards.length} cards)`);
+    return true;
   } catch (error) {
-    console.error("[UnifiedDataService] Error saving topic shells:", error);
-    throw error;
+    console.error('[UnifiedDataService] Error backing up to localStorage:', error);
+    return false;
   }
 };
 
 /**
- * Add cards to field_2979 and link them to a topic
- * @param {Array} cards - Array of card objects
- * @param {string} topicId - ID of the parent topic
- * @param {string} userId - User ID
- * @param {Object} auth - Auth object containing token
- * @returns {Promise<boolean>} - Success status
+ * Restore unified data from localStorage backup
+ * @param {string} key - Storage key
+ * @returns {Object|null} - Restored data or null if backup not found
  */
-export const addCardsToTopic = async (cards, topicId, userId, auth) => {
+export const restoreFromLocalStorage = (key = 'unified_data_backup') => {
   try {
-    debugLog("Adding cards to topic", { 
-      cardCount: cards.length,
-      topicId,
-      userId
-    });
+    const backupJson = localStorage.getItem(key);
+    if (!backupJson) return null;
     
-    // Input validation
-    if (!Array.isArray(cards) || cards.length === 0) {
-      throw new Error("Invalid cards format or empty array");
-    }
+    const backup = safeParseJSON(backupJson, null);
+    if (!backup || !backup.data) return null;
     
-    if (!topicId) {
-      throw new Error("No topicId provided");
-    }
-    
-    // Get user's record ID
-    const recordId = await getUserRecordId(userId, auth);
-    
-    // Get existing data
-    const userData = await getUserData(recordId, auth);
-    
-    // Parse existing field_2979 data
-    let existingData = [];
-    if (userData[FIELD_MAPPING.cardBankData]) {
-      existingData = safeParseJSON(userData[FIELD_MAPPING.cardBankData], []);
-    }
-    
-    // Find the topic shell
-    const topicShellIndex = existingData.findIndex(item => 
-      item.type === 'topic' && item.id === topicId
-    );
-    
-    if (topicShellIndex === -1) {
-      throw new Error(`Topic shell with ID ${topicId} not found`);
-    }
-    
-    const topicShell = existingData[topicShellIndex];
-    
-    // Process cards to add topic references
-    const processedCards = cards.map(card => {
-      // Ensure each card has required properties
-      if (!card.id) card.id = generateId('card');
-      if (!card.type) card.type = 'card';
-      
-      // Add references to parent topic
-      card.topicId = topicId;
-      
-      // Use topic metadata if not already provided
-      if (!card.subject) card.subject = topicShell.subject;
-      if (!card.topic) card.topic = topicShell.name;
-      if (!card.examBoard) card.examBoard = topicShell.examBoard;
-      if (!card.examType) card.examType = topicShell.examType;
-      if (!card.cardColor && topicShell.color) card.cardColor = topicShell.color;
-      
-      // Add timestamps
-      if (!card.created) card.created = new Date().toISOString();
-      card.updated = new Date().toISOString();
-      
-      // Add spaced repetition data if not present
-      if (!card.boxNum) card.boxNum = 1;
-      if (!card.lastReviewed) card.lastReviewed = new Date().toISOString();
-      if (!card.nextReviewDate) {
-        // Set next review date to tomorrow
-        const nextDay = new Date();
-        nextDay.setDate(nextDay.getDate() + 1);
-        card.nextReviewDate = nextDay.toISOString();
-      }
-      
-      return card;
-    });
-    
-    // Update topic shell's cards array and empty status
-    topicShell.cards = [...(topicShell.cards || []), ...processedCards.map(card => card.id)];
-    
-    // Set topic as no longer empty
-    const wasEmpty = topicShell.isEmpty === true;
-    topicShell.isEmpty = false;
-    
-    // Update the color to full color (not greyed out) if it was empty before
-    if (wasEmpty && topicShell.baseColor) {
-      topicShell.color = topicShell.baseColor;
-      debugLog("Topic no longer empty, updating color", { 
-        topicId, 
-        wasEmpty, 
-        newColor: topicShell.color 
-      });
-    }
-    
-    topicShell.updated = new Date().toISOString();
-    
-    // Update the topic shell in the existing data
-    existingData[topicShellIndex] = topicShell;
-    
-    // Add the new cards to the existing data
-    const updatedData = [...existingData, ...processedCards];
-    
-    // Prepare box1 entries
-    let box1Data = [];
-    if (userData[FIELD_MAPPING.box1]) {
-      box1Data = safeParseJSON(userData[FIELD_MAPPING.box1], []);
-    }
-    
-    // Create box1 entries for the new cards
-    const newBox1Items = processedCards.map(card => ({
-      cardId: card.id,
-      lastReviewed: card.lastReviewed,
-      nextReviewDate: card.nextReviewDate
-    }));
-    
-    // Prepare data to save
-    const updateData = {
-      [FIELD_MAPPING.cardBankData]: JSON.stringify(updatedData),
-      [FIELD_MAPPING.box1]: JSON.stringify([...box1Data, ...newBox1Items]),
-      [FIELD_MAPPING.lastSaved]: new Date().toISOString()
-    };
-    
-    // Preserve other fields
-    if (userData[FIELD_MAPPING.topicLists]) updateData[FIELD_MAPPING.topicLists] = userData[FIELD_MAPPING.topicLists];
-    if (userData[FIELD_MAPPING.box2]) updateData[FIELD_MAPPING.box2] = userData[FIELD_MAPPING.box2];
-    if (userData[FIELD_MAPPING.box3]) updateData[FIELD_MAPPING.box3] = userData[FIELD_MAPPING.box3];
-    if (userData[FIELD_MAPPING.box4]) updateData[FIELD_MAPPING.box4] = userData[FIELD_MAPPING.box4];
-    if (userData[FIELD_MAPPING.box5]) updateData[FIELD_MAPPING.box5] = userData[FIELD_MAPPING.box5];
-    
-    // Save to Knack
-    return await saveWithRetry(recordId, updateData, auth);
+    console.log(`[UnifiedDataService] Restored unified data from localStorage (${backup.data.cards.length} cards)`);
+    return backup.data;
   } catch (error) {
-    console.error("[UnifiedDataService] Error adding cards to topic:", error);
-    throw error;
-  }
-};
-
-/**
- * Get all topics from field_2979
- * @param {string} userId - User ID
- * @param {Object} auth - Auth object containing token
- * @param {Object} filters - Optional filters (subject, examBoard, examType)
- * @returns {Promise<Array>} - Array of topic shells
- */
-export const getTopics = async (userId, auth, filters = {}) => {
-  try {
-    debugLog("Getting topics", { userId, filters });
-    
-    // Get user's record ID
-    const recordId = await getUserRecordId(userId, auth);
-    
-    // Get user data
-    const userData = await getUserData(recordId, auth);
-    
-    // Parse field_2979 data
-    let bankData = [];
-    if (userData[FIELD_MAPPING.cardBankData]) {
-      bankData = safeParseJSON(userData[FIELD_MAPPING.cardBankData], []);
-    }
-    
-    // Filter for topic shells only
-    let topics = bankData.filter(item => item.type === 'topic' && item.isShell);
-    
-    // Apply filters if provided
-    if (filters.subject) {
-      topics = topics.filter(topic => topic.subject === filters.subject);
-    }
-    if (filters.examBoard) {
-      topics = topics.filter(topic => topic.examBoard === filters.examBoard);
-    }
-    if (filters.examType) {
-      topics = topics.filter(topic => topic.examType === filters.examType);
-    }
-    
-    return topics;
-  } catch (error) {
-    console.error("[UnifiedDataService] Error getting topics:", error);
-    return [];
-  }
-};
-
-/**
- * Get cards for a specific topic
- * @param {string} topicId - Topic ID
- * @param {string} userId - User ID
- * @param {Object} auth - Auth object containing token
- * @returns {Promise<Array>} - Array of cards
- */
-export const getCardsForTopic = async (topicId, userId, auth) => {
-  try {
-    debugLog("Getting cards for topic", { topicId, userId });
-    
-    // Get user's record ID
-    const recordId = await getUserRecordId(userId, auth);
-    
-    // Get user data
-    const userData = await getUserData(recordId, auth);
-    
-    // Parse field_2979 data
-    let bankData = [];
-    if (userData[FIELD_MAPPING.cardBankData]) {
-      bankData = safeParseJSON(userData[FIELD_MAPPING.cardBankData], []);
-    }
-    
-    // Find the topic shell
-    const topicShell = bankData.find(item => 
-      item.type === 'topic' && item.id === topicId
-    );
-    
-    if (!topicShell) {
-      throw new Error(`Topic with ID ${topicId} not found`);
-    }
-    
-    // Get cards that belong to this topic
-    const cards = bankData.filter(item => 
-      item.type === 'card' && item.topicId === topicId
-    );
-    
-    return cards;
-  } catch (error) {
-    console.error("[UnifiedDataService] Error getting cards for topic:", error);
-    return [];
-  }
-};
-
-/**
- * Move cards between topics
- * @param {Array} cardIds - Array of card IDs to move
- * @param {string} sourceTopicId - Source topic ID
- * @param {string} targetTopicId - Target topic ID
- * @param {string} userId - User ID
- * @param {Object} auth - Auth object containing token
- * @returns {Promise<boolean>} - Success status
- */
-export const moveCardsBetweenTopics = async (cardIds, sourceTopicId, targetTopicId, userId, auth) => {
-  try {
-    debugLog("Moving cards between topics", { 
-      cardCount: cardIds.length,
-      sourceTopicId,
-      targetTopicId,
-      userId
-    });
-    
-    // Input validation
-    if (!Array.isArray(cardIds) || cardIds.length === 0) {
-      throw new Error("Invalid cardIds format or empty array");
-    }
-    
-    if (!sourceTopicId || !targetTopicId) {
-      throw new Error("Source or target topic ID missing");
-    }
-    
-    // Get user's record ID
-    const recordId = await getUserRecordId(userId, auth);
-    
-    // Get user data
-    const userData = await getUserData(recordId, auth);
-    
-    // Parse field_2979 data
-    let bankData = [];
-    if (userData[FIELD_MAPPING.cardBankData]) {
-      bankData = safeParseJSON(userData[FIELD_MAPPING.cardBankData], []);
-    }
-    
-    // Find the source and target topic shells
-    const sourceTopicIndex = bankData.findIndex(item => 
-      item.type === 'topic' && item.id === sourceTopicId
-    );
-    
-    const targetTopicIndex = bankData.findIndex(item => 
-      item.type === 'topic' && item.id === targetTopicId
-    );
-    
-    if (sourceTopicIndex === -1) {
-      throw new Error(`Source topic with ID ${sourceTopicId} not found`);
-    }
-    
-    if (targetTopicIndex === -1) {
-      throw new Error(`Target topic with ID ${targetTopicId} not found`);
-    }
-    
-    const sourceTopic = bankData[sourceTopicIndex];
-    const targetTopic = bankData[targetTopicIndex];
-    
-    // Update the cards with new topic ID and metadata
-    bankData = bankData.map(item => {
-      if (item.type === 'card' && cardIds.includes(item.id)) {
-        return {
-          ...item,
-          topicId: targetTopicId,
-          topic: targetTopic.name,
-          subject: targetTopic.subject,
-          examBoard: targetTopic.examBoard,
-          examType: targetTopic.examType,
-          updated: new Date().toISOString()
-        };
-      }
-      return item;
-    });
-    
-    // Update the source topic's cards array
-    sourceTopic.cards = (sourceTopic.cards || []).filter(id => !cardIds.includes(id));
-    sourceTopic.updated = new Date().toISOString();
-    
-    // Check if source topic is now empty and update its status and color if needed
-    const sourceTopicIsNowEmpty = sourceTopic.cards.length === 0;
-    if (sourceTopicIsNowEmpty && !sourceTopic.isEmpty) {
-      sourceTopic.isEmpty = true;
-      // Apply greyed-out color if baseColor exists
-      if (sourceTopic.baseColor) {
-        sourceTopic.color = createGreyedOutColor(sourceTopic.baseColor);
-      }
-      debugLog("Source topic now empty, updating color", { 
-        topicId: sourceTopicId, 
-        newColor: sourceTopic.color 
-      });
-    }
-    
-    // Update the target topic's cards array
-    targetTopic.cards = [...(targetTopic.cards || []), ...cardIds];
-    targetTopic.updated = new Date().toISOString();
-    
-    // If target topic was empty, update its status and color
-    if (targetTopic.isEmpty && targetTopic.cards.length > 0) {
-      targetTopic.isEmpty = false;
-      // Apply full color if baseColor exists
-      if (targetTopic.baseColor) {
-        targetTopic.color = targetTopic.baseColor;
-      }
-      debugLog("Target topic no longer empty, updating color", { 
-        topicId: targetTopicId, 
-        newColor: targetTopic.color 
-      });
-    }
-    
-    // Update the topics in the bankData
-    bankData[sourceTopicIndex] = sourceTopic;
-    bankData[targetTopicIndex] = targetTopic;
-    
-    // Prepare data to save
-    const updateData = {
-      [FIELD_MAPPING.cardBankData]: JSON.stringify(bankData),
-      [FIELD_MAPPING.lastSaved]: new Date().toISOString()
-    };
-    
-    // Preserve other fields
-    if (userData[FIELD_MAPPING.topicLists]) updateData[FIELD_MAPPING.topicLists] = userData[FIELD_MAPPING.topicLists];
-    if (userData[FIELD_MAPPING.box1]) updateData[FIELD_MAPPING.box1] = userData[FIELD_MAPPING.box1];
-    if (userData[FIELD_MAPPING.box2]) updateData[FIELD_MAPPING.box2] = userData[FIELD_MAPPING.box2];
-    if (userData[FIELD_MAPPING.box3]) updateData[FIELD_MAPPING.box3] = userData[FIELD_MAPPING.box3];
-    if (userData[FIELD_MAPPING.box4]) updateData[FIELD_MAPPING.box4] = userData[FIELD_MAPPING.box4];
-    if (userData[FIELD_MAPPING.box5]) updateData[FIELD_MAPPING.box5] = userData[FIELD_MAPPING.box5];
-    
-    // Save to Knack
-    return await saveWithRetry(recordId, updateData, auth);
-  } catch (error) {
-    console.error("[UnifiedDataService] Error moving cards between topics:", error);
-    throw error;
+    console.error('[UnifiedDataService] Error restoring from localStorage:', error);
+    return null;
   }
 };
 
 export default {
-  saveTopicShells,
-  addCardsToTopic,
-  getTopics,
-  getCardsForTopic,
-  moveCardsBetweenTopics
+  loadUserData,
+  saveUserData,
+  addCardsToUnifiedData,
+  backupToLocalStorage,
+  restoreFromLocalStorage
 };
