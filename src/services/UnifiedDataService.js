@@ -45,12 +45,12 @@ const debugLog = (title, data) => {
 };
 
 /**
- * Safely parse JSON with recovery options
+ * Local helper for parsing JSON with recovery options - renamed to avoid conflict
  * @param {string} jsonString - JSON string to parse
  * @param {Array|Object} defaultValue - Default value if parsing fails
  * @returns {Array|Object} - Parsed JSON or default value
  */
-const safeParseJSON = (jsonString, defaultValue = []) => {
+const parseSafeJSON = (jsonString, defaultValue = []) => {
   if (!jsonString) return defaultValue;
   
   try {
@@ -120,7 +120,7 @@ const getColorMapping = (userData) => {
   if (!userData[FIELD_MAPPING.colorMapping]) return {};
   
   try {
-    return safeParseJSON(userData[FIELD_MAPPING.colorMapping], {});
+    return parseSafeJSON(userData[FIELD_MAPPING.colorMapping], {});
   } catch (error) {
     console.error("[UnifiedDataService] Error parsing color mapping:", error);
     return {};
@@ -246,7 +246,7 @@ export const loadUserData = async (userId, auth) => {
     // Check if unified data exists
     if (userData[FIELD_MAPPING.unifiedData]) {
       // Parse the unified data
-      const unifiedData = safeParseJSON(userData[FIELD_MAPPING.unifiedData], null);
+      const unifiedData = parseSafeJSON(userData[FIELD_MAPPING.unifiedData], null);
       
       if (unifiedData && unifiedData.version === UnifiedDataModel.SCHEMA_VERSION) {
         debugLog("Loaded unified data", { 
@@ -264,11 +264,11 @@ export const loadUserData = async (userId, auth) => {
     
     // If no unified data, convert from old format
     const oldCards = userData[FIELD_MAPPING.cardBankData] 
-      ? safeParseJSON(userData[FIELD_MAPPING.cardBankData], [])
+      ? parseSafeJSON(userData[FIELD_MAPPING.cardBankData], [])
       : [];
       
     const colorMapping = userData[FIELD_MAPPING.colorMapping]
-      ? safeParseJSON(userData[FIELD_MAPPING.colorMapping], {})
+      ? parseSafeJSON(userData[FIELD_MAPPING.colorMapping], {})
       : {};
       
     // Convert old format to unified model
@@ -509,7 +509,7 @@ export const restoreFromLocalStorage = (key = 'unified_data_backup') => {
     const backupJson = localStorage.getItem(key);
     if (!backupJson) return null;
     
-    const backup = safeParseJSON(backupJson, null);
+    const backup = parseSafeJSON(backupJson, null);
     if (!backup || !backup.data) return null;
     
     console.log(`[UnifiedDataService] Restored unified data from localStorage (${backup.data.cards.length} cards)`);
@@ -520,10 +520,197 @@ export const restoreFromLocalStorage = (key = 'unified_data_backup') => {
   }
 };
 
+/**
+ * Save topic shells to the unified data model
+ * @param {Array} topicShells - Array of topic shells to save
+ * @param {string} userId - User ID
+ * @param {Object} auth - Auth object with token
+ * @returns {Promise<boolean>} - Success status
+ */
+export const saveTopicShells = async (topicShells, userId, auth) => {
+  try {
+    if (!Array.isArray(topicShells) || topicShells.length === 0) {
+      console.log("[UnifiedDataService] No topic shells to save");
+      return true; // Nothing to do, so technically successful
+    }
+    
+    debugLog("Saving topic shells", { 
+      count: topicShells.length, 
+      userId 
+    });
+    
+    // Get the user's record ID
+    let recordId;
+    try {
+      // First try to get recordId from API
+      const searchUrl = `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records`;
+      const searchResponse = await fetch(searchUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY,
+          "Authorization": `Bearer ${auth.token}`
+        }
+      });
+
+      if (!searchResponse.ok) {
+        throw new Error(`Failed to search for user record: ${await searchResponse.text()}`);
+      }
+
+      const allRecords = await searchResponse.json();
+      
+      // Find the record matching this user ID
+      if (allRecords && allRecords.records) {
+        const userRecord = allRecords.records.find(record => 
+          record.field_2954 === userId || 
+          (record.field_2958 && record.field_2958 === auth.email)
+        );
+
+        if (userRecord) {
+          recordId = userRecord.id;
+          debugLog("Found record ID", { recordId });
+        } else {
+          throw new Error(`No record found for user ID: ${userId}`);
+        }
+      } else {
+        throw new Error("No records returned from Knack API");
+      }
+    } catch (error) {
+      console.error("[UnifiedDataService] Error finding user record ID:", error);
+      return false;
+    }
+    
+    // Get the user's current data
+    let existingData;
+    try {
+      const getUrl = `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records/${recordId}`;
+      const getResponse = await fetch(getUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY,
+          "Authorization": `Bearer ${auth.token}`
+        }
+      });
+
+      if (!getResponse.ok) {
+        throw new Error(`Failed to get user data: ${await getResponse.text()}`);
+      }
+
+      existingData = await getResponse.json();
+    } catch (error) {
+      console.error("[UnifiedDataService] Error getting user data:", error);
+      return false;
+    }
+    
+    // Process the existing card bank data to extract cards
+    let existingBankData = [];
+    if (existingData[FIELD_MAPPING.cardBankData]) {
+      try {
+        existingBankData = parseSafeJSON(existingData[FIELD_MAPPING.cardBankData], []);
+      } catch (error) {
+        console.error("[UnifiedDataService] Error parsing existing bank data:", error);
+        existingBankData = [];
+      }
+    }
+    
+    // Split existing data into topic shells and cards
+    const existingTopicShells = existingBankData.filter(item => item.type === 'topic');
+    const existingCards = existingBankData.filter(item => item.type !== 'topic');
+    
+    debugLog("Split existing data", {
+      totalItems: existingBankData.length,
+      existingTopics: existingTopicShells.length,
+      existingCards: existingCards.length
+    });
+    
+    // Create a map of existing topic shells by ID for quick lookup
+    const existingTopicMap = new Map();
+    existingTopicShells.forEach(topic => {
+      existingTopicMap.set(topic.id, topic);
+    });
+    
+    // Process the new topic shells, updating existing ones if they exist
+    const updatedTopicShells = [];
+    topicShells.forEach(newTopic => {
+      if (existingTopicMap.has(newTopic.id)) {
+        // Update existing topic shell
+        const existingTopic = existingTopicMap.get(newTopic.id);
+        existingTopicMap.delete(newTopic.id); // Remove from map as we've processed it
+        
+        // Preserve cards array from existing topic
+        updatedTopicShells.push({
+          ...newTopic,
+          cards: existingTopic.cards || [],
+          updated: new Date().toISOString()
+        });
+      } else {
+        // Add new topic shell
+        updatedTopicShells.push({
+          ...newTopic,
+          updated: new Date().toISOString()
+        });
+      }
+    });
+    
+    // Add any remaining existing topic shells that weren't updated
+    existingTopicMap.forEach(remainingTopic => {
+      updatedTopicShells.push(remainingTopic);
+    });
+    
+    // Combine updated topic shells with existing cards
+    const updatedBankData = [...updatedTopicShells, ...existingCards];
+    
+    debugLog("Updated bank data", {
+      totalItems: updatedBankData.length,
+      updatedTopics: updatedTopicShells.length,
+      existingCards: existingCards.length
+    });
+    
+    // Update the record
+    try {
+      const updateUrl = `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records/${recordId}`;
+      const updateResponse = await fetch(updateUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY,
+          "Authorization": `Bearer ${auth.token}`
+        },
+        body: JSON.stringify({
+          [FIELD_MAPPING.cardBankData]: JSON.stringify(updatedBankData),
+          [FIELD_MAPPING.lastSaved]: new Date().toISOString()
+        })
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error(`Failed to update user data: ${await updateResponse.text()}`);
+      }
+
+      debugLog("Topic shells saved successfully", {
+        count: updatedTopicShells.length,
+        recordId
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("[UnifiedDataService] Error updating user data:", error);
+      return false;
+    }
+  } catch (error) {
+    console.error("[UnifiedDataService] Error saving topic shells:", error);
+    return false;
+  }
+};
+
 export default {
   loadUserData,
   saveUserData,
   addCardsToUnifiedData,
   backupToLocalStorage,
-  restoreFromLocalStorage
+  restoreFromLocalStorage,
+  saveTopicShells
 };
