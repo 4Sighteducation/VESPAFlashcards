@@ -196,9 +196,9 @@ const AICardGenerator = ({
       // Use our centralized service to load topic lists
       const { topicLists: knackTopicLists } = await loadTopicLists(userId, auth);
       
-      if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
-        console.log("Successfully loaded topic lists from Knack:", knackTopicLists);
-        return knackTopicLists;
+            if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
+              console.log("Successfully loaded topic lists from Knack:", knackTopicLists);
+              return knackTopicLists;
       }
       
       return [];
@@ -422,64 +422,64 @@ const AICardGenerator = ({
       console.log("Generating topics for:", examBoard, examType, subjectName);
       
       try {
-        // Get the prompt from our new prompt file
-        const prompt = generateTopicPrompt(examBoard, examType, subjectName);
-        
-        // Make API call to OpenAI
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${OPENAI_API_KEY}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
+      // Get the prompt from our new prompt file
+      const prompt = generateTopicPrompt(examBoard, examType, subjectName);
+      
+      // Make API call to OpenAI
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
           model: "gpt-3.5-turbo",
-            messages: [{ role: "user", content: prompt }],
-            max_tokens: 800,
-            temperature: 0.5
-          })
-        });
-        
-        if (!response.ok) {
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 800,
+          temperature: 0.5
+        })
+      });
+      
+      if (!response.ok) {
           // If we get a 429 (rate limit), immediately use fallback data
           if (response.status === 429) {
             console.log("Rate limit hit, using fallback data for", subjectName);
             return getFallbackTopics(examBoard, examType, subjectName);
           }
-          throw new Error(`API call failed: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (!data.choices || data.choices.length === 0) {
-          throw new Error("No content returned from API");
-        }
-        
-        // Extract and clean the content
-        let content = data.choices[0].message.content;
-        content = content.replace(/```json|```/g, '').trim();
-        console.log("Raw topic response:", content);
-        
-        // Try to parse as JSON
-        let topics;
-        try {
-          topics = JSON.parse(content);
-        } catch (e) {
-          console.error("Failed to parse topic response as JSON:", e);
-          // Fall back to text processing if JSON parsing fails
-          topics = content.split('\n')
-            .filter(line => line.trim().length > 0)
-            .map(line => line.replace(/^[-*•]\s*/, '').trim());
-        }
-        
-        // Ensure we have an array
-        if (!Array.isArray(topics)) {
-          console.error("Unexpected response format:", topics);
-          throw new Error("Invalid topic format received");
-        }
-        
-        console.log("Generated topics:", topics);
-        return topics;
+        throw new Error(`API call failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error("No content returned from API");
+      }
+      
+      // Extract and clean the content
+      let content = data.choices[0].message.content;
+      content = content.replace(/```json|```/g, '').trim();
+      console.log("Raw topic response:", content);
+      
+      // Try to parse as JSON
+      let topics;
+      try {
+        topics = JSON.parse(content);
+      } catch (e) {
+        console.error("Failed to parse topic response as JSON:", e);
+        // Fall back to text processing if JSON parsing fails
+        topics = content.split('\n')
+          .filter(line => line.trim().length > 0)
+          .map(line => line.replace(/^[-*•]\s*/, '').trim());
+      }
+      
+      // Ensure we have an array
+      if (!Array.isArray(topics)) {
+        console.error("Unexpected response format:", topics);
+        throw new Error("Invalid topic format received");
+      }
+      
+      console.log("Generated topics:", topics);
+      return topics;
       } catch (apiError) {
         // Log the error but recover with fallback data
         console.warn("API error, using fallback data:", apiError.message);
@@ -588,16 +588,16 @@ const AICardGenerator = ({
         setError("You must be logged in to save topic lists");
         return false;
       }
-
+      
       console.log("Saving topic lists to Knack for user:", userId);
-
+      
       // Safety check to ensure topicLists is a valid array
       if (!Array.isArray(topicLists)) {
         console.error("Topic lists is not an array:", topicLists);
         setError("Invalid data format: Topic lists must be an array");
         return false;
       }
-
+      
       // Process each topic list individually to create topic shells
       for (const list of topicLists) {
         // Extract the topics from the list
@@ -620,7 +620,7 @@ const AICardGenerator = ({
       }
       
       console.log("Topic lists saved to unified storage successfully:", topicLists.length, "lists");
-      return true;
+              return true;
     } catch (error) {
       console.error("Error in saveTopicListToKnack:", error);
       setError(`Error saving topic lists: ${error.message || "Unknown error"}`);
@@ -1229,7 +1229,7 @@ Use this format for different question types:
       show: true,
       addedCards: [card]
     });
-
+    
     // Auto-hide after 3 seconds
     setTimeout(() => {
       setSuccessModal(prev => ({...prev, show: false}));
@@ -1296,19 +1296,19 @@ Use this format for different question types:
     const topicId = selectedTopic ? selectedTopic.id : null;
     console.log("Adding all cards with topicId:", topicId);
     
-    // Trigger an explicit save operation to ensure cards are saved to the database
-    // This is important to prevent data loss if the user refreshes the page
-    if (window.parent && window.parent.postMessage) {
+  // Trigger an explicit save operation to ensure cards are saved to the database
+  // This is important to prevent data loss if the user refreshes the page
+  if (window.parent && window.parent.postMessage) {
       // First add all cards to the bank, with topic reference if available
-      window.parent.postMessage({ 
-        type: "ADD_TO_BANK",
-        data: {
-          cards: unadded,
+    window.parent.postMessage({ 
+      type: "ADD_TO_BANK",
+      data: {
+        cards: unadded,
           recordId: auth?.recordId || window.recordId,
           userId: userId, // Include userId for UnifiedDataService
           topicId: topicId // Include the topicId for association
-        }
-      }, "*");
+      }
+    }, "*");
       console.log("Added all cards to bank:", unadded);
       
       // Then immediately trigger a save to ensure persistence
@@ -1320,7 +1320,7 @@ Use this format for different question types:
         }
       }, "*");
       console.log("Triggered immediate save after adding all cards");
-    }
+  }
   };
   
   // Modal to show successfully added cards
@@ -2381,11 +2381,40 @@ Use this format for different question types:
     return () => clearInterval(autosaveInterval);
   }, [auth, userId, savedTopicLists]);
 
+  // Modified close handler to trigger data refresh
+  const handleClose = () => {
+    // If we saved topics, request a data refresh
+    if (topicListSaved) {
+      console.log("Topics were saved - triggering data refresh before closing");
+      
+      // Send message to parent window to request latest data
+      if (window.parent && window.parent.postMessage) {
+        window.parent.postMessage({ 
+          type: "REQUEST_REFRESH_DATA",
+          data: {
+            recordId: auth?.recordId || window.recordId
+          }
+        }, "*");
+        
+        // Small delay to allow data to refresh before closing
+        setTimeout(() => {
+          onClose();
+        }, 300);
+      } else {
+        // If can't message parent, just close normally
+        onClose();
+      }
+    } else {
+      // No topics saved, just close normally
+      onClose();
+    }
+  };
+
   return (
     <div className="ai-card-generator">
       <div className="generator-header">
         <h1>AI Flashcard Generator</h1>
-        <button className="close-button" onClick={onClose}>&times;</button>
+        <button className="close-button" onClick={handleClose}>&times;</button>
       </div>
       
       {/* Render the topic modal */}
@@ -2439,7 +2468,7 @@ Use this format for different question types:
           </button>
         ) : (
           <button 
-            onClick={onClose} 
+            onClick={handleClose} 
             className="finish-button"
           >
             Finish
