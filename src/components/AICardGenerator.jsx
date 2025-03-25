@@ -941,7 +941,7 @@ const AICardGenerator = ({
   // Generate cards using OpenAI API
   const generateCards = async () => {
     // Get subject value, ensuring it's a string not an object
-    const subjectValue = formData.subject || formData.newSubject;
+    const subjectValue = formData.subject || formData.newSubject || initialSubject;
     const subjectName = typeof subjectValue === 'object' && subjectValue.name 
       ? subjectValue.name 
       : subjectValue;
@@ -950,10 +950,10 @@ const AICardGenerator = ({
       isGenerating, 
       currentStep,
       formData: { 
-        examType: formData.examType,
-        examBoard: formData.examBoard,
+        examType: formData.examType || examType,
+        examBoard: formData.examBoard || examBoard,
         subject: subjectName,
-        topic: formData.topic || formData.newTopic,
+        topic: formData.topic || formData.newTopic || initialTopic,
         questionType: formData.questionType
       }
     });
@@ -964,9 +964,9 @@ const AICardGenerator = ({
     try {
       // Determine final subject and topic (use new values if provided)
       const finalSubject = formData.newSubject || subjectName;
-      const finalTopic = formData.newTopic || formData.topic;
-      const finalExamType = formData.examType;
-      const finalExamBoard = formData.examBoard;
+      const finalTopic = formData.newTopic || formData.topic || initialTopic;
+      const finalExamType = formData.examType || examType;
+      const finalExamBoard = formData.examBoard || examBoard;
       
       // Log explicit metadata that will be used
       console.log("Explicit metadata for cards:", {
@@ -1275,44 +1275,80 @@ Use this format for different question types:
       c.id === card.id ? {...c, added: true} : c
     ));
 
-    // Show success modal with the added card
-    setSuccessModal({
-      show: true,
-      addedCards: [card]
-    });
-    
-    // Auto-hide after 3 seconds
-    setTimeout(() => {
-      setSuccessModal(prev => ({...prev, show: false}));
-    }, 3000);
-
     // Get the selected topic ID if available
-    const topicId = selectedTopic ? selectedTopic.id : null;
+    const topicId = selectedCard?.id || topicId || null;
     console.log("Adding card with topicId:", topicId);
 
-    // Send message to parent window to add card to bank
-    if (window.parent && window.parent.postMessage) {
-      // First add the card to the bank, with topic reference if available
-      window.parent.postMessage({ 
-        type: "ADD_TO_BANK",
-        data: {
-          cards: [card],
-          recordId: auth?.recordId || window.recordId,
-          userId: userId, // Include userId for UnifiedDataService
-          topicId: topicId // Include the topicId for association
+    try {
+      // Ensure the card has proper metadata
+      const enrichedCard = {
+        ...card,
+        examBoard: card.examBoard || formData.examBoard || examBoard || "",
+        examType: card.examType || formData.examType || examType || "",
+        subject: card.subject || formData.subject || initialSubject || "General",
+        topic: card.topic || formData.topic || initialTopic || "General",
+        topicId: topicId || card.topicId || "",
+        created: card.created || new Date().toISOString(),
+        updated: card.updated || new Date().toISOString()
+      };
+      
+      // Show success message early to ensure visible feedback
+      setShowSuccessModal({
+        show: true,
+        addedCards: [enrichedCard]
+      });
+      
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        setShowSuccessModal(prev => ({...prev, show: false}));
+      }, 3000);
+      
+      // Wait a moment before sending to parent window to ensure UI stays responsive
+      setTimeout(() => {
+        // Send message to parent window to add card to bank
+        if (window.parent && window.parent.postMessage) {
+          console.log("Sending card to parent window:", enrichedCard);
+          
+          // Make sure we have valid auth data
+          const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
+          const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
+          
+          // First add the card to the bank
+          window.parent.postMessage({ 
+            type: "ADD_TO_BANK",
+            data: {
+              cards: [enrichedCard],
+              recordId: authData?.recordId || window.recordId || "",
+              userId: userIdToUse,
+              topicId: topicId || enrichedCard.topicId || ""
+            }
+          }, "*");
+          
+          // Then trigger a save with a small delay
+          setTimeout(() => {
+            window.parent.postMessage({ 
+              type: "TRIGGER_SAVE",
+              data: {
+                cards: [enrichedCard],
+                recordId: authData?.recordId || window.recordId || ""
+              }
+            }, "*");
+            console.log("Triggered save to ensure persistence");
+          }, 500);
         }
-      }, "*");
-      console.log("Added card to bank:", card);
-
-      // Then immediately trigger a save to ensure persistence
-      window.parent.postMessage({ 
-        type: "TRIGGER_SAVE",
-        data: {
-          cards: [card],
-          recordId: auth?.recordId || window.recordId
+        
+        // Call the onAddCard callback provided by parent
+        if (typeof onAddCard === 'function') {
+          try {
+            onAddCard(enrichedCard);
+          } catch (callbackError) {
+            console.error("Error in onAddCard callback:", callbackError);
+          }
         }
-      }, "*");
-      console.log("Triggered immediate save after adding card");
+      }, 100);
+    } catch (error) {
+      console.error("Error handling add card:", error);
+      setError(`Error adding card: ${error.message}. Please try again.`);
     }
   };
 

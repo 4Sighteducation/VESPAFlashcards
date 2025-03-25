@@ -50,6 +50,10 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
       return false;
     }
 
+    // Ensure exam metadata is valid - use defaults if not provided
+    const validExamBoard = examBoard || "General";
+    const validExamType = examType || "Course";
+
     // Ensure all topics have valid IDs and names before saving
     const validatedTopics = topics.map(topic => {
       if (!topic) {
@@ -57,14 +61,20 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
         return {
           id: `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           topic: "Unknown Topic",
-          name: "Unknown Topic"
+          name: "Unknown Topic",
+          examBoard: validExamBoard,
+          examType: validExamType,
+          subject: subject
         };
       }
       return {
         ...topic,
         id: topic.id || `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         topic: topic.topic || topic.name || "Unknown Topic",
-        name: topic.name || topic.topic || "Unknown Topic"
+        name: topic.name || topic.topic || "Unknown Topic",
+        examBoard: validExamBoard,  // Ensure all topics have examBoard
+        examType: validExamType,    // Ensure all topics have examType
+        subject: subject            // Ensure all topics have subject
       };
     });
 
@@ -78,8 +88,8 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
     const field3011Result = await saveTopicList(
       validatedTopics, 
       subject, 
-      examBoard, 
-      examType, 
+      validExamBoard, 
+      validExamType, 
       userId, 
       auth
     );
@@ -93,10 +103,11 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
       name: topic.name || topic.topic || "Unknown Topic",
       topic: topic.topic || topic.name || "Unknown Topic", // Include both name AND topic properties for consistency
       subject: subject,
-      examBoard: examBoard,
-      examType: examType,
+      examBoard: validExamBoard,
+      examType: validExamType,
       color: '#3cb44b', // Default green color 
       baseColor: '#3cb44b',
+      subjectColor: '#3cb44b', // Add this to ensure subject color is passed through
       cards: [], // Empty cards array - this is an empty topic shell
       isShell: true,
       isEmpty: true, // Mark as empty
@@ -125,10 +136,10 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
         // Get the saved topic list with complete data
         const topicList = {
           id: `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          name: `${subject} - ${examBoard} ${examType}`,
-          examBoard,
-          examType,
-          subject,
+          name: `${subject} - ${validExamBoard} ${validExamType}`,
+          examBoard: validExamBoard,
+          examType: validExamType,
+          subject: subject,
           topics: validatedTopics,
           created: new Date().toISOString(),
           userId
@@ -139,13 +150,19 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
           type: 'TOPIC_LISTS_UPDATED',
           data: {
             topicLists: [topicList],
-            recordId: auth?.recordId // Send record ID if available
+            recordId: auth?.recordId, // Send record ID if available
+            metadata: {
+              subject: subject,
+              examBoard: validExamBoard,
+              examType: validExamType
+            }
           },
           timestamp: new Date().toISOString()
         }, '*');
         
         debugLog("Sent TOPIC_LISTS_UPDATED message to parent", { 
-          topicCount: validatedTopics.length 
+          topicCount: validatedTopics.length,
+          metadata: { subject, examBoard: validExamBoard, examType: validExamType }
         });
       } catch (messageError) {
         console.error("Error sending TOPIC_LISTS_UPDATED message:", messageError);

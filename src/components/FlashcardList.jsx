@@ -274,82 +274,74 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // Function to get exam type and board directly from the first card in a subject
   const getExamInfo = (subject) => {
     try {
-      // Try to extract exam board and type from the subject name itself
-      // Common patterns are: "[Board] [Type] [Subject]" like "Edexcel A-Level Dance"
-      
-      // List of known exam boards to look for in the subject name
-      const knownBoards = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA', 'Cambridge', 'IB', 'Pearson'];
-      // List of known exam types to look for in the subject name
-      const knownTypes = ['GCSE', 'A-Level', 'AS-Level', 'BTEC', 'Diploma', 'Certificate', 'Foundation', 'Higher'];
-      
       let examBoard = null;
       let examType = null;
       
-      // Pattern 1: Check if any known board is in the subject name
-      for (const board of knownBoards) {
-        if (subject.includes(board)) {
-          examBoard = board;
-          break;
-        }
-      }
-      
-      // Pattern 2: Check if any known type is in the subject name
-      for (const type of knownTypes) {
-        if (subject.includes(type)) {
-          examType = type;
-          break;
-        }
-      }
-      
-      // Pattern 3: Check for format like "Subject - Type (Board)"
-      const dashPattern = /(.+)\s*-\s*(.+)\s*\((.+)\)/;
-      const dashMatch = subject.match(dashPattern);
-      if (dashMatch && dashMatch.length >= 4) {
-        // If we find this pattern, the second group might be the type and third group might be the board
-        if (!examType) examType = dashMatch[2].trim();
-        if (!examBoard) examBoard = dashMatch[3].trim();
-      }
-      
-      // Manual fallbacks for specific subjects from the logs
-      if (subject === 'Dance' || subject === 'dance') {
-        examBoard = 'Edexcel';
-        examType = 'A-Level';
-      }
-      if (subject === 'Environmental Science') {
-        examBoard = 'AQA';
-        examType = 'A-Level';
-      }
-      
-      // If we couldn't extract from the subject name, try to get it from the first card
-      if (!examBoard || !examType) {
-        const subjectTopics = groupedCards[subject];
-        if (subjectTopics) {
-          const firstTopic = Object.keys(subjectTopics)[0];
-          const cards = subjectTopics[firstTopic];
-          
+      // First, try to find a topic shell with this subject that has metadata
+      const subjectTopics = groupedCards[subject];
+      if (subjectTopics) {
+        // Look through all topics in this subject
+        for (const topicName in subjectTopics) {
+          const cards = subjectTopics[topicName];
           if (cards && cards.length > 0) {
-            const firstCard = cards[0];
+            // Find any topic shell or card with metadata
+            const cardWithMetadata = cards.find(
+              card => card.examBoard && card.examType
+            );
             
-            // Try to get values directly from the card properties
-            if (!examType) {
-              examType = firstCard.examType || firstCard.courseType || firstCard.type;
-            }
-            
-            if (!examBoard) {
-              examBoard = firstCard.examBoard || firstCard.board;
-            }
-            
-            // If we still don't have values, check meta properties if they exist
-            if ((!examType || !examBoard) && firstCard.meta) {
-              if (!examType) {
-                examType = firstCard.meta.examType || firstCard.meta.courseType;
-              }
-              
-              if (!examBoard) {
-                examBoard = firstCard.meta.examBoard || firstCard.meta.board;
-              }
+            if (cardWithMetadata) {
+              examBoard = cardWithMetadata.examBoard;
+              examType = cardWithMetadata.examType;
+              console.log(`Found metadata in card for ${subject}:`, { examBoard, examType });
+              break;
             }
           }
+        }
+      }
+      
+      // If metadata not found, try other methods
+      if (!examBoard || !examType) {
+        // Try to extract exam board and type from the subject name itself
+        // Common patterns are: "[Board] [Type] [Subject]" like "Edexcel A-Level Dance"
+        
+        // List of known exam boards to look for in the subject name
+        const knownBoards = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA', 'Cambridge', 'IB', 'Pearson'];
+        // List of known exam types to look for in the subject name
+        const knownTypes = ['GCSE', 'A-Level', 'AS-Level', 'BTEC', 'Diploma', 'Certificate', 'Foundation', 'Higher'];
+        
+        // Pattern 1: Check if any known board is in the subject name
+        for (const board of knownBoards) {
+          if (subject.includes(board)) {
+            examBoard = board;
+            break;
+          }
+        }
+        
+        // Pattern 2: Check if any known type is in the subject name
+        for (const type of knownTypes) {
+          if (subject.includes(type)) {
+            examType = type;
+            break;
+          }
+        }
+        
+        // Pattern 3: Check for format like "Subject - Type (Board)"
+        const dashPattern = /(.+)\s*-\s*(.+)\s*\((.+)\)/;
+        const dashMatch = subject.match(dashPattern);
+        if (dashMatch && dashMatch.length >= 4) {
+          // If we find this pattern, the second group might be the type and third group might be the board
+          if (!examType) examType = dashMatch[2].trim();
+          if (!examBoard) examBoard = dashMatch[3].trim();
+        }
+        
+        // Manual fallbacks for specific subjects from the logs
+        if (subject === 'Dance' || subject === 'dance') {
+          examBoard = 'Edexcel';
+          examType = 'A-Level';
+        }
+        if (subject === 'Environmental Science') {
+          examBoard = 'AQA';
+          examType = 'A-Level';
         }
       }
       
@@ -973,17 +965,39 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
             <AICardGenerator
               onClose={handleCloseTopicCardGenerator}
               onAddCard={(card) => {
-                // Handle adding the new card
-                // This will typically be handled by the AICardGenerator's internal functions
-                handleCloseTopicCardGenerator();
+                // Add the generated card directly - no need to close generator
+                if (onUpdateCard && card) {
+                  try {
+                    console.log("Adding card to flashcard list:", card);
+                    
+                    // Ensure the card has metadata
+                    const enrichedCard = {
+                      ...card,
+                      subject: selectedTopicForCards.subject,
+                      topic: selectedTopicForCards.name,
+                      examBoard: selectedTopicForCards.examBoard,
+                      examType: selectedTopicForCards.examType,
+                      topicId: selectedTopicForCards.id
+                    };
+                    
+                    // Add a small delay before updating to prevent UI freezes
+                    setTimeout(() => {
+                      onUpdateCard(enrichedCard);
+                    }, 500);
+                  } catch (err) {
+                    console.error("Error adding card:", err);
+                  }
+                }
               }}
               initialSubject={selectedTopicForCards.subject}
               initialTopic={selectedTopicForCards.name}
-              examBoard={selectedTopicForCards.examBoard}
-              examType={selectedTopicForCards.examType}
+              examBoard={selectedTopicForCards.examBoard || ""}
+              examType={selectedTopicForCards.examType || ""}
               subjects={[selectedTopicForCards.subject]}
-              auth={true} // Assuming the user is authenticated if they can access this
-              userId="current_user" // This should be passed from the parent component
+              auth={window.VESPA_USER_AUTH || {recordId: window.recordId}} 
+              userId={window.VESPA_USER_ID || "current_user"}
+              topicId={selectedTopicForCards.id}
+              startAtStep={5} // Start at the cards generation step
             />
           </div>
         </div>
