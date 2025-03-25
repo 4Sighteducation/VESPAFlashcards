@@ -1276,7 +1276,7 @@ Use this format for different question types:
     ));
 
     // Get the selected topic ID if available
-    const topicId = selectedCard?.id || topicId || null;
+    const topicId = selectedTopic?.id || null;
     console.log("Adding card with topicId:", topicId);
 
     try {
@@ -1293,14 +1293,14 @@ Use this format for different question types:
       };
       
       // Show success message early to ensure visible feedback
-      setShowSuccessModal({
+      setSuccessModal({
         show: true,
         addedCards: [enrichedCard]
       });
       
       // Auto-hide success message after 3 seconds
       setTimeout(() => {
-        setShowSuccessModal(prev => ({...prev, show: false}));
+        setSuccessModal(prev => ({...prev, show: false}));
       }, 3000);
       
       // Wait a moment before sending to parent window to ensure UI stays responsive
