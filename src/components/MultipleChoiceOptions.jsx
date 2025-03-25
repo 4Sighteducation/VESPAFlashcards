@@ -1,16 +1,57 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './Flashcard.css';
 
 /**
  * Standalone component for rendering multiple choice options
  * This ensures consistent appearance across all views
  */
-const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) => {
-  // Skip rendering if no options
-  if (!options || !Array.isArray(options) || options.length === 0) {
-    console.warn("No options provided to MultipleChoiceOptions");
-    return null;
-  }
+const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, card }) => {
+  const [optionsToDisplay, setOptionsToDisplay] = useState([]);
+  
+  // Attempt to initialize options from props or recover from card
+  useEffect(() => {
+    try {
+      // First check if valid options were passed directly
+      if (options && Array.isArray(options) && options.length > 0) {
+        console.log("Using provided options:", options.length);
+        setOptionsToDisplay(options);
+        return;
+      }
+      
+      // If not, try to recover from card if available
+      if (card) {
+        // Try savedOptions if options are missing
+        if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+          console.log("Recovered options from savedOptions:", card.savedOptions.length);
+          setOptionsToDisplay(card.savedOptions);
+          return;
+        }
+        
+        // Try card.options directly if not passed in props
+        if (card.options && Array.isArray(card.options) && card.options.length > 0) {
+          console.log("Recovered options from card.options:", card.options.length);
+          setOptionsToDisplay(card.options);
+          return;
+        }
+      }
+      
+      // Create default options if nothing is available
+      if ((!optionsToDisplay || optionsToDisplay.length === 0) && card && card.questionType === 'multiple_choice') {
+        console.warn("No options available for multiple choice card, creating defaults");
+        const defaultOptions = [
+          "Option A (placeholder)", 
+          "Option B (placeholder)", 
+          "Option C (placeholder)", 
+          "Option D (placeholder)"
+        ];
+        setOptionsToDisplay(defaultOptions);
+      }
+    } catch (error) {
+      console.error("Error processing options in MultipleChoiceOptions:", error);
+      // Set fallback options in case of error
+      setOptionsToDisplay(["Option A", "Option B", "Option C", "Option D"]);
+    }
+  }, [options, card]);
 
   // Clean option text by removing letter prefixes (a., a), etc.)
   const cleanOptionText = (option) => {
@@ -20,7 +61,21 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
     return option.replace(prefixRegex, '').trim();
   };
 
-  console.log("Rendering options in dedicated component:", options);
+  // Render placeholder if no options available
+  if (!optionsToDisplay || !Array.isArray(optionsToDisplay) || optionsToDisplay.length === 0) {
+    return (
+      <div className="options-container" style={{
+        padding: '12px',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: '5px',
+        marginTop: '10px',
+      }}>
+        <div className="error-message" style={{textAlign: 'center', padding: '10px'}}>
+          Multiple choice options unavailable
+        </div>
+      </div>
+    );
+  }
   
   // Create option elements with explicit lettering (a, b, c, d, etc.)
   return (
@@ -40,7 +95,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false }) 
         margin: '0',
         display: 'block'
       }}>
-        {options.map((option, index) => {
+        {optionsToDisplay.map((option, index) => {
           if (!option) return null;
           const letter = String.fromCharCode(97 + index); // a, b, c, d, etc.
           const cleanedText = cleanOptionText(option);

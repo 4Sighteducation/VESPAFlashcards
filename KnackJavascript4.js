@@ -819,6 +819,19 @@ return cards.map(card => {
     return card;
   }
   
+  // For multiple choice questions, ensure options are preserved
+  const hasOptions = card.options && Array.isArray(card.options) && card.options.length > 0;
+  const hasSavedOptions = card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0;
+  
+  // Use existing options or fall back to savedOptions if present
+  const finalOptions = hasOptions ? card.options : (hasSavedOptions ? card.savedOptions : []);
+  
+  // Determine question type, default to short_answer if not specified
+  const questionType = card.questionType || (hasOptions || hasSavedOptions ? 'multiple_choice' : 'short_answer');
+  
+  // Determine correctAnswer for multiple choice questions
+  const correctAnswer = card.correctAnswer || (hasOptions && card.options.length > 0 ? card.options[0] : '');
+  
   // Otherwise, standardize it
   return {
     // Core identification
@@ -838,8 +851,15 @@ return cards.map(card => {
     detailedAnswer: card.detailedAnswer || '',
     additionalInfo: card.additionalInfo || '',
     
+    // Multiple choice fields
+    questionType: questionType,
+    options: finalOptions,
+    // Always save a backup of options if they exist
+    savedOptions: hasOptions ? [...card.options] : (hasSavedOptions ? [...card.savedOptions] : []),
+    correctAnswer: correctAnswer,
+    
     // Card type
-    type: card.type || 'short_answer',
+    type: card.type || 'card',
     
     // Visual properties
     cardColor: card.cardColor || card.color || '#3cb44b',
@@ -968,6 +988,7 @@ function verifyDataSave(recordId) {
         debugLog("VERIFICATION RESULT", {
           recordId: recordId,
           hasTopicLists: response && response[FIELD_MAPPING.topicLists] ? "yes" : "no",
+          hasCardBank: response && response[FIELD_MAPPING.cardBankData] ? "yes" : "no",
           timestamp: new Date().toISOString()
         });
         
@@ -997,7 +1018,104 @@ function verifyDataSave(recordId) {
             console.error(`Flashcard app [${new Date().toISOString()}]: Error parsing topic lists during verification:`, e);
           }
         } else {
-          console.error(`Flashcard app [${new Date().toISOString()}]: Verification failed: No topic lists field found`);
+          console.warn(`Flashcard app [${new Date().toISOString()}]: No topic lists field found during verification`);
+        }
+        
+        // NEW: Verify card bank data and check multiple choice options
+        if (response && response[FIELD_MAPPING.cardBankData]) {
+          try {
+            const cardBankJson = response[FIELD_MAPPING.cardBankData];
+            const cardBank = safeParseJSON(cardBankJson);
+            
+            if (Array.isArray(cardBank) && cardBank.length > 0) {
+              console.log(`Flashcard app [${new Date().toISOString()}]: Card bank verification: ${cardBank.length} items found`);
+              
+              // Check for multiple choice cards with missing options
+              const multipleChoiceCards = cardBank.filter(card => 
+                card.type === 'card' && 
+                card.questionType === 'multiple_choice'
+              );
+              
+              const cardsWithOptions = multipleChoiceCards.filter(card => 
+                card.options && Array.isArray(card.options) && card.options.length > 0
+              );
+              
+              const cardsWithSavedOptions = multipleChoiceCards.filter(card => 
+                card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0
+              );
+              
+              console.log(`Flashcard app [${new Date().toISOString()}]: Multiple choice verification:`, {
+                totalMultipleChoice: multipleChoiceCards.length,
+                withOptions: cardsWithOptions.length,
+                withSavedOptions: cardsWithSavedOptions.length
+              });
+              
+              // If we have multiple choice cards with missing options but with savedOptions,
+              // try to restore them by doing another save
+              if (multipleChoiceCards.length > 0 && 
+                  cardsWithOptions.length < multipleChoiceCards.length && 
+                  cardsWithSavedOptions.length > 0) {
+                
+                console.log(`Flashcard app [${new Date().toISOString()}]: Found multiple choice cards with missing options, attempting to restore...`);
+                
+                // Restore options from savedOptions
+                const restoredCardBank = cardBank.map(card => {
+                  if (card.type === 'card' && 
+                      card.questionType === 'multiple_choice' && 
+                      (!card.options || !Array.isArray(card.options) || card.options.length === 0) &&
+                      card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+                    
+                    return { ...card, options: [...card.savedOptions] };
+                  }
+                  return card;
+                });
+                
+                // Save the restored card bank
+                const updateData = {
+                  [FIELD_MAPPING.cardBankData]: JSON.stringify(restoredCardBank),
+                  [FIELD_MAPPING.lastSaved]: new Date().toISOString()
+                };
+                
+                // Save the update
+                $.ajax({
+                  url: KNACK_API_URL + '/objects/' + FLASHCARD_OBJECT + '/records/' + recordId,
+                  type: 'PUT',
+                  headers: {
+                    'X-Knack-Application-Id': knackAppId,
+                    'X-Knack-REST-API-Key': knackApiKey,
+                    'Authorization': Knack.getUserToken(),
+                    'Content-Type': 'application/json'
+                  },
+                  data: JSON.stringify(updateData),
+                  success: function(restoreResponse) {
+                    console.log(`Flashcard app [${new Date().toISOString()}]: Successfully restored options for multiple choice cards`);
+                  },
+                  error: function(error) {
+                    console.error(`Flashcard app [${new Date().toISOString()}]: Error restoring options:`, error);
+                  }
+                });
+              }
+            } else {
+              console.warn(`Flashcard app [${new Date().toISOString()}]: Card bank is empty or malformed`);
+            }
+          } catch (e) {
+            console.error(`Flashcard app [${new Date().toISOString()}]: Error parsing card bank during verification:`, e);
+          }
+        } else {
+          console.warn(`Flashcard app [${new Date().toISOString()}]: No card bank field found during verification`);
+        }
+        
+        // Send the updated data to any flashcard app iframes
+        try {
+          const iframe = document.getElementById('flashcard-app-iframe');
+          if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({
+              type: 'LOAD_SAVED_DATA',
+              data: response
+            }, '*');
+          }
+        } catch (error) {
+          console.error(`Flashcard app [${new Date().toISOString()}]: Error sending verification data to iframe:`, error);
         }
       },
       error: function(error) {

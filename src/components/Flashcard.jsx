@@ -344,7 +344,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                   marginTop: '10px',
                   position: 'relative'
                 }}>
-                  <MultipleChoiceOptions options={card.options || []} preview={preview} isInModal={isInModal} />
+                  <MultipleChoiceOptions options={card.options || []} preview={preview} isInModal={isInModal} card={card} />
                 </div>
               </>
             ) : (

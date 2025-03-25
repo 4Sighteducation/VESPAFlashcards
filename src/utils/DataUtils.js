@@ -428,3 +428,114 @@ export const dataLogger = {
     console.groupEnd();
   }
 };
+
+/**
+ * Multiple Choice Options Persistence
+ * Functions to ensure options are preserved across page refreshes
+ */
+
+const OPTIONS_STORAGE_KEY = 'multiple_choice_options_backup';
+
+/**
+ * Store multiple choice options in localStorage as a backup
+ * @param {Array} cards - Array of card objects
+ * @returns {boolean} - Success status
+ */
+export const backupMultipleChoiceOptions = (cards) => {
+  try {
+    if (!Array.isArray(cards)) {
+      console.error("backupMultipleChoiceOptions: Cards is not an array");
+      return false;
+    }
+    
+    // Extract only multiple choice cards with options
+    const multipleChoiceCards = cards.filter(card => 
+      card && 
+      card.id && 
+      (card.questionType === 'multiple_choice' || (card.options && Array.isArray(card.options) && card.options.length > 0))
+    );
+    
+    // Create a map of card IDs to their options
+    const optionsMap = {};
+    multipleChoiceCards.forEach(card => {
+      if (card.options && Array.isArray(card.options) && card.options.length > 0) {
+        optionsMap[card.id] = {
+          options: [...card.options],
+          questionType: card.questionType || 'multiple_choice',
+          timestamp: new Date().toISOString()
+        };
+      }
+    });
+    
+    // Store in localStorage
+    localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify(optionsMap));
+    console.log(`Backed up options for ${Object.keys(optionsMap).length} multiple choice cards`);
+    return true;
+  } catch (error) {
+    console.error("Error backing up multiple choice options:", error);
+    return false;
+  }
+};
+
+/**
+ * Restore multiple choice options from localStorage
+ * @param {Array} cards - Array of card objects
+ * @returns {Array} - Cards with restored options
+ */
+export const restoreMultipleChoiceOptions = (cards) => {
+  try {
+    if (!Array.isArray(cards)) {
+      console.error("restoreMultipleChoiceOptions: Cards is not an array");
+      return cards;
+    }
+    
+    // Get backup from localStorage
+    const backupString = localStorage.getItem(OPTIONS_STORAGE_KEY);
+    if (!backupString) {
+      console.log("No multiple choice options backup found");
+      return cards;
+    }
+    
+    const optionsMap = safeParseJSON(backupString, {});
+    if (!optionsMap || Object.keys(optionsMap).length === 0) {
+      console.log("Empty or invalid multiple choice options backup");
+      return cards;
+    }
+    
+    // Restore options to cards that need them
+    const restoredCards = cards.map(card => {
+      if (!card || !card.id) return card;
+      
+      const backup = optionsMap[card.id];
+      
+      // Check if this card needs options restoration
+      if (backup && backup.options && Array.isArray(backup.options) && backup.options.length > 0) {
+        // Card needs restoration if it's missing options or has empty options
+        const needsRestoration = !card.options || !Array.isArray(card.options) || card.options.length === 0;
+        
+        if (needsRestoration) {
+          console.log(`Restoring options for card ${card.id}`);
+          return {
+            ...card,
+            options: [...backup.options],
+            savedOptions: [...backup.options],
+            questionType: backup.questionType || card.questionType || 'multiple_choice'
+          };
+        }
+      }
+      
+      return card;
+    });
+    
+    // Count how many cards were restored
+    const restoredCount = restoredCards.filter((card, index) => 
+      card && cards[index] && card.options && (!cards[index].options || cards[index].options.length === 0)
+    ).length;
+    
+    console.log(`Restored options for ${restoredCount} multiple choice cards`);
+    return restoredCards;
+  } catch (error) {
+    console.error("Error restoring multiple choice options:", error);
+    return cards;
+  }
+};

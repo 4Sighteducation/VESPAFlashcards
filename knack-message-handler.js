@@ -72,6 +72,13 @@ function verifyDataSave(recordId, sourceWindow) {
             
             // Then sync topic lists with card bank
             processedResponse = window.TopicCardSyncService.syncTopicLists(processedResponse);
+
+            // ADDED: Ensure multiple choice options are preserved
+            if (processedResponse && processedResponse[FIELD_MAPPING.cardBankData]) {
+              const cards = safeParseJSON(processedResponse[FIELD_MAPPING.cardBankData], []);
+              const updatedCards = ensureOptionsPreserved(cards);
+              processedResponse[FIELD_MAPPING.cardBankData] = JSON.stringify(updatedCards);
+            }
             
             console.log(`[${new Date().toISOString()}] Successfully processed and synchronized topic data`);
           }
@@ -128,6 +135,41 @@ function verifyDataSave(recordId, sourceWindow) {
       }
     });
   }, 5000); // Wait 5 seconds before verification to ensure data is committed
+}
+
+// NEW HELPER FUNCTION: Ensure multiple choice options are preserved
+function ensureOptionsPreserved(cards) {
+  if (!Array.isArray(cards)) {
+    console.error(`[${new Date().toISOString()}] ensureOptionsPreserved: Cards is not an array:`, cards);
+    return cards;
+  }
+
+  console.log(`[${new Date().toISOString()}] Ensuring options are preserved for ${cards.length} cards`);
+  
+  return cards.map(card => {
+    // Skip topic shells or null items
+    if (!card || card.type === 'topic' || card.isShell) {
+      return card;
+    }
+    
+    // For multiple choice questions, ensure options are preserved
+    if (card.questionType === 'multiple_choice') {
+      // If options are missing but savedOptions exist, restore them
+      if ((!card.options || !Array.isArray(card.options) || card.options.length === 0) && 
+          card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+        
+        console.log(`[${new Date().toISOString()}] Restoring options for card:`, card.id);
+        return { ...card, options: [...card.savedOptions] };
+      }
+      
+      // Always backup options as savedOptions for future recovery
+      if (card.options && Array.isArray(card.options) && card.options.length > 0) {
+        return { ...card, savedOptions: [...card.options] };
+      }
+    }
+    
+    return card;
+  });
 }
 
 // Helper function to access TopicCardSyncService

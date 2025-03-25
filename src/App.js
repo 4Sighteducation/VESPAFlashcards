@@ -1,4 +1,4 @@
-﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -16,7 +16,9 @@ import {
   addVersionMetadata, 
   safeParseJSON, 
   localStorageHelpers, 
-  dataLogger 
+  dataLogger,
+  backupMultipleChoiceOptions,
+  restoreMultipleChoiceOptions
 } from './utils/DataUtils';
 
 import {
@@ -222,6 +224,9 @@ function App() {
       localStorage.setItem('colorMapping', JSON.stringify(subjectColorMapping));
       localStorage.setItem('spacedRepetition', JSON.stringify(spacedRepetitionData));
       localStorage.setItem('userTopics', JSON.stringify(userTopics));
+      
+      // Backup multiple choice options
+      backupMultipleChoiceOptions(allCards);
       
       console.log("Saved data to localStorage with versioning and backup");
     } catch (error) {
@@ -669,6 +674,10 @@ function App() {
         
         console.log(`Loaded data from localStorage using ${loadResult.source} source`);
         showStatus(`Data loaded from ${loadResult.source}`);
+
+        // Restore multiple choice options
+        restoreMultipleChoiceOptions(versionedData.cards);
+
         return;
       }
       
@@ -1263,8 +1272,10 @@ function App() {
 
                 // Process cards
                 if (userData.cards && Array.isArray(userData.cards)) {
-                  setAllCards(userData.cards);
-                  updateSpacedRepetitionData(userData.cards);
+                  const restoredCards = restoreMultipleChoiceOptions(userData.cards);
+                  setAllCards(restoredCards);
+                  updateSpacedRepetitionData(restoredCards);
+                  console.log("[User Info] Restored multiple choice options for cards");
                 }
                 
                 // Process color mapping
@@ -1333,8 +1344,10 @@ function App() {
               try {
                 // Process cards
                 if (event.data.data.cards && Array.isArray(event.data.data.cards)) {
-                  setAllCards(event.data.data.cards);
-                  updateSpacedRepetitionData(event.data.data.cards);
+                  const restoredCards = restoreMultipleChoiceOptions(event.data.data.cards);
+                  setAllCards(restoredCards);
+                  updateSpacedRepetitionData(restoredCards);
+                  console.log("[Load Data] Restored multiple choice options for cards");
                 }
 
                 // Process color mapping
@@ -1484,8 +1497,9 @@ function App() {
         
         // Load cards if available
         if (event.data.cards && Array.isArray(event.data.cards)) {
-          setAllCards(event.data.cards);
-          console.log(`Loaded ${event.data.cards.length} cards from Knack`);
+          const restoredCards = restoreMultipleChoiceOptions(event.data.cards);
+          setAllCards(restoredCards);
+          console.log(`Loaded ${event.data.cards.length} cards from Knack and restored multiple choice options`);
         }
         
         // Load color mapping if available
