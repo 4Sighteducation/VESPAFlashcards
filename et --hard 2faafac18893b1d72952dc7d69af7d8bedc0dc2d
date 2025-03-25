@@ -1,5 +1,0 @@
-[33m76231c9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix topic list persistence issues by enhancing multi-layer storage system. Implemented protection against localStorage overwriting topic lists by checking sessionStorage before saving and using storage event listeners to detect changes. Added forceSyncTopics function to ensure proper synchronization between different storage mechanisms.
-[33m2faafac[m Merge topic persistence enhancement to prevent data loss during autosaves and page refreshes
-[33mb787fd2[m Add documentation explaining the topic persistence implementation
-[33m493d920[m Remove old TopicListModal files completely
-[33m394917a[m Update old TopicListModal files before removal

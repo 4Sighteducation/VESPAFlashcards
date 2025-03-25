@@ -344,18 +344,18 @@ export const saveUserData = async (recordId, unifiedData, auth) => {
     };
     
     // Update the record
-    const updateUrl = `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records/${recordId}`;
-    const updateResponse = await fetch(updateUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Knack-Application-ID": KNACK_APP_ID,
-        "X-Knack-REST-API-Key": KNACK_API_KEY,
-        "Authorization": `Bearer ${auth.token}`
-      },
-      body: JSON.stringify(updateData)
-    });
-    
+      const updateUrl = `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records/${recordId}`;
+      const updateResponse = await fetch(updateUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY,
+          "Authorization": `Bearer ${auth.token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+      
     if (!updateResponse.ok) {
       throw new Error(`Failed to update user data: ${await updateResponse.text()}`);
     }
@@ -648,7 +648,7 @@ export const saveTopicShells = async (topicShells, userId, auth) => {
     
     debugLog("Saving topic shells", { 
       count: topicShells.length, 
-      userId 
+      userId
     });
     
     // Get the user's record ID
