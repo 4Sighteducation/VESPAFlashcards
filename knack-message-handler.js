@@ -44,7 +44,10 @@ function verifyDataSave(recordId, sourceWindow) {
         if (response && response[FIELD_MAPPING.cardBankData]) {
           try {
             const cardBankJson = response[FIELD_MAPPING.cardBankData];
-            const cardBank = safeParseJSON(cardBankJson);
+            let cardBank = safeParseJSON(cardBankJson);
+            
+            // Migrate any legacy type fields to questionType
+            cardBank = migrateTypeToQuestionType(cardBank);
             
             if (Array.isArray(cardBank) && cardBank.length > 0) {
               console.log(`[${new Date().toISOString()}] Card bank verification: ${cardBank.length} items found`);
@@ -176,7 +179,14 @@ function verifyDataSave(recordId, sourceWindow) {
             // ADDED: Ensure multiple choice options are preserved
             if (processedResponse && processedResponse[FIELD_MAPPING.cardBankData]) {
               const cards = safeParseJSON(processedResponse[FIELD_MAPPING.cardBankData], []);
-              const updatedCards = ensureOptionsPreserved(cards);
+              
+              // Migrate any legacy type fields to questionType
+              const migratedCards = migrateTypeToQuestionType(cards);
+              
+              // Ensure options are preserved
+              const updatedCards = ensureOptionsPreserved(migratedCards);
+              
+              // Update the processed response
               processedResponse[FIELD_MAPPING.cardBankData] = JSON.stringify(updatedCards);
             }
             
@@ -237,14 +247,9 @@ function verifyDataSave(recordId, sourceWindow) {
   }, 5000); // Wait 5 seconds before verification to ensure data is committed
 }
 
-// Enhanced function to verify card options are preserved
+// Ensure options are preserved for multiple choice cards
 function ensureOptionsPreserved(cards) {
-  if (!Array.isArray(cards)) {
-    console.error(`[${new Date().toISOString()}] ensureOptionsPreserved: Cards is not an array:`, cards);
-    return cards;
-  }
-
-  console.log(`[${new Date().toISOString()}] Ensuring options are preserved for ${cards.length} cards`);
+  if (!Array.isArray(cards)) return cards;
   
   let cardsWithAnswerPattern = 0;
   
@@ -264,6 +269,11 @@ function ensureOptionsPreserved(cards) {
       
       // Force questionType to multiple_choice for these cards
       card.questionType = 'multiple_choice';
+      
+      // Remove type field if it refers to question format
+      if (card.type === 'multiple_choice' || card.type === 'short_answer') {
+        delete card.type;
+      }
       
       // If options are missing, try to recreate them
       if (!card.options || !Array.isArray(card.options) || card.options.length === 0) {
@@ -308,6 +318,11 @@ function ensureOptionsPreserved(cards) {
       // Ensure questionType is set correctly
       card.questionType = 'multiple_choice';
       
+      // Remove type field if it refers to question format
+      if (card.type === 'multiple_choice' || card.type === 'short_answer') {
+        delete card.type;
+      }
+      
       // Apply fixes to options if needed
       if (!card.options || !Array.isArray(card.options) || card.options.length === 0) {
         if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
@@ -328,7 +343,7 @@ function ensureOptionsPreserved(cards) {
     withAnswerPattern: cardsWithAnswerPattern,
     withOptions: cards.filter(c => c && c.options && Array.isArray(c.options) && c.options.length > 0).length,
     withSavedOptions: cards.filter(c => c && c.savedOptions && Array.isArray(c.savedOptions) && c.savedOptions.length > 0).length,
-    multipleChoice: cards.filter(c => c && (c.questionType === 'multiple_choice' || c.type === 'multiple_choice')).length
+    multipleChoice: cards.filter(c => c && c.questionType === 'multiple_choice').length
   });
   
   return result;
@@ -417,4 +432,43 @@ function debugLog(title, data) {
   } else {
     console.log(`[${title}]`, JSON.stringify(data));
   }
+}
+
+// Migration helper to standardize on questionType
+function migrateTypeToQuestionType(data) {
+  if (!data) return data;
+  
+  // Handle arrays
+  if (Array.isArray(data)) {
+    return data.map(item => migrateTypeToQuestionType(item));
+  }
+  
+  // Handle objects
+  if (typeof data === 'object') {
+    // Create a new object to avoid modifying original
+    const newData = {...data};
+    
+    // Fix question type fields
+    if (newData.type === 'multiple_choice' || newData.type === 'short_answer') {
+      // Set questionType based on legacy type
+      newData.questionType = newData.type;
+      
+      // Remove the legacy type field for question format
+      delete newData.type;
+      
+      console.log(`Migrated type to questionType for item: ${newData.id || 'unknown'}`);
+    }
+    
+    // Recursively process nested objects
+    for (const key in newData) {
+      if (newData[key] && typeof newData[key] === 'object') {
+        newData[key] = migrateTypeToQuestionType(newData[key]);
+      }
+    }
+    
+    return newData;
+  }
+  
+  // For non-objects, just return as is
+  return data;
 }
