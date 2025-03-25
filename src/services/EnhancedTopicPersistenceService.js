@@ -95,6 +95,41 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
     
     debugLog("field_2979 save result", { success: field2979Result });
     
+    // If successful, also send message to parent window (Knack integration)
+    // to ensure topic shells are created there as well (redundancy)
+    if (field3011Result && window.parent) {
+      try {
+        // Get the saved topic list with complete data
+        const topicList = {
+          id: `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: `${subject} - ${examBoard} ${examType}`,
+          examBoard,
+          examType,
+          subject,
+          topics: validatedTopics,
+          created: new Date().toISOString(),
+          userId
+        };
+        
+        // Send message to parent window to trigger topic shell creation in Knack JavaScript
+        window.parent.postMessage({
+          type: 'TOPIC_LISTS_UPDATED',
+          data: {
+            topicLists: [topicList],
+            recordId: auth?.recordId // Send record ID if available
+          },
+          timestamp: new Date().toISOString()
+        }, '*');
+        
+        debugLog("Sent TOPIC_LISTS_UPDATED message to parent", { 
+          topicCount: validatedTopics.length 
+        });
+      } catch (messageError) {
+        console.error("Error sending TOPIC_LISTS_UPDATED message:", messageError);
+        // Non-fatal error, continue
+      }
+    }
+    
     // Return overall success status (both operations should succeed)
     return field3011Result && field2979Result;
   } catch (error) {
