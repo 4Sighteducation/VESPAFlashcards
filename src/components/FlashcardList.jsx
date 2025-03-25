@@ -3,7 +3,7 @@ import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
 import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
-import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes, FaBolt, FaFlash } from 'react-icons/fa';
+import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes, FaBolt } from 'react-icons/fa';
 import ColorEditor from "./ColorEditor";
 import { getContrastColor } from '../helper';
 import AICardGenerator from "./AICardGenerator";
@@ -1086,7 +1086,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
                                 onClick={(e) => handleGenerateCardsForTopic(subject, topic, topicId, e)}
                                 title="Generate flashcards for this topic"
                               >
-                                <FaFlash />
+                                <FaBolt />
                               </button>
                             ) : (
                               <button

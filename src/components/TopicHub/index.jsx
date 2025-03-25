@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaDatabase, FaFlash, FaInfo, FaCheckCircle } from 'react-icons/fa';
+import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaDatabase, FaInfo, FaCheckCircle } from 'react-icons/fa';
 import './styles.css';
 import { generateTopicPrompt } from '../../prompts/topicListPrompt';
 
@@ -1594,7 +1594,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
               
               <div className="flash-icon-instructions">
                 <div className="flash-icon-example">
-                  <FaFlash className="flash-icon" />
+                  <FaBolt className="flash-icon" />
                 </div>
                 <p>To generate flashcards for a specific topic, click the <strong>green flash icon</strong> on the topic header in the Flashcard Manager.</p>
               </div>
@@ -1604,7 +1604,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
                   <div className="example-topic-header">
                     <span className="example-topic-name">Chemistry: Atomic Structure</span>
                     <span className="example-topic-actions">
-                      <FaFlash className="example-flash-icon" />
+                      <FaBolt className="example-flash-icon" />
                     </span>
                   </div>
                 </div>
