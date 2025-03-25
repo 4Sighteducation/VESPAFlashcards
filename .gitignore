@@ -43,7 +43,7 @@ Thumbs.db
 # API Integration Scripts
 Knack*Integration*Script*.js
 KnackIntegrationScript2.js
-KnackJavascript4.js
+KnackJavascript*.js
 
 # Util scrapers and log files (deprecated)
 /util-scrapers/

@@ -44,9 +44,16 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
       userId
     });
 
+    // Ensure all topics have valid IDs and names before saving
+    const validatedTopics = topics.map(topic => ({
+      ...topic,
+      id: topic.id || `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: topic.name || topic.topic || "Unknown Topic"
+    }));
+
     // First, save to field_3011 using TopicListService (backward compatibility)
     const field3011Result = await saveTopicList(
-      topics, 
+      validatedTopics, 
       subject, 
       examBoard, 
       examType, 
@@ -57,11 +64,11 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
     debugLog("field_3011 save result", { success: field3011Result });
 
     // Then, convert topics to topic shells and save to field_2979 (new single source of truth)
-    const topicShells = topics.map(topic => ({
+    const topicShells = validatedTopics.map(topic => ({
       id: topic.id,
       type: 'topic',
-      name: topic.topic || topic.name || "Unknown Topic", // Ensure name is properly set
-      topic: topic.topic || topic.name || "Unknown Topic", // Include both name AND topic properties
+      name: topic.name || "Unknown Topic",
+      topic: topic.name || "Unknown Topic", // Include both name AND topic properties for consistency
       subject: subject,
       examBoard: examBoard,
       examType: examType,
