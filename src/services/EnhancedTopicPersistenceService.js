@@ -40,16 +40,39 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
       subject,
       examBoard,
       examType,
-      topicCount: topics.length,
+      topicCount: topics?.length || 0,
       userId
     });
 
+    // Check if topics is valid
+    if (!topics || !Array.isArray(topics) || topics.length === 0) {
+      console.error("Invalid topics array provided:", topics);
+      return false;
+    }
+
     // Ensure all topics have valid IDs and names before saving
-    const validatedTopics = topics.map(topic => ({
-      ...topic,
-      id: topic.id || `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: topic.name || topic.topic || "Unknown Topic"
-    }));
+    const validatedTopics = topics.map(topic => {
+      if (!topic) {
+        console.warn("Encountered null/undefined topic, creating placeholder");
+        return {
+          id: `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          topic: "Unknown Topic",
+          name: "Unknown Topic"
+        };
+      }
+      return {
+        ...topic,
+        id: topic.id || `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        topic: topic.topic || topic.name || "Unknown Topic",
+        name: topic.name || topic.topic || "Unknown Topic"
+      };
+    });
+
+    debugLog("Validated topics for saving", {
+      original: topics.length,
+      validated: validatedTopics.length,
+      sample: validatedTopics[0] || null
+    });
 
     // First, save to field_3011 using TopicListService (backward compatibility)
     const field3011Result = await saveTopicList(
@@ -67,8 +90,8 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
     const topicShells = validatedTopics.map(topic => ({
       id: topic.id,
       type: 'topic',
-      name: topic.name || "Unknown Topic",
-      topic: topic.name || "Unknown Topic", // Include both name AND topic properties for consistency
+      name: topic.name || topic.topic || "Unknown Topic",
+      topic: topic.topic || topic.name || "Unknown Topic", // Include both name AND topic properties for consistency
       subject: subject,
       examBoard: examBoard,
       examType: examType,

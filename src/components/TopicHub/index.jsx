@@ -1080,7 +1080,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
     // Toggle save dialog visibility
     setShowSaveDialog(false);
     
-    // Check if we have at least one topics
+    // Check if we have at least one topic
     if (!topics || topics.length === 0) {
       setErrorMessage("No topics to save");
       setErrorDetails("Please generate or add topics before saving.");
@@ -1088,17 +1088,40 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
       return;
     }
     
-    // Format topics for saving
-    const topicListForSave = topics.map(topic => ({
-      id: topic.id,
-      name: `${topic.mainTopic}: ${topic.subtopic}`,
-      mainTopic: topic.mainTopic,
-      subtopic: topic.subtopic,
-      topic: `${topic.mainTopic}: ${topic.subtopic}`
-    }));
+    // Format topics for saving with additional validation
+    const topicListForSave = topics.map(topic => {
+      // Ensure each required property exists
+      if (!topic) {
+        console.error("Found null/undefined topic in topics array");
+        return {
+          id: `topic_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          name: "Unknown Topic",
+          mainTopic: "Unknown",
+          subtopic: "Unknown",
+          topic: "Unknown Topic"
+        };
+      }
+      
+      return {
+        id: topic.id || `topic_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        name: `${topic.mainTopic || ''}: ${topic.subtopic || ''}`.trim() || "Unknown Topic",
+        mainTopic: topic.mainTopic || subject || "Unknown",
+        subtopic: topic.subtopic || "General",
+        topic: `${topic.mainTopic || ''}: ${topic.subtopic || ''}`.trim() || "Unknown Topic"
+      };
+    });
     
     // Log the formatted topic list for debugging
     console.log("Formatted topic list for save:", topicListForSave);
+    
+    // Create the complete topicList object with metadata
+    const completeTopicList = {
+      name: `${subject} - ${examBoard} ${examType}`,
+      topics: topicListForSave,
+      examBoard: examBoard,
+      examType: examType,
+      subject: subject
+    };
     
     // Call the parent's onSaveTopicList callback with the formatted topics
     if (onSaveTopicList) {
@@ -1106,25 +1129,20 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
       setShowLoadingOverlay(true);
       
       try {
-        // Create a properly structured topic list object
-        const topicListObject = {
-          name: `${subject} - ${examBoard} ${examType}`,
-          topics: topicListForSave,
-          examBoard: examBoard,
-          examType: examType,
-          subject: subject
-        };
-        
-        // Log the complete object being passed to parent
-        console.log("Sending topic list object to parent:", topicListObject);
-        
-        // Handle both promise-based and callback-based implementations
-        const result = onSaveTopicList(topicListObject, {
+        // Send complete object with proper metadata
+        const metadata = {
           subject,
           examBoard,
           examType,
           recordId
-        });
+        };
+        
+        // Log the complete objects being passed to parent
+        console.log("Sending topic list object to parent:", completeTopicList);
+        console.log("With metadata:", metadata);
+        
+        // Handle both promise-based and callback-based implementations
+        const result = onSaveTopicList(completeTopicList, metadata);
         
         // If the result is a promise, handle it with then/catch
         if (result && typeof result.then === 'function') {
@@ -1149,7 +1167,6 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
             setShowErrorModal(true);
           });
         } else {
-          // If it's not a promise, assume old callback style was used and show success immediately
           console.log("Topic save completed (non-promise style)");
           setShowLoadingOverlay(false);
           setShowSuccessModal(true);
@@ -1158,7 +1175,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
         console.error("Exception saving topic list:", error);
         setShowLoadingOverlay(false);
         setErrorMessage("Error saving topic list");
-        setErrorDetails(error?.message || "An unknown error occurred.");
+        setErrorDetails(error?.message || "An unexpected error occurred.");
         setShowErrorModal(true);
       }
     }

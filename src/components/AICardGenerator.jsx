@@ -591,6 +591,8 @@ const AICardGenerator = ({
       }
       
       console.log("Saving topic lists to Knack for user:", userId);
+      console.log("TopicLists data type:", typeof topicLists);
+      console.log("TopicLists data:", JSON.stringify(topicLists).substring(0, 200) + "...");
       
       // Safety check to ensure topicLists is a valid array
       if (!Array.isArray(topicLists)) {
@@ -599,26 +601,59 @@ const AICardGenerator = ({
         return false;
       }
       
+      // Ensure we have valid topic lists with required structure - improved validation
+      const validTopicLists = topicLists.filter(list => 
+        list && typeof list === 'object' && list.topics && Array.isArray(list.topics) && list.topics.length > 0
+      );
+      
+      if (validTopicLists.length === 0) {
+        console.error("No valid topic lists found with required structure");
+        setError("No valid topic lists with required structure");
+        return false;
+      }
+      
+      console.log("Valid topic lists found:", validTopicLists.length);
+      
       // Process each topic list individually to create topic shells
-      for (const list of topicLists) {
+      for (const list of validTopicLists) {
         // Add detailed logging to see what's happening
         console.log("Processing topic list:", list);
         
-        if (!list || !list.topics || !Array.isArray(list.topics)) {
-          console.error("Invalid topic list structure:", list);
-          continue; // Skip this invalid list but continue with others
-        }
-
-        // Extract the topics from the list
-        const topics = list.topics.map(topic => ({
-          id: topic.id || generateId('topic'),
-          topic: topic.topic || topic.name || 'Unknown Topic'
-        }));
-
-        // Use our enhanced service to save topics to both storage fields
-        console.log(`Saving topic list "${list.name}" with ${topics.length} topics`);
-        
         try {
+          // Enhanced validation - check for empty arrays too
+          if (!list.topics || !Array.isArray(list.topics) || list.topics.length === 0) {
+            console.error("Invalid or empty topics array:", list.topics);
+            continue; // Skip this invalid list but continue with others
+          }
+          
+          // Double-check that topics is still defined right before using it
+          // This addresses the specific error we're seeing
+          if (!list.topics) {
+            console.error("Topics array became undefined during processing, skipping list");
+            continue;
+          }
+          
+          const topics = list.topics.map(topic => {
+            if (!topic) {
+              console.error("Invalid topic entry:", topic);
+              return { id: generateId('topic'), topic: 'Unknown Topic' };
+            }
+            return {
+              id: topic.id || generateId('topic'),
+              topic: topic.topic || topic.name || 'Unknown Topic'
+            };
+          });
+
+          // Verify topics array after mapping
+          if (!topics || topics.length === 0) {
+            console.error("Failed to create topics array, skipping list");
+            continue;
+          }
+
+          // Use our enhanced service to save topics to both storage fields
+          console.log(`Saving topic list "${list.name}" with ${topics.length} topics`);
+          
+          // Direct API call to save to both storage fields
           await saveTopicsUnified(
             topics, 
             list.subject, 
@@ -627,13 +662,15 @@ const AICardGenerator = ({
             userId, 
             auth
           );
+          
+          console.log(`Successfully saved topic list "${list.name}"`);
         } catch (innerError) {
           console.error("Error saving topics in list:", list.name, innerError);
           // Continue with other lists despite error
         }
       }
       
-      console.log("Topic lists saved to unified storage successfully:", topicLists.length, "lists");
+      console.log("Topic lists saved to unified storage successfully:", validTopicLists.length, "lists");
       return true;
     } catch (error) {
       console.error("Error in saveTopicListToKnack:", error);
@@ -1547,17 +1584,24 @@ Use this format for different question types:
                   return { success: false, error: "Invalid topic list structure" };
                 }
                 
-                // Create a new saved list
+                // Create a new saved list with proper structure validation
                 const newSavedList = {
                   id: generateId('topiclist'),
                   name: topicList.name || `${metadata.subject} - ${metadata.examBoard} ${metadata.examType}`,
                   examBoard: metadata.examBoard,
                   examType: metadata.examType,
                   subject: metadata.subject,
-                  topics: topicList.topics,
+                  topics: Array.isArray(topicList.topics) ? topicList.topics.map(topic => ({
+                    id: topic.id || generateId('topic'),
+                    topic: topic.topic || topic.name || `Unknown Topic`,
+                    mainTopic: topic.mainTopic || metadata.subject,
+                    subtopic: topic.subtopic || "General"
+                  })) : [],
                   created: new Date().toISOString(),
                   userId: userId
                 };
+                
+                console.log("Created well-formed topic list:", newSavedList);
                 
                 // Add to state
                 const updatedLists = [...savedTopicLists, newSavedList];
@@ -1565,7 +1609,11 @@ Use this format for different question types:
                 
                 // Save to Knack and return a promise
                 return new Promise((resolve, reject) => {
-                  saveTopicListToKnack(updatedLists)
+                  // Create a separate standalone copy of the list to avoid reference issues
+                  const listsToSave = JSON.parse(JSON.stringify(updatedLists));
+                  console.log("About to save lists:", listsToSave);
+                  
+                  saveTopicListToKnack(listsToSave)
                     .then(success => {
                       if (success) {
                         console.log("Topic list saved:", newSavedList.name);
