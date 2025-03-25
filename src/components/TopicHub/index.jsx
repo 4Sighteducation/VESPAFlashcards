@@ -18,7 +18,8 @@ const TopicHub = ({
   onSelectTopic,
   onGenerateCards,
   academicYear = "2024-2025",
-  onClose
+  onClose,
+  recordId
 }) => {
   // State for topic management
   const [topics, setTopics] = useState(initialTopics);
@@ -1664,16 +1665,50 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
             <button 
               onClick={() => {
                 setShowSuccessModal(false);
-                // Completely exit the Topic Hub
-                onClose && onClose();
-                // Force reload the page to refresh data
-                setTimeout(() => window.location.reload(), 100);
+                
+                // Show a loading indicator
+                setLoadingStatus("Finalizing your topic shells...");
+                setShowLoadingOverlay(true);
+                
+                // Send explicit message to parent window that topic lists were updated
+                if (window.parent && window.parent !== window) {
+                  window.parent.postMessage({
+                    type: "TOPIC_LISTS_UPDATED",
+                    data: {
+                      recordId: recordId,
+                      timestamp: new Date().toISOString()
+                    }
+                  }, '*');
+                }
+                
+                // Wait longer to ensure everything is saved before closing and reloading
+                setTimeout(() => {
+                  // Completely exit the Topic Hub
+                  onClose && onClose();
+                  
+                  // Force reload the page to refresh data
+                  window.location.reload();
+                }, 2000); // Increased from 100ms to 2000ms
               }} 
               className="finish-button"
             >
               Finish
             </button>
           </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Render loading overlay
+  const renderLoadingOverlay = () => {
+    if (!showLoadingOverlay) return null;
+    
+    return (
+      <div className="loading-overlay">
+        <div className="loading-overlay-content">
+          <div className="loading-spinner"></div>
+          <p className="loading-message">{loadingStatus || "Processing..."}</p>
         </div>
       </div>
     );
@@ -1689,6 +1724,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
       {renderFallbackNotice()}
       {renderErrorModal()}
       {renderSuccessModal()}
+      {renderLoadingOverlay()}
     </div>
   );
 };

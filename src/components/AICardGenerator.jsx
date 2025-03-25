@@ -89,7 +89,8 @@ const AICardGenerator = ({
   initialSubject = "",
   initialTopic = "",
   examBoard = "AQA",
-  examType = "A-Level"
+  examType = "A-Level",
+  recordId
 }) => {
   // Step management state
   const [currentStep, setCurrentStep] = useState(1);
@@ -1522,6 +1523,7 @@ Use this format for different question types:
               examBoard={formData.examBoard}
               examType={formData.examType}
               initialTopics={hierarchicalTopics}
+              recordId={recordId} // Add recordId for topic saving
               onSaveTopicList={(topicList) => {
                 // Create a new saved list
                 const newSavedList = {
