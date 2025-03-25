@@ -1102,38 +1102,41 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
       setShowLoadingOverlay(true);
       
       try {
-        // Call the save callback (returns a promise)
-        onSaveTopicList(topicListForSave, {
+        // Handle both promise-based and callback-based implementations
+        const result = onSaveTopicList(topicListForSave, {
           subject,
           examBoard,
           examType
-        }).then((result) => {
-          console.log("Topic save result:", result);
-          setShowLoadingOverlay(false);
-          
-          // Skip confirmation modal for debugging
-          if (result && result.success) {
-            // Show success modal
-            setShowSuccessModal(true);
-            
-            // Close the parent modal when showing the success modal
-            if (onClose) {
-              // We don't call onClose here as we want to keep the topic hub
-              // open until the user clicks Finish on the success modal
-            }
-          } else {
-            // Handle error
-            setErrorMessage("Error saving topic list");
-            setErrorDetails(result?.error || "An unknown error occurred.");
-            setShowErrorModal(true);
-          }
-        }).catch((error) => {
-          console.error("Error saving topic list:", error);
-          setShowLoadingOverlay(false);
-          setErrorMessage("Error saving topic list");
-          setErrorDetails(error?.message || "An unknown error occurred.");
-          setShowErrorModal(true);
         });
+        
+        // If the result is a promise, handle it with then/catch
+        if (result && typeof result.then === 'function') {
+          result.then((response) => {
+            console.log("Topic save result:", response);
+            setShowLoadingOverlay(false);
+            
+            if (response && response.success) {
+              // Show success modal
+              setShowSuccessModal(true);
+            } else {
+              // Handle error
+              setErrorMessage("Error saving topic list");
+              setErrorDetails(response?.error || "An unknown error occurred.");
+              setShowErrorModal(true);
+            }
+          }).catch((error) => {
+            console.error("Error saving topic list:", error);
+            setShowLoadingOverlay(false);
+            setErrorMessage("Error saving topic list");
+            setErrorDetails(error?.message || "An unknown error occurred.");
+            setShowErrorModal(true);
+          });
+        } else {
+          // If it's not a promise, assume old callback style was used and show success immediately
+          console.log("Topic save completed (non-promise style)");
+          setShowLoadingOverlay(false);
+          setShowSuccessModal(true);
+        }
       } catch (error) {
         console.error("Exception saving topic list:", error);
         setShowLoadingOverlay(false);
