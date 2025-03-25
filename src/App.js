@@ -428,10 +428,18 @@ function App() {
         } 
         // If it's a topic-level color update
         else if (topic) {
-          // Ensure the topics object exists
-          if (!newMapping[subject].topics) {
+          // Ensure the subject exists in mapping with the correct structure
+          if (!newMapping[subject]) {
+            newMapping[subject] = { base: colorToUse, topics: {} };
+          } else if (typeof newMapping[subject] === 'string') {
+            // Convert string color to proper object structure
+            const baseColor = newMapping[subject];
+            newMapping[subject] = { base: baseColor, topics: {} };
+          } else if (!newMapping[subject].topics) {
+            // Ensure topics object exists
             newMapping[subject].topics = {};
           }
+          
           // Update the specified topic color
           newMapping[subject].topics[topic] = colorToUse;
         }

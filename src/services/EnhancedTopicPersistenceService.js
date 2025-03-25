@@ -54,12 +54,17 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
     const validExamBoard = examBoard || "General";
     const validExamType = examType || "Course";
 
+    // Create a set to track IDs we've used to ensure uniqueness
+    const usedIds = new Set();
+    
     // Ensure all topics have valid IDs and names before saving
     const validatedTopics = topics.map(topic => {
       if (!topic) {
         console.warn("Encountered null/undefined topic, creating placeholder");
+        const newId = `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        usedIds.add(newId);
         return {
-          id: `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: newId,
           topic: "Unknown Topic",
           name: "Unknown Topic",
           examBoard: validExamBoard,
@@ -67,9 +72,17 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
           subject: subject
         };
       }
+      
+      // Generate a new ID only if needed
+      let topicId = topic.id;
+      if (!topicId || usedIds.has(topicId)) {
+        topicId = `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      }
+      usedIds.add(topicId);
+      
       return {
         ...topic,
-        id: topic.id || `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: topicId,
         topic: topic.topic || topic.name || "Unknown Topic",
         name: topic.name || topic.topic || "Unknown Topic",
         examBoard: validExamBoard,  // Ensure all topics have examBoard
@@ -129,13 +142,16 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
     
     debugLog("field_2979 save result", { success: field2979Result });
     
-    // If successful, also send message to parent window (Knack integration)
-    // to ensure topic shells are created there as well (redundancy)
-    if (field3011Result && window.parent) {
+    // Only send the parent message if both saves were successful
+    // and we're in an iframe (has parent window)
+    if (field3011Result && field2979Result && window.parent && window.parent !== window) {
       try {
+        // Create a unique list ID
+        const listId = `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
         // Get the saved topic list with complete data
         const topicList = {
-          id: `topiclist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: listId,
           name: `${subject} - ${validExamBoard} ${validExamType}`,
           examBoard: validExamBoard,
           examType: validExamType,
@@ -146,31 +162,35 @@ export const saveTopicsUnified = async (topics, subject, examBoard, examType, us
         };
         
         // Send message to parent window to trigger topic shell creation in Knack JavaScript
+        // BUT use a different message type to prevent duplicate processing
         window.parent.postMessage({
-          type: 'TOPIC_LISTS_UPDATED',
+          type: 'TOPIC_SHELLS_CREATED',  // Changed from TOPIC_LISTS_UPDATED
           data: {
-            topicLists: [topicList],
-            recordId: auth?.recordId, // Send record ID if available
+            topicList: topicList,        // Send single topicList instead of array
+            recordId: auth?.recordId,    // Send record ID if available
+            topicShells: topicShells,    // Send the actual shells
             metadata: {
               subject: subject,
               examBoard: validExamBoard,
-              examType: validExamType
+              examType: validExamType,
+              timestamp: new Date().toISOString(),
+              operation: 'save_topics_unified'
             }
           },
           timestamp: new Date().toISOString()
         }, '*');
         
-        debugLog("Sent TOPIC_LISTS_UPDATED message to parent", { 
+        debugLog("Sent TOPIC_SHELLS_CREATED message to parent", { 
           topicCount: validatedTopics.length,
           metadata: { subject, examBoard: validExamBoard, examType: validExamType }
         });
       } catch (messageError) {
-        console.error("Error sending TOPIC_LISTS_UPDATED message:", messageError);
+        console.error("Error sending TOPIC_SHELLS_CREATED message:", messageError);
         // Non-fatal error, continue
       }
     }
     
-    // Return overall success status (both operations should succeed)
+    // Return overall success status
     return field3011Result && field2979Result;
   } catch (error) {
     console.error("Error in saveTopicsUnified:", error);

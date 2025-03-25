@@ -1352,21 +1352,27 @@ Use this format for different question types:
     }
   };
 
-  // Add all cards to the bank
+  // Add all generated cards to the bank
   const handleAddAllCards = () => {
+    // Check if there are any cards to add
+    if (!generatedCards || generatedCards.length === 0) {
+      console.error("No generated cards to add to bank");
+      setError("No cards to add to bank");
+      return;
+    }
+    
+    // Get cards that haven't been added yet
     const unadded = generatedCards.filter(card => !card.added);
     
     if (unadded.length === 0) {
-      return; // No cards to add
+      setError("All cards have already been added to the bank");
+      return;
     }
     
-    // Add all unadded cards
-    unadded.forEach(card => {
-      onAddCard(card);
-    });
-    
     // Mark all cards as added
-    setGeneratedCards(prev => prev.map(c => ({...c, added: true})));
+    setGeneratedCards(prev => 
+      prev.map(card => ({ ...card, added: true }))
+    );
     
     // Show success modal with all added cards
     setSuccessModal({
@@ -1383,33 +1389,55 @@ Use this format for different question types:
     const topicId = selectedTopic ? selectedTopic.id : null;
     console.log("Adding all cards with topicId:", topicId);
     
-  // Trigger an explicit save operation to ensure cards are saved to the database
-  // This is important to prevent data loss if the user refreshes the page
-  if (window.parent && window.parent.postMessage) {
-      // First add all cards to the bank, with topic reference if available
-    window.parent.postMessage({ 
-      type: "ADD_TO_BANK",
-      data: {
-        cards: unadded,
-          recordId: auth?.recordId || window.recordId,
-          userId: userId, // Include userId for UnifiedDataService
-          topicId: topicId // Include the topicId for association
-      }
-    }, "*");
-      console.log("Added all cards to bank:", unadded);
-      
-      // Then immediately trigger a save to ensure persistence
-      window.parent.postMessage({ 
-        type: "TRIGGER_SAVE",
-        data: {
-          cards: unadded,
-          recordId: auth?.recordId || window.recordId
+    // Ensure cards have proper metadata
+    const enrichedCards = unadded.map(card => ({
+      ...card,
+      examBoard: card.examBoard || formData.examBoard || examBoard || "General",
+      examType: card.examType || formData.examType || examType || "Course",
+      subject: card.subject || formData.subject || formData.newSubject || "General",
+      topic: card.topic || formData.topic || formData.newTopic || (selectedTopic ? selectedTopic.topic : null) || "General"
+    }));
+    
+    // Add a slight delay to prevent UI freezing
+    setTimeout(() => {
+      try {
+        // Trigger an explicit save operation to ensure cards are saved to the database
+        // This is important to prevent data loss if the user refreshes the page
+        if (window.parent && window.parent.postMessage) {
+          // First add all cards to the bank, with topic reference if available
+          window.parent.postMessage({ 
+            type: "ADD_TO_BANK",
+            data: {
+              cards: enrichedCards,
+              recordId: auth?.recordId,
+              userId: userId, // Include userId for UnifiedDataService
+              topicId: topicId, // Include the topicId for association
+              timestamp: new Date().toISOString()
+            }
+          }, "*");
+          console.log("Added all cards to bank:", enrichedCards);
+          
+          // Then immediately trigger a save to ensure persistence
+          window.parent.postMessage({ 
+            type: "TRIGGER_SAVE",
+            data: {
+              cards: enrichedCards,
+              recordId: auth?.recordId,
+              timestamp: new Date().toISOString()
+            }
+          }, "*");
+          console.log("Triggered immediate save after adding all cards");
+        } else {
+          console.error("Cannot access parent window for messaging");
+          setError("Failed to communicate with parent window");
         }
-      }, "*");
-      console.log("Triggered immediate save after adding all cards");
-  }
+      } catch (error) {
+        console.error("Error adding cards to bank:", error);
+        setError("Error adding cards: " + error.message);
+      }
+    }, 100);
   };
-  
+
   // Modal to show successfully added cards
   const renderSuccessModal = () => {
     if (!successModal.show) return null;
