@@ -1097,17 +1097,33 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
       topic: `${topic.mainTopic}: ${topic.subtopic}`
     }));
     
+    // Log the formatted topic list for debugging
+    console.log("Formatted topic list for save:", topicListForSave);
+    
     // Call the parent's onSaveTopicList callback with the formatted topics
     if (onSaveTopicList) {
       setLoadingStatus("Saving your topic list...");
       setShowLoadingOverlay(true);
       
       try {
+        // Create a properly structured topic list object
+        const topicListObject = {
+          name: `${subject} - ${examBoard} ${examType}`,
+          topics: topicListForSave,
+          examBoard: examBoard,
+          examType: examType,
+          subject: subject
+        };
+        
+        // Log the complete object being passed to parent
+        console.log("Sending topic list object to parent:", topicListObject);
+        
         // Handle both promise-based and callback-based implementations
-        const result = onSaveTopicList(topicListForSave, {
+        const result = onSaveTopicList(topicListObject, {
           subject,
           examBoard,
-          examType
+          examType,
+          recordId
         });
         
         // If the result is a promise, handle it with then/catch
@@ -1672,6 +1688,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
                 
                 // Send explicit message to parent window that topic lists were updated
                 if (window.parent && window.parent !== window) {
+                  console.log("Sending TOPIC_LISTS_UPDATED message to parent with recordId:", recordId);
                   window.parent.postMessage({
                     type: "TOPIC_LISTS_UPDATED",
                     data: {
@@ -1683,12 +1700,17 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
                 
                 // Wait longer to ensure everything is saved before closing and reloading
                 setTimeout(() => {
-                  // Completely exit the Topic Hub
-                  onClose && onClose();
-                  
-                  // Force reload the page to refresh data
-                  window.location.reload();
-                }, 2000); // Increased from 100ms to 2000ms
+                  // Wait another 1 second before reloading to ensure server has time to process
+                  console.log("Finishing topic shell creation, waiting 1 more second...");
+                  setTimeout(() => {
+                    console.log("Reloading page...");
+                    // Completely exit the Topic Hub
+                    onClose && onClose();
+                    
+                    // Force reload the page to refresh data
+                    window.location.reload();
+                  }, 1000); // Additional 1 second buffer
+                }, 3000); // Increased from 2000ms to 3000ms
               }} 
               className="finish-button"
             >

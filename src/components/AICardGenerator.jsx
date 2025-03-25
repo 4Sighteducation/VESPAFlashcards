@@ -601,6 +601,14 @@ const AICardGenerator = ({
       
       // Process each topic list individually to create topic shells
       for (const list of topicLists) {
+        // Add detailed logging to see what's happening
+        console.log("Processing topic list:", list);
+        
+        if (!list || !list.topics || !Array.isArray(list.topics)) {
+          console.error("Invalid topic list structure:", list);
+          continue; // Skip this invalid list but continue with others
+        }
+
         // Extract the topics from the list
         const topics = list.topics.map(topic => ({
           id: topic.id || generateId('topic'),
@@ -610,18 +618,23 @@ const AICardGenerator = ({
         // Use our enhanced service to save topics to both storage fields
         console.log(`Saving topic list "${list.name}" with ${topics.length} topics`);
         
-        await saveTopicsUnified(
-          topics, 
-          list.subject, 
-          list.examBoard, 
-          list.examType, 
-          userId, 
-          auth
-        );
+        try {
+          await saveTopicsUnified(
+            topics, 
+            list.subject, 
+            list.examBoard, 
+            list.examType, 
+            userId, 
+            auth
+          );
+        } catch (innerError) {
+          console.error("Error saving topics in list:", list.name, innerError);
+          // Continue with other lists despite error
+        }
       }
       
       console.log("Topic lists saved to unified storage successfully:", topicLists.length, "lists");
-              return true;
+      return true;
     } catch (error) {
       console.error("Error in saveTopicListToKnack:", error);
       setError(`Error saving topic lists: ${error.message || "Unknown error"}`);
@@ -1524,14 +1537,23 @@ Use this format for different question types:
               examType={formData.examType}
               initialTopics={hierarchicalTopics}
               recordId={recordId} // Add recordId for topic saving
-              onSaveTopicList={(topicList) => {
+              onSaveTopicList={(topicList, metadata) => {
+                console.log("Received topic list to save:", topicList);
+                console.log("With metadata:", metadata);
+                
+                // Ensure we have a properly structured topic list
+                if (!topicList || !topicList.topics || !Array.isArray(topicList.topics)) {
+                  console.error("Invalid topic list structure received", topicList);
+                  return { success: false, error: "Invalid topic list structure" };
+                }
+                
                 // Create a new saved list
                 const newSavedList = {
                   id: generateId('topiclist'),
-                  name: topicList.name,
-                  examBoard: formData.examBoard,
-                  examType: formData.examType,
-                  subject: formData.subject || formData.newSubject,
+                  name: topicList.name || `${metadata.subject} - ${metadata.examBoard} ${metadata.examType}`,
+                  examBoard: metadata.examBoard,
+                  examType: metadata.examType,
+                  subject: metadata.subject,
                   topics: topicList.topics,
                   created: new Date().toISOString(),
                   userId: userId
@@ -1541,11 +1563,24 @@ Use this format for different question types:
                 const updatedLists = [...savedTopicLists, newSavedList];
                 setSavedTopicLists(updatedLists);
                 
-                // Save to Knack
-                saveTopicListToKnack(updatedLists);
-                setTopicListSaved(true);
-                
-                console.log("Topic list saved:", newSavedList.name);
+                // Save to Knack and return a promise
+                return new Promise((resolve, reject) => {
+                  saveTopicListToKnack(updatedLists)
+                    .then(success => {
+                      if (success) {
+                        console.log("Topic list saved:", newSavedList.name);
+                        setTopicListSaved(true);
+                        resolve({ success: true });
+                      } else {
+                        console.error("Failed to save topic list to Knack");
+                        reject(new Error("Failed to save topic list"));
+                      }
+                    })
+                    .catch(err => {
+                      console.error("Error in save operation:", err);
+                      reject(err);
+                    });
+                });
               }}
               onSelectTopic={(topic) => {
                 // Set the selected topic and move to the next step
