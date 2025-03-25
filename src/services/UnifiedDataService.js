@@ -304,29 +304,32 @@ export const loadUserData = async (userId, auth) => {
  */
 export const saveUserData = async (recordId, unifiedData, auth) => {
   try {
+    // First, fix multiple choice cards before saving
+    const fixedData = fixMultipleChoiceInUnifiedData(unifiedData);
+    
     debugLog("Saving unified data", {
       recordId,
-      subjects: unifiedData.subjects.length,
-      topics: unifiedData.topics.length,
-      cards: unifiedData.cards.length
+      subjects: fixedData.subjects.length,
+      topics: fixedData.topics.length,
+      cards: fixedData.cards.length
     });
     
     // Update timestamp
-    unifiedData.lastUpdated = new Date().toISOString();
+    fixedData.lastUpdated = new Date().toISOString();
     
     // Convert to old format for backward compatibility
-    const oldFormatCards = UnifiedDataModel.convertToOldFormat(unifiedData);
+    const oldFormatCards = UnifiedDataModel.convertToOldFormat(fixedData);
     
     // Create color mapping from subjects and topics
     const colorMapping = {};
-    unifiedData.subjects.forEach(subject => {
+    fixedData.subjects.forEach(subject => {
       colorMapping[subject.name] = {
         base: subject.color,
         topics: {}
       };
       
       // Add topic colors
-      const topicsForSubject = unifiedData.topics.filter(topic => topic.subjectId === subject.id);
+      const topicsForSubject = fixedData.topics.filter(topic => topic.subjectId === subject.id);
       topicsForSubject.forEach(topic => {
         colorMapping[subject.name].topics[topic.name] = topic.color;
       });
@@ -334,7 +337,7 @@ export const saveUserData = async (recordId, unifiedData, auth) => {
     
     // Prepare update data
     const updateData = {
-      [FIELD_MAPPING.unifiedData]: JSON.stringify(unifiedData),
+      [FIELD_MAPPING.unifiedData]: JSON.stringify(fixedData),
       [FIELD_MAPPING.cardBankData]: JSON.stringify(oldFormatCards),
       [FIELD_MAPPING.colorMapping]: JSON.stringify(colorMapping),
       [FIELD_MAPPING.lastSaved]: new Date().toISOString()
@@ -363,6 +366,115 @@ export const saveUserData = async (recordId, unifiedData, auth) => {
     console.error("[UnifiedDataService] Error saving user data:", error);
     return false;
   }
+};
+
+/**
+ * Detect if a card is multiple choice by examining content
+ * @param {Object} card - The card to examine
+ * @returns {boolean} - Whether the card is multiple choice
+ */
+const isMultipleChoiceCard = (card) => {
+  if (!card) return false;
+  
+  // Check explicit indicators
+  if (card.questionType === 'multiple_choice') return true;
+  if (card.type === 'multiple_choice') return true;
+  
+  // Check for options
+  if (card.options && Array.isArray(card.options) && card.options.length > 0) return true;
+  if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) return true;
+  
+  // Check answer text patterns
+  if (card.answer && typeof card.answer === 'string') {
+    // Look for "Correct Answer: x)" pattern
+    if (card.answer.match(/Correct Answer:\s*[a-e]\)/i)) return true;
+    
+    // Look for option lettering
+    if (card.answer.match(/[a-e]\)\s*[A-Za-z]/)) return true;
+  }
+  
+  return false;
+};
+
+/**
+ * Fix type and options for multiple choice cards before saving
+ * @param {Array} cards - Array of cards to fix
+ * @returns {Array} - Fixed cards
+ */
+export const fixMultipleChoiceCards = (cards) => {
+  if (!Array.isArray(cards)) return cards;
+  
+  return cards.map(card => {
+    if (!card) return card;
+    
+    // Deep clone to avoid mutating original
+    const fixedCard = { ...card };
+    
+    // Check if this is a multiple choice card
+    if (isMultipleChoiceCard(fixedCard)) {
+      // Set the questionType explicitly
+      fixedCard.questionType = 'multiple_choice';
+      
+      // Ensure options are present
+      if (!fixedCard.options || !Array.isArray(fixedCard.options) || fixedCard.options.length === 0) {
+        // Try to restore from savedOptions
+        if (fixedCard.savedOptions && Array.isArray(fixedCard.savedOptions) && fixedCard.savedOptions.length > 0) {
+          fixedCard.options = [...fixedCard.savedOptions];
+          console.log(`[UnifiedDataService] Restored options from savedOptions for card ${fixedCard.id}`);
+        } else if (fixedCard.answer && typeof fixedCard.answer === 'string') {
+          // Try to extract from answer
+          const match = fixedCard.answer.match(/Correct Answer:\s*([a-e])\)/i);
+          
+          if (match) {
+            const correctLetter = match[1].toLowerCase();
+            const letters = ['a', 'b', 'c', 'd', 'e'];
+            const options = [];
+            
+            // Create options with the correct one marked
+            letters.slice(0, 4).forEach(letter => {
+              options.push({
+                text: letter === correctLetter ? 
+                      (fixedCard.detailedAnswer || 'Correct option') : 
+                      `Option ${letter.toUpperCase()}`,
+                isCorrect: letter === correctLetter
+              });
+            });
+            
+            fixedCard.options = options;
+            fixedCard.savedOptions = [...options];
+            console.log(`[UnifiedDataService] Created options from answer pattern for card ${fixedCard.id}`);
+          }
+        }
+      }
+      
+      // Always backup options to savedOptions
+      if (fixedCard.options && Array.isArray(fixedCard.options) && fixedCard.options.length > 0) {
+        fixedCard.savedOptions = [...fixedCard.options];
+      }
+    }
+    
+    return fixedCard;
+  });
+};
+
+/**
+ * Fix and process multiple choice cards in the unified data model
+ * @param {Object} unifiedData - The unified data model
+ * @returns {Object} - Updated unified data model
+ */
+export const fixMultipleChoiceInUnifiedData = (unifiedData) => {
+  if (!unifiedData || !unifiedData.cards || !Array.isArray(unifiedData.cards)) {
+    return unifiedData;
+  }
+  
+  // Create a deep copy
+  const updatedData = {
+    ...unifiedData,
+    cards: fixMultipleChoiceCards(unifiedData.cards),
+    lastUpdated: new Date().toISOString()
+  };
+  
+  return updatedData;
 };
 
 /**
@@ -712,5 +824,7 @@ export default {
   addCardsToUnifiedData,
   backupToLocalStorage,
   restoreFromLocalStorage,
-  saveTopicShells
+  saveTopicShells,
+  fixMultipleChoiceCards,
+  fixMultipleChoiceInUnifiedData
 };

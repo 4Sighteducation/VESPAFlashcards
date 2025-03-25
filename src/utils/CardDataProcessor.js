@@ -378,3 +378,81 @@ export const createBackup = (cards, reason = 'manual') => {
     cards: Array.isArray(cards) ? [...cards] : []
   };
 };
+
+/**
+ * Improved function to detect if a card is multiple choice based on content
+ * @param {Object} card - The card to check
+ * @returns {boolean} - Whether the card is multiple choice
+ */
+export const isMultipleChoiceCard = (card) => {
+  // Case 1: Card has options array
+  if (card.options && Array.isArray(card.options) && card.options.length > 0) {
+    return true;
+  }
+  
+  // Case 2: Card has savedOptions array
+  if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+    return true;
+  }
+  
+  // Case 3: Card has questionType explicitly set
+  if (card.questionType === 'multiple_choice') {
+    return true;
+  }
+  
+  // Case 4: Answer contains "Correct Answer: X)" pattern
+  if (card.answer && typeof card.answer === 'string') {
+    // Check for "Correct Answer: a)" or "Correct Answer: b)" pattern
+    if (card.answer.match(/Correct Answer:\s*[a-z]\)/i)) {
+      return true;
+    }
+    
+    // Check for option lettering pattern
+    if (card.answer.match(/[a-e]\)\s*[A-Za-z]/)) {
+      return true;
+    }
+  }
+  
+  // Case 5: Type is already set
+  if (card.type === 'multiple_choice') {
+    return true;
+  }
+  
+  return false;
+};
+
+/**
+ * Extract options from answer text for multiple choice cards missing options
+ * @param {Object} card - The card to process
+ * @returns {Array} - Extracted options
+ */
+export const extractOptionsFromAnswer = (card) => {
+  if (!card.answer || typeof card.answer !== 'string') {
+    return [];
+  }
+  
+  // Try to find the correct option letter (a, b, c, d, e)
+  const correctAnswerMatch = card.answer.match(/Correct Answer:\s*([a-e])\)/i);
+  if (!correctAnswerMatch) {
+    return [];
+  }
+  
+  const correctLetter = correctAnswerMatch[1].toLowerCase();
+  
+  // Create placeholder options based on the correct answer position
+  const options = [];
+  const letters = ['a', 'b', 'c', 'd', 'e'];
+  const correctIndex = letters.indexOf(correctLetter);
+  
+  if (correctIndex >= 0) {
+    // Create 4 options with the correct one marked
+    letters.slice(0, 4).forEach(letter => {
+      options.push({
+        text: letter === correctLetter ? `${card.detailedAnswer || 'Correct option'}` : `Option ${letter.toUpperCase()}`,
+        isCorrect: letter === correctLetter
+      });
+    });
+  }
+  
+  return options;
+};

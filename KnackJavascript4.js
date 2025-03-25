@@ -814,109 +814,165 @@ function standardizeCards(cards) {
   if (!Array.isArray(cards)) return [];
 
   return cards.map(card => {
-    // If it's already a standard card, just return it
+    // Deep clone to avoid modifying original object
+    card = JSON.parse(JSON.stringify(card));
+    
+    // If it's already a standard card, just verify/fix the multiple choice settings
     if (card.createdAt && card.updatedAt && card.examBoard !== undefined) {
-      // Check options need to be fixed
-      if (card.questionType === 'multiple_choice' && 
-          (!card.options || !Array.isArray(card.options) || card.options.length === 0) &&
-          card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
-        
-        // Restore options from savedOptions
-        card.options = [...card.savedOptions];
-        console.log(`KnackJavascript4: Restored options for card ${card.id}`);
-      }
+      // Detect if this should be a multiple choice card
+      const isMultipleChoice = isMultipleChoiceCard(card);
       
-      // Always backup options as savedOptions
-      if (card.questionType === 'multiple_choice' && 
-          card.options && Array.isArray(card.options) && card.options.length > 0 &&
-          (!card.savedOptions || !Array.isArray(card.savedOptions) || card.savedOptions.length === 0)) {
+      // Correct the questionType and type fields for multiple choice cards
+      if (isMultipleChoice) {
+        card.questionType = 'multiple_choice';
         
-        card.savedOptions = [...card.options];
-        console.log(`KnackJavascript4: Backed up options for card ${card.id}`);
+        // Restore or create options if missing
+        if (!card.options || !Array.isArray(card.options) || card.options.length === 0) {
+          // Try to restore from savedOptions first
+          if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+            console.log(`KnackJavascript4: Restored options from savedOptions for card ${card.id}`);
+            card.options = [...card.savedOptions];
+          } else {
+            // Extract options from answer text as a fallback
+            const extractedOptions = extractOptionsFromAnswer(card);
+            if (extractedOptions.length > 0) {
+              console.log(`KnackJavascript4: Created options from answer text for card ${card.id}`);
+              card.options = extractedOptions;
+              card.savedOptions = [...extractedOptions];
+            }
+          }
+        }
+        
+        // Make a backup of options in savedOptions
+        if (card.options && Array.isArray(card.options) && card.options.length > 0) {
+          card.savedOptions = [...card.options];
+        }
       }
       
       return card;
     }
-    
-    // For multiple choice questions, ensure options are preserved
-    const hasOptions = card.options && Array.isArray(card.options) && card.options.length > 0;
-    const hasSavedOptions = card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0;
-    const hasCorrectAnswer = card.correctAnswer && card.correctAnswer.trim() !== '';
-    const answerIndicatesMultipleChoice = card.answer && typeof card.answer === 'string' && 
-                                         card.answer.includes('Correct Answer:');
-    
-    // Determine if this is a multiple choice card
-    const isMultipleChoice = hasOptions || hasSavedOptions || hasCorrectAnswer || 
-                             answerIndicatesMultipleChoice || card.questionType === 'multiple_choice';
-    
-    // Use existing options or fall back to savedOptions if present
-    const finalOptions = hasOptions ? card.options : (hasSavedOptions ? card.savedOptions : []);
-    
-    // Determine question type, default to short_answer if not multiple choice
-    const questionType = isMultipleChoice ? 'multiple_choice' : (card.questionType || 'short_answer');
-    
-    // Determine correctAnswer for multiple choice questions
-    let correctAnswer = '';
-    if (hasCorrectAnswer) {
-      correctAnswer = card.correctAnswer;
-    } else if (isMultipleChoice && finalOptions.length > 0) {
-      correctAnswer = finalOptions[0];
-    } else if (answerIndicatesMultipleChoice) {
-      // Try to extract correct answer from formatted answer string
-      const match = card.answer.match(/Correct Answer:\s*([^\n]+)/);
-      if (match && match[1]) {
-        correctAnswer = match[1].trim();
-      }
-    }
-    
-    // Fix answer format for multiple choice if needed
-    let answer = card.answer || card.back || '';
-    if (isMultipleChoice && correctAnswer && !answer.includes('Correct Answer:')) {
-      answer = `Correct Answer: ${correctAnswer}`;
-    }
-    
-    // Otherwise, standardize it
-    return {
-      // Core identification
-      id: card.id || generateId(),
-      
-      // Subject and topic information
+
+    // Create a standardized version of the card
+    let standardCard = {
+      id: card.id || `card_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
       subject: card.subject || 'General',
       topic: card.topic || 'General',
       examBoard: card.examBoard || '',
       examType: card.examType || '',
       topicPriority: card.topicPriority || 0,
-      
-      // Content fields
       question: card.question || card.front || '',
-      answer: answer,
+      answer: card.answer || card.back || '',
       keyPoints: card.keyPoints || [],
       detailedAnswer: card.detailedAnswer || '',
-      additionalInfo: card.additionalInfo || '',
-      
-      // Multiple choice fields - explicitly include these for all cards
-      questionType: questionType,
-      options: finalOptions,
-      savedOptions: hasOptions ? [...card.options] : (hasSavedOptions ? [...card.savedOptions] : []),
-      correctAnswer: correctAnswer,
-      
-      // Card type
-      type: card.type || 'card',
-      
-      // Visual properties
+      additionalInfo: card.additionalInfo || card.notes || '',
       cardColor: card.cardColor || card.color || '#3cb44b',
       textColor: card.textColor || '',
-      
-      // Spaced repetition
       boxNum: card.boxNum || 1,
       lastReviewed: card.lastReviewed || null,
-      nextReviewDate: card.nextReviewDate || new Date().toISOString(),
-      
-      // Metadata
-      createdAt: card.createdAt || card.timestamp || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      nextReviewDate: card.nextReviewDate || new Date(Date.now() + 86400000).toISOString(),
+      createdAt: card.createdAt || new Date().toISOString(),
+      updatedAt: card.updatedAt || new Date().toISOString()
     };
+    
+    // Detect if this should be a multiple choice card
+    const isMultipleChoice = isMultipleChoiceCard(standardCard);
+    
+    // Set appropriate fields for multiple choice cards
+    if (isMultipleChoice) {
+      standardCard.questionType = 'multiple_choice';
+      
+      // Use existing options or try to extract them from the answer
+      if (card.options && Array.isArray(card.options) && card.options.length > 0) {
+        standardCard.options = [...card.options];
+        standardCard.savedOptions = [...card.options];
+      } else if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+        standardCard.options = [...card.savedOptions];
+        standardCard.savedOptions = [...card.savedOptions];
+      } else {
+        // Extract options from answer text
+        const extractedOptions = extractOptionsFromAnswer(standardCard);
+        if (extractedOptions.length > 0) {
+          console.log(`KnackJavascript4: Created options from answer text for new card`);
+          standardCard.options = extractedOptions;
+          standardCard.savedOptions = [...extractedOptions];
+        }
+      }
+    } else {
+      standardCard.questionType = card.questionType || 'short_answer';
+    }
+    
+    return standardCard;
   });
+}
+
+// Helper function to detect multiple choice cards
+function isMultipleChoiceCard(card) {
+  // Case 1: Card has options array
+  if (card.options && Array.isArray(card.options) && card.options.length > 0) {
+    return true;
+  }
+  
+  // Case 2: Card has savedOptions array
+  if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+    return true;
+  }
+  
+  // Case 3: Card has questionType explicitly set
+  if (card.questionType === 'multiple_choice') {
+    return true;
+  }
+  
+  // Case 4: Answer contains "Correct Answer: X)" pattern
+  if (card.answer && typeof card.answer === 'string') {
+    // Check for "Correct Answer: a)" or "Correct Answer: b)" pattern
+    if (card.answer.match(/Correct Answer:\s*[a-z]\)/i)) {
+      return true;
+    }
+    
+    // Check for option lettering pattern
+    if (card.answer.match(/[a-e]\)\s*[A-Za-z]/)) {
+      return true;
+    }
+  }
+  
+  // Case 5: Type is already set
+  if (card.type === 'multiple_choice') {
+    return true;
+  }
+  
+  return false;
+}
+
+// Helper function to extract options from answer text
+function extractOptionsFromAnswer(card) {
+  if (!card.answer || typeof card.answer !== 'string') {
+    return [];
+  }
+  
+  // Try to find the correct option letter (a, b, c, d, e)
+  const correctAnswerMatch = card.answer.match(/Correct Answer:\s*([a-e])\)/i);
+  if (!correctAnswerMatch) {
+    return [];
+  }
+  
+  const correctLetter = correctAnswerMatch[1].toLowerCase();
+  
+  // Create placeholder options based on the correct answer position
+  const options = [];
+  const letters = ['a', 'b', 'c', 'd', 'e'];
+  const correctIndex = letters.indexOf(correctLetter);
+  
+  if (correctIndex >= 0) {
+    // Create 4 options with the correct one marked
+    letters.slice(0, 4).forEach(letter => {
+      options.push({
+        text: letter === correctLetter ? `${card.detailedAnswer || 'Correct option'}` : `Option ${letter.toUpperCase()}`,
+        isCorrect: letter === correctLetter
+      });
+    });
+  }
+  
+  return options;
 }
 
 // Save flashcard user data

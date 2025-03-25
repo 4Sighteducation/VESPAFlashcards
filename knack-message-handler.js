@@ -237,7 +237,7 @@ function verifyDataSave(recordId, sourceWindow) {
   }, 5000); // Wait 5 seconds before verification to ensure data is committed
 }
 
-// NEW HELPER FUNCTION: Ensure multiple choice options are preserved
+// Enhanced function to verify card options are preserved
 function ensureOptionsPreserved(cards) {
   if (!Array.isArray(cards)) {
     console.error(`[${new Date().toISOString()}] ensureOptionsPreserved: Cards is not an array:`, cards);
@@ -246,82 +246,92 @@ function ensureOptionsPreserved(cards) {
 
   console.log(`[${new Date().toISOString()}] Ensuring options are preserved for ${cards.length} cards`);
   
-  return cards.map(card => {
+  let cardsWithAnswerPattern = 0;
+  
+  const result = cards.map(card => {
     // Skip topic shells or null items
     if (!card || card.type === 'topic' || card.isShell) {
       return card;
     }
     
-    // Detect if this should be a multiple choice card
-    const hasOptions = card.options && Array.isArray(card.options) && card.options.length > 0;
-    const hasSavedOptions = card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0;
-    const hasCorrectAnswer = card.correctAnswer && typeof card.correctAnswer === 'string' && card.correctAnswer.trim() !== '';
-    const explicitQuestionType = card.questionType === 'multiple_choice';
-    
-    // Card should be multiple choice if any of these conditions are true
-    const shouldBeMultipleChoice = hasOptions || hasSavedOptions || hasCorrectAnswer || explicitQuestionType;
-    
-    if (shouldBeMultipleChoice) {
-      // First, set the question type explicitly
+    // Check for "Correct Answer: X)" pattern in answer
+    const hasCorrectAnswerPattern = card.answer && 
+                                  typeof card.answer === 'string' && 
+                                  card.answer.match(/Correct Answer:\s*[a-z]\)/i);
+                                  
+    if (hasCorrectAnswerPattern) {
+      cardsWithAnswerPattern++;
+      
+      // Force questionType to multiple_choice for these cards
       card.questionType = 'multiple_choice';
       
-      // If options are missing but savedOptions exist, restore them
-      if ((!hasOptions) && hasSavedOptions) {
-        console.log(`[${new Date().toISOString()}] Restoring options from savedOptions for card:`, card.id);
-        card.options = [...card.savedOptions];
-      }
-      
-      // If no options or savedOptions, but has correctAnswer, create default options
-      if (!hasOptions && !hasSavedOptions && hasCorrectAnswer) {
-        console.log(`[${new Date().toISOString()}] Creating default options for card with correctAnswer:`, card.id);
-        
-        const correctAns = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
-        
-        // Create three wrong options as placeholders
-        card.options = [
-          correctAns,
-          `Alternative answer 1 (placeholder)`,
-          `Alternative answer 2 (placeholder)`,
-          `Alternative answer 3 (placeholder)`
-        ];
-        
-        // Save for future reference
-        card.savedOptions = [...card.options];
-      }
-      
-      // If multiple choice is explicit but no options exist, create empty array
-      if (explicitQuestionType && !hasOptions && !hasSavedOptions && !hasCorrectAnswer) {
-        console.log(`[${new Date().toISOString()}] Creating empty options array for explicit multiple choice card:`, card.id);
-        card.options = [];
-        card.savedOptions = [];
-      }
-      
-      // Always backup options as savedOptions for future recovery
-      if (hasOptions && !hasSavedOptions) {
-        console.log(`[${new Date().toISOString()}] Backing up options to savedOptions for card:`, card.id);
-        card.savedOptions = [...card.options];
-      }
-      
-      // Add correctAnswer if missing but options are present
-      if (!hasCorrectAnswer && (hasOptions || hasSavedOptions)) {
-        const optionsToUse = hasOptions ? card.options : card.savedOptions;
-        if (optionsToUse.length > 0) {
-          console.log(`[${new Date().toISOString()}] Setting default correctAnswer for card:`, card.id);
-          card.correctAnswer = optionsToUse[0];
+      // If options are missing, try to recreate them
+      if (!card.options || !Array.isArray(card.options) || card.options.length === 0) {
+        // Try to use savedOptions first
+        if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+          console.log(`[${new Date().toISOString()}] Restoring options from savedOptions for card ${card.id}`);
+          card.options = [...card.savedOptions];
+        } else {
+          // Try to extract the correct option letter
+          const correctAnswerMatch = card.answer.match(/Correct Answer:\s*([a-e])\)/i);
+          if (correctAnswerMatch) {
+            const correctLetter = correctAnswerMatch[1].toLowerCase();
+            const letters = ['a', 'b', 'c', 'd', 'e'];
+            const options = [];
+            
+            // Create placeholder options with the correct one marked
+            letters.slice(0, 4).forEach(letter => {
+              options.push({
+                text: letter === correctLetter ? 
+                      (card.detailedAnswer || 'Correct option') : 
+                      `Option ${letter.toUpperCase()}`,
+                isCorrect: letter === correctLetter
+              });
+            });
+            
+            console.log(`[${new Date().toISOString()}] Created options from answer pattern for card ${card.id}`);
+            card.options = options;
+            card.savedOptions = [...options];
+          }
         }
       }
       
-      // If we have a better formatted answer but it's missing the "Correct Answer:" prefix
-      if (hasCorrectAnswer && !card.correctAnswer.startsWith("Correct Answer:") && 
-          !card.answer.startsWith("Correct Answer:")) {
-        // Update the answer field to include proper multiple choice format
-        const correct = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
-        card.answer = `Correct Answer: ${correct}`;
+      // Always ensure savedOptions is also set
+      if (card.options && Array.isArray(card.options) && card.options.length > 0 &&
+          (!card.savedOptions || !Array.isArray(card.savedOptions))) {
+        card.savedOptions = [...card.options];
+      }
+    }
+    
+    // Always check if this is a multiple choice card that needs option preservation
+    if (card.questionType === 'multiple_choice' || card.type === 'multiple_choice') {
+      // Ensure questionType is set correctly
+      card.questionType = 'multiple_choice';
+      
+      // Apply fixes to options if needed
+      if (!card.options || !Array.isArray(card.options) || card.options.length === 0) {
+        if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+          card.options = [...card.savedOptions];
+          console.log(`[${new Date().toISOString()}] Restored missing options for card ${card.id}`);
+        }
+      } else if (!card.savedOptions || !Array.isArray(card.savedOptions) || card.savedOptions.length === 0) {
+        card.savedOptions = [...card.options];
+        console.log(`[${new Date().toISOString()}] Backed up options for card ${card.id}`);
       }
     }
     
     return card;
   });
+  
+  console.log(`[${new Date().toISOString()}] Options preservation complete:`, {
+    total: cards.length,
+    withAnswerPattern: cardsWithAnswerPattern,
+    withOptions: cards.filter(c => c && c.options && Array.isArray(c.options) && c.options.length > 0).length,
+    withSavedOptions: cards.filter(c => c && c.savedOptions && Array.isArray(c.savedOptions) && c.savedOptions.length > 0).length,
+    multipleChoice: cards.filter(c => c && (c.questionType === 'multiple_choice' || c.type === 'multiple_choice')).length
+  });
+  
+  return result;
 }
 
 // Helper function to access TopicCardSyncService
