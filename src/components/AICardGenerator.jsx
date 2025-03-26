@@ -1389,13 +1389,27 @@ Use this format for different question types:
     const topicId = selectedTopic ? selectedTopic.id : null;
     console.log("Adding all cards with topicId:", topicId);
     
-    // Ensure cards have proper metadata
+    // Log current metadata for debugging
+    console.log("Metadata check before enriching cards:", {
+      propExamBoard: examBoard,
+      propExamType: examType,
+      propInitialSubject: initialSubject,
+      propInitialTopic: initialTopic,
+      formDataExamBoard: formData.examBoard,
+      formDataExamType: formData.examType,
+      formDataSubject: formData.subject,
+      formDataTopic: formData.topic,
+      topicId: topicId
+    });
+    
+    // Ensure cards have proper metadata - prioritize props over form data
     const enrichedCards = unadded.map(card => ({
       ...card,
-      examBoard: card.examBoard || formData.examBoard || examBoard || "General",
-      examType: card.examType || formData.examType || examType || "Course",
-      subject: card.subject || formData.subject || formData.newSubject || "General",
-      topic: card.topic || formData.topic || formData.newTopic || (selectedTopic ? selectedTopic.topic : null) || "General"
+      examBoard: card.examBoard || examBoard || formData.examBoard || "General",
+      examType: card.examType || examType || formData.examType || "Course",
+      subject: card.subject || initialSubject || formData.subject || formData.newSubject || "General",
+      topic: card.topic || initialTopic || formData.topic || formData.newTopic || (selectedTopic ? selectedTopic.topic : null) || "General",
+      topicId: card.topicId || topicId || "" // Ensure topicId is set
     }));
     
     // Add a slight delay to prevent UI freezing
@@ -1415,7 +1429,7 @@ Use this format for different question types:
               timestamp: new Date().toISOString()
             }
           }, "*");
-          console.log("Added all cards to bank:", enrichedCards);
+          console.log("Added all cards to bank with metadata:", enrichedCards[0]);
           
           // Then immediately trigger a save to ensure persistence
           window.parent.postMessage({ 
