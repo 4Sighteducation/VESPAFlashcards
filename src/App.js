@@ -1429,7 +1429,20 @@ function App() {
                 }
               }
             } else {
-              showStatus("Error adding cards to bank.");
+              showStatus("Error adding cards to bank. Try refreshing the page.");
+              
+              // If there was an error, try to refresh data anyway after a short delay
+              // This can help recover from temporary issues
+              setTimeout(() => {
+                if (window.parent !== window) {
+                  window.parent.postMessage({
+                    type: "REQUEST_UPDATED_DATA",
+                    recordId: recordId
+                  }, "*");
+                  
+                  console.log("[Add To Bank Result] Requested data refresh after error");
+                }
+              }, 2000);
             }
             break;
             

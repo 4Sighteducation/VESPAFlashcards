@@ -1292,6 +1292,9 @@ Use this format for different question types:
         topic: card.topic || formData.topic || initialTopic
       });
       
+      // Get the correct topic ID - either selected or from card
+      const finalTopicId = topicId || card.topicId || "";
+      
       // Ensure the card has proper metadata
       const enrichedCard = {
         ...card,
@@ -1299,7 +1302,7 @@ Use this format for different question types:
         examType: card.examType || formData.examType || examType || "Course",
         subject: card.subject || formData.subject || initialSubject || "General",
         topic: card.topic || formData.topic || initialTopic || "General",
-        topicId: topicId || card.topicId || "",
+        topicId: finalTopicId,
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
         lastReviewed: new Date().toISOString(),
@@ -1327,73 +1330,60 @@ Use this format for different question types:
         setSuccessModal(prev => ({...prev, show: false}));
       }, 3000);
       
-      // Wait a moment before sending to parent window to ensure UI stays responsive
-      setTimeout(() => {
-        // Send message to parent window to add card to bank
-        if (window.parent && window.parent.postMessage) {
-          console.log("Sending card to parent window:", enrichedCard);
-          
-          // Make sure we have valid auth data
-          const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
-          const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
-          
-          // First add the card to the bank
+      // First try with local callback if available
+      if (typeof onAddCard === 'function') {
+        try {
+          onAddCard(enrichedCard);
+          console.log("Card added via onAddCard callback");
+        } catch (callbackError) {
+          console.error("Error in onAddCard callback:", callbackError);
+        }
+      }
+      
+      // Then use the message passing to the parent window as the main approach
+      if (window.parent && window.parent.postMessage) {
+        // Make sure we have valid auth data
+        const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
+        const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
+        
+        console.log("Adding card via parent window messaging");
+        
+        // First add the card to the bank
+        window.parent.postMessage({ 
+          type: "ADD_TO_BANK",
+          data: {
+            cards: [enrichedCard],
+            recordId: authData?.recordId || window.recordId || "",
+            userId: userIdToUse,
+            topicId: finalTopicId
+          }
+        }, "*");
+        
+        // Then trigger a save with a delay to ensure ADD_TO_BANK completes
+        setTimeout(() => {
           window.parent.postMessage({ 
-            type: "ADD_TO_BANK",
+            type: "TRIGGER_SAVE",
             data: {
-              cards: [enrichedCard],
-              recordId: authData?.recordId || window.recordId || "",
-              userId: userIdToUse,
-              topicId: topicId || enrichedCard.topicId || ""
+              recordId: authData?.recordId || window.recordId || ""
             }
           }, "*");
+          console.log("Triggered save to ensure persistence");
           
-          // Then trigger a save with a small delay
+          // Add another small delay before requesting refresh
           setTimeout(() => {
-            window.parent.postMessage({ 
-              type: "TRIGGER_SAVE",
+            window.parent.postMessage({
+              type: "REQUEST_REFRESH",
               data: {
-                cards: [enrichedCard],
                 recordId: authData?.recordId || window.recordId || ""
               }
             }, "*");
-            console.log("Triggered save to ensure persistence");
-            
-            // Add another small delay before requesting refresh
-            setTimeout(() => {
-              window.parent.postMessage({
-                type: "REQUEST_REFRESH",
-                data: {
-                  recordId: authData?.recordId || window.recordId || ""
-                }
-              }, "*");
-              console.log("Requested app refresh to update UI");
-            }, 500);
+            console.log("Requested app refresh to update UI");
           }, 500);
-        }
-        
-        // Call the onAddCard callback provided by parent
-        if (typeof onAddCard === 'function') {
-          try {
-            onAddCard(enrichedCard);
-          } catch (callbackError) {
-            console.error("Error in onAddCard callback:", callbackError);
-          }
-        }
-        
-        // Also try adding via direct API call as backup
-        handleAddToBank([enrichedCard])
-          .then(success => {
-            if (success) {
-              console.log("Card added via direct API call");
-            } else {
-              console.warn("Failed to add card via direct API");
-            }
-          })
-          .catch(error => {
-            console.error("Error in direct API add:", error);
-          });
-      }, 100);
+        }, 500);
+      } else {
+        console.error("Cannot access parent window for messaging");
+        setError("Failed to communicate with parent window");
+      }
     } catch (error) {
       console.error("Error handling add card:", error);
       setError(`Error adding card: ${error.message}. Please try again.`);
@@ -1448,48 +1438,58 @@ Use this format for different question types:
     });
     
     // Ensure all cards have proper metadata
-    const enrichedCards = unadded.map(card => ({
-      ...card,
-      // Explicitly ensure metadata is set correctly
-      examBoard: card.examBoard || formData.examBoard || examBoard || "General",
-      examType: card.examType || formData.examType || examType || "Course",
-      subject: card.subject || formData.subject || initialSubject || "General",
-      topic: card.topic || formData.topic || initialTopic || "General",
-      topicId: topicId || card.topicId || "",
-      // Add timestamps if missing
-      created: card.created || new Date().toISOString(),
-      updated: card.updated || new Date().toISOString()
-    }));
+    const enrichedCards = unadded.map(card => {
+      // Get the correct topic ID - either selected or from card
+      const finalTopicId = topicId || card.topicId || "";
+      
+      // Create enriched card with proper metadata
+      return {
+        ...card,
+        // Explicitly ensure metadata is set correctly
+        examBoard: card.examBoard || formData.examBoard || examBoard || "General",
+        examType: card.examType || formData.examType || examType || "Course",
+        subject: card.subject || formData.subject || initialSubject || "General",
+        topic: card.topic || formData.topic || initialTopic || "General",
+        topicId: finalTopicId, // Ensure topicId is set
+        // Add timestamps and spaced repetition metadata
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        lastReviewed: new Date().toISOString(),
+        nextReviewDate: new Date().toISOString(),
+        boxNum: 1
+      };
+    });
     
     console.log("Enriched cards for bank:", enrichedCards.map(card => ({
       id: card.id,
       examBoard: card.examBoard,
       examType: card.examType,
       subject: card.subject,
-      topic: card.topic
+      topic: card.topic,
+      topicId: card.topicId
     })));
     
-    // Add cards to bank
-    try {
-      // Make sure we have valid auth data
-      const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
-      const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
-      
-      // First try handling locally
-      if (typeof onAddCard === 'function') {
-        try {
-          enrichedCards.forEach(card => onAddCard(card));
-          console.log("Added cards via onAddCard callback");
-        } catch (callbackError) {
-          console.error("Error in onAddCard callback:", callbackError);
-        }
+    // First try handling locally
+    if (typeof onAddCard === 'function') {
+      try {
+        enrichedCards.forEach(card => onAddCard(card));
+        console.log("Added cards via onAddCard callback");
+      } catch (callbackError) {
+        console.error("Error in onAddCard callback:", callbackError);
       }
+    }
+    
+    // Then use message passing to the parent window as the primary method
+    // since it handles field_3086 and other fields correctly
+    if (window.parent && window.parent.postMessage) {
+      console.log("Adding cards to bank via parent window:", enrichedCards.length);
       
-      // Then attempt to batch add to parent application
-      if (window.parent && window.parent.postMessage) {
-        console.log("Adding cards to bank via parent window:", enrichedCards.length);
+      try {
+        // Make sure we have valid auth data
+        const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
+        const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
         
-        // Add cards to bank - send in batches if needed
+        // First, add cards to bank
         window.parent.postMessage({ 
           type: "ADD_TO_BANK",
           data: {
@@ -1500,7 +1500,7 @@ Use this format for different question types:
           }
         }, "*");
         
-        // Then trigger an explicit save operation to handle persistence
+        // Then trigger a save with a delay to ensure ADD_TO_BANK completes
         setTimeout(() => {
           window.parent.postMessage({ 
             type: "TRIGGER_SAVE",
@@ -1510,7 +1510,7 @@ Use this format for different question types:
           }, "*");
           console.log("Triggered save after adding cards to bank");
           
-          // Add a small delay before another message to trigger a refresh
+          // Add a small delay before requesting refresh
           setTimeout(() => {
             window.parent.postMessage({
               type: "REQUEST_REFRESH",
@@ -1521,24 +1521,13 @@ Use this format for different question types:
             console.log("Requested app refresh to update UI");
           }, 500);
         }, 1000);
+      } catch (error) {
+        console.error("Error in message passing:", error);
+        setError("Error saving cards. Please try again.");
       }
-      
-      // Call the handleAddToBank function directly for direct API save
-      handleAddToBank(enrichedCards)
-        .then(success => {
-          if (success) {
-            console.log("Cards added to bank via direct API call");
-          } else {
-            console.warn("Failed to add cards via direct API");
-          }
-        })
-        .catch(error => {
-          console.error("Error in direct API add:", error);
-        });
-        
-    } catch (error) {
-      console.error("Error adding all cards to bank:", error);
-      setError("Error adding cards to bank. Please try again.");
+    } else {
+      console.error("Cannot access parent window for messaging");
+      setError("Failed to communicate with parent window");
     }
   };
 
