@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -1450,10 +1450,31 @@ function App() {
             console.log("[Topic Shells] Created successfully:", event.data);
             showStatus(`Created ${event.data.count} topic shells!`);
             
-            // If shouldReload flag is set, reload the page to display the new topic shells
+            // If shouldReload flag is set, request updated data instead of full page reload
             if (event.data.shouldReload) {
-              console.log("[Topic Shells] Reloading page to refresh data...");
-              setTimeout(() => window.location.reload(), 1000);
+              console.log("[Topic Shells] Requesting updated data...");
+              setLoading(true);
+              setLoadingMessage("Refreshing card data...");
+              
+              // Send a message to parent window to request updated data
+              if (window.parent !== window) {
+                window.parent.postMessage({
+                  type: "REQUEST_UPDATED_DATA",
+                  recordId: recordId
+                }, "*");
+                
+                // Set a fallback timeout to ensure we don't get stuck in loading state
+                setTimeout(() => {
+                  if (loading) {
+                    console.log("[Topic Shells] Data refresh timed out, reverting to manual refresh");
+                    window.location.reload();
+                  }
+                }, 5000);
+              } else {
+                // If we're not in an iframe, just reload from localStorage
+                loadFromLocalStorage();
+                setLoading(false);
+              }
             }
             break;
             
