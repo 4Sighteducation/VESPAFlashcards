@@ -1,4 +1,4 @@
-﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -1448,6 +1448,35 @@ function App() {
             console.log("[Reload] Explicit reload request received");
             showStatus("Refreshing data...");
             setTimeout(() => window.location.reload(), 500);
+            break;
+
+          case "REQUEST_REFRESH":
+            console.log("[Refresh] Request to refresh app data received");
+            showStatus("Refreshing your flashcards...");
+            
+            // Show a loading indicator
+            setLoading(true);
+            setLoadingMessage("Refreshing data...");
+            
+            // Request updated data from parent if in iframe
+            if (window.parent !== window) {
+              window.parent.postMessage({
+                type: "REQUEST_UPDATED_DATA",
+                recordId: recordId || event.data?.data?.recordId
+              }, "*");
+              
+              // Set a fallback timeout to ensure we don't get stuck in loading state
+              setTimeout(() => {
+                if (loading) {
+                  console.log("[Refresh] Data refresh timed out, forcing page reload");
+                  window.location.reload();
+                }
+              }, 5000);
+            } else {
+              // If not in iframe, just reload from localStorage
+              loadFromLocalStorage();
+              setLoading(false);
+            }
             break;
 
           default:
