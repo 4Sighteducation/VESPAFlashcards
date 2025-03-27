@@ -1676,9 +1676,6 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
         
         console.log("Adding card via parent window messaging");
         
-        // Preemptively request token refresh to ensure we have a valid token
-        await requestTokenRefresh();
-        
         // Enhanced function to handle sending messages with retry for auth errors
         const sendMessageWithRetry = async (type, data, maxRetries = 3) => {
           for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -1752,7 +1749,9 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
           
           if (!addSuccess && !localAddSuccess) {
             // Try one more attempt with token refresh first
-            await requestTokenRefresh();
+            // Call without await to avoid redundant async operations
+            requestTokenRefresh();
+            // Wait a bit for the token to refresh
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             const retrySuccess = await sendMessageWithRetry("ADD_TO_BANK", {
@@ -2920,7 +2919,8 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
             } catch (error) {
               if (attempt < maxRetries) {
                 console.warn(`Error sending ${type} message, attempt ${attempt + 1}/${maxRetries + 1}:`, error);
-                await requestTokenRefresh();
+                // Request token refresh but don't await it to avoid syntax errors
+                requestTokenRefresh();
               } else {
                 console.error(`Failed to send ${type} message after ${maxRetries + 1} attempts:`, error);
                 return false;
