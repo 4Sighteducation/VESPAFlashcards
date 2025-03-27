@@ -1620,7 +1620,7 @@ function App() {
     openPrintModal(cardsToDisplay, "All Flashcards");
   };
 
-  // Process data received from Knack integration
+  // Process messages from parent window
   useEffect(() => {
     const handleMessage = (event) => {
       // Only process messages that have the expected format
@@ -1670,6 +1670,44 @@ function App() {
               setLoadingMessage("");
               showStatus("Error loading cards. Please refresh the page.");
             }
+          }
+        }
+        
+        // Handle AUTH_ERROR message - authentication issues
+        if (event.data.type === 'AUTH_ERROR') {
+          console.error("Authentication error received:", event.data.data?.message || "Unknown auth error");
+          
+          // Ensure loading state is cleared first
+          setLoading(false);
+          setLoadingMessage("");
+          
+          // Show error message to user
+          showStatus(event.data.data?.message || "Authentication error. Please refresh the page.");
+          
+          // If we're in the AIGenerator view, consider returning to card bank
+          if (view === "aiGenerator") {
+            setTimeout(() => {
+              // Give user time to see the error message before redirecting
+              setView("cardBank");
+            }, 3000);
+          }
+        }
+        
+        // Handle REQUEST_TOKEN_REFRESH - attempt to refresh the authentication token
+        if (event.data.type === 'REQUEST_TOKEN_REFRESH') {
+          console.log("Token refresh requested");
+          
+          // Send message to parent window to request token refresh
+          if (window.parent !== window) {
+            window.parent.postMessage({
+              type: "REQUEST_TOKEN_REFRESH",
+              recordId: recordId
+            }, "*");
+            
+            console.log("Requested token refresh from parent window");
+            
+            // Show status indicating refresh attempt
+            showStatus("Refreshing session...");
           }
         }
         
@@ -1724,7 +1762,7 @@ function App() {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [showStatus, setAllCards, setSubjectColorMapping, setSpacedRepetitionData, setTopicLists, setTopicMetadata, addCard]);
+  }, [showStatus, setAllCards, setSubjectColorMapping, setSpacedRepetitionData, setTopicLists, setTopicMetadata, addCard, recordId, view]);
 
   // Show loading state
   if (loading) {

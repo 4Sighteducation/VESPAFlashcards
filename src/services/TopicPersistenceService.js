@@ -45,49 +45,107 @@ export const findUserRecordId = async (userId, auth) => {
     return recordIdCache.get(userId);
   }
 
-  try {
-    debugLog("Looking up record ID for user", { userId });
-    
-    // Search for the user record
-    const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
-    const searchResponse = await fetch(searchUrl, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Knack-Application-ID": KNACK_APP_ID,
-        "X-Knack-REST-API-Key": KNACK_API_KEY,
-        "Authorization": `Bearer ${auth.token}`
-      }
-    });
+  // Keep track of retry attempts
+  let retryCount = 0;
+  const maxRetries = 2;
 
-    if (!searchResponse.ok) {
-      const errorText = await searchResponse.text();
-      throw new Error(`Failed to search for user record: ${errorText}`);
-    }
+  while (retryCount <= maxRetries) {
+    try {
+      debugLog("Looking up record ID for user", { userId, retry: retryCount });
+      
+      // Search for the user record
+      const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
+      const searchResponse = await fetch(searchUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY,
+          "Authorization": `Bearer ${auth.token}`
+        }
+      });
 
-    const allRecords = await searchResponse.json();
-    
-    // Find the record matching this user ID
-    if (allRecords && allRecords.records) {
-      const userRecord = allRecords.records.find(record => 
-        record.field_2954 === userId || 
-        (record.field_2958 && record.field_2958 === auth.email)
-      );
-
-      if (userRecord) {
-        debugLog("Found record ID", { recordId: userRecord.id });
+      if (!searchResponse.ok) {
+        const errorText = await searchResponse.text();
         
-        // Cache the record ID
-        recordIdCache.set(userId, userRecord.id);
-        return userRecord.id;
+        // Check specifically for authentication errors
+        if (searchResponse.status === 403 || errorText.includes("Invalid token")) {
+          // Try to request token refresh
+          console.warn(`Authentication error on retry ${retryCount}, requesting token refresh`);
+          
+          if (window.parent && window.parent !== window) {
+            // Send a message to parent requesting token refresh
+            window.parent.postMessage({ 
+              type: "REQUEST_TOKEN_REFRESH", 
+              timestamp: new Date().toISOString() 
+            }, "*");
+            
+            // Wait a moment before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } else {
+            // No parent to ask for token refresh, fail faster
+            throw new Error(`Authentication failed: ${errorText}`);
+          }
+          
+          // Increment retry count and try again
+          retryCount++;
+          continue;
+        }
+        
+        throw new Error(`Failed to search for user record: ${errorText}`);
       }
-    }
 
-    throw new Error(`No record found for user ID: ${userId}`);
-  } catch (error) {
-    console.error("Error finding user record ID:", error);
-    throw error;
+      const allRecords = await searchResponse.json();
+      
+      // Find the record matching this user ID
+      if (allRecords && allRecords.records) {
+        const userRecord = allRecords.records.find(record => 
+          record.field_2954 === userId || 
+          (record.field_2958 && record.field_2958 === auth.email)
+        );
+
+        if (userRecord) {
+          debugLog("Found record ID", { recordId: userRecord.id });
+          
+          // Cache the record ID
+          recordIdCache.set(userId, userRecord.id);
+          return userRecord.id;
+        }
+      }
+
+      throw new Error(`No record found for user ID: ${userId}`);
+    } catch (error) {
+      console.error(`Error finding user record ID (attempt ${retryCount + 1}/${maxRetries + 1}):`, error);
+      
+      // If this is our last retry, propagate the error
+      if (retryCount === maxRetries) {
+        // For token errors, add more helpful information
+        if (error.message.includes("Invalid token") || error.message.includes("Authentication failed")) {
+          // If we're in the iframe, notify the parent about the auth issue
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ 
+              type: "AUTH_ERROR", 
+              data: { message: "Authentication token expired. Please refresh the page." },
+              timestamp: new Date().toISOString() 
+            }, "*");
+          }
+          
+          throw new Error(`Authentication error: ${error.message}. Try refreshing the page.`);
+        }
+        
+        throw error;
+      }
+      
+      // Increment retry count
+      retryCount++;
+      
+      // Add a small delay before retry
+      await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
+    }
   }
+
+  // This should never be reached due to the throw in the loop, but just in case
+  throw new Error(`Failed to find user record ID after ${maxRetries} retries`);
 };
 
 /**
@@ -570,49 +628,111 @@ export const loadTopicLists = async (userId, auth) => {
     
     debugLog("Loading topic lists", { userId });
     
-    // Find the user's record ID
-    const recordId = await findUserRecordId(userId, auth);
+    try {
+      // Find the user's record ID
+      const recordId = await findUserRecordId(userId, auth);
 
-    // Get user data
-    const userData = await getUserData(recordId, auth);
-    
-    // Result containers
-    let topicLists = [];
-    let metadata = [];
-    
-    // Parse topic lists if available
-    if (userData && userData.field_3011) {
-      try {
-        const parsedLists = safeParseJSON(userData.field_3011, []);
-        if (Array.isArray(parsedLists)) {
-          topicLists = parsedLists;
-          debugLog("Loaded topic lists", { count: parsedLists.length });
+      // Get user data
+      const userData = await getUserData(recordId, auth);
+      
+      // Result containers
+      let topicLists = [];
+      let metadata = [];
+      
+      // Parse topic lists if available
+      if (userData && userData.field_3011) {
+        try {
+          const parsedLists = safeParseJSON(userData.field_3011, []);
+          if (Array.isArray(parsedLists)) {
+            topicLists = parsedLists;
+            debugLog("Loaded topic lists", { count: parsedLists.length });
+          }
+        } catch (e) {
+          console.error("Error parsing topic lists:", e);
         }
-      } catch (e) {
-        console.error("Error parsing topic lists:", e);
+      } else {
+        console.log("No topic lists found in user data");
       }
-    } else {
-      console.log("No topic lists found in user data");
-    }
-    
-    // Parse metadata if available
-    if (userData && userData.field_3030) {
-      try {
-        const parsedMetadata = safeParseJSON(userData.field_3030, []);
-        if (Array.isArray(parsedMetadata)) {
-          metadata = parsedMetadata;
-          debugLog("Loaded metadata", { count: parsedMetadata.length });
+      
+      // Parse metadata if available
+      if (userData && userData.field_3030) {
+        try {
+          const parsedMetadata = safeParseJSON(userData.field_3030, []);
+          if (Array.isArray(parsedMetadata)) {
+            metadata = parsedMetadata;
+            debugLog("Loaded metadata", { count: parsedMetadata.length });
+          }
+        } catch (e) {
+          console.error("Error parsing metadata:", e);
         }
-      } catch (e) {
-        console.error("Error parsing metadata:", e);
+      } else {
+        console.log("No metadata found in user data");
       }
-    } else {
-      console.log("No metadata found in user data");
+      
+      return { topicLists, metadata, userData };
+    } catch (error) {
+      // Handle authentication errors specifically
+      if (error.message.includes("Authentication error") || error.message.includes("Invalid token")) {
+        console.warn("Authentication error in loadTopicLists, falling back to local data:", error.message);
+        
+        // Try to load from localStorage as fallback
+        return loadTopicListsFromLocalStorage();
+      }
+      
+      // For other errors, just propagate them
+      throw error;
     }
-    
-    return { topicLists, metadata, userData };
   } catch (error) {
     console.error("Error in loadTopicLists:", error);
+    
+    // Always return something usable even if there's an error
+    return { topicLists: [], metadata: [] };
+  }
+};
+
+/**
+ * Load topic lists from localStorage as a fallback
+ * @returns {Object} - Topic lists and metadata from localStorage
+ */
+const loadTopicListsFromLocalStorage = () => {
+  try {
+    console.log("Attempting to load topic lists from localStorage");
+    
+    // Try to load from localStorage
+    const topicListsStr = localStorage.getItem('topicLists');
+    const metadataStr = localStorage.getItem('topicMetadata');
+    
+    // Parse topic lists
+    let topicLists = [];
+    if (topicListsStr) {
+      try {
+        const parsed = safeParseJSON(topicListsStr, []);
+        if (Array.isArray(parsed)) {
+          topicLists = parsed;
+          console.log(`Loaded ${parsed.length} topic lists from localStorage`);
+        }
+      } catch (e) {
+        console.error("Error parsing topic lists from localStorage:", e);
+      }
+    }
+    
+    // Parse metadata
+    let metadata = [];
+    if (metadataStr) {
+      try {
+        const parsed = safeParseJSON(metadataStr, []);
+        if (Array.isArray(parsed)) {
+          metadata = parsed;
+          console.log(`Loaded ${parsed.length} topic metadata items from localStorage`);
+        }
+      } catch (e) {
+        console.error("Error parsing topic metadata from localStorage:", e);
+      }
+    }
+    
+    return { topicLists, metadata };
+  } catch (error) {
+    console.error("Error loading from localStorage:", error);
     return { topicLists: [], metadata: [] };
   }
 };

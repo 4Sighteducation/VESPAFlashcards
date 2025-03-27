@@ -153,6 +153,13 @@ const AICardGenerator = ({
   // State for selected topic
   const [selectedTopic, setSelectedTopic] = useState(null);
 
+  // Add a state to track if we've already triggered a save/refresh to prevent duplicate requests
+  const [pendingOperations, setPendingOperations] = useState({
+    save: false,
+    refresh: false,
+    addToBank: false
+  });
+
   // Load saved topic lists from both localStorage and Knack on mount
   useEffect(() => {
     // Only proceed if authenticated
@@ -1367,166 +1374,8 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
 
   // Add all generated cards to the bank
   const handleAddAllCards = () => {
-    // Check if there are any cards to add
-    if (!generatedCards || generatedCards.length === 0) {
-      console.error("No generated cards to add to bank");
-      setError("No cards to add to bank");
-      return;
-    }
-    
-    // Get cards that haven't been added yet
-    const unadded = generatedCards.filter(card => !card.added);
-    
-    if (unadded.length === 0) {
-      setError("All cards have already been added to the bank");
-      return;
-    }
-    
-    // Mark all cards as added
-    setGeneratedCards(prev => 
-      prev.map(card => ({ ...card, added: true }))
-    );
-    
-    // Show success modal with all added cards
-    setSuccessModal({
-      show: true,
-      addedCards: unadded
-    });
-    
-    // Auto-hide after 3 seconds
-    setTimeout(() => {
-      setSuccessModal(prev => ({...prev, show: false}));
-    }, 3000);
-    
-    // Get the selected topic ID if available
-    const topicId = selectedTopic ? selectedTopic.id : null;
-    console.log("Adding all cards with topicId:", topicId);
-    
-    // Log current metadata for debugging
-    console.log("Metadata check before enriching cards:", {
-      propExamBoard: examBoard,
-      propExamType: examType,
-      propInitialSubject: initialSubject,
-      propInitialTopic: initialTopic,
-      formDataExamBoard: formData.examBoard,
-      formDataExamType: formData.examType,
-    });
-    
-    // Ensure all cards have proper metadata
-    const enrichedCards = unadded.map(card => {
-      // Get the correct topic ID - either selected or from card
-      const finalTopicId = topicId || card.topicId || "";
-      
-      // Create enriched card with proper metadata
-      return {
-        ...card,
-        // Explicitly ensure metadata is set correctly
-        examBoard: card.examBoard || formData.examBoard || examBoard || "General",
-        examType: card.examType || formData.examType || examType || "Course",
-        subject: card.subject || formData.subject || initialSubject || "General",
-        topic: card.topic || formData.topic || initialTopic || "General",
-        topicId: finalTopicId, // Ensure topicId is set
-        // Add timestamps and spaced repetition metadata
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
-        lastReviewed: new Date().toISOString(),
-        nextReviewDate: new Date().toISOString(),
-        boxNum: 1
-      };
-    });
-    
-    console.log("Enriched cards for bank:", enrichedCards.map(card => ({
-      id: card.id,
-      examBoard: card.examBoard,
-      examType: card.examType,
-      subject: card.subject,
-      topic: card.topic,
-      topicId: card.topicId
-    })));
-    
-    // First try handling locally
-    if (typeof onAddCard === 'function') {
-      try {
-        enrichedCards.forEach(card => onAddCard(card));
-        console.log("Added cards via onAddCard callback");
-      } catch (callbackError) {
-        console.error("Error in onAddCard callback:", callbackError);
-      }
-    }
-    
-    // Then use message passing to the parent window as the primary method
-    // since it handles field_3086 and other fields correctly
-    if (window.parent && window.parent.postMessage) {
-      console.log("Adding cards to bank via parent window:", enrichedCards.length);
-      
-      try {
-        // Make sure we have valid auth data
-        const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
-        
-        // Never use "current_user" placeholder - use actual user ID or window-level ID
-        const userIdToUse = userId || window.VESPA_USER_ID || "";
-        
-        if (!userIdToUse) {
-          console.warn("No userId available for card save - using parent window messaging only");
-        }
-        
-        // First, add cards to bank
-        window.parent.postMessage({ 
-          type: "ADD_TO_BANK",
-          data: {
-            cards: enrichedCards,
-            recordId: authData?.recordId || window.recordId || "",
-            userId: userIdToUse,
-            topicId: topicId || ""
-          }
-        }, "*");
-        
-        // Then trigger a save with a reduced delay to ensure ADD_TO_BANK completes
-        // but prevent the initialization screen from getting stuck
-        setTimeout(() => {
-          window.parent.postMessage({ 
-            type: "TRIGGER_SAVE",
-            data: {
-              recordId: authData?.recordId || window.recordId || "",
-              // Add user ID to the save request to ensure proper auth
-              userId: userIdToUse
-            }
-          }, "*");
-          console.log("Triggered save after adding cards to bank");
-          
-          // Reduce the delay before requesting refresh to prevent initialization screen issues
-          setTimeout(() => {
-            window.parent.postMessage({
-              type: "REQUEST_REFRESH",
-              data: {
-                recordId: authData?.recordId || window.recordId || "",
-                // Add user ID to the refresh request
-                userId: userIdToUse
-              }
-            }, "*");
-            console.log("Requested app refresh to update UI");
-            
-            // Add a final close operation to ensure we return to the main UI if refresh fails
-            setTimeout(() => {
-              // If we're still generating, assume refresh failed and close or reset
-              if (isGenerating) {
-                setIsGenerating(false);
-                // Optionally close the generator if the app gets stuck
-                // onClose && onClose(); 
-              }
-            }, 3000);
-          }, 300); // Reduced from 500ms
-        }, 700); // Reduced from 1000ms
-      } catch (error) {
-        console.error("Error in message passing:", error);
-        setError("Error saving cards. Please try again.");
-        setIsGenerating(false);
-      }
-    } else {
-      console.error("Cannot access parent window for messaging");
-      setError("Failed to communicate with parent window");
-      setIsGenerating(false);
-    }
+    console.log("Add all cards button clicked");
+    addAllToBank();
   };
 
   // Modal to show successfully added cards
@@ -2715,6 +2564,265 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
       });
     }
   }, [initialTopic, initialSubject, examBoard, examType]);
+
+  // Helper to safely send messages to parent
+  const sendMessageToParent = (type, data = {}) => {
+    if (window.parent && window.parent.postMessage) {
+      window.parent.postMessage({ 
+        type, 
+        data,
+        timestamp: new Date().toISOString() 
+      }, "*");
+      return true;
+    }
+    return false;
+  };
+
+  // Add all cards to bank
+  const addAllToBank = () => {
+    // Return early if already processing an add to bank operation
+    if (pendingOperations.addToBank) {
+      console.log("Add to bank operation already in progress, ignoring duplicate request");
+      return;
+    }
+    
+    // Mark add to bank as in progress
+    setPendingOperations(prev => ({ ...prev, addToBank: true }));
+    
+    // Get cards that haven't been added yet
+    const unadded = generatedCards.filter(card => !card.added);
+    
+    if (unadded.length === 0) {
+      setError("All cards have already been added to the bank");
+      setPendingOperations(prev => ({ ...prev, addToBank: false })); // Reset flag
+      return;
+    }
+    
+    // Mark all cards as added
+    setGeneratedCards(prev => 
+      prev.map(card => ({ ...card, added: true }))
+    );
+    
+    // Show success modal with all added cards
+    setSuccessModal({
+      show: true,
+      addedCards: unadded
+    });
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      setSuccessModal(prev => ({...prev, show: false}));
+    }, 3000);
+    
+    // Get the selected topic ID if available
+    const topicId = selectedTopic ? selectedTopic.id : null;
+    console.log("Adding all cards with topicId:", topicId);
+    
+    // Log current metadata for debugging
+    console.log("Metadata check before enriching cards:", {
+      propExamBoard: examBoard,
+      propExamType: examType,
+      propInitialSubject: initialSubject,
+      propInitialTopic: initialTopic,
+      formDataExamBoard: formData.examBoard,
+      formDataExamType: formData.examType,
+    });
+    
+    // Ensure all cards have proper metadata
+    const enrichedCards = unadded.map(card => {
+      // Get the correct topic ID - either selected or from card
+      const finalTopicId = topicId || card.topicId || "";
+      
+      // Create enriched card with proper metadata
+      return {
+        ...card,
+        // Explicitly ensure metadata is set correctly
+        examBoard: card.examBoard || formData.examBoard || examBoard || "General",
+        examType: card.examType || formData.examType || examType || "Course",
+        subject: card.subject || formData.subject || initialSubject || "General",
+        topic: card.topic || formData.topic || initialTopic || "General",
+        topicId: finalTopicId, // Ensure topicId is set
+        // Add timestamps and spaced repetition metadata
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        lastReviewed: new Date().toISOString(),
+        nextReviewDate: new Date().toISOString(),
+        boxNum: 1
+      };
+    });
+    
+    console.log("Enriched cards for bank:", enrichedCards.map(card => ({
+      id: card.id,
+      examBoard: card.examBoard,
+      examType: card.examType,
+      subject: card.subject,
+      topic: card.topic,
+      topicId: card.topicId
+    })));
+    
+    // First try handling locally
+    let localAddSuccess = false;
+    if (typeof onAddCard === 'function') {
+      try {
+        enrichedCards.forEach(card => onAddCard(card));
+        console.log("Added cards via onAddCard callback");
+        localAddSuccess = true;
+      } catch (callbackError) {
+        console.error("Error in onAddCard callback:", callbackError);
+      }
+    }
+    
+    // Then use message passing to the parent window as the primary method
+    // since it handles field_3086 and other fields correctly
+    if (window.parent && window.parent.postMessage) {
+      console.log("Adding cards to bank via parent window:", enrichedCards.length);
+      
+      try {
+        // Make sure we have valid auth data
+        const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
+        
+        // Never use "current_user" placeholder - use actual user ID or window-level ID
+        const userIdToUse = userId || window.VESPA_USER_ID || "";
+        
+        if (!userIdToUse) {
+          console.warn("No userId available for card save - using parent window messaging only");
+        }
+        
+        // First, add cards to bank - this is the main operation
+        const addToBankSuccess = sendMessageToParent("ADD_TO_BANK", {
+          cards: enrichedCards,
+          recordId: authData?.recordId || window.recordId || "",
+          userId: userIdToUse,
+          topicId: topicId || ""
+        });
+        
+        if (!addToBankSuccess) {
+          console.error("Failed to send ADD_TO_BANK message to parent");
+          if (!localAddSuccess) {
+            setError("Failed to communicate with parent window to add cards. Try refreshing the page.");
+          }
+          // Reset flag regardless
+          setPendingOperations(prev => ({ ...prev, addToBank: false }));
+          setIsGenerating(false);
+          return;
+        }
+        
+        // Define how we'll handle operations after a delay
+        // Only trigger save and refresh if the add was successful and component is still mounted
+        const triggerFollowupOperations = () => {
+          // Check if we're still generating/processing before continuing
+          if (!isGenerating) {
+            console.log("Component state changed, aborting follow-up operations");
+            setPendingOperations({ save: false, refresh: false, addToBank: false });
+            return;
+          }
+          
+          // Set a flag to avoid multiple saves
+          if (!pendingOperations.save) {
+            setPendingOperations(prev => ({ ...prev, save: true }));
+            
+            // Trigger a save with a shorter delay
+            sendMessageToParent("TRIGGER_SAVE", {
+              recordId: authData?.recordId || window.recordId || "",
+              userId: userIdToUse // Add user ID to the save request 
+            });
+            console.log("Triggered save after adding cards to bank");
+          }
+          
+          // Delay before sending refresh request
+          setTimeout(() => {
+            // Check again if component is still mounted/generating
+            if (!isGenerating) {
+              console.log("Component state changed, aborting refresh operation");
+              setPendingOperations({ save: false, refresh: false, addToBank: false });
+              return;
+            }
+            
+            // Set a flag to avoid multiple refreshes
+            if (!pendingOperations.refresh) {
+              setPendingOperations(prev => ({ ...prev, refresh: true }));
+              
+              // Request the app to refresh (load latest data)
+              sendMessageToParent("REQUEST_REFRESH", {
+                recordId: authData?.recordId || window.recordId || "",
+                userId: userIdToUse // Add user ID to the refresh request
+              });
+              console.log("Requested app refresh to update UI");
+              
+              // Reset all operation flags after a delay
+              setTimeout(() => {
+                setPendingOperations({ save: false, refresh: false, addToBank: false });
+                setIsGenerating(false);
+              }, 1000);
+            }
+          }, 300); // Reduced delay for refresh
+        };
+        
+        // Schedule follow-up operations with shorter delay than before
+        setTimeout(triggerFollowupOperations, 500);
+      } catch (error) {
+        console.error("Error in message passing:", error);
+        setError("Error saving cards. Please try again.");
+        setPendingOperations({ save: false, refresh: false, addToBank: false });
+        setIsGenerating(false);
+      }
+    } else {
+      console.error("Cannot access parent window for messaging");
+      setError("Failed to communicate with parent window");
+      setPendingOperations({ save: false, refresh: false, addToBank: false });
+      setIsGenerating(false);
+    }
+  };
+
+  // When user clicks on "Add to Bank" button in the card preview section
+  const renderAddToBank = () => {
+    if (generatedCards.length === 0 || isGenerating) return null;
+    
+    // Style for the button
+    const buttonStyle = {
+      minWidth: "100%",
+      margin: "8px 0",
+      padding: "12px",
+      backgroundColor: "#4CAF50",
+      color: "white",
+      border: "none",
+      borderRadius: "8px",
+      fontSize: "16px",
+      fontWeight: "bold",
+      cursor: "pointer",
+      boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)",
+      transition: "background-color 0.3s ease"
+    };
+    
+    // Count how many cards haven't been added yet
+    const unaddedCount = generatedCards.filter(card => !card.added).length;
+    
+    // Determine button text based on how many cards are unadded
+    let buttonText = "Add to Bank";
+    if (unaddedCount === 0) {
+      buttonText = "All Cards Added";
+    } else if (unaddedCount < generatedCards.length) {
+      buttonText = `Add ${unaddedCount} Card${unaddedCount > 1 ? 's' : ''} to Bank`;
+    } else {
+      buttonText = `Add ${generatedCards.length} Card${generatedCards.length > 1 ? 's' : ''} to Bank`;
+    }
+    
+    return (
+      <div className="add-to-bank-container">
+        <button 
+          onClick={addAllToBank} 
+          style={{
+            ...buttonStyle,
+            backgroundColor: unaddedCount === 0 ? "#888" : "#4CAF50",
+            cursor: unaddedCount === 0 ? "not-allowed" : "pointer"
+          }}
+          disabled={unaddedCount === 0}
+        >
+          {buttonText}
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="ai-card-generator">
