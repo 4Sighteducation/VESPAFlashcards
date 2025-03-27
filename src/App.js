@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -1475,32 +1475,41 @@ function App() {
             break;
 
           case "REQUEST_REFRESH":
-            console.log("[Refresh] Request to refresh app data received");
-            showStatus("Refreshing your flashcards...");
+            console.log("[Refresh] App refresh requested:", event.data);
             
-            // Show a loading indicator
-            setLoading(true);
-            setLoadingMessage("Refreshing data...");
-            
-            // Request updated data from parent if in iframe
+            // Instead of setting loading state which shows init screen,
+            // just reload the data silently
             if (window.parent !== window) {
               window.parent.postMessage({
                 type: "REQUEST_UPDATED_DATA",
                 recordId: recordId || event.data?.data?.recordId
               }, "*");
               
-              // Set a fallback timeout to ensure we don't get stuck in loading state
+              console.log("[Refresh] Requested data refresh without showing loading screen");
+              
+              // Add a timeout to clear loading state in case the response never comes
               setTimeout(() => {
-                if (loading) {
-                  console.log("[Refresh] Data refresh timed out, forcing page reload");
-                  window.location.reload();
-                }
-              }, 5000);
+                setLoading(false);
+                setLoadingMessage("");
+              }, 3000);
             } else {
-              // If not in iframe, just reload from localStorage
+              // If we're not in an iframe, just reload from localStorage
               loadFromLocalStorage();
+              // Ensure we're not in loading state
               setLoading(false);
+              setLoadingMessage("");
             }
+            break;
+
+          case "SAVE_OPERATION_QUEUED":
+            // Data save has been queued on the server
+            console.log("[Message Handler] Save operation queued");
+            
+            // Make sure loading state is cleared
+            setLoading(false);
+            setLoadingMessage("");
+            
+            showStatus("Your flashcards are being saved...");
             break;
 
           default:
@@ -1579,134 +1588,6 @@ function App() {
     [auth, saveData]
   );
 
-  // Add the print modal function near other helper functions
-  const openPrintModal = (cardsForPrinting, title) => {
-    setCardsToPrint(cardsForPrinting);
-    setPrintTitle(title);
-    setPrintModalOpen(true);
-  };
-  
-  const handlePrintAllCards = () => {
-    // Use the filtered cards that are currently being shown
-    const cardsToDisplay = getFilteredCards();
-    openPrintModal(cardsToDisplay, "All Flashcards");
-  };
-
-  // Effect to listen for messages from the parent window
-  useEffect(() => {
-    const handleMessage = (event) => {
-      // Handle data from Knack
-      if (event.data && event.data.type === "KNACK_DATA") {
-        console.log("Received data from Knack:", event.data);
-        
-        // Set the record ID for saving
-        if (event.data.recordId) {
-          setRecordId(event.data.recordId);
-        }
-        
-        // Set authentication status
-        if (event.data.auth) {
-          setAuth(event.data.auth);
-        }
-        
-        // Load cards if available
-        if (event.data.cards && Array.isArray(event.data.cards)) {
-          const restoredCards = restoreMultipleChoiceOptions(event.data.cards);
-          setAllCards(restoredCards);
-          updateSpacedRepetitionData(restoredCards);
-          console.log(`Loaded ${event.data.cards.length} cards from Knack and restored multiple choice options`);
-        }
-        
-        // Load color mapping if available
-        if (event.data.colorMapping) {
-          setSubjectColorMapping(event.data.colorMapping);
-          console.log("Loaded color mapping from Knack");
-        }
-        
-        // Load spaced repetition data if available
-        if (event.data.spacedRepetition) {
-          setSpacedRepetitionData(event.data.spacedRepetition);
-          console.log("Loaded spaced repetition data from Knack");
-        }
-        
-        // Load user topics if available
-        if (event.data.userTopics) {
-          setUserTopics(event.data.userTopics);
-          console.log("Loaded user topics from Knack");
-        }
-        
-        // Load topic lists if available
-        if (event.data.topicLists && Array.isArray(event.data.topicLists)) {
-          setTopicLists(event.data.topicLists);
-          console.log(`Loaded ${event.data.topicLists.length} topic lists from Knack`);
-        }
-        
-        // Load topic metadata if available
-        if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
-          setTopicMetadata(event.data.topicMetadata);
-          console.log(`Loaded ${event.data.topicMetadata.length} topic metadata entries from Knack`);
-        }
-        
-        // Always turn off loading when receiving KNACK_DATA
-        setLoading(false);
-      }
-      
-      // Handle save confirmation
-      if (event.data && event.data.type === "SAVE_CONFIRMATION") {
-        console.log("Save confirmation received:", event.data);
-        setIsSaving(false);
-        showStatus("Saved successfully!");
-      }
-      
-      // Handle explicit save request from AICardGenerator
-      if (event.data && event.data.type === "TRIGGER_SAVE") {
-        console.log("Explicit save request received");
-        saveData();
-      }
-
-      // Handle ADD_TO_BANK action from AICardGenerator
-      if (event.data && event.data.type === "ADD_TO_BANK") {
-        console.log("ADD_TO_BANK action received", event.data);
-        try {
-          if (event.data.data && event.data.data.cards && Array.isArray(event.data.data.cards)) {
-            const newCards = event.data.data.cards;
-            
-            // Process each card, preserving all its metadata
-            newCards.forEach(card => {
-              // Ensure all necessary properties are set
-              if (!card.subject) {
-                console.warn("Card missing subject:", card.id);
-                card.subject = "General";
-              }
-              
-              if (!card.topic) {
-                console.warn("Card missing topic:", card.id);
-                card.topic = "General";
-              }
-              
-              // Ensure boxNum and review dates are set
-              card.boxNum = card.boxNum || 1;
-              card.lastReviewed = card.lastReviewed || new Date().toISOString();
-              card.nextReviewDate = card.nextReviewDate || new Date().toISOString();
-              
-              // Add the card to state
-              addCard(card);
-            });
-            
-            console.log(`Successfully added ${newCards.length} cards to bank with topic information preserved`);
-            showStatus(`Added ${newCards.length} cards to your flashcard bank`);
-          }
-        } catch (error) {
-          console.error("Error processing ADD_TO_BANK action:", error);
-          showStatus("Error adding cards to bank");
-        }
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [saveData, showStatus, addCard]);
-
   // Handle opening the topic list modal for a subject
   const handleViewTopicList = useCallback((subject) => {
     setTopicListSubject(subject);
@@ -1725,6 +1606,125 @@ function App() {
     setTopicListModalOpen(false);
     setView("aiGenerator");
   }, []);
+
+  // Add the print modal function near other helper functions
+  const openPrintModal = (cardsForPrinting, title) => {
+    setCardsToPrint(cardsForPrinting);
+    setPrintTitle(title);
+    setPrintModalOpen(true);
+  };
+  
+  const handlePrintAllCards = () => {
+    // Use the filtered cards that are currently being shown
+    const cardsToDisplay = getFilteredCards();
+    openPrintModal(cardsToDisplay, "All Flashcards");
+  };
+
+  // Process data received from Knack integration
+  useEffect(() => {
+    const handleMessage = (event) => {
+      // Only process messages that have the expected format
+      if (event.data && typeof event.data === 'object' && event.data.type) {
+        if (event.data.type === 'KNACK_DATA') {
+          console.log("Received data from Knack:", event.data);
+          
+          if (event.data.cards && Array.isArray(event.data.cards)) {
+            try {
+              // Restore multiple choice options if they exist
+              const restoredCards = restoreMultipleChoiceOptions(event.data.cards);
+              
+              // Update app state with the loaded cards
+              setAllCards(restoredCards);
+              console.log(`Loaded ${restoredCards.length} cards from Knack and restored multiple choice options`);
+              
+              // Load color mapping
+              if (event.data.colorMapping) {
+                setSubjectColorMapping(event.data.colorMapping);
+                console.log("Loaded color mapping from Knack");
+              }
+              
+              // Load spaced repetition data
+              if (event.data.spacedRepetition) {
+                setSpacedRepetitionData(event.data.spacedRepetition);
+                console.log("Loaded spaced repetition data from Knack");
+              }
+              
+              // Load topic lists
+              if (event.data.topicLists && Array.isArray(event.data.topicLists)) {
+                setTopicLists(event.data.topicLists);
+                console.log(`Loaded ${event.data.topicLists.length} topic lists from Knack`);
+              }
+              
+              // Load topic metadata
+              if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
+                setTopicMetadata(event.data.topicMetadata);
+                console.log(`Loaded ${event.data.topicMetadata.length} topic metadata entries from Knack`);
+              }
+              
+              // Always ensure loading state is cleared
+              setLoading(false);
+              setLoadingMessage("");
+            } catch (error) {
+              console.error("Error processing Knack data:", error);
+              setLoading(false);
+              setLoadingMessage("");
+              showStatus("Error loading cards. Please refresh the page.");
+            }
+          }
+        }
+        
+        // Handle ADD_TO_BANK action from AICardGenerator
+        if (event.data.type === 'ADD_TO_BANK') {
+          console.log("ADD_TO_BANK action received in secondary handler:", event.data);
+          try {
+            if (event.data.data && event.data.data.cards && Array.isArray(event.data.data.cards)) {
+              const newCards = event.data.data.cards;
+              
+              // Process each card, preserving all its metadata
+              newCards.forEach(card => {
+                // Ensure all necessary properties are set
+                if (!card.subject) {
+                  console.warn("Card missing subject:", card.id);
+                  card.subject = "General";
+                }
+                
+                if (!card.topic) {
+                  console.warn("Card missing topic:", card.id);
+                  card.topic = "General";
+                }
+                
+                // Explicitly ensure exam type and board are set, even if they're missing
+                card.examType = card.examType || "Course";
+                card.examBoard = card.examBoard || "General";
+                
+                // Ensure boxNum and review dates are set
+                card.boxNum = card.boxNum || 1;
+                card.lastReviewed = card.lastReviewed || new Date().toISOString();
+                card.nextReviewDate = card.nextReviewDate || new Date().toISOString();
+                
+                // Add the card to state
+                addCard(card);
+              });
+              
+              console.log(`Successfully added ${newCards.length} cards to bank with topic information preserved`);
+              showStatus(`Added ${newCards.length} cards to your flashcard bank`);
+              
+              // Make sure we aren't stuck in a loading state
+              setLoading(false);
+            }
+          } catch (error) {
+            console.error("Error processing ADD_TO_BANK action:", error);
+            showStatus("Error adding cards to bank");
+            // Ensure we exit the loading state if there's an error
+            setLoading(false);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [showStatus, setAllCards, setSubjectColorMapping, setSpacedRepetitionData, setTopicLists, setTopicMetadata, addCard]);
 
   // Show loading state
   if (loading) {

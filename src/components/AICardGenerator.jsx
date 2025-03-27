@@ -963,10 +963,14 @@ const AICardGenerator = ({
     
     try {
       // Determine final subject and topic (use new values if provided)
+      // Always prioritize the values from the form data, then fall back to props
       const finalSubject = formData.newSubject || subjectName;
       const finalTopic = formData.newTopic || formData.topic || initialTopic;
-      const finalExamType = formData.examType || examType;
-      const finalExamBoard = formData.examBoard || examBoard;
+      
+      // Explicitly ensure we have exam metadata by checking form data first, then props
+      // This is critical for passing the correct info to the AI Generator
+      const finalExamType = formData.examType || examType || "Course";
+      const finalExamBoard = formData.examBoard || examBoard || "General";
       
       // Log explicit metadata that will be used
       console.log("Explicit metadata for cards:", {
@@ -1034,50 +1038,21 @@ const AICardGenerator = ({
         
         // Base prompt
         prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). 
-Generate ${formData.numCards} high-quality ${formData.examBoard} ${formData.examType} ${finalSubject} flashcards for the specific topic "${finalTopic}".
+Generate ${formData.numCards} high-quality ${finalExamBoard} ${finalExamType} ${finalSubject} flashcards for the specific topic "${finalTopic}".
 ${complexityInstruction}
 
-Before generating questions, scrape the latest ${formData.examBoard} ${formData.examType} ${finalSubject} specification to ensure the content matches the current curriculum exactly.
+Before generating questions, scrape the latest ${finalExamBoard} ${finalExamType} ${finalSubject} specification to ensure the content matches the current curriculum exactly.
 
-Use this format for different question types:
-`;
-        
-        // Add format based on question type
-        if (formData.questionType === "multiple_choice") {
-          prompt += `[
+Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple choice questions' : formData.questionType + ' questions'}:
+[
   {
     "subject": "${finalSubject}",
     "topic": "${finalTopic}",
-    "questionType": "multiple_choice",
-    "question": "Clear, focused question based on the curriculum",
-    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-    "correctAnswer": "The correct option exactly as written in options array",
+    "questionType": "${formData.questionType}",
+    "question": "Clear, focused question based on the curriculum"${formData.questionType === 'multiple_choice' ? ',\n    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],\n    "correctAnswer": "The correct option exactly as written in options array"' : ''},
     "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
   }
 ]`;
-        } else if (formData.questionType === "short_answer") {
-          prompt += `[
-  {
-    "subject": "${finalSubject}",
-    "topic": "${finalTopic}",
-    "questionType": "short_answer",
-    "question": "Clear, focused question from the curriculum",
-    "keyPoints": ["Key point 1", "Key point 2", "Key point 3"],
-    "detailedAnswer": "Complete and thorough explanation with all necessary information"
-  }
-]`;
-        } else if (formData.questionType === "essay") {
-          prompt += `[
-  {
-    "subject": "${finalSubject}",
-    "topic": "${finalTopic}",
-    "questionType": "essay",
-    "question": "Thought-provoking essay question matching the curriculum",
-    "keyPoints": ["Important point 1", "Important point 2", "Important point 3", "Important point 4"],
-    "detailedAnswer": "Structured essay plan with introduction, key arguments, and conclusion guidance"
-  }
-]`;
-        }
       }
       
       console.log("Generating cards with prompt:", prompt);
@@ -1487,7 +1462,13 @@ Use this format for different question types:
       try {
         // Make sure we have valid auth data
         const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
-        const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
+        
+        // Never use "current_user" placeholder - use actual user ID or window-level ID
+        const userIdToUse = userId || window.VESPA_USER_ID || "";
+        
+        if (!userIdToUse) {
+          console.warn("No userId available for card save - using parent window messaging only");
+        }
         
         // First, add cards to bank
         window.parent.postMessage({ 
@@ -1500,34 +1481,51 @@ Use this format for different question types:
           }
         }, "*");
         
-        // Then trigger a save with a delay to ensure ADD_TO_BANK completes
+        // Then trigger a save with a reduced delay to ensure ADD_TO_BANK completes
+        // but prevent the initialization screen from getting stuck
         setTimeout(() => {
           window.parent.postMessage({ 
             type: "TRIGGER_SAVE",
             data: {
-              recordId: authData?.recordId || window.recordId || ""
+              recordId: authData?.recordId || window.recordId || "",
+              // Add user ID to the save request to ensure proper auth
+              userId: userIdToUse
             }
           }, "*");
           console.log("Triggered save after adding cards to bank");
           
-          // Add a small delay before requesting refresh
+          // Reduce the delay before requesting refresh to prevent initialization screen issues
           setTimeout(() => {
             window.parent.postMessage({
               type: "REQUEST_REFRESH",
               data: {
-                recordId: authData?.recordId || window.recordId || ""
+                recordId: authData?.recordId || window.recordId || "",
+                // Add user ID to the refresh request
+                userId: userIdToUse
               }
             }, "*");
             console.log("Requested app refresh to update UI");
-          }, 500);
-        }, 1000);
+            
+            // Add a final close operation to ensure we return to the main UI if refresh fails
+            setTimeout(() => {
+              // If we're still generating, assume refresh failed and close or reset
+              if (isGenerating) {
+                setIsGenerating(false);
+                // Optionally close the generator if the app gets stuck
+                // onClose && onClose(); 
+              }
+            }, 3000);
+          }, 300); // Reduced from 500ms
+        }, 700); // Reduced from 1000ms
       } catch (error) {
         console.error("Error in message passing:", error);
         setError("Error saving cards. Please try again.");
+        setIsGenerating(false);
       }
     } else {
       console.error("Cannot access parent window for messaging");
       setError("Failed to communicate with parent window");
+      setIsGenerating(false);
     }
   };
 
@@ -2687,7 +2685,7 @@ Use this format for different question types:
   useEffect(() => {
     // If we have a specific topic directly passed in from props,
     // and the topic is non-empty, skip directly to step 5 (num cards)
-    if (initialTopic && initialSubject && examBoard && examType) {
+    if (initialTopic && initialSubject) {
       console.log("Direct topic provided, skipping to step 5:", {
         initialTopic,
         initialSubject,
@@ -2696,12 +2694,13 @@ Use this format for different question types:
       });
       
       // Set form data with the provided topic info
+      // Ensure we explicitly capture the exam metadata
       setFormData(prev => ({
         ...prev,
         subject: initialSubject,
         topic: initialTopic,
-        examBoard: examBoard,
-        examType: examType
+        examBoard: examBoard || "General", // Default if not provided
+        examType: examType || "Course"     // Default if not provided
       }));
       
       // Skip directly to step 5 (num cards)

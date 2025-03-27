@@ -1,0 +1,681 @@
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+vespa-academy#flashcards/:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+main.js?1743056634725&_=1743056634725:106 VESPA Config initialized: {knackAppId: '5ee90912c38ae7001510c1a9', knackApiKey: '8f733aa5-dd35-4464-8348-64824d1f5f0d', appUrl: 'https://vespa-flashcards-e7f31e9ff3c9.herokuapp.com/'}
+main.js?1743056634725&_=1743056634725:129 Document ready - checking if flashcard app needs initialization
+main.js?1743056634725&_=1743056634725:119 VESPA Integration script loaded successfully
+index.js?v=1:76 Developed byKsense Technology Group LLCPRODUCTION MODE - Branch: mainKSENSE DEBUG: INJECTED URL: https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1
+index.js?v=1:90 (index)Value(index)ValueisDevUserfalsetunnelUrlundefineddevBranch'main'projectRoute'knack_projects/vespa'currentUser'630510eb3c91500021a8fad2'injectURL'https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1'useLocalRoutesfalseuseStagingServerfalsecssFiles''isHostedOnNexustrueObject
+KnackJavascript4kk.js:104 Flashcard app: Scene rendered: scene_1206
+KnackJavascript4kk.js:267 Initializing Flashcard React app
+KnackJavascript4kk.js:274 Flashcard app: User is authenticated
+KnackJavascript4kk.js:281 Flashcard app: Basic user info: {id: '630510eb3c91500021a8fad2', values: {…}, roles: Array(1), email: 'aramsey@vespa.academy', name: 'Alena Ramsey'}
+KnackJavascript4kk.js:239 Flashcard app: Getting complete user data for: 630510eb3c91500021a8fad2
+
+                
+          
+          
+          
+         Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
+KnackJavascript4kk.js:251 Flashcard app: Complete user data: {id: '630510eb3c91500021a8fad2', account_status: 'active', approval_status: 'approved', utility_key: '17255243733681lvgwmb', profile_keys: 'Student', …}
+KnackJavascript4kk.js:232 CONNECTION FIELD IDs
+KnackJavascript4kk.js:233 {
+  "emailId": "630510eb3c91500021a8fad2",
+  "schoolId": null,
+  "tutorId": null,
+  "roleId": null
+}
+KnackJavascript4kk.js:321 Flashcard app: First selector failed, trying alternatives
+KnackJavascript4kk.js:327 Flashcard app: No rich text field found, looking for the view
+KnackJavascript4kk.js:331 Flashcard app: View found, creating container
+App.js:1522 [Init] Sent ready message to parent
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:23:55.846Z]: Message from React app: APP_READY
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T06:23:55.846Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:407 Flashcard app: React app is ready, sending user info (first time)
+KnackJavascript4kk.js:677 Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+KnackJavascript4kk.js:717 Flashcard app: User data search response: {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript4kk.js:722 Flashcard app: Found existing user data: {id: '67e4eee0db14c802bb0020e4', field_3010: {…}, field_3029: '', field_2954: '630510eb3c91500021a8fad2', field_3008: Array(1), …}
+KnackJavascript4kk.js:745 Flashcard app: Loaded 13 cards, including 0 multiple choice cards
+KnackJavascript4kk.js:440 Flashcard app: Sent user info to React app
+App.js:1208 [Message Handler 2025-03-27T06:23:56.132Z] From parent: KNACK_USER_INFO
+App.js:1222 [User Info] First-time processing of user data
+App.js:1278 [User Info] Stored recordId: 67e4eee0db14c802bb0020e4
+DataUtils.js:535 Restored options for 0 multiple choice cards
+App.js:1286 [User Info] Restored multiple choice options for cards
+App.js:1307 [User Info] Loaded topic lists from Knack: 1
+App.js:1313 [User Info] Loaded topic metadata from Knack: 13
+App.js:1317 [User Info] Successfully processed user data from Knack
+App.js:1333 [User Info] Sending AUTH_CONFIRMED message
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:23:56.142Z]: Message from React app: AUTH_CONFIRMED
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "AUTH_CONFIRMED",
+  "timestamp": "2025-03-27T06:23:56.142Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:446 Flashcard app: Authentication confirmed by React app
+FlashcardList.jsx:193 FlashcardList processed items with special topic shell handling: {topicShellCount: 13, regularCardCount: 0, topicShells: {…}}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+App.js:1522 [Init] Sent ready message to parent
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:23:56.176Z]: Message from React app: APP_READY
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T06:23:56.176Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:401 Flashcard app: Ignoring duplicate APP_READY message
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+AICardGenerator.jsx:160 User authenticated, loading topic lists from Knack
+AICardGenerator.jsx:195 Loading topic lists from Knack for user: current_user
+TopicPersistenceService.js:27 [TopicPersistenceService] Loading topic lists
+TopicPersistenceService.js:28 {
+  "userId": "current_user"
+}
+TopicPersistenceService.js:27 [TopicPersistenceService] Looking up record ID for user
+TopicPersistenceService.js:28 {
+  "userId": "current_user"
+}
+AICardGenerator.jsx:2211 Skipping to step 5 with metadata: Biology, Biological molecules: Lipids, General, Course
+AICardGenerator.jsx:2691 Direct topic provided, skipping to step 5: {initialTopic: 'Biological molecules: Lipids', initialSubject: 'Biology', examBoard: 'General', examType: 'Course'}
+TopicPersistenceService.js:53 
+            
+            
+            GET https://api.knack.com/v1/objects/object_102/records 403 (Forbidden)
+findUserRecordId @ TopicPersistenceService.js:53
+loadTopicLists @ TopicPersistenceService.js:574
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:282
+yl @ react-dom.production.min.js:280
+cl @ react-dom.production.min.js:272
+Fa @ react-dom.production.min.js:127
+(anonymous) @ react-dom.production.min.js:266
+   GET https://api.knack.com/v1/objects/object_102/records 403 (Forbidden)
+findUserRecordId @ main.206d6e8f.js:2
+loadTopicLists @ main.206d6e8f.js:2
+Z @ main.206d6e8f.js:2
+(anonymous) @ main.206d6e8f.js:2
+rc @ main.206d6e8f.js:2
+jl @ main.206d6e8f.js:2
+(anonymous) @ main.206d6e8f.js:2
+yl @ main.206d6e8f.js:2
+cl @ main.206d6e8f.js:2
+Fa @ main.206d6e8f.js:2
+(anonymous) @ main.206d6e8f.js:2
+TopicPersistenceService.js:88  Error finding user record ID: Error: Failed to search for user record: Invalid token provided. Please reauthenticate.
+    at findUserRecordId (TopicPersistenceService.js:65:13)
+    at async loadTopicLists (TopicPersistenceService.js:574:11)
+    at async Z (AICardGenerator.jsx:198:27)
+findUserRecordId @ TopicPersistenceService.js:88
+await in findUserRecordId
+loadTopicLists @ TopicPersistenceService.js:574
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:282
+yl @ react-dom.production.min.js:280
+cl @ react-dom.production.min.js:272
+Fa @ react-dom.production.min.js:127
+(anonymous) @ react-dom.production.min.js:266
+TopicPersistenceService.js:615  Error in loadTopicLists: Error: Failed to search for user record: Invalid token provided. Please reauthenticate.
+    at findUserRecordId (TopicPersistenceService.js:65:13)
+    at async loadTopicLists (TopicPersistenceService.js:574:11)
+    at async Z (AICardGenerator.jsx:198:27)
+loadTopicLists @ TopicPersistenceService.js:615
+await in loadTopicLists
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:282
+yl @ react-dom.production.min.js:280
+cl @ react-dom.production.min.js:272
+Fa @ react-dom.production.min.js:127
+(anonymous) @ react-dom.production.min.js:266
+AICardGenerator.jsx:949 Generate cards function called with state: {isGenerating: false, currentStep: 6, formData: {…}}
+AICardGenerator.jsx:972 Explicit metadata for cards: {finalSubject: 'Biology', finalTopic: 'Biological molecules: Lipids', finalExamType: 'Course', finalExamBoard: 'General'}
+AICardGenerator.jsx:1009 Selected new color #f58231 for subject Biology
+AICardGenerator.jsx:1083 Generating cards with prompt: Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). 
+Generate 1 high-quality General Course Biology flashcards for the specific topic "Biological molecules: Lipids".
+Make these appropriate for GCSE students (age 14-16). Questions should be clear but still challenging. Explanations should be thorough but accessible.
+
+Before generating questions, scrape the latest General Course Biology specification to ensure the content matches the current curriculum exactly.
+
+Use this format for different question types:
+[
+  {
+    "subject": "Biology",
+    "topic": "Biological molecules: Lipids",
+    "questionType": "multiple_choice",
+    "question": "Clear, focused question based on the curriculum",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+    "correctAnswer": "The correct option exactly as written in options array",
+    "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
+  }
+]
+AICardGenerator.jsx:1108 Raw AI response: [
+  {
+    "subject": "Biology",
+    "topic": "Biological molecules: Lipids",
+    "questionType": "multiple_choice",
+    "question": "Which of the following is a characteristic of lipids?",
+    "options": ["Soluble in water", "Contain glycerol and fatty acids", "Primary source of quick energy in cells", "Made up of amino acids"],
+    "correctAnswer": "Contain glycerol and fatty acids",
+    "detailedAnswer": "Lipids are biological molecules that are insoluble in water and are made up of glycerol and fatty acids. They are an important energy source for cells and play a role in cell structure and signaling."
+  }
+]
+AICardGenerator.jsx:1130 Generating card #1 with metadata: {subject: 'Biology', topic: 'Biological molecules: Lipids', examType: 'Course', examBoard: 'General', color: '#f58231'}
+AICardGenerator.jsx:1231 FINAL PROCESSED CARDS: [{…}]
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+AICardGenerator.jsx:1428 Adding all cards with topicId: null
+AICardGenerator.jsx:1431 Metadata check before enriching cards: {propExamBoard: 'General', propExamType: 'Course', propInitialSubject: 'Biology', propInitialTopic: 'Biological molecules: Lipids', formDataExamBoard: 'General', …}
+AICardGenerator.jsx:1463 Enriched cards for bank: [{…}]
+FlashcardList.jsx:971 Adding card to flashcard list: {id: 'card_1743056655113_0_2tr7puqum', subject: 'Biology', topic: 'Biological molecules: Lipids', examType: 'Course', examBoard: 'General', …}
+AICardGenerator.jsx:1476 Added cards via onAddCard callback
+AICardGenerator.jsx:1485 Adding cards to bank via parent window: 1
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:24:17.245Z]: Message from React app: ADD_TO_BANK
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "ADD_TO_BANK",
+  "timestamp": "2025-03-27T06:24:17.245Z",
+  "hasData": "yes"
+}
+KnackJavascript4kk.js:472 Flashcard app: Adding cards to bank: {cards: Array(1), recordId: '', userId: 'current_user', topicId: ''}
+KnackJavascript4kk.js:2292 Flashcard app [2025-03-27T06:24:17.245Z]: Starting handleAddToBank with 1 cards
+KnackJavascript4kk.js:677 Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+KnackJavascript4kk.js:717 Flashcard app: User data search response: {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript4kk.js:722 Flashcard app: Found existing user data: {id: '67e4eee0db14c802bb0020e4', field_3010: {…}, field_3029: '', field_2954: '630510eb3c91500021a8fad2', field_3008: Array(1), …}
+KnackJavascript4kk.js:745 Flashcard app: Loaded 13 cards, including 0 multiple choice cards
+KnackJavascript4kk.js:2292 Flashcard app [2025-03-27T06:24:17.516Z]: Starting handleAddToBank with 1 cards
+App.js:379 Updating color for subject: Biology, topic: Biological molecules: Lipids, color: #f58231, updateTopics: false
+App.js:490 Sample cards after color update: (3) [{…}, {…}, {…}]
+FlashcardList.jsx:193 FlashcardList processed items with special topic shell handling: {topicShellCount: 13, regularCardCount: 0, topicShells: {…}}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+AICardGenerator.jsx:160 User authenticated, loading topic lists from Knack
+AICardGenerator.jsx:195 Loading topic lists from Knack for user: current_user
+TopicPersistenceService.js:27 [TopicPersistenceService] Loading topic lists
+TopicPersistenceService.js:28 {
+  "userId": "current_user"
+}
+TopicPersistenceService.js:27 [TopicPersistenceService] Looking up record ID for user
+TopicPersistenceService.js:28 {
+  "userId": "current_user"
+}
+App.js:1522 [Init] Sent ready message to parent
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+AICardGenerator.jsx:160 User authenticated, loading topic lists from Knack
+AICardGenerator.jsx:195 Loading topic lists from Knack for user: current_user
+TopicPersistenceService.js:27 [TopicPersistenceService] Loading topic lists
+TopicPersistenceService.js:28 {
+  "userId": "current_user"
+}
+TopicPersistenceService.js:27 [TopicPersistenceService] Looking up record ID for user
+TopicPersistenceService.js:28 {
+  "userId": "current_user"
+}
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:24:17.740Z]: Message from React app: APP_READY
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T06:24:17.740Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:401 Flashcard app: Ignoring duplicate APP_READY message
+KnackJavascript4kk.js:2336 Flashcard app [2025-03-27T06:24:17.779Z]: Processing 13 existing items
+KnackJavascript4kk.js:2347 Flashcard app [2025-03-27T06:24:17.779Z]: Found 13 topic shells and 0 existing cards before adding 1 new cards
+KnackJavascript4kk.js:2427 Flashcard app [2025-03-27T06:24:17.779Z]: Updated topic shell 1.2 isEmpty flag to false
+KnackJavascript4kk.js:2439 Flashcard app [2025-03-27T06:24:17.779Z]: Processed 1 new cards after deduplication
+KnackJavascript4kk.js:2471 Flashcard app [2025-03-27T06:24:17.779Z]: Adding 1 new Box 1 entries
+KnackJavascript4kk.js:2511 Flashcard app [2025-03-27T06:24:17.779Z]: Sending update with 14 total items
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-27T06:24:17.833Z
+DataUtils.js:373 Data Stats: {cards: 13, subjects: 1, version: '1.0'}
+DataUtils.js:472 Backed up options for 0 multiple choice cards
+App.js:231 Saved data to localStorage with versioning and backup
+App.js:246 [Save] Starting save operation...
+App.js:250 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-03-27T06:24:17.834Z
+DataUtils.js:373 Data Stats: {cards: 13, subjects: 1, version: '1.0'}
+DataUtils.js:472 Backed up options for 0 multiple choice cards
+App.js:231 Saved data to localStorage with versioning and backup
+App.js:255 [Save] Preparing data for Knack integration
+App.js:312 [Save] Sending data to Knack (13 cards, record ID: 67e4eee0db14c802bb0020e4)
+App.js:323 [Save] Message sent to parent window
+FlashcardList.jsx:193 FlashcardList processed items with special topic shell handling: {topicShellCount: 13, regularCardCount: 0, topicShells: {…}}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:24:17.836Z]: Message from React app: SAVE_DATA
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-27T06:24:17.836Z",
+  "hasData": "yes"
+}
+KnackJavascript4kk.js:454 Flashcard app [2025-03-27T06:24:17.836Z]: Saving data from React app: {recordId: '67e4eee0db14c802bb0020e4', cards: Array(13), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
+KnackJavascript4kk.js:232 SAVE_DATA REQUEST RECEIVED
+KnackJavascript4kk.js:233 {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-27T06:24:17.836Z"
+}
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+KnackJavascript4kk.js:1254 Flashcard app [2025-03-27T06:24:17.836Z]: Saving with field preservation for user: 630510eb3c91500021a8fad2
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+AICardGenerator.jsx:160 User authenticated, loading topic lists from Knack
+AICardGenerator.jsx:195 Loading topic lists from Knack for user: current_user
+TopicPersistenceService.js:27 [TopicPersistenceService] Loading topic lists
+TopicPersistenceService.js:28 {
+  "userId": "current_user"
+}
+TopicPersistenceService.js:27 [TopicPersistenceService] Looking up record ID for user
+TopicPersistenceService.js:28 {
+  "userId": "current_user"
+}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+AICardGenerator.jsx:160 User authenticated, loading topic lists from Knack
+AICardGenerator.jsx:195 Loading topic lists from Knack for user: current_user
+TopicPersistenceService.js:27 [TopicPersistenceService] Loading topic lists
+TopicPersistenceService.js:28 {
+  "userId": "current_user"
+}
+TopicPersistenceService.js:27 [TopicPersistenceService] Looking up record ID for user
+TopicPersistenceService.js:28 {
+  "userId": "current_user"
+}
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+App.js:1208 [Message Handler 2025-03-27T06:24:17.840Z] From parent: SAVE_OPERATION_QUEUED
+App.js:1507 [Message Handler] Unknown message type: SAVE_OPERATION_QUEUED
+TopicPersistenceService.js:53 
+            
+            
+            GET https://api.knack.com/v1/objects/object_102/records 403 (Forbidden)
+findUserRecordId @ TopicPersistenceService.js:53
+loadTopicLists @ TopicPersistenceService.js:574
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+   GET https://api.knack.com/v1/objects/object_102/records 403 (Forbidden)
+findUserRecordId @ main.206d6e8f.js:2
+loadTopicLists @ main.206d6e8f.js:2
+Z @ main.206d6e8f.js:2
+(anonymous) @ main.206d6e8f.js:2
+rc @ main.206d6e8f.js:2
+jl @ main.206d6e8f.js:2
+(anonymous) @ main.206d6e8f.js:2
+j @ main.206d6e8f.js:2
+P @ main.206d6e8f.js:2
+TopicPersistenceService.js:88  Error finding user record ID: Error: Failed to search for user record: Invalid token provided. Please reauthenticate.
+    at findUserRecordId (TopicPersistenceService.js:65:13)
+    at async loadTopicLists (TopicPersistenceService.js:574:11)
+    at async Z (AICardGenerator.jsx:198:27)
+findUserRecordId @ TopicPersistenceService.js:88
+await in findUserRecordId
+loadTopicLists @ TopicPersistenceService.js:574
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+TopicPersistenceService.js:615  Error in loadTopicLists: Error: Failed to search for user record: Invalid token provided. Please reauthenticate.
+    at findUserRecordId (TopicPersistenceService.js:65:13)
+    at async loadTopicLists (TopicPersistenceService.js:574:11)
+    at async Z (AICardGenerator.jsx:198:27)
+loadTopicLists @ TopicPersistenceService.js:615
+await in loadTopicLists
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+KnackJavascript4kk.js:1281 Flashcard app [2025-03-27T06:24:18.003Z]: Found 1 existing topic lists for merging
+KnackJavascript4kk.js:1297 Flashcard app [2025-03-27T06:24:18.003Z]: Found 13 existing topic metadata items for merging
+KnackJavascript4kk.js:1338 Flashcard app [2025-03-27T06:24:18.003Z]: Updated topic list for subject: Biology
+KnackJavascript4kk.js:232 UPDATING WITH MERGED DATA
+KnackJavascript4kk.js:233 {
+  "originalTopicListsCount": 1,
+  "newTopicListsCount": 1,
+  "mergedTopicListsCount": 1,
+  "originalMetadataCount": 13,
+  "newMetadataCount": 13,
+  "mergedMetadataCount": 13,
+  "recordId": "67e4eee0db14c802bb0020e4",
+  "timestamp": "2025-03-27T06:24:18.003Z"
+}
+TopicPersistenceService.js:53 
+            
+            
+            GET https://api.knack.com/v1/objects/object_102/records 403 (Forbidden)
+findUserRecordId @ TopicPersistenceService.js:53
+loadTopicLists @ TopicPersistenceService.js:574
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+ 
+            
+            
+            GET https://api.knack.com/v1/objects/object_102/records 403 (Forbidden)
+findUserRecordId @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+loadTopicLists @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+Z @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+(anonymous) @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+rc @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+jl @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+(anonymous) @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+j @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+P @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+TopicPersistenceService.js:88  Error finding user record ID: Error: Failed to search for user record: Invalid token provided. Please reauthenticate.
+    at findUserRecordId (TopicPersistenceService.js:65:13)
+    at async loadTopicLists (TopicPersistenceService.js:574:11)
+    at async Z (AICardGenerator.jsx:198:27)
+findUserRecordId @ TopicPersistenceService.js:88
+await in findUserRecordId
+loadTopicLists @ TopicPersistenceService.js:574
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+TopicPersistenceService.js:615  Error in loadTopicLists: Error: Failed to search for user record: Invalid token provided. Please reauthenticate.
+    at findUserRecordId (TopicPersistenceService.js:65:13)
+    at async loadTopicLists (TopicPersistenceService.js:574:11)
+    at async Z (AICardGenerator.jsx:198:27)
+loadTopicLists @ TopicPersistenceService.js:615
+await in loadTopicLists
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+TopicPersistenceService.js:53 
+            
+            
+            GET https://api.knack.com/v1/objects/object_102/records 403 (Forbidden)
+findUserRecordId @ TopicPersistenceService.js:53
+loadTopicLists @ TopicPersistenceService.js:574
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+ 
+            
+            
+            GET https://api.knack.com/v1/objects/object_102/records 403 (Forbidden)
+findUserRecordId @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+loadTopicLists @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+Z @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+(anonymous) @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+rc @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+jl @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+(anonymous) @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+j @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+P @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+TopicPersistenceService.js:88  Error finding user record ID: Error: Failed to search for user record: Invalid token provided. Please reauthenticate.
+    at findUserRecordId (TopicPersistenceService.js:65:13)
+    at async loadTopicLists (TopicPersistenceService.js:574:11)
+    at async Z (AICardGenerator.jsx:198:27)
+findUserRecordId @ TopicPersistenceService.js:88
+await in findUserRecordId
+loadTopicLists @ TopicPersistenceService.js:574
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+TopicPersistenceService.js:615  Error in loadTopicLists: Error: Failed to search for user record: Invalid token provided. Please reauthenticate.
+    at findUserRecordId (TopicPersistenceService.js:65:13)
+    at async loadTopicLists (TopicPersistenceService.js:574:11)
+    at async Z (AICardGenerator.jsx:198:27)
+loadTopicLists @ TopicPersistenceService.js:615
+await in loadTopicLists
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+MultipleChoiceOptions.jsx:21 MultipleChoiceOptions: Using provided options array: 4
+ScaledText.jsx:63 ScaledText () length: 15, starting fontSize: 20
+KnackJavascript4kk.js:2524 Flashcard app [2025-03-27T06:24:18.211Z]: Successfully added 1 cards to bank
+App.js:1208 [Message Handler 2025-03-27T06:24:18.212Z] From parent: ADD_TO_BANK_RESULT
+App.js:1401 [Add To Bank Result] Received: {type: 'ADD_TO_BANK_RESULT', success: true, shouldReload: true}
+App.js:1407 [Add To Bank Result] Requesting updated data...
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:24:18.213Z]: Message from React app: REQUEST_UPDATED_DATA
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_UPDATED_DATA",
+  "timestamp": "2025-03-27T06:24:18.213Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:622 Flashcard app [2025-03-27T06:24:18.213Z]: Requested updated data
+KnackJavascript4kk.js:677 Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+AICardGenerator.jsx:1511 Triggered save after adding cards to bank
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:24:18.229Z]: Message from React app: TRIGGER_SAVE
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "TRIGGER_SAVE",
+  "timestamp": "2025-03-27T06:24:18.229Z",
+  "hasData": "yes"
+}
+KnackJavascript4kk.js:555 Flashcard app: Triggered save from React app
+TopicPersistenceService.js:53 
+            
+            
+            GET https://api.knack.com/v1/objects/object_102/records 403 (Forbidden)
+findUserRecordId @ TopicPersistenceService.js:53
+loadTopicLists @ TopicPersistenceService.js:574
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+ 
+            
+            
+            GET https://api.knack.com/v1/objects/object_102/records 403 (Forbidden)
+findUserRecordId @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+loadTopicLists @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+Z @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+(anonymous) @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+rc @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+jl @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+(anonymous) @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+j @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+P @ vespa-flashcards-e7f…/main.206d6e8f.js:2
+TopicPersistenceService.js:88  Error finding user record ID: Error: Failed to search for user record: Invalid token provided. Please reauthenticate.
+    at findUserRecordId (TopicPersistenceService.js:65:13)
+    at async loadTopicLists (TopicPersistenceService.js:574:11)
+    at async Z (AICardGenerator.jsx:198:27)
+findUserRecordId @ TopicPersistenceService.js:88
+await in findUserRecordId
+loadTopicLists @ TopicPersistenceService.js:574
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+TopicPersistenceService.js:615  Error in loadTopicLists: Error: Failed to search for user record: Invalid token provided. Please reauthenticate.
+    at findUserRecordId (TopicPersistenceService.js:65:13)
+    at async loadTopicLists (TopicPersistenceService.js:574:11)
+    at async Z (AICardGenerator.jsx:198:27)
+loadTopicLists @ TopicPersistenceService.js:615
+await in loadTopicLists
+Z @ AICardGenerator.jsx:198
+(anonymous) @ AICardGenerator.jsx:162
+rc @ react-dom.production.min.js:243
+jl @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+j @ scheduler.production.min.js:13
+P @ scheduler.production.min.js:14
+KnackJavascript4kk.js:717 Flashcard app: User data search response: {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript4kk.js:722 Flashcard app: Found existing user data: {id: '67e4eee0db14c802bb0020e4', field_3010: {…}, field_3029: '', field_2954: '630510eb3c91500021a8fad2', field_3008: Array(1), …}
+KnackJavascript4kk.js:745 Flashcard app: Loaded 14 cards, including 1 multiple choice cards
+KnackJavascript4kk.js:640 Flashcard app [2025-03-27T06:24:18.379Z]: Sending refreshed data to React app
+App.js:1208 [Message Handler 2025-03-27T06:24:18.380Z] From parent: KNACK_DATA
+App.js:1507 [Message Handler] Unknown message type: KNACK_DATA
+App.js:1600 Received data from Knack: {type: 'KNACK_DATA', cards: Array(14), colorMapping: {…}, topicLists: Array(1), topicMetadata: Array(13), …}
+DataUtils.js:501 Empty or invalid multiple choice options backup
+App.js:1617 Loaded 14 cards from Knack and restored multiple choice options
+App.js:1623 Loaded color mapping from Knack
+App.js:1641 Loaded 1 topic lists from Knack
+App.js:1647 Loaded 13 topic metadata entries from Knack
+FlashcardList.jsx:193 FlashcardList processed items with special topic shell handling: {topicShellCount: 13, regularCardCount: 1, topicShells: {…}}
+FlashcardList.jsx:295 Found metadata in card for Biology: {examBoard: 'General', examType: 'Course'}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+App.js:1522 [Init] Sent ready message to parent
+FlashcardList.jsx:295 Found metadata in card for Biology: {examBoard: 'General', examType: 'Course'}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:24:18.382Z]: Message from React app: APP_READY
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T06:24:18.382Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:401 Flashcard app: Ignoring duplicate APP_READY message
+KnackJavascript4kk.js:1405 Flashcard app [2025-03-27T06:24:18.455Z]: Successfully saved topic list data: 67e4eee0db14c802bb0020e4
+KnackJavascript4kk.js:232 SAVE SUCCESS
+KnackJavascript4kk.js:233 {
+  "recordId": "67e4eee0db14c802bb0020e4",
+  "timestamp": "2025-03-27T06:24:18.455Z"
+}
+KnackJavascript4kk.js:1453 Flashcard app [2025-03-27T06:24:18.455Z]: Verifying data save for record: 67e4eee0db14c802bb0020e4
+KnackJavascript4kk.js:1416 Flashcard app [2025-03-27T06:24:18.455Z]: Creating topic shells for 1 topic lists
+KnackJavascript4kk.js:1549 Flashcard app [2025-03-27T06:24:18.455Z]: Creating topic shells from 1 topic lists
+KnackJavascript4kk.js:1823 Flashcard app [2025-03-27T06:24:18.725Z]: Created 13 topic shells with consistent colors and metadata
+KnackJavascript4kk.js:1892 Flashcard app [2025-03-27T06:24:18.725Z]: Deduplication complete: 13 new + 13 existing = 13 final shells
+AICardGenerator.jsx:1521 Requested app refresh to update UI
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:24:18.729Z]: Message from React app: REQUEST_REFRESH
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_REFRESH",
+  "timestamp": "2025-03-27T06:24:18.729Z",
+  "hasData": "yes"
+}
+KnackJavascript4kk.js:1918 Flashcard app [2025-03-27T06:24:19.076Z]: Successfully added 13 topic shells (after deduplication)
+App.js:1208 [Message Handler 2025-03-27T06:24:19.077Z] From parent: TOPIC_SHELLS_CREATED
+App.js:1445 [Topic Shells] Created successfully: {type: 'TOPIC_SHELLS_CREATED', timestamp: '2025-03-27T06:24:19.076Z', count: 13, shouldReload: true}
+App.js:1450 [Topic Shells] Requesting updated data...
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:24:19.078Z]: Message from React app: REQUEST_UPDATED_DATA
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_UPDATED_DATA",
+  "timestamp": "2025-03-27T06:24:19.078Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:622 Flashcard app [2025-03-27T06:24:19.079Z]: Requested updated data
+KnackJavascript4kk.js:677 Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+KnackJavascript4kk.js:717 Flashcard app: User data search response: {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript4kk.js:722 Flashcard app: Found existing user data: {id: '67e4eee0db14c802bb0020e4', field_3010: {…}, field_3029: '', field_2954: '630510eb3c91500021a8fad2', field_3008: Array(1), …}
+KnackJavascript4kk.js:745 Flashcard app: Loaded 14 cards, including 1 multiple choice cards
+KnackJavascript4kk.js:640 Flashcard app [2025-03-27T06:24:19.247Z]: Sending refreshed data to React app
+App.js:1208 [Message Handler 2025-03-27T06:24:19.248Z] From parent: KNACK_DATA
+App.js:1507 [Message Handler] Unknown message type: KNACK_DATA
+App.js:1600 Received data from Knack: {type: 'KNACK_DATA', cards: Array(14), colorMapping: {…}, topicLists: Array(1), topicMetadata: Array(26), …}
+DataUtils.js:501 Empty or invalid multiple choice options backup
+App.js:1617 Loaded 14 cards from Knack and restored multiple choice options
+App.js:1623 Loaded color mapping from Knack
+App.js:1641 Loaded 1 topic lists from Knack
+App.js:1647 Loaded 26 topic metadata entries from Knack
+FlashcardList.jsx:193 FlashcardList processed items with special topic shell handling: {topicShellCount: 13, regularCardCount: 1, topicShells: {…}}
+FlashcardList.jsx:295 Found metadata in card for Biology: {examBoard: 'General', examType: 'Course'}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+App.js:1522 [Init] Sent ready message to parent
+FlashcardList.jsx:295 Found metadata in card for Biology: {examBoard: 'General', examType: 'Course'}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:24:19.250Z]: Message from React app: APP_READY
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T06:24:19.250Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:401 Flashcard app: Ignoring duplicate APP_READY message
+App.js:1208 [Message Handler 2025-03-27T06:24:20.221Z] From parent: RELOAD_APP_DATA
+App.js:1472 [Reload] Explicit reload request received
+FlashcardList.jsx:193 FlashcardList processed items with special topic shell handling: {topicShellCount: 13, regularCardCount: 1, topicShells: {…}}
+FlashcardList.jsx:295 Found metadata in card for Biology: {examBoard: 'General', examType: 'Course'}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+FlashcardList.jsx:295 Found metadata in card for Biology: {examBoard: 'General', examType: 'Course'}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+KnackJavascript4kk.js:232 VERIFICATION RESULT
+KnackJavascript4kk.js:233 {
+  "recordId": "67e4eee0db14c802bb0020e4",
+  "hasTopicLists": "yes",
+  "hasCardBank": "yes",
+  "timestamp": "2025-03-27T06:24:20.652Z"
+}
+KnackJavascript4kk.js:1482 Flashcard app [2025-03-27T06:24:20.652Z]: Verification successful: Topic lists present with 1 items
+KnackJavascript4kk.js:1490 Flashcard app [2025-03-27T06:24:20.653Z]: Topic lists contain topics - save fully verified
+KnackJavascript4kk.js:1502 Flashcard app [2025-03-27T06:24:20.653Z]: Card bank contains 13 topic shells and 1 cards
+KnackJavascript4kk.js:1514 Flashcard app [2025-03-27T06:24:20.653Z]: 1 of 1 cards have topicId references
+FlashcardList.jsx:193 FlashcardList processed items with special topic shell handling: {topicShellCount: 13, regularCardCount: 1, topicShells: {…}}
+FlashcardList.jsx:295 Found metadata in card for Biology: {examBoard: 'General', examType: 'Course'}
+FlashcardList.jsx:1036 Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+ Found metadata in card for Biology: {examBoard: 'General', examType: 'Course'}
+ Subject color for Biology: {subjectColor: '#06206e', firstCardSubjectColor: undefined, firstCardBaseColor: undefined, firstCardCardColor: undefined, firstCard: undefined}
+App.js:1522 [Init] Sent ready message to parent
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T06:24:20.854Z]: Message from React app: APP_READY
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T06:24:20.854Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:401 Flashcard app: Ignoring duplicate APP_READY message
