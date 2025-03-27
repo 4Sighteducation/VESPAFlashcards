@@ -918,59 +918,74 @@ const AICardGenerator = ({
     setFormData(prev => ({ ...prev, subjectColor: color }));
   };
 
-  // Handle next step in wizard
+  // Enhanced handleNextStep function with robust state management to prevent initialization screen issues
   const handleNextStep = () => {
+    // First check if we're already progressing - prevent duplicate transitions
+    if (isGenerating) {
+      console.log("Already generating cards or processing a step, ignoring duplicate request");
+      return;
+    }
+    
+    // Only proceed if we're not at the last step
     if (currentStep < totalSteps) {
-      // If we're moving from step 6 (question type) to step 7,
-      // set isGenerating to true to show the loading screen immediately
-      // AND trigger the card generation
+      // Critical step: If we're moving from step 6 (question type) to step 7,
+      // we need to handle card generation carefully to avoid the initialization screen issue
       if (currentStep === 6) {
-        // Store the current values before any state changes
-        const currentExamType = formData.examType;
-        const currentExamBoard = formData.examBoard;
-        const currentSubject = formData.subject || formData.newSubject;
-        const currentTopic = formData.topic || formData.newTopic;
+        // Create local copies of ALL form values to ensure complete stability
+        const stableValues = {
+          examType: formData.examType || examType || "General",
+          examBoard: formData.examBoard || examBoard || "General",
+          subject: formData.subject || formData.newSubject || initialSubject || "General",
+          topic: formData.topic || formData.newTopic || initialTopic || "General",
+          questionType: formData.questionType || "short_answer",
+          numCards: formData.numCards || 5,
+          subjectColor: formData.subjectColor || BRIGHT_COLORS[0]
+        };
         
-        console.log("Step 6->7 transition with stable metadata:", {
-          examType: currentExamType,
-          examBoard: currentExamBoard,
-          subject: currentSubject,
-          topic: currentTopic
-        });
+        // Log the stable values we're using
+        debugLog("Step 6->7 transition with comprehensive stable metadata", stableValues);
         
-        // First set isGenerating to true
+        // First set the loading indicator - BEFORE any state changes
         setIsGenerating(true);
         
-        // Then move to next step
-        setCurrentStep(currentStep + 1);
+        // Set pendingOperations flag to prevent conflicts
+        setPendingOperations(prev => ({ ...prev, transition: true }));
         
-        // Use a longer delay to ensure state is fully updated
+        // Then move to next step with a slight delay to avoid state update conflicts
         setTimeout(() => {
-          // Create a stable reference to form data that won't change during async operations
-          const stableFormData = {
-            ...formData,
-            examType: currentExamType,
-            examBoard: currentExamBoard,
-            subject: currentSubject,
-            topic: currentTopic
-          };
+          // Move to step 7
+          setCurrentStep(7);
           
-          console.log("Generating cards with stable exam metadata:", {
-            examType: stableFormData.examType,
-            examBoard: stableFormData.examBoard
-          });
-          
-          // Temporarily update form data with stable values
-          setFormData(stableFormData);
-          
-          // Add another delay to ensure the form data update is processed
+          // Use a longer delay to ensure step transition completes
           setTimeout(() => {
-            generateCards();
-          }, 200);
-        }, 500);
+            // Log that we're starting card generation
+            console.log(`[${new Date().toISOString()}] Starting card generation with stable values:`, stableValues);
+            
+            // Special handling for multiple staggered state updates to prevent conflicts
+            // First, update form data with our stable values
+            setFormData(prev => ({
+              ...prev,
+              ...stableValues
+            }));
+            
+            // Wait for form data update to complete
+            setTimeout(() => {
+              // CRITICAL FIX: Generate cards with explicitly passed stable values
+              // This should be picked up by our enhanced generateCards function
+              generateCards();
+              
+              // Clear the transition flag after a delay
+              setTimeout(() => {
+                setPendingOperations(prev => ({ ...prev, transition: false }));
+              }, 1000);
+            }, 300);
+          }, 500);
+        }, 100);
         
         return; // Exit early since we already set the next step
       }
+      
+      // For other steps, simply increment the step counter
       setCurrentStep(currentStep + 1);
     }
   };
@@ -1002,7 +1017,7 @@ const AICardGenerator = ({
     }
   };
 
-  // Generate cards using OpenAI API with improved stability and checks
+  // Generate cards using OpenAI API with enhanced stability and comprehensive error handling
   const generateCards = async () => {
     // Check if we're already generating to prevent duplicate calls
     if (isGenerating) {
@@ -1010,44 +1025,50 @@ const AICardGenerator = ({
       return;
     }
     
-    // Use local copies of values for stability
-    const localExamType = formData.examType || examType;
-    const localExamBoard = formData.examBoard || examBoard;
+    // CRITICAL FIX: Store all form values in local variables to ensure stability throughout the function
+    // This prevents issues caused by state updates during async operations
+    const localFormData = {...formData};
+    
+    // These stable values are crucial for exam metadata
+    const localExamType = localFormData.examType || examType || "General";
+    const localExamBoard = localFormData.examBoard || examBoard || "General";
     
     // Get subject value, ensuring it's a string not an object
-    const subjectValue = formData.subject || formData.newSubject || initialSubject;
+    const subjectValue = localFormData.subject || localFormData.newSubject || initialSubject;
     const subjectName = typeof subjectValue === 'object' && subjectValue.name 
       ? subjectValue.name 
       : subjectValue;
     
-    console.log("Generate cards function called with stabilized state:", { 
+    // Topic needs the same treatment for stability
+    const topicValue = localFormData.topic || localFormData.newTopic || initialTopic;
+    const questionTypeValue = localFormData.questionType;
+    const numCardsValue = localFormData.numCards;
+    
+    // Log all the stable values we're using
+    debugLog("Generate cards function called with stabilized state", { 
       isGenerating, 
       currentStep,
-      formData: { 
-        examType: localExamType,
-        examBoard: localExamBoard,
-        subject: subjectName,
-        topic: formData.topic || formData.newTopic || initialTopic,
-        questionType: formData.questionType
-      }
+      examType: localExamType,
+      examBoard: localExamBoard,
+      subject: subjectName,
+      topic: topicValue,
+      questionType: questionTypeValue,
+      numCards: numCardsValue
     });
     
     setIsGenerating(true);
     setError(null);
     
     try {
-      // Determine final subject and topic (use new values if provided)
-      // Always prioritize the local stable values we captured earlier
-      const finalSubject = formData.newSubject || subjectName;
-      const finalTopic = formData.newTopic || formData.topic || initialTopic;
+      // Explicitly define final values used for card generation
+      // CRITICAL: Only use the local variables captured at the start
+      const finalSubject = subjectName;
+      const finalTopic = topicValue;
+      const finalExamType = localExamType;
+      const finalExamBoard = localExamBoard;
       
-      // Explicitly use the local variables to ensure stability during async operations
-      // This is critical for passing the correct info to the AI Generator
-      const finalExamType = localExamType || "Course";
-      const finalExamBoard = localExamBoard || "General";
-      
-      // Log explicit metadata that will be used
-      console.log("Explicit metadata for cards:", {
+      // Extra debug log for metadata
+      debugLog("Final stable metadata for card generation", {
         finalSubject,
         finalTopic,
         finalExamType,
@@ -1055,14 +1076,13 @@ const AICardGenerator = ({
       });
       
       // Automatically select a color if not already set
-      // This can happen if we're coming from a previous step
-      let cardColor = formData.subjectColor;
+      let cardColor = localFormData.subjectColor;
       
       // Get existing subject colors from parent component's subjects if available
       const existingSubjects = subjects || [];
       const existingColors = existingSubjects
-        .filter(sub => sub.subjectColor && typeof sub.subjectColor === 'string') // Only consider subjects with colors that are strings
-        .map(sub => sub.subjectColor.toLowerCase()); // Normalize color format
+        .filter(sub => sub.subjectColor && typeof sub.subjectColor === 'string')
+        .map(sub => sub.subjectColor.toLowerCase());
       
       // If this is a new subject that matches an existing one, use that color
       const matchingSubject = existingSubjects.find(sub => {
@@ -1092,38 +1112,40 @@ const AICardGenerator = ({
         }
       }
       
-      // Update the form data with the selected color
-      setFormData(prev => ({ ...prev, subjectColor: cardColor }));
+      // Update the form data with the selected color - AFTER card generation to avoid state issues
+      const colorUpdateOnly = async () => {
+        setFormData(prev => ({ ...prev, subjectColor: cardColor }));
+      };
       
       // Create prompt based on question type and other parameters
       let prompt;
       
-      if (formData.questionType === "acronym") {
+      if (questionTypeValue === "acronym") {
         let topicInfo = finalTopic ? ` with focus on ${finalTopic}` : "";
-        prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). Generate ${formData.numCards} exam-style flashcards for ${formData.examBoard} ${formData.examType} ${finalSubject}${topicInfo}. Create a useful acronym from some essential course knowledge. Be creative and playful. Format exactly as: [{"acronym": "Your acronym", "explanation": "Detailed explanation here"}]`;
+        prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). Generate ${numCardsValue} exam-style flashcards for ${finalExamBoard} ${finalExamType} ${finalSubject}${topicInfo}. Create a useful acronym from some essential course knowledge. Be creative and playful. Format exactly as: [{"acronym": "Your acronym", "explanation": "Detailed explanation here"}]`;
       } else {
         // Determine complexity based on exam type
         let complexityInstruction;
-        if (formData.examType === "A-Level") {
+        if (finalExamType === "A-Level") {
           complexityInstruction = "Make these appropriate for A-Level students (age 16-18). Questions should be challenging and involve deeper thinking. Include sufficient detail in answers and use appropriate technical language.";
-        } else { // GCSE
+        } else { // GCSE or other
           complexityInstruction = "Make these appropriate for GCSE students (age 14-16). Questions should be clear but still challenging. Explanations should be thorough but accessible.";
         }
         
-        // Base prompt
+        // Base prompt - IMPROVED: Using final stable values only
         prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). 
-Generate ${formData.numCards} high-quality ${finalExamBoard} ${finalExamType} ${finalSubject} flashcards for the specific topic "${finalTopic}".
+Generate ${numCardsValue} high-quality ${finalExamBoard} ${finalExamType} ${finalSubject} flashcards for the specific topic "${finalTopic}".
 ${complexityInstruction}
 
 Before generating questions, scrape the latest ${finalExamBoard} ${finalExamType} ${finalSubject} specification to ensure the content matches the current curriculum exactly.
 
-Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple choice questions' : formData.questionType + ' questions'}:
+Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice questions' : questionTypeValue + ' questions'}:
 [
   {
     "subject": "${finalSubject}",
     "topic": "${finalTopic}",
-    "questionType": "${formData.questionType}",
-    "question": "Clear, focused question based on the curriculum"${formData.questionType === 'multiple_choice' ? ',\n    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],\n    "correctAnswer": "The correct option exactly as written in options array"' : ''},
+    "questionType": "${questionTypeValue}",
+    "question": "Clear, focused question based on the curriculum"${questionTypeValue === 'multiple_choice' ? ',\n    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],\n    "correctAnswer": "The correct option exactly as written in options array"' : ''},
     "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
   }
 ]`;
@@ -1131,25 +1153,76 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
       
       console.log("Generating cards with prompt:", prompt);
       
-      // Make the API call to OpenAI
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 2000,
-          temperature: 0.7
-        })
-      });
+      // Make the API call to OpenAI with retry logic for resilience
+      let response;
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        try {
+          response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${OPENAI_API_KEY}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: "gpt-3.5-turbo",
+              messages: [{ role: "user", content: prompt }],
+              max_tokens: 2000,
+              temperature: 0.7
+            })
+          });
+          
+          // Break out of retry loop if successful
+          if (response.ok) break;
+          
+          // If we got a 401/403, request a token refresh and retry
+          if (response.status === 401 || response.status === 403) {
+            console.warn(`Authentication error (${response.status}) on attempt ${attempts+1}, trying to refresh token...`);
+            await requestTokenRefresh();
+            attempts++;
+            continue;
+          }
+          
+          // For rate limits, wait longer before retry
+          if (response.status === 429) {
+            console.warn(`Rate limit (${response.status}) on attempt ${attempts+1}, waiting before retry...`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * (attempts + 1)));
+            attempts++;
+            continue;
+          }
+          
+          // For other errors, just retry with backoff
+          console.warn(`API error (${response.status}) on attempt ${attempts+1}, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempts + 1)));
+          attempts++;
+          
+        } catch (fetchError) {
+          console.error(`Network error on attempt ${attempts+1}:`, fetchError);
+          
+          // On network error, wait and retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempts + 1)));
+          attempts++;
+          
+          // Throw if we've tried too many times
+          if (attempts >= maxAttempts) {
+            throw new Error(`Failed to connect to OpenAI API after ${maxAttempts} attempts: ${fetchError.message}`);
+          }
+        }
+      }
+      
+      // Now check the response fully after retries
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `OpenAI API error: ${response.status}`);
+      }
       
       const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error?.message || "Error calling OpenAI API");
+      // Safe guard against invalid API response
+      if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
+        throw new Error("Invalid or empty response from OpenAI API");
       }
       
       // Parse the response
@@ -1170,7 +1243,10 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
         throw new Error("Invalid response format from AI. Please try again.");
       }
       
-      // Process the generated cards
+      // Now that we have cards, update color first
+      await colorUpdateOnly();
+      
+      // Process the generated cards - ENHANCED: Ensure all cards have stable metadata
       const processedCards = cards.map((card, index) => {
         // Generate a unique ID
         const id = `card_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
@@ -1187,14 +1263,14 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
         // Ensure card color is valid - use a default if no color is available
         const ensuredCardColor = cardColor || "#3cb44b";
         
-        // Add standard fields
+        // Add standard fields - CRITICAL: Using stable values defined at function start
         const baseCard = {
           id,
           subject: finalSubject,
           topic: finalTopic,
           examType: finalExamType,
           examBoard: finalExamBoard,
-          questionType: formData.questionType,
+          questionType: questionTypeValue,
           cardColor: ensuredCardColor,
           baseColor: ensuredCardColor,
           timestamp: new Date().toISOString(),
@@ -1202,7 +1278,7 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
         };
         
         // Process specific question types
-        if (formData.questionType === "acronym") {
+        if (questionTypeValue === "acronym") {
           return {
             ...baseCard,
             acronym: card.acronym,
@@ -1210,13 +1286,20 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
             front: `Acronym: ${card.acronym}`,
             back: `Explanation: ${card.explanation}`
           };
-        } else if (formData.questionType === "multiple_choice") {
+        } else if (questionTypeValue === "multiple_choice") {
+          // Validate options array before processing
+          if (!card.options || !Array.isArray(card.options) || card.options.length === 0) {
+            console.warn("Missing options array for multiple choice card, creating default options");
+            card.options = ["Option A", "Option B", "Option C", "Option D"];
+            card.correctAnswer = "Option A";
+          }
+          
           // Clean all options and correct answer of any existing prefixes
           const cleanedOptions = card.options.map(option => 
             option.replace(/^[a-d]\)\s*/i, '').trim()
           );
           
-          let correctAnswer = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
+          let correctAnswer = (card.correctAnswer || cleanedOptions[0]).replace(/^[a-d]\)\s*/i, '').trim();
           
           // Find the index of the correct answer in the options
           let correctIndex = cleanedOptions.findIndex(option => 
@@ -1250,9 +1333,10 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
             detailedAnswer: card.detailedAnswer,
             additionalInfo: card.detailedAnswer, // Add to additionalInfo field for info modal
             front: card.question,
-            back: `Correct Answer: ${letter}) ${correctAnswer}` // Format with letter prefix
+            back: `Correct Answer: ${letter}) ${correctAnswer}`, // Format with letter prefix
+            savedOptions: [...cleanedOptions] // IMPORTANT: Save a backup of options
           };
-        } else if (formData.questionType === "short_answer" || formData.questionType === "essay") {
+        } else if (questionTypeValue === "short_answer" || questionTypeValue === "essay") {
           // Create key points as bullet points if they exist
           const keyPointsHtml = card.keyPoints && card.keyPoints.length > 0
             ? card.keyPoints.map(point => `• ${point}`).join("<br/>")
@@ -1265,7 +1349,7 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
             detailedAnswer: card.detailedAnswer,
             additionalInfo: card.detailedAnswer, // Add to additionalInfo field for info modal
             front: card.question,
-            back: keyPointsHtml // Only show key points, not detailed answer
+            back: keyPointsHtml || card.detailedAnswer // Use detailed answer if no key points
           };
         } else {
           return {
@@ -1276,8 +1360,22 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
         }
       });
       
+      // ENHANCED: Add explicit exam metadata verification before setting state
+      const verifiedCards = processedCards.map(card => {
+        // Double-check that all cards have the correct exam metadata
+        if (!card.examType || card.examType === "undefined") {
+          card.examType = finalExamType;
+          console.warn(`Fixed missing examType on card ${card.id}`);
+        }
+        if (!card.examBoard || card.examBoard === "undefined") {
+          card.examBoard = finalExamBoard;
+          console.warn(`Fixed missing examBoard on card ${card.id}`);
+        }
+        return card;
+      });
+      
       // Add debug log of the full processed cards before setting state
-      console.log("FINAL PROCESSED CARDS:", processedCards.map(card => ({
+      debugLog("FINAL PROCESSED CARDS WITH METADATA", verifiedCards.map(card => ({
         id: card.id,
         subject: card.subject,
         topic: card.topic,
@@ -1286,7 +1384,8 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
         questionType: card.questionType,
       })));
 
-      setGeneratedCards(processedCards);
+      // Set the state with our verified cards
+      setGeneratedCards(verifiedCards);
       
     } catch (error) {
       console.error("Error generating cards:", error);
@@ -1338,30 +1437,94 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     return text.replace(/```json\s*/g, "").replace(/```/g, "").trim();
   };
 
-  // Add a helper function to request token refresh
+  // Enhanced helper function to request token refresh with improved reliability
   const requestTokenRefresh = async () => {
-    console.log("AICardGenerator requesting token refresh");
+    console.log(`[${new Date().toISOString()}] AICardGenerator requesting token refresh`);
     
-    if (window.parent && window.parent !== window) {
-      // Send a message to parent requesting token refresh
-      window.parent.postMessage({ 
-        type: "REQUEST_TOKEN_REFRESH", 
-        timestamp: new Date().toISOString() 
-      }, "*");
-      
-      // Return a promise that resolves after waiting for potential refresh
-      return new Promise(resolve => setTimeout(resolve, 1500));
+    // Create a tracking variable to avoid multiple simultaneous refresh requests
+    if (window.tokenRefreshInProgress) {
+      console.log("Token refresh already in progress, waiting for completion");
+      // Wait for existing refresh to complete
+      return new Promise(resolve => {
+        const checkInterval = setInterval(() => {
+          if (!window.tokenRefreshInProgress) {
+            clearInterval(checkInterval);
+            resolve(true);
+          }
+        }, 300);
+        
+        // Safety timeout in case something goes wrong
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          resolve(false);
+        }, 5000);
+      });
     }
     
+    // Mark refresh as in progress
+    window.tokenRefreshInProgress = true;
+    
+    try {
+      if (window.parent && window.parent !== window) {
+        // Create a more robust system with message acknowledgment
+        return new Promise((resolve) => {
+          // Function to handle token refresh response
+          const messageHandler = (event) => {
+            if (event.data && 
+                (event.data.type === "AUTH_REFRESH" || 
+                 event.data.type === "TOKEN_REFRESH_RESULT")) {
+              // Remove listener once we get a response
+              window.removeEventListener('message', messageHandler);
+              window.tokenRefreshInProgress = false;
+              
+              console.log(`[${new Date().toISOString()}] Received token refresh response:`, event.data.type);
+              resolve(true);
+            }
+          };
+          
+          // Add listener for response
+          window.addEventListener('message', messageHandler);
+          
+          // Send a message to parent requesting token refresh
+          window.parent.postMessage({ 
+            type: "REQUEST_TOKEN_REFRESH", 
+            timestamp: new Date().toISOString(),
+            source: "AICardGenerator"
+          }, "*");
+          
+          // Set a timeout to ensure we don't wait forever
+          setTimeout(() => {
+            window.removeEventListener('message', messageHandler);
+            window.tokenRefreshInProgress = false;
+            console.log(`[${new Date().toISOString()}] Token refresh timed out`);
+            resolve(false);
+          }, 3000);
+        });
+      }
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error in token refresh:`, error);
+      window.tokenRefreshInProgress = false;
+    }
+    
+    window.tokenRefreshInProgress = false;
     return Promise.resolve(false);
   };
 
-  // Modify the handleAddCard function with improved error handling
+  // Enhanced handleAddCard function with improved error handling and stable metadata
   const handleAddCard = (card) => {
+    // Prevent adding card if already in progress
+    if (pendingOperations.addToBank) {
+      console.log("Add to bank operation already in progress, ignoring duplicate request");
+      return;
+    }
+    
     if (!card || !card.id) {
       console.error("Invalid card data:", card);
       return;
     }
+
+    // Set pending flag for this operation
+    setPendingOperations(prev => ({ ...prev, addToBank: true }));
 
     // Mark the card as being processed
     setGeneratedCards(prev => prev.map(c => 
@@ -1370,23 +1533,32 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
 
     // Get the selected topic ID if available
     const topicId = selectedTopic?.id || null;
-    console.log("Adding card with topicId:", topicId);
-    console.log("Card will have examType:", formData.examType, "and examBoard:", formData.examBoard);
+    
+    // CRITICAL: Store all current state values that we need in local variables
+    // This ensures they remain stable during the async operation
+    const localExamBoard = formData.examBoard || examBoard || "General";
+    const localExamType = formData.examType || examType || "Course";
+    const localSubject = formData.subject || formData.newSubject || initialSubject || "General";
+    const localTopic = formData.topic || formData.newTopic || initialTopic || "General";
+    
+    // Log what we're doing with explicit metadata
+    debugLog("Adding card with metadata", {
+      topicId,
+      examType: localExamType,
+      examBoard: localExamBoard,
+      subject: localSubject,
+      topic: localTopic,
+      cardId: card.id
+    });
 
-    try {
-      // Force use of local variables to prevent issues with state references
-      const forcedExamBoard = formData.examBoard;
-      const forcedExamType = formData.examType;
-      
-      console.log(`Adding single card with forced values - examType: ${forcedExamType}, examBoard: ${forcedExamBoard}`);
-      
-      // Ensure the card has proper metadata - explicitly use local variables
+    try {      
+      // Ensure the card has proper metadata - explicitly use our stable local variables
       const enrichedCard = {
         ...card,
-        examBoard: forcedExamBoard || card.examBoard || examBoard || "General",
-        examType: forcedExamType || card.examType || examType || "Course",
-        subject: card.subject || formData.subject || initialSubject || "General",
-        topic: card.topic || formData.topic || initialTopic || "General",
+        examBoard: localExamBoard,  // Simplified and consistent usage
+        examType: localExamType,    // Simplified and consistent usage
+        subject: card.subject || localSubject,
+        topic: card.topic || localTopic,
         topicId: topicId || card.topicId || "",
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
@@ -1394,6 +1566,24 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
         nextReviewDate: new Date().toISOString(),
         boxNum: 1
       };
+      
+      // Double-check essential metadata is present
+      if (!enrichedCard.examType || enrichedCard.examType === "undefined") {
+        console.warn(`Fixed missing examType on card ${enrichedCard.id}`);
+        enrichedCard.examType = localExamType;
+      }
+      if (!enrichedCard.examBoard || enrichedCard.examBoard === "undefined") {
+        console.warn(`Fixed missing examBoard on card ${enrichedCard.id}`);
+        enrichedCard.examBoard = localExamBoard;
+      }
+      
+      // For multiple choice cards, ensure options are preserved
+      if (enrichedCard.questionType === 'multiple_choice') {
+        if (!enrichedCard.savedOptions && enrichedCard.options) {
+          enrichedCard.savedOptions = [...enrichedCard.options];
+          console.log(`Added savedOptions backup for multiple choice card ${enrichedCard.id}`);
+        }
+      }
       
       // Show success message early to ensure visible feedback
       setSuccessModal({
@@ -1426,8 +1616,8 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
         
         console.log("Adding card via parent window messaging");
         
-        // Create a function to handle sending messages with retry for auth errors
-        const sendMessageWithRetry = async (type, data, maxRetries = 2) => {
+        // Enhanced function to handle sending messages with retry for auth errors
+        const sendMessageWithRetry = async (type, data, maxRetries = 3) => {
           for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
               // Send the message
@@ -1437,11 +1627,28 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
                 timestamp: new Date().toISOString() 
               }, "*");
               
+              // Wait for a brief period to allow message to be processed
+              await new Promise(resolve => setTimeout(resolve, 300));
+              
               return true;
             } catch (error) {
               if (attempt < maxRetries) {
                 console.warn(`Error sending ${type} message, attempt ${attempt + 1}/${maxRetries + 1}:`, error);
-                await requestTokenRefresh();
+                
+                // Longer delay between retries
+                await new Promise(resolve => setTimeout(resolve, 800 * (attempt + 1)));
+                
+                // Request token refresh if authentication might be the issue
+                if (error.message && (
+                    error.message.includes("auth") || 
+                    error.message.includes("token") || 
+                    error.message.includes("permission") ||
+                    error.message.includes("403")
+                  )) {
+                  await requestTokenRefresh();
+                  // Wait after token refresh
+                  await new Promise(resolve => setTimeout(resolve, 800));
+                }
               } else {
                 console.error(`Failed to send ${type} message after ${maxRetries + 1} attempts:`, error);
                 return false;
@@ -1450,7 +1657,7 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
           }
         };
         
-        // Sequence of operations with better error handling
+        // Sequence of operations with better error handling and longer delays
         const addCardSequence = async () => {
           // Step 1: Add to bank
           const addSuccess = await sendMessageWithRetry("ADD_TO_BANK", {
@@ -1469,16 +1676,16 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
             return;
           }
           
-          // Wait a bit before triggering save
-          await new Promise(resolve => setTimeout(resolve, 800));
+          // Wait longer before triggering save
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
           // Step 2: Trigger save
           await sendMessageWithRetry("TRIGGER_SAVE", {
             recordId: authData?.recordId || window.recordId || ""
           });
           
-          // Wait a bit before requesting refresh
-          await new Promise(resolve => setTimeout(resolve, 800));
+          // Wait even longer before requesting refresh
+          await new Promise(resolve => setTimeout(resolve, 2000));
           
           // Step 3: Request refresh
           await sendMessageWithRetry("REQUEST_REFRESH", {
@@ -1499,6 +1706,9 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
           setGeneratedCards(prev => prev.map(c => 
             c.id === card.id ? {...c, processing: false} : c
           ));
+        }).finally(() => {
+          // Always reset the pending operation flag when done
+          setPendingOperations(prev => ({ ...prev, addToBank: false }));
         });
       } else {
         console.error("Cannot access parent window for messaging");
@@ -1507,6 +1717,7 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
         setGeneratedCards(prev => prev.map(c => 
           c.id === card.id ? {...c, processing: false} : c
         ));
+        setPendingOperations(prev => ({ ...prev, addToBank: false }));
       }
     } catch (error) {
       console.error("Error handling add card:", error);
@@ -1515,43 +1726,50 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
       setGeneratedCards(prev => prev.map(c => 
         c.id === card.id ? {...c, processing: false} : c
       ));
+      setPendingOperations(prev => ({ ...prev, addToBank: false }));
     }
   };
 
-  // Add all generated cards to the bank with improved error handling
+  // Enhanced handleAddAllCards function with comprehensive protection against race conditions
   const handleAddAllCards = () => {
     console.log("Add all cards button clicked");
     
-    // Prevent multiple clicks
+    // Prevent multiple clicks with early return
     if (pendingOperations.addToBank) {
       console.log("Add all operation already in progress, ignoring duplicate click");
       return;
     }
     
-    // Store the current values for stability
-    const currentExamType = formData.examType;
-    const currentExamBoard = formData.examBoard;
+    // Mark operation as in progress immediately
+    setPendingOperations(prev => ({ ...prev, addToBank: true }));
     
-    console.log("Starting add all cards with stable metadata:", {
-      examType: currentExamType,
-      examBoard: currentExamBoard
+    // CRITICAL: Store all current state values that we need in local variables
+    // This ensures they remain stable throughout the entire operation
+    const localExamType = formData.examType || examType || "General";
+    const localExamBoard = formData.examBoard || examBoard || "General";
+    const localSubject = formData.subject || formData.newSubject || initialSubject || "General";
+    const localTopic = formData.topic || formData.newTopic || initialTopic || "General";
+    
+    // Log operation with explicit metadata
+    debugLog("Starting add all cards with stable metadata", {
+      examType: localExamType,
+      examBoard: localExamBoard,
+      subject: localSubject,
+      topic: localTopic,
+      cardCount: generatedCards.length
     });
     
-    // Create a stable version of formData
-    const stableFormData = {
-      ...formData,
-      examType: currentExamType,
-      examBoard: currentExamBoard
-    };
-    
-    // Temporarily update the form data to ensure consistent values
-    setFormData(stableFormData);
-    
-    // Add a delay to ensure the form data update is processed
-    setTimeout(() => {
-      // Call addAllToBank with the updated form data
-      addAllToBank();
-    }, 300);
+    try {
+      // We need to delay to ensure we don't encounter React state update issues
+      setTimeout(() => {
+        // Call addAllToBank but pass our stable local values explicitly
+        addAllToBank(localExamType, localExamBoard, localSubject, localTopic);
+      }, 500);
+    } catch (error) {
+      console.error("Error in handleAddAllCards:", error);
+      setError(`Error preparing to add cards: ${error.message}`);
+      setPendingOperations(prev => ({ ...prev, addToBank: false }));
+    }
   };
 
   // Modal to show successfully added cards
@@ -1656,6 +1874,45 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     }
   };
 
+  // Add a function to reset state after card operations to fix initialization screen issue
+  const resetAfterCardOperation = () => {
+    // This function helps recover from initialization screen issues
+    // by resetting flags after card operations
+    console.log(`[${new Date().toISOString()}] Resetting card operation state flags`);
+    
+    // Clear all pending operations
+    setPendingOperations({
+      save: false,
+      refresh: false,
+      addToBank: false,
+      transition: false
+    });
+    
+    // Reset generating flag if it's stuck
+    setIsGenerating(false);
+    
+    // Clear any error messages
+    setError(null);
+  };
+  
+  // Effect to auto-reset after successful card operations
+  useEffect(() => {
+    // If cards have been added and we're still showing an initialization screen,
+    // reset the state to recover
+    const addedCards = generatedCards.filter(card => card.added).length;
+    
+    if (addedCards > 0 && isGenerating && currentStep === 7) {
+      console.log(`[${new Date().toISOString()}] Auto-recovery: Cards added but still showing initialization screen`);
+      
+      // Use a timeout to give any in-progress operations time to complete
+      const timer = setTimeout(() => {
+        resetAfterCardOperation();
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [generatedCards, isGenerating, currentStep]);
+  
   // Render step content based on current step
   const renderStepContent = () => {
     switch (currentStep) {
@@ -2387,8 +2644,8 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     );
   };
 
-  // Update the addAllToBank function with improved error handling and sequencing
-  const addAllToBank = async () => {
+  // Enhanced addAllToBank function that accepts stable values as parameters
+  const addAllToBank = async (stableExamType, stableExamBoard, stableSubject, stableTopic) => {
     // Return early if already processing an add to bank operation
     if (pendingOperations.addToBank) {
       console.log("Add to bank operation already in progress, ignoring duplicate request");
@@ -2398,6 +2655,21 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     // Mark add to bank as in progress
     setPendingOperations(prev => ({ ...prev, addToBank: true }));
     setIsGenerating(true);
+    
+    // CRITICAL: Ensure we have stable values - use parameters if provided, otherwise use fallbacks
+    // This is the key to fixing the metadata persistence issue
+    const localExamType = stableExamType || formData.examType || examType || "General";
+    const localExamBoard = stableExamBoard || formData.examBoard || examBoard || "General";
+    const localSubject = stableSubject || formData.subject || formData.newSubject || initialSubject || "General";
+    const localTopic = stableTopic || formData.topic || formData.newTopic || initialTopic || "General";
+    
+    // Log that we're using stable values
+    debugLog("Starting addAllToBank with stable metadata", {
+      localExamType,
+      localExamBoard,
+      localSubject,
+      localTopic
+    });
     
     try {
       // Get cards that haven't been added yet
@@ -2432,28 +2704,23 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
       // Get the selected topic ID if available
       const topicId = selectedTopic ? selectedTopic.id : null;
       console.log("Adding all cards with topicId:", topicId);
-      console.log("Cards will have examType:", formData.examType, "and examBoard:", formData.examBoard);
+      console.log("Cards will have examType:", localExamType, "and examBoard:", localExamBoard);
       
       // Ensure all cards have proper metadata
       const enrichedCards = unadded.map(card => {
         // Get the correct topic ID - either selected or from card
         const finalTopicId = topicId || card.topicId || "";
         
-        // Force use of local variables instead of relying on passed props
-        // This ensures these values are used even if form state changes
-        const forcedExamBoard = formData.examBoard;
-        const forcedExamType = formData.examType;
-
         // Log explicit values for debugging
-        console.log(`Enriching card with forced values - examType: ${forcedExamType}, examBoard: ${forcedExamBoard}`);
+        console.log(`Enriching card with stable values - examType: ${localExamType}, examBoard: ${localExamBoard}`);
         
-        // Create enriched card with proper metadata - explicitly use local variables
-        return {
+        // Create enriched card with proper metadata - CRITICAL: use stable local variables ONLY
+        const enrichedCard = {
           ...card,
-          examBoard: forcedExamBoard || card.examBoard || examBoard || "General",
-          examType: forcedExamType || card.examType || examType || "Course",
-          subject: card.subject || formData.subject || initialSubject || "General",
-          topic: card.topic || formData.topic || initialTopic || "General",
+          examBoard: localExamBoard, // Simplified - always use our stable value
+          examType: localExamType,   // Simplified - always use our stable value
+          subject: card.subject || localSubject,
+          topic: card.topic || localTopic,
           topicId: finalTopicId,
           created: new Date().toISOString(),
           updated: new Date().toISOString(),
@@ -2461,6 +2728,26 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
           nextReviewDate: new Date().toISOString(),
           boxNum: 1
         };
+        
+        // Double-check essential metadata is present
+        if (!enrichedCard.examType || enrichedCard.examType === "undefined") {
+          console.warn(`Fixed missing examType on card ${enrichedCard.id}`);
+          enrichedCard.examType = localExamType;
+        }
+        if (!enrichedCard.examBoard || enrichedCard.examBoard === "undefined") {
+          console.warn(`Fixed missing examBoard on card ${enrichedCard.id}`);
+          enrichedCard.examBoard = localExamBoard;
+        }
+        
+        // For multiple choice cards, ensure options are preserved
+        if (enrichedCard.questionType === 'multiple_choice') {
+          if (!enrichedCard.savedOptions && enrichedCard.options) {
+            enrichedCard.savedOptions = [...enrichedCard.options];
+            console.log(`Added savedOptions backup for multiple choice card ${enrichedCard.id}`);
+          }
+        }
+        
+        return enrichedCard;
       });
       
       // Try local callback first
