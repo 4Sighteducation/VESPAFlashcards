@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -241,124 +241,101 @@ function App() {
     }
   }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics]);
 
-  // Save data to Knack - depends on saveToLocalStorage and showStatus
+  // Update the saveData function to avoid multiple concurrent saves
   const saveData = useCallback(() => {
     if (!auth) {
-      console.log("[Save] No auth data, cannot save to Knack");
+      console.log("[Save] No authentication available, saving locally only");
+      saveToLocalStorage();
+      setIsSaving(false);
       return;
     }
 
-    setIsSaving(true);
-    console.log("[Save] Starting save operation...");
-
-    try {
-      // Always save to localStorage as fallback
-      console.log("[Save] Saving to localStorage first");
-      saveToLocalStorage();
-      
-      // Send data to parent window for saving to Knack
-      if (window.parent !== window) {
-        console.log("[Save] Preparing data for Knack integration");
-        
-        // Get the user info for saving
-        const userInfo = getUserInfo();
-        
-        // Extract the user role directly from auth
-        const userRole = auth.role || "";
-        
-        // Get VESPA Customer info - this should be the school name
-        const vespaCustomer = cleanHtmlTags(userInfo.school || auth.field_122 || "");
-        
-        // Get tutor information - clean any HTML tags and handle undefined values
-        const tutorInfo = cleanHtmlTags(userInfo.tutor || "");
-        
-        // Get user email for the connection fields
-        const userEmail = userInfo.email || auth.email || "";
-        
-        // Prepare additional fields for Object_102
-        const additionalFields = {
-          field_3029: userInfo.name || "",                  // User Name
-          field_3008: vespaCustomer,                        // VESPA Customer (school/educational establishment)
-          field_2956: userEmail,                            // User Account Email
-          field_3009: tutorInfo,                            // User "Tutor"
-          // Add additional fields for student-specific data if needed
-          field_565: userInfo.tutorGroup || "",             // Group (Tutor Group)
-          field_548: userInfo.yearGroup || "",              // Year Group
-          field_73: userRole                                // User Role
-        };
-        
-        // Ensure data is serializable by running it through JSON.stringify + JSON.parse
-        // This prevents circular references and other serialization issues
-        const safeSerializeData = (data) => {
-          try {
-            return JSON.parse(JSON.stringify(data));
-          } catch (e) {
-            console.error("[Save] Serialization error:", e);
-            // Try to clean the data manually
-            return {
-              ...data,
-              _cleaned: true
-            };
-          }
-        };
-        
-        // Prepare the data payload for Knack
-        const safeData = {
-          recordId: recordId,
-          cards: safeSerializeData(allCards),
-          colorMapping: safeSerializeData(subjectColorMapping), 
-          spacedRepetition: safeSerializeData(spacedRepetitionData),
-          userTopics: safeSerializeData(userTopics),
-          topicLists: safeSerializeData(topicLists),
-          topicMetadata: safeSerializeData(topicMetadata),
-          preserveFields: true,
-          additionalFields: additionalFields
-        };
-        
-        console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${recordId})`);
-        
-        // Send save message to parent window
-        window.parent.postMessage(
-          {
-            type: "SAVE_DATA",
-            data: safeData
-          },
-          "*"
-        );
-
-        console.log("[Save] Message sent to parent window");
-        showStatus("Saving your flashcards...");
-      } else {
-        // If we're in standalone mode, mark as saved immediately
-        console.log("[Save] Running in standalone mode");
-        setIsSaving(false);
-        showStatus("Saved to browser storage");
-      }
-    } catch (error) {
-      // Log detailed error information
-      console.error("[Save] Error details:", {
-        message: error.message,
-        stack: error.stack,
-        cards: allCards?.length || 0,
-        auth: !!auth,
-        recordId: recordId || 'none'
-      });
-      
-      setIsSaving(false);
-      showStatus("Error saving data - check console for details");
-      
-      // Attempt emergency local save
-      try {
-        localStorage.setItem('flashcards_emergency', JSON.stringify({
-          timestamp: new Date().toISOString(),
-          cards: allCards
-        }));
-        console.log("[Save] Emergency local backup created");
-      } catch (backupError) {
-        console.error("[Save] Even emergency backup failed:", backupError);
-      }
+    // Prevent multiple save operations
+    if (isSaving) {
+      console.log("[Save] Save already in progress, skipping this request");
+      showStatus("Save in progress...");
+      return;
     }
-  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, showStatus, saveToLocalStorage, recordId, getUserInfo]);
+
+    console.log("[Save] Starting save operation...");
+    setIsSaving(true);
+    
+    // Always save to localStorage first as a backup
+    console.log("[Save] Saving to localStorage first");
+    saveToLocalStorage();
+    
+    // If we're in an iframe, send data to parent window
+    if (window.parent !== window) {
+      console.log("[Save] Preparing data for Knack integration");
+      
+      // Get recordId safely
+      const recordId = auth?.recordId || window.recordId;
+      
+      if (!recordId) {
+        console.error("[Save] No record ID available, cannot save to Knack");
+        setIsSaving(false);
+        showStatus("Error: Missing record ID for save");
+        return;
+      }
+      
+      // Ensure data is serializable by running it through JSON.stringify + JSON.parse
+      // This prevents circular references and other serialization issues
+      const safeSerializeData = (data) => {
+        try {
+          return JSON.parse(JSON.stringify(data));
+        } catch (e) {
+          console.error("[Save] Serialization error:", e);
+          // Try to clean the data manually
+          return {
+            ...data,
+            _cleaned: true
+          };
+        }
+      };
+      
+      // Prepare the data payload for Knack
+      const safeData = {
+        recordId: recordId,
+        cards: safeSerializeData(allCards),
+        colorMapping: safeSerializeData(subjectColorMapping), 
+        spacedRepetition: safeSerializeData(spacedRepetitionData),
+        userTopics: safeSerializeData(userTopics),
+        topicLists: safeSerializeData(topicLists),
+        topicMetadata: safeSerializeData(topicMetadata),
+        preserveFields: true,
+        additionalFields: additionalFields
+      };
+      
+      console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${recordId})`);
+      
+      // Add a timeout to clear the saving state if no response is received
+      const saveTimeout = setTimeout(() => {
+        console.log("[Save] No save response received within timeout, resetting save state");
+        setIsSaving(false);
+        showStatus("Save status unknown - check your data");
+      }, 15000); // 15 second timeout
+      
+      // Store the timeout ID so we can clear it if we get a response
+      window.currentSaveTimeout = saveTimeout;
+      
+      // Send save message to parent window
+      window.parent.postMessage(
+        {
+          type: "SAVE_DATA",
+          data: safeData
+        },
+        "*"
+      );
+
+      console.log("[Save] Message sent to parent window");
+      showStatus("Saving your flashcards...");
+    } else {
+      // If we're in standalone mode, mark as saved immediately
+      console.log("[Save] Running in standalone mode");
+      setIsSaving(false);
+      showStatus("Saved to browser storage");
+    }
+  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, additionalFields, isSaving, saveToLocalStorage, showStatus]);
 
   // Generate a random vibrant color
   const getRandomColor = useCallback(() => {
@@ -1203,10 +1180,45 @@ function App() {
   
   useEffect(() => {
     // Prevent duplicate message sending
-    if (readyMessageSentRef.current) return;
+    let hasReceivedUserInfo = false;
     
-    // Store a timestamp when we send the ready message
-    const initTimestamp = new Date().getTime();
+    // Function to handle new verification messages
+    const handleVerificationMessage = (event) => {
+      const { type, success, error, reason } = event.data;
+      
+      console.log(`[Verification] Received ${type}`, event.data);
+      
+      switch (type) {
+        case 'VERIFICATION_COMPLETE':
+          // Clear any save timeouts
+          if (window.currentSaveTimeout) {
+            clearTimeout(window.currentSaveTimeout);
+            window.currentSaveTimeout = null;
+          }
+          
+          // Handle verification result
+          if (success) {
+            showStatus("Save verified successfully");
+          } else {
+            showStatus("Save completed, verification pending");
+          }
+          break;
+          
+        case 'VERIFICATION_SKIPPED':
+          // Just log the reason
+          console.log(`[Verification] Skipped: ${reason}`);
+          break;
+          
+        case 'VERIFICATION_FAILED':
+          console.error(`[Verification] Failed: ${error}`);
+          showStatus("Warning: Save verification failed");
+          break;
+          
+        default:
+          // Unhandled verification message
+          console.log(`[Verification] Unhandled message type: ${type}`);
+      }
+    };
     
     const handleMessage = (event) => {
       // Avoid logging every message to reduce console spam
@@ -1350,6 +1362,13 @@ function App() {
 
           case "SAVE_RESULT":
             console.log("[Save Result] Received:", event.data.success);
+            
+            // Clear any save timeouts
+            if (window.currentSaveTimeout) {
+              clearTimeout(window.currentSaveTimeout);
+              window.currentSaveTimeout = null;
+            }
+            
             setIsSaving(false);
             if (event.data.success) {
               showStatus("Saved successfully!");
@@ -1518,13 +1537,25 @@ function App() {
             // Data save has been queued on the server
             console.log("[Message Handler] Save operation queued");
             
-            // Make sure loading state is cleared
-            setLoading(false);
-            setLoadingMessage("");
+            // Don't reset the saving state - keep it active
+            // since we're still in the save process
             
-            showStatus("Your flashcards are being saved...");
+            showStatus("Your flashcards are being saved (queued)...");
             break;
 
+          case "SAVE_OPERATION_FAILED":
+            console.error("[Message Handler] Save operation failed:", event.data.error);
+            
+            // Clear any save timeouts
+            if (window.currentSaveTimeout) {
+              clearTimeout(window.currentSaveTimeout);
+              window.currentSaveTimeout = null;
+            }
+            
+            setIsSaving(false);
+            showStatus("Error saving data: " + (event.data.error || "Unknown error"));
+            break;
+            
           case "KNACK_DATA":
             console.log("Received data from Knack:", event.data);
             
@@ -1608,6 +1639,12 @@ function App() {
                 console.warn("[Token] Token refresh could not be initiated");
               }
             });
+            break;
+
+          case "VERIFICATION_COMPLETE":
+          case "VERIFICATION_SKIPPED":
+          case "VERIFICATION_FAILED":
+            handleVerificationMessage(event);
             break;
 
           default:
