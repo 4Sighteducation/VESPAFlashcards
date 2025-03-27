@@ -1529,7 +1529,8 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
               window.removeEventListener('message', messageHandler);
               window.tokenRefreshInProgress = false;
               console.log(`[${new Date().toISOString()}] Token refresh timed out`);
-            resolve(false);
+              resolve(false);
+            }
           }, 3000);
         });
       }
