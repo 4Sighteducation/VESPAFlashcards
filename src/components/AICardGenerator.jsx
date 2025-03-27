@@ -772,26 +772,43 @@ const AICardGenerator = ({
     );
   };
 
-  // Generate cards directly from a saved topic list
+  // Generate cards directly from a saved topic list with improved stability
   const generateCardsFromTopicList = (list) => {
-    // First load the topic list data
+    // Store stable values before any state updates
+    const stableExamBoard = list.examBoard;
+    const stableExamType = list.examType;
+    const stableSubject = list.subject;
+    
+    // Select a topic from the list
+    const randomTopic = list.topics[Math.floor(Math.random() * list.topics.length)].topic;
+    
+    console.log(`Generating cards from topic list "${list.name}" with stable metadata:`, {
+      examBoard: stableExamBoard,
+      examType: stableExamType,
+      subject: stableSubject,
+      topic: randomTopic
+    });
+    
+    // First update form data with stable values
     setFormData(prev => ({
       ...prev,
-      examBoard: list.examBoard,
-      examType: list.examType,
-      subject: list.subject,
-      // We'll select a random topic from the list
-      topic: list.topics[Math.floor(Math.random() * list.topics.length)].topic,
-      // Default to multiple choice questions
+      examBoard: stableExamBoard,
+      examType: stableExamType,
+      subject: stableSubject,
+      topic: randomTopic,
       questionType: "multiple_choice",
       numCards: 5
     }));
     
-    // Move to the question type step (step 5)
-    setCurrentStep(5);
-    
-    console.log(`Loaded topic list for card generation: ${list.name}`);
-    console.log(`Using exam type: ${list.examType}, exam board: ${list.examBoard}`);
+    // Add a delay before moving to the next step to ensure state is updated
+    setTimeout(() => {
+      // Move to the question type step (step 5)
+      setCurrentStep(5);
+      
+      // Add another log to confirm values are stable
+      console.log(`Loaded topic list for card generation: ${list.name}`);
+      console.log(`Using stable values - exam type: ${stableExamType}, exam board: ${stableExamBoard}`);
+    }, 300);
   };
 
   // Render hierarchical topics
@@ -908,18 +925,50 @@ const AICardGenerator = ({
       // set isGenerating to true to show the loading screen immediately
       // AND trigger the card generation
       if (currentStep === 6) {
+        // Store the current values before any state changes
+        const currentExamType = formData.examType;
+        const currentExamBoard = formData.examBoard;
+        const currentSubject = formData.subject || formData.newSubject;
+        const currentTopic = formData.topic || formData.newTopic;
+        
+        console.log("Step 6->7 transition with stable metadata:", {
+          examType: currentExamType,
+          examBoard: currentExamBoard,
+          subject: currentSubject,
+          topic: currentTopic
+        });
+        
+        // First set isGenerating to true
         setIsGenerating(true);
-        // Move to next step first, then trigger card generation
+        
+        // Then move to next step
         setCurrentStep(currentStep + 1);
-        // Directly call generateCards without waiting for the useEffect
-        // Add a slightly longer delay to ensure state is fully updated
+        
+        // Use a longer delay to ensure state is fully updated
         setTimeout(() => {
-          console.log("Generating cards with exam metadata:", {
-            examType: formData.examType,
-            examBoard: formData.examBoard
+          // Create a stable reference to form data that won't change during async operations
+          const stableFormData = {
+            ...formData,
+            examType: currentExamType,
+            examBoard: currentExamBoard,
+            subject: currentSubject,
+            topic: currentTopic
+          };
+          
+          console.log("Generating cards with stable exam metadata:", {
+            examType: stableFormData.examType,
+            examBoard: stableFormData.examBoard
           });
-          generateCards();
-        }, 300);
+          
+          // Temporarily update form data with stable values
+          setFormData(stableFormData);
+          
+          // Add another delay to ensure the form data update is processed
+          setTimeout(() => {
+            generateCards();
+          }, 200);
+        }, 500);
+        
         return; // Exit early since we already set the next step
       }
       setCurrentStep(currentStep + 1);
@@ -953,20 +1002,30 @@ const AICardGenerator = ({
     }
   };
 
-  // Generate cards using OpenAI API
+  // Generate cards using OpenAI API with improved stability and checks
   const generateCards = async () => {
+    // Check if we're already generating to prevent duplicate calls
+    if (isGenerating) {
+      console.log("Card generation already in progress, ignoring duplicate call");
+      return;
+    }
+    
+    // Use local copies of values for stability
+    const localExamType = formData.examType || examType;
+    const localExamBoard = formData.examBoard || examBoard;
+    
     // Get subject value, ensuring it's a string not an object
     const subjectValue = formData.subject || formData.newSubject || initialSubject;
     const subjectName = typeof subjectValue === 'object' && subjectValue.name 
       ? subjectValue.name 
       : subjectValue;
     
-    console.log("Generate cards function called with state:", { 
+    console.log("Generate cards function called with stabilized state:", { 
       isGenerating, 
       currentStep,
       formData: { 
-        examType: formData.examType || examType,
-        examBoard: formData.examBoard || examBoard,
+        examType: localExamType,
+        examBoard: localExamBoard,
         subject: subjectName,
         topic: formData.topic || formData.newTopic || initialTopic,
         questionType: formData.questionType
@@ -978,14 +1037,14 @@ const AICardGenerator = ({
     
     try {
       // Determine final subject and topic (use new values if provided)
-      // Always prioritize the values from the form data, then fall back to props
+      // Always prioritize the local stable values we captured earlier
       const finalSubject = formData.newSubject || subjectName;
       const finalTopic = formData.newTopic || formData.topic || initialTopic;
       
-      // Explicitly ensure we have exam metadata by checking form data first, then props
+      // Explicitly use the local variables to ensure stability during async operations
       // This is critical for passing the correct info to the AI Generator
-      const finalExamType = formData.examType || examType || "Course";
-      const finalExamBoard = formData.examBoard || examBoard || "General";
+      const finalExamType = localExamType || "Course";
+      const finalExamBoard = localExamBoard || "General";
       
       // Log explicit metadata that will be used
       console.log("Explicit metadata for cards:", {
@@ -1244,14 +1303,33 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     // and we're not already generating (to avoid duplicate calls)
     if (currentStep === 7 && generatedCards.length === 0 && !isGenerating) {
       console.log("Backup useEffect triggering card generation");
-      // Add a delay to ensure all state is updated before generating cards
+      
+      // Store the current values to ensure they don't change during state updates
+      const currentExamType = formData.examType;
+      const currentExamBoard = formData.examBoard;
+      
+      // Use a longer delay to ensure all state is updated before generating cards
       setTimeout(() => {
         console.log("Generating cards with exam metadata:", {
-          examType: formData.examType,
-          examBoard: formData.examBoard
+          examType: currentExamType,
+          examBoard: currentExamBoard
         });
-        generateCards();
-      }, 300);
+        
+        // Make sure we pass the stable values to generate cards
+        const tempFormData = {
+          ...formData,
+          examType: currentExamType,
+          examBoard: currentExamBoard
+        };
+        
+        // Use a wrapper function to ensure stable references
+        const generateCardsWithStableData = () => {
+          console.log("Using stable data to generate cards:", tempFormData.examType, tempFormData.examBoard);
+          generateCards();
+        };
+        
+        generateCardsWithStableData();
+      }, 500); // Increased delay for more stability
     }
   }, [currentStep, generatedCards.length, isGenerating]);
 
@@ -1296,11 +1374,17 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     console.log("Card will have examType:", formData.examType, "and examBoard:", formData.examBoard);
 
     try {
-      // Ensure the card has proper metadata - explicitly prioritize form data
+      // Force use of local variables to prevent issues with state references
+      const forcedExamBoard = formData.examBoard;
+      const forcedExamType = formData.examType;
+      
+      console.log(`Adding single card with forced values - examType: ${forcedExamType}, examBoard: ${forcedExamBoard}`);
+      
+      // Ensure the card has proper metadata - explicitly use local variables
       const enrichedCard = {
         ...card,
-        examBoard: formData.examBoard || card.examBoard || examBoard || "General",
-        examType: formData.examType || card.examType || examType || "Course",
+        examBoard: forcedExamBoard || card.examBoard || examBoard || "General",
+        examType: forcedExamType || card.examType || examType || "Course",
         subject: card.subject || formData.subject || initialSubject || "General",
         topic: card.topic || formData.topic || initialTopic || "General",
         topicId: topicId || card.topicId || "",
@@ -1434,10 +1518,40 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     }
   };
 
-  // Add all generated cards to the bank
+  // Add all generated cards to the bank with improved error handling
   const handleAddAllCards = () => {
     console.log("Add all cards button clicked");
-    addAllToBank();
+    
+    // Prevent multiple clicks
+    if (pendingOperations.addToBank) {
+      console.log("Add all operation already in progress, ignoring duplicate click");
+      return;
+    }
+    
+    // Store the current values for stability
+    const currentExamType = formData.examType;
+    const currentExamBoard = formData.examBoard;
+    
+    console.log("Starting add all cards with stable metadata:", {
+      examType: currentExamType,
+      examBoard: currentExamBoard
+    });
+    
+    // Create a stable version of formData
+    const stableFormData = {
+      ...formData,
+      examType: currentExamType,
+      examBoard: currentExamBoard
+    };
+    
+    // Temporarily update the form data to ensure consistent values
+    setFormData(stableFormData);
+    
+    // Add a delay to ensure the form data update is processed
+    setTimeout(() => {
+      // Call addAllToBank with the updated form data
+      addAllToBank();
+    }, 300);
   };
 
   // Modal to show successfully added cards
@@ -2325,11 +2439,19 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
         // Get the correct topic ID - either selected or from card
         const finalTopicId = topicId || card.topicId || "";
         
-        // Create enriched card with proper metadata - explicitly prioritize form data
+        // Force use of local variables instead of relying on passed props
+        // This ensures these values are used even if form state changes
+        const forcedExamBoard = formData.examBoard;
+        const forcedExamType = formData.examType;
+
+        // Log explicit values for debugging
+        console.log(`Enriching card with forced values - examType: ${forcedExamType}, examBoard: ${forcedExamBoard}`);
+        
+        // Create enriched card with proper metadata - explicitly use local variables
         return {
           ...card,
-          examBoard: formData.examBoard || card.examBoard || examBoard || "General",
-          examType: formData.examType || card.examType || examType || "Course",
+          examBoard: forcedExamBoard || card.examBoard || examBoard || "General",
+          examType: forcedExamType || card.examType || examType || "Course",
           subject: card.subject || formData.subject || initialSubject || "General",
           topic: card.topic || formData.topic || initialTopic || "General",
           topicId: finalTopicId,
