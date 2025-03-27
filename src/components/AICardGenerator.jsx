@@ -1437,42 +1437,54 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     return text.replace(/```json\s*/g, "").replace(/```/g, "").trim();
   };
 
-  // Enhanced helper function to request token refresh with improved reliability
+  // Enhanced helper function to request token refresh with improved reliability and retry logic
   const requestTokenRefresh = async () => {
     console.log(`[${new Date().toISOString()}] AICardGenerator requesting token refresh`);
     
-    // Create a tracking variable to avoid multiple simultaneous refresh requests
-    if (window.tokenRefreshInProgress) {
+    // Global tracking variable to prevent duplicate requests across components
+    if (!window.tokenRefreshInProgress) {
+      window.tokenRefreshInProgress = true;
+    } else {
       console.log("Token refresh already in progress, waiting for completion");
-      // Wait for existing refresh to complete
+      // Wait for existing refresh to complete with improved reliability
       return new Promise(resolve => {
+        let attempts = 0;
+        const maxAttempts = 10; // More attempts for reliability
+        
         const checkInterval = setInterval(() => {
+          attempts++;
           if (!window.tokenRefreshInProgress) {
             clearInterval(checkInterval);
+            console.log(`[${new Date().toISOString()}] Existing token refresh completed`);
             resolve(true);
           }
-        }, 300);
-        
-        // Safety timeout in case something goes wrong
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          resolve(false);
-        }, 5000);
+          
+          if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            // Reset the flag if we're giving up waiting
+            window.tokenRefreshInProgress = false;
+            console.log(`[${new Date().toISOString()}] Timed out waiting for existing token refresh`);
+            resolve(false);
+          }
+        }, 500); // Longer interval for less CPU usage
       });
     }
     
-    // Mark refresh as in progress
-    window.tokenRefreshInProgress = true;
-    
     try {
       if (window.parent && window.parent !== window) {
-        // Create a more robust system with message acknowledgment
+        // Create a more robust system with message acknowledgment and retries
         return new Promise((resolve) => {
+          let receivedResponse = false;
+          
           // Function to handle token refresh response
           const messageHandler = (event) => {
             if (event.data && 
                 (event.data.type === "AUTH_REFRESH" || 
                  event.data.type === "TOKEN_REFRESH_RESULT")) {
+              // Prevent duplicate handling
+              if (receivedResponse) return;
+              receivedResponse = true;
+              
               // Remove listener once we get a response
               window.removeEventListener('message', messageHandler);
               window.tokenRefreshInProgress = false;
@@ -1485,18 +1497,38 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
           // Add listener for response
           window.addEventListener('message', messageHandler);
           
-          // Send a message to parent requesting token refresh
-          window.parent.postMessage({ 
-            type: "REQUEST_TOKEN_REFRESH", 
-            timestamp: new Date().toISOString(),
-            source: "AICardGenerator"
-          }, "*");
+          // Function to send refresh request with retry capability
+          const sendRefreshRequest = (retryCount = 0) => {
+            // Send a message to parent requesting token refresh
+            window.parent.postMessage({ 
+              type: "REQUEST_TOKEN_REFRESH", 
+              timestamp: new Date().toISOString(),
+              source: "AICardGenerator",
+              retryCount
+            }, "*");
+            
+            console.log(`[${new Date().toISOString()}] Sent token refresh request (attempt ${retryCount + 1})`);
+          };
+          
+          // Send initial request
+          sendRefreshRequest();
+          
+          // Add retry logic - try 3 more times with increasing delays
+          for (let i = 1; i <= 3; i++) {
+            setTimeout(() => {
+              // Only retry if we haven't received a response yet
+              if (!receivedResponse) {
+                sendRefreshRequest(i);
+              }
+            }, 1000 * i); // Progressive backoff: 1s, 2s, 3s
+          }
           
           // Set a timeout to ensure we don't wait forever
           setTimeout(() => {
-            window.removeEventListener('message', messageHandler);
-            window.tokenRefreshInProgress = false;
-            console.log(`[${new Date().toISOString()}] Token refresh timed out`);
+            if (!receivedResponse) {
+              window.removeEventListener('message', messageHandler);
+              window.tokenRefreshInProgress = false;
+              console.log(`[${new Date().toISOString()}] Token refresh timed out`);
             resolve(false);
           }, 3000);
         });
@@ -1510,7 +1542,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     return Promise.resolve(false);
   };
 
-  // Enhanced handleAddCard function with improved error handling and stable metadata
+  // Completely enhanced handleAddCard function with improved error handling and stable metadata
   const handleAddCard = (card) => {
     // Prevent adding card if already in progress
     if (pendingOperations.addToBank) {
@@ -1541,6 +1573,10 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     const localSubject = formData.subject || formData.newSubject || initialSubject || "General";
     const localTopic = formData.topic || formData.newTopic || initialTopic || "General";
     
+    // Additional values for communication
+    const recordIdToUse = recordId || (typeof auth === 'object' && auth.recordId ? auth.recordId : null) || window.recordId || '';
+    const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
+    
     // Log what we're doing with explicit metadata
     debugLog("Adding card with metadata", {
       topicId,
@@ -1548,7 +1584,9 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
       examBoard: localExamBoard,
       subject: localSubject,
       topic: localTopic,
-      cardId: card.id
+      cardId: card.id,
+      recordId: recordIdToUse,
+      userId: userIdToUse
     });
 
     try {      
@@ -1567,7 +1605,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
         boxNum: 1
       };
       
-      // Double-check essential metadata is present
+      // Double-check essential metadata is present and correctly formatted
       if (!enrichedCard.examType || enrichedCard.examType === "undefined") {
         console.warn(`Fixed missing examType on card ${enrichedCard.id}`);
         enrichedCard.examType = localExamType;
@@ -1576,13 +1614,35 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
         console.warn(`Fixed missing examBoard on card ${enrichedCard.id}`);
         enrichedCard.examBoard = localExamBoard;
       }
+      if (!enrichedCard.subject || enrichedCard.subject === "undefined") {
+        console.warn(`Fixed missing subject on card ${enrichedCard.id}`);
+        enrichedCard.subject = localSubject;
+      }
+      if (!enrichedCard.topic || enrichedCard.topic === "undefined") {
+        console.warn(`Fixed missing topic on card ${enrichedCard.id}`);
+        enrichedCard.topic = localTopic;
+      }
       
       // For multiple choice cards, ensure options are preserved
       if (enrichedCard.questionType === 'multiple_choice') {
         if (!enrichedCard.savedOptions && enrichedCard.options) {
           enrichedCard.savedOptions = [...enrichedCard.options];
           console.log(`Added savedOptions backup for multiple choice card ${enrichedCard.id}`);
+        } else if (!enrichedCard.options && enrichedCard.savedOptions) {
+          enrichedCard.options = [...enrichedCard.savedOptions];
+          console.log(`Restored options from savedOptions for card ${enrichedCard.id}`);
         }
+      }
+      
+      // Fix any object type issues - ensure we have consistent types
+      // This is critical for proper serialization
+      if (enrichedCard.questionType === undefined) {
+        enrichedCard.questionType = card.type === 'multiple_choice' ? 'multiple_choice' : 'short_answer';
+      }
+      
+      // Make sure the card has a type field for proper categorization
+      if (!enrichedCard.type || enrichedCard.type === 'multiple_choice' || enrichedCard.type === 'short_answer') {
+        enrichedCard.type = 'card';
       }
       
       // Show success message early to ensure visible feedback
@@ -1612,23 +1672,38 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
       if (window.parent && window.parent.postMessage) {
         // Make sure we have valid auth data
         const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
-        const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
         
         console.log("Adding card via parent window messaging");
+        
+        // Preemptively request token refresh to ensure we have a valid token
+        await requestTokenRefresh();
         
         // Enhanced function to handle sending messages with retry for auth errors
         const sendMessageWithRetry = async (type, data, maxRetries = 3) => {
           for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
-              // Send the message
-              window.parent.postMessage({ 
+              // Create a stable message with timestamp
+              const message = { 
                 type,
-                data,
-                timestamp: new Date().toISOString() 
-              }, "*");
+                data: { ...data, timestamp: new Date().toISOString() },
+                timestamp: new Date().toISOString(),
+                attempt: attempt + 1,
+                source: "AICardGenerator"
+              };
+              
+              // Log what we're sending (without full card data to keep log clean)
+              console.log(`Sending ${type} message (attempt ${attempt + 1})`, {
+                ...message,
+                data: data.cards ? 
+                  { ...data, cards: `[${data.cards.length} cards]` } : 
+                  data
+              });
+              
+              // Send the message
+              window.parent.postMessage(message, "*");
               
               // Wait for a brief period to allow message to be processed
-              await new Promise(resolve => setTimeout(resolve, 300));
+              await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
               
               return true;
             } catch (error) {
@@ -1636,7 +1711,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
                 console.warn(`Error sending ${type} message, attempt ${attempt + 1}/${maxRetries + 1}:`, error);
                 
                 // Longer delay between retries
-                await new Promise(resolve => setTimeout(resolve, 800 * (attempt + 1)));
+                await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
                 
                 // Request token refresh if authentication might be the issue
                 if (error.message && (
@@ -1647,7 +1722,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
                   )) {
                   await requestTokenRefresh();
                   // Wait after token refresh
-                  await new Promise(resolve => setTimeout(resolve, 800));
+                  await new Promise(resolve => setTimeout(resolve, 1000));
                 }
               } else {
                 console.error(`Failed to send ${type} message after ${maxRetries + 1} attempts:`, error);
@@ -1659,43 +1734,88 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
         
         // Sequence of operations with better error handling and longer delays
         const addCardSequence = async () => {
-          // Step 1: Add to bank
+          // Step 1: Add to bank - with improved data structure
           const addSuccess = await sendMessageWithRetry("ADD_TO_BANK", {
             cards: [enrichedCard],
-            recordId: authData?.recordId || window.recordId || "",
+            recordId: recordIdToUse,
             userId: userIdToUse,
-            topicId: topicId || ""
+            topicId: topicId || "",
+            preserveExistingData: true,
+            metadata: {
+              examBoard: localExamBoard,
+              examType: localExamType,
+              subject: localSubject,
+              topic: localTopic
+            }
           });
           
           if (!addSuccess && !localAddSuccess) {
-            setError("Failed to add card to bank. Please try again.");
-            // Mark as no longer processing but not added
-            setGeneratedCards(prev => prev.map(c => 
-              c.id === card.id ? {...c, processing: false} : c
-            ));
-            return;
+            // Try one more attempt with token refresh first
+            await requestTokenRefresh();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const retrySuccess = await sendMessageWithRetry("ADD_TO_BANK", {
+              cards: [enrichedCard],
+              recordId: recordIdToUse,
+              userId: userIdToUse,
+              topicId: topicId || "",
+              preserveExistingData: true,
+              metadata: {
+                examBoard: localExamBoard,
+                examType: localExamType,
+                subject: localSubject,
+                topic: localTopic
+              }
+            });
+            
+            if (!retrySuccess) {
+              setError("Failed to add card to bank after multiple attempts. Please try again.");
+              // Mark as no longer processing but not added
+              setGeneratedCards(prev => prev.map(c => 
+                c.id === card.id ? {...c, processing: false} : c
+              ));
+              return;
+            }
           }
           
-          // Wait longer before triggering save
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          // Wait longer before triggering save to avoid race conditions
+          await new Promise(resolve => setTimeout(resolve, 2000));
           
-          // Step 2: Trigger save
+          // Step 2: Trigger save with explicit record ID
           await sendMessageWithRetry("TRIGGER_SAVE", {
-            recordId: authData?.recordId || window.recordId || ""
+            recordId: recordIdToUse,
+            userId: userIdToUse
           });
           
           // Wait even longer before requesting refresh
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 2500));
           
-          // Step 3: Request refresh
+          // Step 3: Request refresh with explicit record ID
           await sendMessageWithRetry("REQUEST_REFRESH", {
-            recordId: authData?.recordId || window.recordId || ""
+            recordId: recordIdToUse,
+            userId: userIdToUse
+          });
+          
+          // Wait for the refresh to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Step 4: Request updated data to ensure we have the latest state
+          await sendMessageWithRetry("REQUEST_UPDATED_DATA", {
+            recordId: recordIdToUse,
+            userId: userIdToUse  
           });
           
           // Mark the card as added
           setGeneratedCards(prev => prev.map(c => 
             c.id === card.id ? {...c, added: true, processing: false} : c
           ));
+          
+          console.log(`Card ${card.id} successfully added to bank`);
+          
+          // Run reset function after a delay to ensure everything is working properly
+          setTimeout(() => {
+            resetAfterCardOperation();
+          }, 3000);
         };
         
         // Start the sequence
@@ -1706,6 +1826,11 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
           setGeneratedCards(prev => prev.map(c => 
             c.id === card.id ? {...c, processing: false} : c
           ));
+          
+          // Run reset function after error to recover
+          setTimeout(() => {
+            resetAfterCardOperation();
+          }, 2000);
         }).finally(() => {
           // Always reset the pending operation flag when done
           setPendingOperations(prev => ({ ...prev, addToBank: false }));
@@ -1727,6 +1852,11 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
         c.id === card.id ? {...c, processing: false} : c
       ));
       setPendingOperations(prev => ({ ...prev, addToBank: false }));
+      
+      // Run reset function after error to recover
+      setTimeout(() => {
+        resetAfterCardOperation();
+      }, 2000);
     }
   };
 
@@ -2644,7 +2774,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     );
   };
 
-  // Enhanced addAllToBank function that accepts stable values as parameters
+  // Completely enhanced addAllToBank function with comprehensive protection against race conditions
   const addAllToBank = async (stableExamType, stableExamBoard, stableSubject, stableTopic) => {
     // Return early if already processing an add to bank operation
     if (pendingOperations.addToBank) {
@@ -2662,6 +2792,10 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     const localExamBoard = stableExamBoard || formData.examBoard || examBoard || "General";
     const localSubject = stableSubject || formData.subject || formData.newSubject || initialSubject || "General";
     const localTopic = stableTopic || formData.topic || formData.newTopic || initialTopic || "General";
+    
+    // Additional values for communication
+    const recordIdToUse = recordId || (typeof auth === 'object' && auth.recordId ? auth.recordId : null) || window.recordId || '';
+    const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
     
     // Log that we're using stable values
     debugLog("Starting addAllToBank with stable metadata", {

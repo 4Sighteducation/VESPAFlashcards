@@ -4,6 +4,10 @@ function verifyDataSave(recordId, sourceWindow) {
   
   // Wait longer to ensure data has been committed to the database
   setTimeout(function() {
+    // Get a fresh token to avoid 403 errors
+    const currentToken = Knack.getUserToken();
+    console.log(`[${new Date().toISOString()}] Using token for verification: ${currentToken ? 'Available' : 'Missing'}`);
+    
     // Fetch the record to verify the data is there
     $.ajax({
       url: `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records/${recordId}`,
@@ -11,7 +15,7 @@ function verifyDataSave(recordId, sourceWindow) {
       headers: {
         'X-Knack-Application-Id': knackAppId,
         'X-Knack-REST-API-Key': knackApiKey,
-        'Authorization': Knack.getUserToken(),
+        'Authorization': currentToken,
         'Content-Type': 'application/json'
       },
       success: function(response) {
@@ -349,6 +353,62 @@ function ensureOptionsPreserved(cards) {
   return result;
 }
 
+// Main message handler function to centralize all message processing
+function handleMessage(event, sourceWindow) {
+  // Safety check for event data
+  if (!event || !event.data || !event.data.type) {
+    return;
+  }
+  
+  // Extract message type and data
+  const { type, data, timestamp } = event.data;
+  
+  // Log message receipt for debugging
+  console.log(`MESSAGE RECEIVED`, {
+    type,
+    timestamp,
+    hasData: data ? "yes" : "no"
+  });
+  
+  // Process message based on type
+  switch (type) {
+    case "APP_READY":
+      // Handle app ready message
+      console.log(`Flashcard app: React app is ready, sending user info`);
+      // Send user info to app (implementation depends on your system)
+      break;
+      
+    case "REQUEST_TOKEN_REFRESH":
+      // Handle token refresh request
+      console.log(`Flashcard app [${new Date().toISOString()}]: Message from React app: REQUEST_TOKEN_REFRESH`);
+      handleTokenRefresh(event, sourceWindow || event.source);
+      break;
+      
+    case "ADD_TO_BANK":
+      // Handle adding cards to bank
+      console.log(`Flashcard app: Adding cards to bank:`, data);
+      // Process adding cards (implementation depends on your system)
+      break;
+      
+    case "TRIGGER_SAVE":
+      // Handle save trigger
+      console.log(`Flashcard app: Triggered save from React app`);
+      // Process save (implementation depends on your system)
+      break;
+      
+    case "REQUEST_REFRESH":
+      // Handle refresh request
+      console.log(`Flashcard app: Requested refresh`);
+      // Process refresh (implementation depends on your system)
+      break;
+      
+    default:
+      // Log unknown message types
+      console.log(`Flashcard app: Unknown message type: ${type}`);
+      break;
+  }
+}
+
 // Helper function to access TopicCardSyncService
 function getTopicCardSyncService() {
   // If TopicCardSyncService is available in the window object, use it
@@ -471,4 +531,74 @@ function migrateTypeToQuestionType(data) {
   
   // For non-objects, just return as is
   return data;
+}
+
+// Initialize message handlers
+(function initializeMessageHandlers() {
+  console.log(`[${new Date().toISOString()}] Initializing Enhanced Message Handlers`);
+  
+  // Listen for messages from iframe
+  window.addEventListener('message', function(event) {
+    // Process messages using our centralized handler
+    handleMessage(event, event.source);
+  });
+  
+  // Initialize global token refresh status tracking
+  if (window.tokenRefreshInProgress === undefined) {
+    window.tokenRefreshInProgress = false;
+  }
+  
+  // Log successful initialization
+  console.log(`[${new Date().toISOString()}] Message handlers initialized successfully`);
+})();
+
+/**
+ * Handle token refresh requests with proper response
+ * @param {Object} event - Message event
+ * @param {Window} sourceWindow - Source window to send response to
+ */
+function handleTokenRefresh(event, sourceWindow) {
+  console.log(`[${new Date().toISOString()}] Handling token refresh request`);
+  
+  // Get a fresh token from Knack
+  const currentToken = Knack.getUserToken();
+  
+  // Log token status (available/missing) without exposing the actual token
+  console.log(`[${new Date().toISOString()}] Token status: ${currentToken ? 'Available' : 'Missing'}`);
+  
+  // Prepare response data
+  const responseData = {
+    type: 'TOKEN_REFRESH_RESULT',
+    success: !!currentToken,
+    timestamp: new Date().toISOString(),
+    source: 'knack-message-handler.js'
+  };
+  
+  // Send the response back to the source window
+  if (sourceWindow) {
+    console.log(`[${new Date().toISOString()}] Sending token refresh response to source window`);
+    sourceWindow.postMessage(responseData, '*');
+  }
+  
+  // Also broadcast to all iframes in case sourceWindow is not available
+  try {
+    const allIframes = document.querySelectorAll('iframe');
+    if (allIframes.length > 0) {
+      allIframes.forEach(iframe => {
+        if (iframe.contentWindow && iframe.id && iframe.id.includes('flashcard')) {
+          iframe.contentWindow.postMessage(responseData, '*');
+          console.log(`[${new Date().toISOString()}] Sent token refresh response to iframe: ${iframe.id}`);
+        }
+      });
+    }
+  } catch (err) {
+    console.error(`[${new Date().toISOString()}] Error broadcasting token refresh to iframes:`, err);
+  }
+  
+  // Also update the global token refresh status flag if it exists in the parent window
+  if (window.tokenRefreshInProgress !== undefined) {
+    window.tokenRefreshInProgress = false;
+  }
+  
+  return responseData;
 }
