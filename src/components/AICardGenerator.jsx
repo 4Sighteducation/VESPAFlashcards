@@ -2483,6 +2483,35 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     );
   };
 
+  // Add the handleClose function to replace the one that was removed during our previous edits
+  const handleClose = () => {
+    // If we saved topics, request a data refresh
+    if (topicListSaved) {
+      console.log("Topics were saved - triggering data refresh before closing");
+      
+      // Send message to parent window to request latest data
+      if (window.parent && window.parent.postMessage) {
+        window.parent.postMessage({ 
+          type: "REQUEST_REFRESH_DATA",
+          data: {
+            recordId: auth?.recordId || window.recordId
+          }
+        }, "*");
+        
+        // Small delay to allow data to refresh before closing
+        setTimeout(() => {
+          onClose();
+        }, 300);
+      } else {
+        // If can't message parent, just close normally
+        onClose();
+      }
+    } else {
+      // No topics saved, just close normally
+      onClose();
+    }
+  };
+
   return (
     <div className="ai-card-generator">
       <div className="generator-header">
