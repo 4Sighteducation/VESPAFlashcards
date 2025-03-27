@@ -167,16 +167,31 @@ export function safeAddToBank(existingData, newCards) {
     id: card.id || `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
   }));
   
-  // Update topic shells' isEmpty status based on new cards
+  // Group cards by topicId
+  const cardsByTopic = {};
+  processedCards.forEach(card => {
+    if (card.topicId) {
+      if (!cardsByTopic[card.topicId]) {
+        cardsByTopic[card.topicId] = [];
+      }
+      cardsByTopic[card.topicId].push(card);
+    }
+  });
+  
+  // Update topic shells' isEmpty status and cards array based on new cards
   const updatedTopics = existingTopics.map(topic => {
     // Check if any of the new cards belong to this topic
-    const topicCards = processedCards.filter(card => card.topicId === topic.id);
+    const topicCards = cardsByTopic[topic.id] || [];
     
     if (topicCards.length > 0) {
-      // Topic has cards, update its isEmpty property
+      // Add the new card IDs to the topic's cards array
+      const updatedCardIds = [...(topic.cards || []), ...topicCards.map(card => card.id)];
+      
+      // Topic has cards, update its isEmpty property and cards array
       return {
         ...topic,
         isEmpty: false,
+        cards: updatedCardIds,
         updated: new Date().toISOString()
       };
     }
@@ -209,6 +224,19 @@ export function safeAddToBank(existingData, newCards) {
   
   // Add new items to Box 1
   const updatedBox1 = [...box1Cards, ...newBox1Items];
+  
+  // Debug logging to show what we're saving
+  debugLog("SAVING UPDATED DATA", {
+    topicCount: updatedTopics.length,
+    cardCount: updatedCards.length,
+    box1Count: updatedBox1.length,
+    sample: updatedTopics.length > 0 ? 
+      { 
+        topicName: updatedTopics[0].name || updatedTopics[0].topic,
+        isEmpty: updatedTopics[0].isEmpty,
+        cardCount: updatedTopics[0].cards ? updatedTopics[0].cards.length : 0
+      } : null
+  });
   
   // Prepare results
   const result = {
@@ -297,27 +325,40 @@ export function improveTopicAssociations(items) {
     return card;
   });
   
+  // Create a map of existing topic card associations
+  const existingCardsByTopic = {};
+  associatedCards.forEach(card => {
+    if (card.topicId) {
+      if (!existingCardsByTopic[card.topicId]) {
+        existingCardsByTopic[card.topicId] = [];
+      }
+      existingCardsByTopic[card.topicId].push(card.id);
+    }
+  });
+  
   // Update the topic shell card ID lists
   const updatedTopics = topics.map(topic => {
-    const cardIds = newlyAssociatedCards
+    // Get newly associated cards for this topic
+    const newCardIds = newlyAssociatedCards
       .filter(card => card.topicId === topic.id)
       .map(card => card.id);
     
-    if (cardIds.length > 0) {
-      // Add these cards to the topic's card list
-      const existingCardIds = topic.cards || [];
-      const allCardIds = [...new Set([...existingCardIds, ...cardIds])];
-      
-      return {
-        ...topic,
-        cards: allCardIds,
-        isEmpty: allCardIds.length === 0,
-        updated: new Date().toISOString()
-      };
-    }
+    // Get existing associated cards for this topic
+    const existingCardIds = existingCardsByTopic[topic.id] || [];
     
-    // No cards to add
-    return topic;
+    // Combine existing and new card IDs
+    const topicCardIds = [...(topic.cards || []), ...existingCardIds, ...newCardIds];
+    
+    // Remove duplicates
+    const uniqueCardIds = [...new Set(topicCardIds)];
+    
+    // Update topic
+    return {
+      ...topic,
+      cards: uniqueCardIds,
+      isEmpty: uniqueCardIds.length === 0,
+      updated: new Date().toISOString()
+    };
   });
   
   // Combine all items back together
@@ -413,14 +454,14 @@ export function syncTopicLists(userData) {
   // Split existing data
   const { topics: existingTopics, cards: existingCards } = splitByType(cardBankData);
   
-  // Create mappings to check for cards associated with topics
+  // Create mappings of cards by topic ID
   const cardsByTopicId = {};
   existingCards.forEach(card => {
     if (card.topicId) {
       if (!cardsByTopicId[card.topicId]) {
         cardsByTopicId[card.topicId] = [];
       }
-      cardsByTopicId[card.topicId].push(card.id);
+      cardsByTopicId[card.topicId].push(card);
     }
   });
   
@@ -430,18 +471,59 @@ export function syncTopicLists(userData) {
   
   // Update existing topics to preserve their card arrays and isEmpty status
   const updatedExistingTopics = existingTopics.map(topic => {
-    // Check if there are cards for this topic
-    const hasCards = cardsByTopicId[topic.id] && cardsByTopicId[topic.id].length > 0;
+    // Get cards associated with this topic
+    const topicCards = cardsByTopicId[topic.id] || [];
     
+    // Get card IDs
+    const cardIds = topicCards.map(card => card.id);
+    
+    // Update topic with card associations
     return {
       ...topic,
-      // Only set isEmpty to false if we know there are cards
-      isEmpty: hasCards ? false : topic.isEmpty
+      cards: cardIds,
+      isEmpty: cardIds.length === 0,
+      updated: new Date().toISOString()
     };
+  });
+  
+  // Also check if there are any unassociated cards we can match to topics
+  const unassociatedCards = existingCards.filter(card => !card.topicId);
+  
+  // Try to associate cards by topic name
+  unassociatedCards.forEach(card => {
+    if (card.topic) {
+      // Find matching topic by name
+      const matchingTopic = [...updatedExistingTopics, ...newTopics].find(
+        topic => (topic.name === card.topic || topic.topic === card.topic)
+      );
+      
+      if (matchingTopic) {
+        // Update card with topic ID
+        card.topicId = matchingTopic.id;
+        card.updated = new Date().toISOString();
+        
+        // Update topic's cards array and isEmpty flag
+        if (!matchingTopic.cards) matchingTopic.cards = [];
+        matchingTopic.cards.push(card.id);
+        matchingTopic.isEmpty = false;
+        matchingTopic.updated = new Date().toISOString();
+      }
+    }
   });
   
   // Combine all topics and cards
   const combinedItems = [...updatedExistingTopics, ...newTopics, ...existingCards];
+  
+  // Debug log what we're actually saving
+  debugLog("SYNCING TOPIC LISTS", {
+    topicCount: updatedExistingTopics.length + newTopics.length, 
+    cardCount: existingCards.length,
+    sample: updatedExistingTopics.length > 0 ? {
+      topicName: updatedExistingTopics[0].name || updatedExistingTopics[0].topic,
+      isEmpty: updatedExistingTopics[0].isEmpty,
+      cardCount: updatedExistingTopics[0].cards ? updatedExistingTopics[0].cards.length : 0
+    } : null
+  });
   
   // Update the user data
   return {
