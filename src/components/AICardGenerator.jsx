@@ -733,6 +733,7 @@ const AICardGenerator = ({
     setCurrentStep(5);
     
     console.log(`Loaded topic list for card generation: ${list.name}`);
+    console.log(`Using exam type: ${list.examType}, exam board: ${list.examBoard}`);
   };
 
   // Render hierarchical topics
@@ -853,7 +854,14 @@ const AICardGenerator = ({
         // Move to next step first, then trigger card generation
         setCurrentStep(currentStep + 1);
         // Directly call generateCards without waiting for the useEffect
-        setTimeout(() => generateCards(), 100);
+        // Add a slightly longer delay to ensure state is fully updated
+        setTimeout(() => {
+          console.log("Generating cards with exam metadata:", {
+            examType: formData.examType,
+            examBoard: formData.examBoard
+          });
+          generateCards();
+        }, 300);
         return; // Exit early since we already set the next step
       }
       setCurrentStep(currentStep + 1);
@@ -1087,7 +1095,7 @@ Use this format for different question types:
         // Ensure card color is valid - use a default if no color is available
         const ensuredCardColor = cardColor || "#3cb44b";
         
-        // Add standard fields
+        // Add standard fields with explicitly set exam type and board
         const baseCard = {
           id,
           subject: finalSubject,
@@ -1203,7 +1211,9 @@ Use this format for different question types:
     // and we're not already generating (to avoid duplicate calls)
     if (currentStep === 7 && generatedCards.length === 0 && !isGenerating) {
       console.log("Backup useEffect triggering card generation");
-      generateCards();
+      setTimeout(() => {
+        generateCards();
+      }, 300);
     }
   }, [currentStep, generatedCards.length, isGenerating]);
 
@@ -1219,6 +1229,13 @@ Use this format for different question types:
       return;
     }
 
+    // Enhance the card with exam type and board
+    const enhancedCard = {
+      ...card,
+      examType: formData.examType,
+      examBoard: formData.examBoard
+    };
+
     // Mark the card as added
     setGeneratedCards(prev => prev.map(c => 
       c.id === card.id ? {...c, added: true} : c
@@ -1227,7 +1244,7 @@ Use this format for different question types:
     // Show success modal with the added card
     setSuccessModal({
       show: true,
-      addedCards: [card]
+      addedCards: [enhancedCard]
     });
     
     // Auto-hide after 3 seconds
@@ -1238,6 +1255,10 @@ Use this format for different question types:
     // Get the selected topic ID if available
     const topicId = selectedTopic ? selectedTopic.id : null;
     console.log("Adding card with topicId:", topicId);
+    console.log("Card will have examType:", formData.examType, "and examBoard:", formData.examBoard);
+
+    // Call the onAddCard callback with the enhanced card
+    onAddCard(enhancedCard);
 
     // Send message to parent window to add card to bank
     if (window.parent && window.parent.postMessage) {
@@ -1245,19 +1266,19 @@ Use this format for different question types:
       window.parent.postMessage({ 
         type: "ADD_TO_BANK",
         data: {
-          cards: [card],
+          cards: [enhancedCard],
           recordId: auth?.recordId || window.recordId,
           userId: userId, // Include userId for UnifiedDataService
           topicId: topicId // Include the topicId for association
         }
       }, "*");
-      console.log("Added card to bank:", card);
+      console.log("Added card to bank:", enhancedCard);
 
       // Then immediately trigger a save to ensure persistence
       window.parent.postMessage({ 
         type: "TRIGGER_SAVE",
         data: {
-          cards: [card],
+          cards: [enhancedCard],
           recordId: auth?.recordId || window.recordId
         }
       }, "*");
@@ -1275,7 +1296,13 @@ Use this format for different question types:
     
     // Add all unadded cards
     unadded.forEach(card => {
-      onAddCard(card);
+      // Make sure each card has the exam type and board
+      const enhancedCard = {
+        ...card,
+        examType: formData.examType,
+        examBoard: formData.examBoard
+      };
+      onAddCard(enhancedCard);
     });
     
     // Mark all cards as added
@@ -1295,32 +1322,40 @@ Use this format for different question types:
     // Get the selected topic ID if available
     const topicId = selectedTopic ? selectedTopic.id : null;
     console.log("Adding all cards with topicId:", topicId);
+    console.log("Cards will have examType:", formData.examType, "and examBoard:", formData.examBoard);
     
-  // Trigger an explicit save operation to ensure cards are saved to the database
-  // This is important to prevent data loss if the user refreshes the page
-  if (window.parent && window.parent.postMessage) {
+    // Enhance the cards with exam type and board before sending
+    const enhancedCards = unadded.map(card => ({
+      ...card,
+      examType: formData.examType,
+      examBoard: formData.examBoard
+    }));
+    
+    // Trigger an explicit save operation to ensure cards are saved to the database
+    // This is important to prevent data loss if the user refreshes the page
+    if (window.parent && window.parent.postMessage) {
       // First add all cards to the bank, with topic reference if available
-    window.parent.postMessage({ 
-      type: "ADD_TO_BANK",
-      data: {
-        cards: unadded,
+      window.parent.postMessage({ 
+        type: "ADD_TO_BANK",
+        data: {
+          cards: enhancedCards,
           recordId: auth?.recordId || window.recordId,
           userId: userId, // Include userId for UnifiedDataService
           topicId: topicId // Include the topicId for association
-      }
-    }, "*");
-      console.log("Added all cards to bank:", unadded);
+        }
+      }, "*");
+      console.log("Added all cards to bank:", enhancedCards);
       
       // Then immediately trigger a save to ensure persistence
       window.parent.postMessage({ 
         type: "TRIGGER_SAVE",
         data: {
-          cards: unadded,
+          cards: enhancedCards,
           recordId: auth?.recordId || window.recordId
         }
       }, "*");
       console.log("Triggered immediate save after adding all cards");
-  }
+    }
   };
   
   // Modal to show successfully added cards
