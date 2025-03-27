@@ -791,6 +791,7 @@ const AICardGenerator = ({
     setCurrentStep(5);
     
     console.log(`Loaded topic list for card generation: ${list.name}`);
+    console.log(`Using exam type: ${list.examType}, exam board: ${list.examBoard}`);
   };
 
   // Render hierarchical topics
@@ -911,7 +912,14 @@ const AICardGenerator = ({
         // Move to next step first, then trigger card generation
         setCurrentStep(currentStep + 1);
         // Directly call generateCards without waiting for the useEffect
-        setTimeout(() => generateCards(), 100);
+        // Add a slightly longer delay to ensure state is fully updated
+        setTimeout(() => {
+          console.log("Generating cards with exam metadata:", {
+            examType: formData.examType,
+            examBoard: formData.examBoard
+          });
+          generateCards();
+        }, 300);
         return; // Exit early since we already set the next step
       }
       setCurrentStep(currentStep + 1);
@@ -1236,7 +1244,14 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     // and we're not already generating (to avoid duplicate calls)
     if (currentStep === 7 && generatedCards.length === 0 && !isGenerating) {
       console.log("Backup useEffect triggering card generation");
-      generateCards();
+      // Add a delay to ensure all state is updated before generating cards
+      setTimeout(() => {
+        console.log("Generating cards with exam metadata:", {
+          examType: formData.examType,
+          examBoard: formData.examBoard
+        });
+        generateCards();
+      }, 300);
     }
   }, [currentStep, generatedCards.length, isGenerating]);
 
@@ -1278,13 +1293,14 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     // Get the selected topic ID if available
     const topicId = selectedTopic?.id || null;
     console.log("Adding card with topicId:", topicId);
+    console.log("Card will have examType:", formData.examType, "and examBoard:", formData.examBoard);
 
     try {
-      // Ensure the card has proper metadata
+      // Ensure the card has proper metadata - explicitly prioritize form data
       const enrichedCard = {
         ...card,
-        examBoard: card.examBoard || formData.examBoard || examBoard || "General",
-        examType: card.examType || formData.examType || examType || "Course",
+        examBoard: formData.examBoard || card.examBoard || examBoard || "General",
+        examType: formData.examType || card.examType || examType || "Course",
         subject: card.subject || formData.subject || initialSubject || "General",
         topic: card.topic || formData.topic || initialTopic || "General",
         topicId: topicId || card.topicId || "",
@@ -2302,17 +2318,18 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
       // Get the selected topic ID if available
       const topicId = selectedTopic ? selectedTopic.id : null;
       console.log("Adding all cards with topicId:", topicId);
+      console.log("Cards will have examType:", formData.examType, "and examBoard:", formData.examBoard);
       
       // Ensure all cards have proper metadata
       const enrichedCards = unadded.map(card => {
         // Get the correct topic ID - either selected or from card
         const finalTopicId = topicId || card.topicId || "";
         
-        // Create enriched card with proper metadata
+        // Create enriched card with proper metadata - explicitly prioritize form data
         return {
           ...card,
-          examBoard: card.examBoard || formData.examBoard || examBoard || "General",
-          examType: card.examType || formData.examType || examType || "Course",
+          examBoard: formData.examBoard || card.examBoard || examBoard || "General",
+          examType: formData.examType || card.examType || examType || "Course",
           subject: card.subject || formData.subject || initialSubject || "General",
           topic: card.topic || formData.topic || initialTopic || "General",
           topicId: finalTopicId,
