@@ -167,11 +167,29 @@ export function safeAddToBank(existingData, newCards) {
     id: card.id || `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
   }));
   
+  // Update topic shells' isEmpty status based on new cards
+  const updatedTopics = existingTopics.map(topic => {
+    // Check if any of the new cards belong to this topic
+    const topicCards = processedCards.filter(card => card.topicId === topic.id);
+    
+    if (topicCards.length > 0) {
+      // Topic has cards, update its isEmpty property
+      return {
+        ...topic,
+        isEmpty: false,
+        updated: new Date().toISOString()
+      };
+    }
+    
+    // No cards for this topic, leave it unchanged
+    return topic;
+  });
+  
   // Merge keeping both topics and cards
   const updatedCards = [...existingCards, ...processedCards];
   
   // Important: topics come first in the final array for predictable ordering
-  const finalData = [...existingTopics, ...updatedCards];
+  const finalData = [...updatedTopics, ...updatedCards];
   
   // Parse existing Box 1 (field_2986)
   let box1Cards = [];
@@ -395,12 +413,35 @@ export function syncTopicLists(userData) {
   // Split existing data
   const { topics: existingTopics, cards: existingCards } = splitByType(cardBankData);
   
-  // Merge topics, preferring existing ones over new ones
+  // Create mappings to check for cards associated with topics
+  const cardsByTopicId = {};
+  existingCards.forEach(card => {
+    if (card.topicId) {
+      if (!cardsByTopicId[card.topicId]) {
+        cardsByTopicId[card.topicId] = [];
+      }
+      cardsByTopicId[card.topicId].push(card.id);
+    }
+  });
+  
+  // Merge topics, preserving existing ones
   const existingTopicIds = existingTopics.map(t => t.id);
   const newTopics = topicsFromLists.filter(t => !existingTopicIds.includes(t.id));
   
+  // Update existing topics to preserve their card arrays and isEmpty status
+  const updatedExistingTopics = existingTopics.map(topic => {
+    // Check if there are cards for this topic
+    const hasCards = cardsByTopicId[topic.id] && cardsByTopicId[topic.id].length > 0;
+    
+    return {
+      ...topic,
+      // Only set isEmpty to false if we know there are cards
+      isEmpty: hasCards ? false : topic.isEmpty
+    };
+  });
+  
   // Combine all topics and cards
-  const combinedItems = [...existingTopics, ...newTopics, ...existingCards];
+  const combinedItems = [...updatedExistingTopics, ...newTopics, ...existingCards];
   
   // Update the user data
   return {

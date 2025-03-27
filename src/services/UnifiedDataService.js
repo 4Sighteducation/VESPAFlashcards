@@ -831,7 +831,7 @@ export const saveTopicShells = async (topicShells, userId, auth) => {
         type: topic.type || 'topic',
         cards: topic.cards || [],
         isShell: topic.isShell || true,
-        isEmpty: topic.isEmpty || true,
+        isEmpty: topic.isEmpty === false ? false : (topic.isEmpty || true),
         created: topic.created || new Date().toISOString(),
         updated: new Date().toISOString()
       };
