@@ -241,8 +241,88 @@ function App() {
     }
   }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics]);
 
-  // Update the saveData function to avoid multiple concurrent saves
-  const saveData = useCallback(() => {
+  // Add this function to recover the record ID if it gets lost
+  const ensureRecordId = useCallback(async () => {
+    // If we already have a record ID, nothing to do
+    if (recordId) {
+      return recordId;
+    }
+    
+    console.log("[Auth Recovery] Record ID missing, attempting to recover...");
+    
+    // First try to get it from auth object
+    if (auth && auth.recordId) {
+      console.log("[Auth Recovery] Found record ID in auth object:", auth.recordId);
+      return auth.recordId;
+    }
+    
+    // Try to recover from localStorage as a backup
+    try {
+      const storedData = localStorage.getItem('flashcards_auth');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        if (parsedData && parsedData.recordId) {
+          console.log("[Auth Recovery] Recovered record ID from localStorage:", parsedData.recordId);
+          return parsedData.recordId;
+        }
+      }
+    } catch (e) {
+      console.error("[Auth Recovery] Error reading from localStorage:", e);
+    }
+    
+    // If we're in an iframe, request it from the parent
+    if (window.parent !== window) {
+      console.log("[Auth Recovery] Requesting record ID from parent window");
+      
+      // Create a promise that will resolve when we get a response
+      return new Promise((resolve) => {
+        // Function to handle the response
+        const handleRecordIdResponse = (event) => {
+          if (event.data && event.data.type === 'RECORD_ID_RESPONSE' && event.data.recordId) {
+            console.log("[Auth Recovery] Received record ID from parent:", event.data.recordId);
+            
+            // Store the record ID in localStorage for future recovery
+            try {
+              const authData = { recordId: event.data.recordId };
+              localStorage.setItem('flashcards_auth', JSON.stringify(authData));
+            } catch (e) {
+              console.error("[Auth Recovery] Error storing record ID in localStorage:", e);
+            }
+            
+            // Remove the event listener
+            window.removeEventListener('message', handleRecordIdResponse);
+            
+            // Resolve with the record ID
+            resolve(event.data.recordId);
+          }
+        };
+        
+        // Add event listener
+        window.addEventListener('message', handleRecordIdResponse);
+        
+        // Send request to parent
+        window.parent.postMessage({
+          type: 'REQUEST_RECORD_ID',
+          timestamp: new Date().toISOString()
+        }, '*');
+        
+        // Set a timeout to avoid hanging indefinitely
+        setTimeout(() => {
+          window.removeEventListener('message', handleRecordIdResponse);
+          console.error("[Auth Recovery] Timed out waiting for record ID");
+          resolve(null);
+        }, 5000);
+      });
+    }
+    
+    // If all recovery methods fail
+    console.error("[Auth Recovery] Could not recover record ID");
+    return null;
+  }, [recordId, auth]);
+
+  // Modify the saveData function to use the ensureRecordId function
+  const saveData = useCallback(async () => {
+    // Check if we're authenticated
     if (!auth) {
       console.log("[Save] No authentication available, saving locally only");
       saveToLocalStorage();
@@ -268,10 +348,13 @@ function App() {
     if (window.parent !== window) {
       console.log("[Save] Preparing data for Knack integration");
       
-      // Get recordId safely
-      const recordId = auth?.recordId || window.recordId;
+      // Get recordId safely - use the new ensureRecordId function
+      let safeRecordId = recordId;
+      if (!safeRecordId) {
+        safeRecordId = await ensureRecordId();
+      }
       
-      if (!recordId) {
+      if (!safeRecordId) {
         console.error("[Save] No record ID available, cannot save to Knack");
         setIsSaving(false);
         showStatus("Error: Missing record ID for save");
@@ -295,7 +378,7 @@ function App() {
       
       // Prepare the data payload for Knack
       const safeData = {
-        recordId: recordId,
+        recordId: safeRecordId,
         cards: safeSerializeData(allCards),
         colorMapping: safeSerializeData(subjectColorMapping), 
         spacedRepetition: safeSerializeData(spacedRepetitionData),
@@ -305,7 +388,7 @@ function App() {
         preserveFields: true
       };
       
-      console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${recordId})`);
+      console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${safeRecordId})`);
       
       // Add a timeout to clear the saving state if no response is received
       const saveTimeout = setTimeout(() => {
@@ -334,7 +417,7 @@ function App() {
       setIsSaving(false);
       showStatus("Saved to browser storage");
     }
-  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus]);
+  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus, ensureRecordId, recordId]);
 
   // Generate a random vibrant color
   const getRandomColor = useCallback(() => {
@@ -1300,6 +1383,14 @@ function App() {
                 if (userData.recordId) {
                   setRecordId(userData.recordId);
                   console.log("[User Info] Stored recordId:", userData.recordId);
+                  
+                  // Store in localStorage for recovery
+                  try {
+                    localStorage.setItem('flashcards_auth', JSON.stringify({ recordId: userData.recordId }));
+                    console.log("[User Info] Stored record ID in localStorage for recovery");
+                  } catch (e) {
+                    console.error("[User Info] Error storing record ID in localStorage:", e);
+                  }
                 }
 
                 // Process cards
@@ -1314,7 +1405,7 @@ function App() {
                 if (userData.colorMapping) {
                   setSubjectColorMapping(userData.colorMapping);
                 }
-
+                
                 // Process spaced repetition data if separate
                 if (userData.spacedRepetition) {
                   setSpacedRepetitionData(userData.spacedRepetition);
