@@ -1703,31 +1703,29 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
                 setLoadingStatus("Finalizing your topic shells...");
                 setShowLoadingOverlay(true);
                 
-                // Send explicit message to parent window that topic lists were updated
-                if (window.parent && window.parent !== window) {
-                  console.log("Sending TOPIC_LISTS_UPDATED message to parent with recordId:", recordId);
-                  window.parent.postMessage({
-                    type: "TOPIC_LISTS_UPDATED",
-                    data: {
+                // Wait another 1 second before refreshing data
+                console.log("Finishing topic shell creation, waiting 1 more second...");
+                setTimeout(() => {
+                  console.log("Requesting data refresh...");
+                  // Completely exit the Topic Hub
+                  onClose && onClose();
+                  
+                  // Instead of force reloading the page, request updated data
+                  if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                      type: "REQUEST_UPDATED_DATA",
                       recordId: recordId,
                       timestamp: new Date().toISOString()
-                    }
-                  }, '*');
-                }
-                
-                // Wait longer to ensure everything is saved before closing and reloading
-                setTimeout(() => {
-                  // Wait another 1 second before reloading to ensure server has time to process
-                  console.log("Finishing topic shell creation, waiting 1 more second...");
-                  setTimeout(() => {
-                    console.log("Reloading page...");
-                    // Completely exit the Topic Hub
-                    onClose && onClose();
+                    }, '*');
                     
-                    // Force reload the page to refresh data
-                    window.location.reload();
-                  }, 1000); // Additional 1 second buffer
-                }, 3000); // Increased from 2000ms to 3000ms
+                    console.log("Sent REQUEST_UPDATED_DATA message instead of reloading page");
+                  } else {
+                    // If we're not in an iframe, fall back to localStorage refresh
+                    console.log("Not in iframe, using fallback refresh method");
+                    // Trigger a global event that App.js can listen for
+                    window.dispatchEvent(new CustomEvent('topicRefreshNeeded'));
+                  }
+                }, 1000); // Additional 1 second buffer
               }} 
               className="finish-button"
             >

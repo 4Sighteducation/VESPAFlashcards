@@ -1502,7 +1502,28 @@ function App() {
           case "RELOAD_APP_DATA":
             console.log("[Reload] Explicit reload request received");
             showStatus("Refreshing data...");
-            setTimeout(() => window.location.reload(), 500);
+            
+            // Instead of reloading the whole page, use the data refresh mechanism
+            if (window.parent !== window) {
+              window.parent.postMessage({
+                type: "REQUEST_UPDATED_DATA",
+                recordId: recordId
+              }, "*");
+              
+              console.log("[Reload] Requested updated data instead of full page reload");
+              
+              // Set a brief loading state but don't show full initialization screen
+              setLoadingMessage("Refreshing your flashcards...");
+              
+              // Add a timeout to clear loading state in case no response is received
+              setTimeout(() => {
+                setLoading(false);
+                setLoadingMessage("");
+              }, 5000);
+            } else {
+              // If not in an iframe, refresh from localStorage
+              loadFromLocalStorage();
+            }
             break;
 
           case "REQUEST_REFRESH":
@@ -1753,6 +1774,37 @@ function App() {
     const cardsToDisplay = getFilteredCards();
     openPrintModal(cardsToDisplay, "All Flashcards");
   };
+
+  // Listen for topic refresh events from TopicHub component
+  useEffect(() => {
+    const handleTopicRefreshNeeded = () => {
+      console.log("[Topic Refresh] Received topicRefreshNeeded event");
+      
+      // Show a brief loading message
+      showStatus("Refreshing your flashcards...");
+      
+      // Load from localStorage first
+      loadFromLocalStorage();
+      
+      // If in iframe mode, request fresh data from Knack
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: "REQUEST_UPDATED_DATA",
+          recordId: recordId
+        }, "*");
+        
+        console.log("[Topic Refresh] Requested data refresh from parent window");
+      }
+    };
+    
+    // Add the event listener
+    window.addEventListener('topicRefreshNeeded', handleTopicRefreshNeeded);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('topicRefreshNeeded', handleTopicRefreshNeeded);
+    };
+  }, [showStatus, loadFromLocalStorage, recordId]);
 
   // Show loading state
   if (loading) {
