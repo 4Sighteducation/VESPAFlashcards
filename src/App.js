@@ -1,4 +1,4 @@
-﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -12,6 +12,12 @@ import AICardGenerator from './components/AICardGenerator';
 import PrintModal from './components/PrintModal';
 import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
 import TopicListSyncManager from './components/TopicListSyncManager';
+import authManager from './services/AuthManager';
+import { 
+  initializeAuthManager, 
+  handleTokenRefreshRequest, 
+  handleAuthRefreshResult 
+} from './utils/AuthAppIntegration';
 import { 
   addVersionMetadata, 
   safeParseJSON, 
@@ -1260,11 +1266,18 @@ function App() {
               };
             }
             
-            // Set auth with combined user and student data
-            setAuth({
+            // Initialize AuthManager with the complete authentication data
+            const authData = {
               ...event.data.data,
               ...userStudentData
-            });
+            };
+            
+            // Set auth state for React components
+            setAuth(authData);
+            
+            // Initialize the centralized AuthManager with the same data
+            initializeAuthManager(authData);
+            console.log("[User Info] Initialized AuthManager with user data");
 
             // If user data was included, process it
             if (event.data.data?.userData) {
@@ -1580,54 +1593,21 @@ function App() {
             break;
 
           case "REQUEST_TOKEN_REFRESH":
-            console.log("[Token] Token refresh requested, current token status:", {
-              hasAuth: !!auth,
-              tokenAge: auth ? new Date() - new Date(auth.timestamp || 0) : null,
-              recordId
+            console.log("[Token] Using AuthManager to handle token refresh");
+            
+            // Call our new centralized token refresh utility
+            handleTokenRefreshRequest(
+              recordId,
+              showStatus,
+              setLoading,
+              loadFromLocalStorage
+            ).then(success => {
+              if (success) {
+                console.log("[Token] Token refresh initiated successfully");
+              } else {
+                console.warn("[Token] Token refresh could not be initiated");
+              }
             });
-            
-            // Counter to avoid infinite refresh loops
-            const refreshCount = event.data.refreshCount || 0;
-            
-            // If we've already tried refreshing too many times, show an error
-            if (refreshCount > 3) {
-              console.error("[Token] Too many refresh attempts, session may be invalid");
-              showStatus("Session error. Please refresh the page.");
-              
-              // Clear loading state
-              setLoading(false);
-              setLoadingMessage("");
-              return;
-            }
-            
-            // Send message to parent window to request token refresh
-            if (window.parent !== window) {
-              // Include the refresh counter to prevent loops
-              window.parent.postMessage({
-                type: "REQUEST_TOKEN_REFRESH",
-                recordId: recordId || event.data?.recordId || "",
-                refreshCount: refreshCount + 1,
-                timestamp: new Date().toISOString()
-              }, "*");
-              
-              console.log("[Token] Requested token refresh from parent window");
-              
-              // Show status indicating refresh attempt
-              showStatus("Refreshing session...");
-              
-              // Set a timeout to clear the status after a few seconds
-              setTimeout(() => {
-                // Clear status message if it's still showing "Refreshing session..."
-                if (statusMessage.includes("Refreshing session")) {
-                  showStatus("");
-                }
-              }, 3000);
-            } else {
-              // We're not in an iframe, try to reload data from localStorage
-              console.log("[Token] Not in iframe, trying local reload");
-              loadFromLocalStorage();
-              showStatus("Refreshed data from local storage");
-            }
             break;
 
           default:

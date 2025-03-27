@@ -7,8 +7,9 @@
  * 2. Creating topic shells in field_2979 (the new single source of truth)
  */
 
-// Import the UnifiedDataService for topic shell creation
+// Import the UnifiedDataService for topic shell creation and AuthManager
 import { saveTopicShells } from './UnifiedDataService';
+import authManager from './AuthManager';
 
 // API keys and constants
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
@@ -16,6 +17,9 @@ const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 
 // Cache for record IDs to avoid repeated lookups
 const recordIdCache = new Map();
+
+// Track authentication state
+let authRefreshInProgress = false;
 
 /**
  * Debug logging helper
@@ -30,36 +34,69 @@ const debugLog = (title, data) => {
 };
 
 /**
- * Add a centralized token refresh utility
+ * Improved centralized token refresh utility using AuthManager
  * @returns {Promise<boolean>} - Success status
  */
 export const requestTokenRefresh = async () => {
-  console.log("Centralized token refresh requested");
+  debugLog("Centralized token refresh requested", {});
   
-  if (window.parent && window.parent !== window) {
-    // Send a message to parent requesting token refresh
-    window.parent.postMessage({ 
-      type: "REQUEST_TOKEN_REFRESH", 
-      timestamp: new Date().toISOString() 
-    }, "*");
-    
-    // Return a promise that resolves after waiting for potential refresh
-    return new Promise(resolve => setTimeout(resolve, 1500));
+  // Prevent multiple concurrent refresh requests
+  if (authRefreshInProgress) {
+    console.log("[TopicPersistenceService] Auth refresh already in progress, waiting...");
+    return new Promise(resolve => {
+      // Wait for the current refresh to complete
+      const checkInterval = setInterval(() => {
+        if (!authRefreshInProgress) {
+          clearInterval(checkInterval);
+          resolve(true);
+        }
+      }, 200);
+      
+      // Safety timeout after 5 seconds
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        resolve(false);
+      }, 5000);
+    });
   }
   
-  // No parent frame, can't refresh token
-  return Promise.resolve(false);
+  // Set flag to indicate refresh is in progress
+  authRefreshInProgress = true;
+  
+  try {
+    // Use AuthManager for token refresh
+    await authManager.refreshToken();
+    authRefreshInProgress = false;
+    return true;
+  } catch (error) {
+    console.error("[TopicPersistenceService] Token refresh failed:", error);
+    authRefreshInProgress = false;
+    
+    // If AuthManager fails, try legacy approach as fallback
+    if (window.parent && window.parent !== window) {
+      // Send a message to parent requesting token refresh
+      window.parent.postMessage({ 
+        type: "REQUEST_TOKEN_REFRESH", 
+        timestamp: new Date().toISOString() 
+      }, "*");
+      
+      // Return a promise that resolves after waiting for potential refresh
+      return new Promise(resolve => setTimeout(resolve, 1500));
+    }
+    
+    return false;
+  }
 };
 
 /**
- * Find a user's record ID in Knack
+ * Find a user's record ID in Knack using AuthManager
  * @param {string} userId - User ID to find
- * @param {Object} auth - Auth object containing token
+ * @param {Object} auth - Auth object containing token (only used as fallback)
  * @returns {Promise<string>} - Record ID
  */
-export const findUserRecordId = async (userId, auth) => {
-  if (!userId || !auth) {
-    throw new Error("Missing userId or auth for record lookup");
+export const findUserRecordId = async (userId, auth = null) => {
+  if (!userId) {
+    throw new Error("Missing userId for record lookup");
   }
 
   // Check cache first
@@ -69,38 +106,31 @@ export const findUserRecordId = async (userId, auth) => {
 
   // Keep track of retry attempts
   let retryCount = 0;
-  const maxRetries = 3; // Increased from 2
+  const maxRetries = 3;
 
   while (retryCount <= maxRetries) {
     try {
       debugLog("Looking up record ID for user", { userId, retry: retryCount });
       
-      // Search for the user record
+      // Use our centralized auth manager for the API call
+      // This handles token refreshing automatically if needed
       const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
-      const searchResponse = await fetch(searchUrl, {
+      
+      // Create proper headers with Knack app ID and API key
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Knack-Application-ID": KNACK_APP_ID,
+        "X-Knack-REST-API-Key": KNACK_API_KEY
+      };
+      
+      // Use AuthManager's fetchWithAuth for automatic token handling
+      const searchResponse = await authManager.fetchWithAuth(searchUrl, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY,
-          "Authorization": `Bearer ${auth.token}`
-        }
+        headers
       });
 
       if (!searchResponse.ok) {
         const errorText = await searchResponse.text();
-        
-        // Check specifically for authentication errors
-        if (searchResponse.status === 403 || errorText.includes("Invalid token")) {
-          // Try to request token refresh using our centralized function
-          console.warn(`Authentication error on retry ${retryCount}, requesting token refresh`);
-          await requestTokenRefresh();
-          
-          // Increment retry count and try again
-          retryCount++;
-          continue;
-        }
-        
         throw new Error(`Failed to search for user record: ${errorText}`);
       }
 
@@ -108,9 +138,13 @@ export const findUserRecordId = async (userId, auth) => {
       
       // Find the record matching this user ID
       if (allRecords && allRecords.records) {
+        // Get current user info from auth manager
+        const userInfo = authManager.getUserInfo() || {};
+        const userEmail = userInfo.email || (auth ? auth.email : null);
+        
         const userRecord = allRecords.records.find(record => 
           record.field_2954 === userId || 
-          (record.field_2958 && record.field_2958 === auth.email)
+          (record.field_2958 && userEmail && record.field_2958 === userEmail)
         );
 
         if (userRecord) {
@@ -128,27 +162,13 @@ export const findUserRecordId = async (userId, auth) => {
       
       // If this is our last retry, propagate the error
       if (retryCount === maxRetries) {
-        // For token errors, add more helpful information
-        if (error.message.includes("Invalid token") || error.message.includes("Authentication failed")) {
-          // If we're in the iframe, notify the parent about the auth issue
-          if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ 
-              type: "AUTH_ERROR", 
-              data: { message: "Authentication token expired. Please refresh the page." },
-              timestamp: new Date().toISOString() 
-            }, "*");
-          }
-          
-          throw new Error(`Authentication error: ${error.message}. Try refreshing the page.`);
-        }
-        
-        throw error;
+        throw new Error(`Failed to find user record ID after ${maxRetries} retries`);
       }
       
       // Increment retry count
       retryCount++;
       
-      // Add a small delay before retry with exponential backoff
+      // Add a delay before retry with exponential backoff
       await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, retryCount - 1)));
     }
   }
@@ -158,28 +178,32 @@ export const findUserRecordId = async (userId, auth) => {
 };
 
 /**
- * Get user's complete data from Knack
+ * Get user's complete data from Knack using AuthManager
  * @param {string} recordId - Record ID to fetch
- * @param {Object} auth - Auth object containing token
+ * @param {Object} auth - Auth object containing token (only used as fallback)
  * @returns {Promise<Object>} - Complete user data
  */
-export const getUserData = async (recordId, auth) => {
-  if (!recordId || !auth) {
-    throw new Error("Missing recordId or auth for data lookup");
+export const getUserData = async (recordId, auth = null) => {
+  if (!recordId) {
+    throw new Error("Missing recordId for data lookup");
   }
 
   try {
     debugLog("Fetching user data", { recordId });
     
+    // Create proper headers with Knack app ID and API key
+    const headers = {
+      "Content-Type": "application/json",
+      "X-Knack-Application-ID": KNACK_APP_ID,
+      "X-Knack-REST-API-Key": KNACK_API_KEY
+    };
+    
     const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-    const getResponse = await fetch(getUrl, {
+    
+    // Use AuthManager's fetchWithAuth for automatic token handling
+    const getResponse = await authManager.fetchWithAuth(getUrl, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Knack-Application-ID": KNACK_APP_ID,
-        "X-Knack-REST-API-Key": KNACK_API_KEY,
-        "Authorization": `Bearer ${auth.token}`
-      }
+      headers
     });
 
     if (!getResponse.ok) {
@@ -235,18 +259,27 @@ export const safeParseJSON = (jsonString, defaultValue = []) => {
 };
 
 /**
- * Save topic lists to Knack with field preservation
+ * Save topic lists to Knack with field preservation using AuthManager
  * @param {Array} topicLists - Array of topic lists to save
  * @param {string} userId - User ID
- * @param {Object} auth - Auth object containing token
+ * @param {Object} auth - Auth object containing token (only used as fallback)
  * @param {Array} metadata - Optional metadata to save
  * @returns {Promise<boolean>} - Success status
  */
-export const saveTopicLists = async (topicLists, userId, auth, metadata = null) => {
+export const saveTopicLists = async (topicLists, userId, auth = null, metadata = null) => {
   try {
-    if (!auth || !userId) {
-      console.error("Missing auth or userId for saving topic lists");
+    if (!userId) {
+      console.error("Missing userId for saving topic lists");
       return false;
+    }
+    
+    // Make sure AuthManager is initialized
+    if (!authManager.isAuthenticated()) {
+      console.warn("AuthManager not properly initialized, using fallback auth");
+      if (!auth) {
+        console.error("No auth available (neither AuthManager nor fallback)");
+        return false;
+      }
     }
 
     if (!Array.isArray(topicLists)) {
@@ -278,23 +311,24 @@ export const saveTopicLists = async (topicLists, userId, auth, metadata = null) 
       topicLists = fixedTopicLists;
     }
 
-    // Find the user's record ID
-    const recordId = await findUserRecordId(userId, auth);
-    if (!recordId) {
-      console.error("Could not find record ID for user:", userId);
-      
-      // Try API call via postMessage as a fallback
-      return await saveViaPostMessage(topicLists, userId, metadata);
-    }
+    try {
+      // Find the user's record ID using AuthManager
+      const recordId = await findUserRecordId(userId);
+      if (!recordId) {
+        console.error("Could not find record ID for user:", userId);
+        
+        // Try API call via postMessage as a fallback
+        return await saveViaPostMessage(topicLists, userId, metadata);
+      }
 
-    // Get existing data to preserve fields
-    const existingData = await getUserData(recordId, auth);
-    if (!existingData) {
-      console.error("Could not get existing data for user:", userId);
-      
-      // Try API call via postMessage as a fallback
-      return await saveViaPostMessage(topicLists, userId, metadata);
-    }
+      // Get existing data to preserve fields
+      const existingData = await getUserData(recordId);
+      if (!existingData) {
+        console.error("Could not get existing data for user:", userId);
+        
+        // Try API call via postMessage as a fallback
+        return await saveViaPostMessage(topicLists, userId, metadata);
+      }
 
     // Create the update data with field preservation
     const updateData = {
@@ -381,14 +415,17 @@ export const saveTopicLists = async (topicLists, userId, auth, metadata = null) 
       
       while (retryCount <= maxRetries) {
         try {
-          const updateResponse = await fetch(updateUrl, {
+          // Create proper headers with Knack app ID and API key
+          const headers = {
+            "Content-Type": "application/json",
+            "X-Knack-Application-ID": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY
+          };
+          
+          // Use AuthManager's fetchWithAuth for automatic token handling
+          const updateResponse = await authManager.fetchWithAuth(updateUrl, {
             method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Knack-Application-ID": KNACK_APP_ID,
-              "X-Knack-REST-API-Key": KNACK_API_KEY,
-              "Authorization": `Bearer ${auth.token}`
-            },
+            headers,
             body: JSON.stringify(updateData)
           });
           
@@ -439,8 +476,14 @@ export const saveTopicLists = async (topicLists, userId, auth, metadata = null) 
       // Try API call via postMessage as a fallback
       return await saveViaPostMessage(topicLists, userId, metadata);
     }
+    } catch (error) {
+      console.error("Error in saveTopicLists (record/data lookup):", error);
+      
+      // Try API call via postMessage as a fallback
+      return await saveViaPostMessage(topicLists, userId, metadata);
+    }
   } catch (error) {
-    console.error("Error in saveTopicLists:", error);
+    console.error("Error in saveTopicLists (outer try block):", error);
     return false;
   }
 };
