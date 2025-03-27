@@ -1245,16 +1245,34 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     return text.replace(/```json\s*/g, "").replace(/```/g, "").trim();
   };
 
-  // Add a single card to the bank and associate it with the selected topic
+  // Add a helper function to request token refresh
+  const requestTokenRefresh = async () => {
+    console.log("AICardGenerator requesting token refresh");
+    
+    if (window.parent && window.parent !== window) {
+      // Send a message to parent requesting token refresh
+      window.parent.postMessage({ 
+        type: "REQUEST_TOKEN_REFRESH", 
+        timestamp: new Date().toISOString() 
+      }, "*");
+      
+      // Return a promise that resolves after waiting for potential refresh
+      return new Promise(resolve => setTimeout(resolve, 1500));
+    }
+    
+    return Promise.resolve(false);
+  };
+
+  // Modify the handleAddCard function with improved error handling
   const handleAddCard = (card) => {
     if (!card || !card.id) {
       console.error("Invalid card data:", card);
       return;
     }
 
-    // Mark the card as added
+    // Mark the card as being processed
     setGeneratedCards(prev => prev.map(c => 
-      c.id === card.id ? {...c, added: true} : c
+      c.id === card.id ? {...c, processing: true} : c
     ));
 
     // Get the selected topic ID if available
@@ -1262,21 +1280,6 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     console.log("Adding card with topicId:", topicId);
 
     try {
-      // Log current metadata for debugging
-      console.log("Metadata check before enriching card:", {
-        cardExamBoard: card.examBoard,
-        cardExamType: card.examType,
-        propExamBoard: examBoard,
-        propExamType: examType,
-        formDataExamBoard: formData.examBoard,
-        formDataExamType: formData.examType,
-        subject: card.subject || formData.subject || initialSubject,
-        topic: card.topic || formData.topic || initialTopic
-      });
-      
-      // Get the correct topic ID - either selected or from card
-      const finalTopicId = topicId || card.topicId || "";
-      
       // Ensure the card has proper metadata
       const enrichedCard = {
         ...card,
@@ -1284,22 +1287,13 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
         examType: card.examType || formData.examType || examType || "Course",
         subject: card.subject || formData.subject || initialSubject || "General",
         topic: card.topic || formData.topic || initialTopic || "General",
-        topicId: finalTopicId,
+        topicId: topicId || card.topicId || "",
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
         lastReviewed: new Date().toISOString(),
         nextReviewDate: new Date().toISOString(),
         boxNum: 1
       };
-      
-      console.log("Enriched card with metadata:", {
-        id: enrichedCard.id,
-        examBoard: enrichedCard.examBoard,
-        examType: enrichedCard.examType,
-        subject: enrichedCard.subject,
-        topic: enrichedCard.topic,
-        topicId: enrichedCard.topicId
-      });
       
       // Show success message early to ensure visible feedback
       setSuccessModal({
@@ -1313,10 +1307,12 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
       }, 3000);
       
       // First try with local callback if available
+      let localAddSuccess = false;
       if (typeof onAddCard === 'function') {
         try {
           onAddCard(enrichedCard);
           console.log("Card added via onAddCard callback");
+          localAddSuccess = true;
         } catch (callbackError) {
           console.error("Error in onAddCard callback:", callbackError);
         }
@@ -1330,45 +1326,95 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
         
         console.log("Adding card via parent window messaging");
         
-        // First add the card to the bank
-        window.parent.postMessage({ 
-          type: "ADD_TO_BANK",
-          data: {
+        // Create a function to handle sending messages with retry for auth errors
+        const sendMessageWithRetry = async (type, data, maxRetries = 2) => {
+          for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+              // Send the message
+              window.parent.postMessage({ 
+                type,
+                data,
+                timestamp: new Date().toISOString() 
+              }, "*");
+              
+              return true;
+            } catch (error) {
+              if (attempt < maxRetries) {
+                console.warn(`Error sending ${type} message, attempt ${attempt + 1}/${maxRetries + 1}:`, error);
+                await requestTokenRefresh();
+              } else {
+                console.error(`Failed to send ${type} message after ${maxRetries + 1} attempts:`, error);
+                return false;
+              }
+            }
+          }
+        };
+        
+        // Sequence of operations with better error handling
+        const addCardSequence = async () => {
+          // Step 1: Add to bank
+          const addSuccess = await sendMessageWithRetry("ADD_TO_BANK", {
             cards: [enrichedCard],
             recordId: authData?.recordId || window.recordId || "",
             userId: userIdToUse,
-            topicId: finalTopicId
-          }
-        }, "*");
-        
-        // Then trigger a save with a delay to ensure ADD_TO_BANK completes
-        setTimeout(() => {
-          window.parent.postMessage({ 
-            type: "TRIGGER_SAVE",
-            data: {
-              recordId: authData?.recordId || window.recordId || ""
-            }
-          }, "*");
-          console.log("Triggered save to ensure persistence");
+            topicId: topicId || ""
+          });
           
-          // Add another small delay before requesting refresh
-          setTimeout(() => {
-            window.parent.postMessage({
-              type: "REQUEST_REFRESH",
-              data: {
-                recordId: authData?.recordId || window.recordId || ""
-              }
-            }, "*");
-            console.log("Requested app refresh to update UI");
-          }, 500);
-        }, 500);
+          if (!addSuccess && !localAddSuccess) {
+            setError("Failed to add card to bank. Please try again.");
+            // Mark as no longer processing but not added
+            setGeneratedCards(prev => prev.map(c => 
+              c.id === card.id ? {...c, processing: false} : c
+            ));
+            return;
+          }
+          
+          // Wait a bit before triggering save
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          // Step 2: Trigger save
+          await sendMessageWithRetry("TRIGGER_SAVE", {
+            recordId: authData?.recordId || window.recordId || ""
+          });
+          
+          // Wait a bit before requesting refresh
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          // Step 3: Request refresh
+          await sendMessageWithRetry("REQUEST_REFRESH", {
+            recordId: authData?.recordId || window.recordId || ""
+          });
+          
+          // Mark the card as added
+          setGeneratedCards(prev => prev.map(c => 
+            c.id === card.id ? {...c, added: true, processing: false} : c
+          ));
+        };
+        
+        // Start the sequence
+        addCardSequence().catch(error => {
+          console.error("Error in add card sequence:", error);
+          setError(`Error adding card: ${error.message}. Please try again.`);
+          // Reset processing state
+          setGeneratedCards(prev => prev.map(c => 
+            c.id === card.id ? {...c, processing: false} : c
+          ));
+        });
       } else {
         console.error("Cannot access parent window for messaging");
         setError("Failed to communicate with parent window");
+        // Reset processing state
+        setGeneratedCards(prev => prev.map(c => 
+          c.id === card.id ? {...c, processing: false} : c
+        ));
       }
     } catch (error) {
       console.error("Error handling add card:", error);
       setError(`Error adding card: ${error.message}. Please try again.`);
+      // Reset processing state
+      setGeneratedCards(prev => prev.map(c => 
+        c.id === card.id ? {...c, processing: false} : c
+      ));
     }
   };
 
@@ -2211,375 +2257,8 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     );
   };
 
-  // Add to card bank with field preservation
-  const handleAddToBank = async (cards) => {
-    try {
-      if (!auth || !userId) {
-        setError("You must be logged in to save cards");
-        return false;
-      }
-
-      // First get the record ID
-      let recordId = null;
-      try {
-        const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
-        const searchResponse = await fetch(searchUrl, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Knack-Application-ID": KNACK_APP_ID,
-            "X-Knack-REST-API-Key": KNACK_API_KEY,
-            "Authorization": `Bearer ${auth.token}`
-          }
-        });
-
-        if (!searchResponse.ok) {
-          throw new Error("Failed to find user record");
-        }
-
-        const allRecords = await searchResponse.json();
-        const userRecord = allRecords.records.find(record => 
-          record.field_2954 === userId || 
-          (record.field_2958 && record.field_2958 === auth.email)
-        );
-
-        if (userRecord) {
-          recordId = userRecord.id;
-        } else {
-          throw new Error("Could not find your user record");
-        }
-      } catch (error) {
-        console.error("Error finding user record:", error);
-        setError(error.message);
-        return false;
-      }
-
-      // Get existing data to preserve fields and append cards
-      const existingDataUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-      const existingDataResponse = await fetch(existingDataUrl, {
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY,
-          "Authorization": `Bearer ${auth.token}`
-        }
-      });
-
-      if (!existingDataResponse.ok) {
-        throw new Error("Failed to get existing data");
-      }
-
-      const existingData = await existingDataResponse.json();
-
-      // Parse existing cards and box 1 data
-      let existingCards = [];
-      let box1Cards = [];
-      
-      try {
-        existingCards = JSON.parse(existingData.field_2979 || '[]');
-        box1Cards = JSON.parse(existingData.field_2986 || '[]');
-      } catch (e) {
-        console.error("Error parsing existing data:", e);
-        // Continue with empty arrays if parsing fails
-      }
-
-      // Ensure arrays
-      if (!Array.isArray(existingCards)) existingCards = [];
-      if (!Array.isArray(box1Cards)) box1Cards = [];
-
-      // Prepare new cards with proper metadata
-      const newCards = cards.map(card => ({
-        ...card,
-        examBoard: card.examBoard || formData.examBoard || examBoard || "General",
-        examType: card.examType || formData.examType || examType || "Course",
-        subject: card.subject || formData.subject || initialSubject || "General",
-        topic: card.topic || formData.topic || initialTopic || "General",
-        boxNum: 1,
-        lastReviewed: new Date().toISOString(),
-        nextReviewDate: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }));
-
-      // Debug log
-      console.log("Adding cards to bank with metadata:", newCards.map(card => ({
-        id: card.id,
-        examBoard: card.examBoard,
-        examType: card.examType,
-        subject: card.subject,
-        topic: card.topic
-      })));
-
-      // Append new cards to existing ones
-      const updatedCards = [...existingCards, ...newCards];
-
-      // Create Box 1 entries for new cards
-      const newBox1Items = newCards.map(card => ({
-        cardId: card.id,
-        lastReviewed: new Date().toISOString(),
-        nextReviewDate: new Date().toISOString()
-      }));
-
-      // Append new items to Box 1
-      const updatedBox1 = [...box1Cards, ...newBox1Items];
-
-      // Prepare update data
-      const updateData = {
-        field_2979: JSON.stringify(updatedCards), // Card bank
-        field_2986: JSON.stringify(updatedBox1),  // Box 1
-        field_2957: new Date().toISOString()      // Last saved timestamp
-      };
-
-      // Preserve other fields
-      if (existingData.field_3011) updateData.field_3011 = existingData.field_3011; // Topic lists
-      if (existingData.field_3030) updateData.field_3030 = existingData.field_3030; // Topic metadata
-      if (existingData.field_2987) updateData.field_2987 = existingData.field_2987; // Box 2
-      if (existingData.field_2988) updateData.field_2988 = existingData.field_2988; // Box 3
-      if (existingData.field_2989) updateData.field_2989 = existingData.field_2989; // Box 4
-      if (existingData.field_2990) updateData.field_2990 = existingData.field_2990; // Box 5
-      if (existingData.field_3000) updateData.field_3000 = existingData.field_3000; // Color mapping
-      if (existingData.field_3086) updateData.field_3086 = existingData.field_3086; // Spaced repetition info
-
-      // Save to Knack
-      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-      const updateResponse = await fetch(updateUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY,
-          "Authorization": `Bearer ${auth.token}`
-        },
-        body: JSON.stringify(updateData)
-      });
-
-      if (!updateResponse.ok) {
-        const errorData = await updateResponse.json().catch(() => ({ message: "Unknown error" }));
-        throw new Error(errorData.message || "Failed to save cards");
-      }
-
-      console.log("Cards saved successfully:", {
-        newCardsCount: newCards.length,
-        totalCardsCount: updatedCards.length,
-        box1Count: updatedBox1.length
-      });
-
-      // Trigger a save to ensure everything is synchronized
-      if (window.parent) {
-        // First trigger a save
-        window.parent.postMessage({ 
-          type: "TRIGGER_SAVE",
-          data: {
-            recordId: recordId
-          }
-        }, "*");
-        
-        // Then request a refresh of the app UI
-        setTimeout(() => {
-          window.parent.postMessage({
-            type: "REQUEST_REFRESH",
-            data: {
-              recordId: recordId
-            }
-          }, "*");
-          console.log("Requested app refresh after saving cards");
-        }, 1000);
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Error saving cards:", error);
-      setError(`Failed to save cards: ${error.message}`);
-      return false;
-    }
-  };
-
-  // Autosave function with field preservation
-  const handleAutosave = async () => {
-    try {
-      if (!auth || !userId) {
-        console.log("No authentication data or userId, skipping autosave");
-        return;
-      }
-
-      // Get record ID
-      let recordId = null;
-      const searchUrl = `https://api.knack.com/v1/objects/object_102/records`;
-      const searchResponse = await fetch(searchUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY,
-          "Authorization": `Bearer ${auth.token}`
-        }
-      });
-
-      if (!searchResponse.ok) {
-        console.error("Failed to find user record for autosave");
-        return;
-      }
-
-      const allRecords = await searchResponse.json();
-      const userRecord = allRecords.records.find(record => 
-        record.field_2954 === userId || 
-        (record.field_2958 && record.field_2958 === auth.email)
-      );
-
-      if (userRecord) {
-        recordId = userRecord.id;
-      } else {
-        console.error("Could not find user record for autosave");
-        return;
-      }
-
-      // Get existing data
-      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-      const getResponse = await fetch(getUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY,
-          "Authorization": `Bearer ${auth.token}`
-        }
-      });
-
-      if (!getResponse.ok) {
-        console.error("Failed to get existing data for autosave");
-        return;
-      }
-
-      const existingData = await getResponse.json();
-
-      // Prepare update data with field preservation
-      const updateData = {
-        field_2957: new Date().toISOString() // Last saved timestamp
-      };
-
-      // Preserve all existing fields
-      if (existingData.field_2979) updateData.field_2979 = existingData.field_2979; // Cards
-      if (existingData.field_3011) updateData.field_3011 = existingData.field_3011; // Topic lists
-      if (existingData.field_3030) updateData.field_3030 = existingData.field_3030; // Topic metadata
-      if (existingData.field_2986) updateData.field_2986 = existingData.field_2986; // Box 1
-      if (existingData.field_2987) updateData.field_2987 = existingData.field_2987; // Box 2
-      if (existingData.field_2988) updateData.field_2988 = existingData.field_2988; // Box 3
-      if (existingData.field_2989) updateData.field_2989 = existingData.field_2989; // Box 4
-      if (existingData.field_2990) updateData.field_2990 = existingData.field_2990; // Box 5
-
-      // Add any new data that needs to be saved
-      if (savedTopicLists.length > 0) {
-        updateData.field_3011 = JSON.stringify(savedTopicLists);
-      }
-
-      // Save to Knack
-      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${recordId}`;
-      const updateResponse = await fetch(updateUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Knack-Application-ID": KNACK_APP_ID,
-          "X-Knack-REST-API-Key": KNACK_API_KEY,
-          "Authorization": `Bearer ${auth.token}`
-        },
-        body: JSON.stringify(updateData)
-      });
-
-      if (updateResponse.ok) {
-        console.log("Autosave completed successfully");
-      } else {
-        console.error("Autosave failed:", await updateResponse.text());
-      }
-    } catch (error) {
-      console.error("Error during autosave:", error);
-    }
-  };
-
-  // Set up autosave interval
-  useEffect(() => {
-    const autosaveInterval = setInterval(handleAutosave, 30000); // Autosave every 30 seconds
-    return () => clearInterval(autosaveInterval);
-  }, [auth, userId, savedTopicLists]);
-
-  // Modified close handler to trigger data refresh
-  const handleClose = () => {
-    // If we saved topics, request a data refresh
-    if (topicListSaved) {
-      console.log("Topics were saved - triggering data refresh before closing");
-      
-      // Send message to parent window to request latest data
-      if (window.parent && window.parent.postMessage) {
-        window.parent.postMessage({ 
-          type: "REQUEST_REFRESH_DATA",
-          data: {
-            recordId: auth?.recordId || window.recordId
-          }
-        }, "*");
-        
-        // Small delay to allow data to refresh before closing
-        setTimeout(() => {
-          onClose();
-        }, 300);
-      } else {
-        // If can't message parent, just close normally
-        onClose();
-      }
-    } else {
-      // No topics saved, just close normally
-      onClose();
-    }
-  };
-
-  // Effect to set initial step when specific topic is provided via props
-  useEffect(() => {
-    // If we have a specific topic directly passed in from props,
-    // and the topic is non-empty, skip directly to step 5 (num cards)
-    if (initialTopic && initialSubject) {
-      console.log("Direct topic provided, skipping to step 5:", {
-        initialTopic,
-        initialSubject,
-        examBoard,
-        examType
-      });
-      
-      // Set form data with the provided topic info
-      // Ensure we explicitly capture the exam metadata
-      setFormData(prev => ({
-        ...prev,
-        subject: initialSubject,
-        topic: initialTopic,
-        examBoard: examBoard || "General", // Default if not provided
-        examType: examType || "Course"     // Default if not provided
-      }));
-      
-      // Skip directly to step 5 (num cards)
-      setCurrentStep(5);
-      
-      // Mark previous steps as completed
-      setCompletedSteps({
-        1: true, // Exam Type
-        2: true, // Exam Board
-        3: true, // Subject
-        4: true  // Topic
-      });
-    }
-  }, [initialTopic, initialSubject, examBoard, examType]);
-
-  // Helper to safely send messages to parent
-  const sendMessageToParent = (type, data = {}) => {
-    if (window.parent && window.parent.postMessage) {
-      window.parent.postMessage({ 
-        type, 
-        data,
-        timestamp: new Date().toISOString() 
-      }, "*");
-      return true;
-    }
-    return false;
-  };
-
-  // Add all cards to bank
-  const addAllToBank = () => {
+  // Update the addAllToBank function with improved error handling and sequencing
+  const addAllToBank = async () => {
     // Return early if already processing an add to bank operation
     if (pendingOperations.addToBank) {
       console.log("Add to bank operation already in progress, ignoring duplicate request");
@@ -2588,188 +2267,168 @@ Use this format for ${formData.questionType === 'multiple_choice' ? 'multiple ch
     
     // Mark add to bank as in progress
     setPendingOperations(prev => ({ ...prev, addToBank: true }));
+    setIsGenerating(true);
     
-    // Get cards that haven't been added yet
-    const unadded = generatedCards.filter(card => !card.added);
-    
-    if (unadded.length === 0) {
-      setError("All cards have already been added to the bank");
-      setPendingOperations(prev => ({ ...prev, addToBank: false })); // Reset flag
-      return;
-    }
-    
-    // Mark all cards as added
-    setGeneratedCards(prev => 
-      prev.map(card => ({ ...card, added: true }))
-    );
-    
-    // Show success modal with all added cards
-    setSuccessModal({
-      show: true,
-      addedCards: unadded
-    });
-    
-    // Auto-hide after 3 seconds
-    setTimeout(() => {
-      setSuccessModal(prev => ({...prev, show: false}));
-    }, 3000);
-    
-    // Get the selected topic ID if available
-    const topicId = selectedTopic ? selectedTopic.id : null;
-    console.log("Adding all cards with topicId:", topicId);
-    
-    // Log current metadata for debugging
-    console.log("Metadata check before enriching cards:", {
-      propExamBoard: examBoard,
-      propExamType: examType,
-      propInitialSubject: initialSubject,
-      propInitialTopic: initialTopic,
-      formDataExamBoard: formData.examBoard,
-      formDataExamType: formData.examType,
-    });
-    
-    // Ensure all cards have proper metadata
-    const enrichedCards = unadded.map(card => {
-      // Get the correct topic ID - either selected or from card
-      const finalTopicId = topicId || card.topicId || "";
+    try {
+      // Get cards that haven't been added yet
+      const unadded = generatedCards.filter(card => !card.added);
       
-      // Create enriched card with proper metadata
-      return {
-        ...card,
-        // Explicitly ensure metadata is set correctly
-        examBoard: card.examBoard || formData.examBoard || examBoard || "General",
-        examType: card.examType || formData.examType || examType || "Course",
-        subject: card.subject || formData.subject || initialSubject || "General",
-        topic: card.topic || formData.topic || initialTopic || "General",
-        topicId: finalTopicId, // Ensure topicId is set
-        // Add timestamps and spaced repetition metadata
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
-        lastReviewed: new Date().toISOString(),
-        nextReviewDate: new Date().toISOString(),
-        boxNum: 1
-      };
-    });
-    
-    console.log("Enriched cards for bank:", enrichedCards.map(card => ({
-      id: card.id,
-      examBoard: card.examBoard,
-      examType: card.examType,
-      subject: card.subject,
-      topic: card.topic,
-      topicId: card.topicId
-    })));
-    
-    // First try handling locally
-    let localAddSuccess = false;
-    if (typeof onAddCard === 'function') {
-      try {
-        enrichedCards.forEach(card => onAddCard(card));
-        console.log("Added cards via onAddCard callback");
-        localAddSuccess = true;
-      } catch (callbackError) {
-        console.error("Error in onAddCard callback:", callbackError);
+      if (unadded.length === 0) {
+        setError("All cards have already been added to the bank");
+        setPendingOperations(prev => ({ ...prev, addToBank: false }));
+        setIsGenerating(false);
+        return;
       }
-    }
-    
-    // Then use message passing to the parent window as the primary method
-    // since it handles field_3086 and other fields correctly
-    if (window.parent && window.parent.postMessage) {
-      console.log("Adding cards to bank via parent window:", enrichedCards.length);
       
-      try {
+      // Mark all cards as processing
+      setGeneratedCards(prev => 
+        prev.map(card => unadded.some(u => u.id === card.id) 
+          ? { ...card, processing: true } 
+          : card
+        )
+      );
+      
+      // Show success modal with all cards being added
+      setSuccessModal({
+        show: true,
+        addedCards: unadded
+      });
+      
+      // Auto-hide after 3 seconds
+      setTimeout(() => {
+        setSuccessModal(prev => ({...prev, show: false}));
+      }, 3000);
+      
+      // Get the selected topic ID if available
+      const topicId = selectedTopic ? selectedTopic.id : null;
+      console.log("Adding all cards with topicId:", topicId);
+      
+      // Ensure all cards have proper metadata
+      const enrichedCards = unadded.map(card => {
+        // Get the correct topic ID - either selected or from card
+        const finalTopicId = topicId || card.topicId || "";
+        
+        // Create enriched card with proper metadata
+        return {
+          ...card,
+          examBoard: card.examBoard || formData.examBoard || examBoard || "General",
+          examType: card.examType || formData.examType || examType || "Course",
+          subject: card.subject || formData.subject || initialSubject || "General",
+          topic: card.topic || formData.topic || initialTopic || "General",
+          topicId: finalTopicId,
+          created: new Date().toISOString(),
+          updated: new Date().toISOString(),
+          lastReviewed: new Date().toISOString(),
+          nextReviewDate: new Date().toISOString(),
+          boxNum: 1
+        };
+      });
+      
+      // Try local callback first
+      let localAddSuccess = false;
+      if (typeof onAddCard === 'function') {
+        try {
+          enrichedCards.forEach(card => onAddCard(card));
+          console.log("Added cards via onAddCard callback");
+          localAddSuccess = true;
+        } catch (callbackError) {
+          console.error("Error in onAddCard callback:", callbackError);
+        }
+      }
+      
+      // Send to parent window
+      if (window.parent && window.parent.postMessage) {
+        console.log(`Adding ${enrichedCards.length} cards to bank via parent window`);
+        
         // Make sure we have valid auth data
         const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
-        
-        // Never use "current_user" placeholder - use actual user ID or window-level ID
         const userIdToUse = userId || window.VESPA_USER_ID || "";
         
-        if (!userIdToUse) {
-          console.warn("No userId available for card save - using parent window messaging only");
-        }
-        
-        // First, add cards to bank - this is the main operation
-        const addToBankSuccess = sendMessageToParent("ADD_TO_BANK", {
-          cards: enrichedCards,
-          recordId: authData?.recordId || window.recordId || "",
-          userId: userIdToUse,
-          topicId: topicId || ""
-        });
-        
-        if (!addToBankSuccess) {
-          console.error("Failed to send ADD_TO_BANK message to parent");
-          if (!localAddSuccess) {
-            setError("Failed to communicate with parent window to add cards. Try refreshing the page.");
-          }
-          // Reset flag regardless
-          setPendingOperations(prev => ({ ...prev, addToBank: false }));
-          setIsGenerating(false);
-          return;
-        }
-        
-        // Define how we'll handle operations after a delay
-        // Only trigger save and refresh if the add was successful and component is still mounted
-        const triggerFollowupOperations = () => {
-          // Check if we're still generating/processing before continuing
-          if (!isGenerating) {
-            console.log("Component state changed, aborting follow-up operations");
-            setPendingOperations({ save: false, refresh: false, addToBank: false });
-            return;
-          }
-          
-          // Set a flag to avoid multiple saves
-          if (!pendingOperations.save) {
-            setPendingOperations(prev => ({ ...prev, save: true }));
-            
-            // Trigger a save with a shorter delay
-            sendMessageToParent("TRIGGER_SAVE", {
-              recordId: authData?.recordId || window.recordId || "",
-              userId: userIdToUse // Add user ID to the save request 
-            });
-            console.log("Triggered save after adding cards to bank");
-          }
-          
-          // Delay before sending refresh request
-          setTimeout(() => {
-            // Check again if component is still mounted/generating
-            if (!isGenerating) {
-              console.log("Component state changed, aborting refresh operation");
-              setPendingOperations({ save: false, refresh: false, addToBank: false });
-              return;
-            }
-            
-            // Set a flag to avoid multiple refreshes
-            if (!pendingOperations.refresh) {
-              setPendingOperations(prev => ({ ...prev, refresh: true }));
+        // Helper function for sending messages with retry
+        const sendMessageWithRetry = async (type, data, maxRetries = 2) => {
+          for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+              // Send the message
+              window.parent.postMessage({ 
+                type,
+                data,
+                timestamp: new Date().toISOString() 
+              }, "*");
               
-              // Request the app to refresh (load latest data)
-              sendMessageToParent("REQUEST_REFRESH", {
-                recordId: authData?.recordId || window.recordId || "",
-                userId: userIdToUse // Add user ID to the refresh request
-              });
-              console.log("Requested app refresh to update UI");
-              
-              // Reset all operation flags after a delay
-              setTimeout(() => {
-                setPendingOperations({ save: false, refresh: false, addToBank: false });
-                setIsGenerating(false);
-              }, 1000);
+              return true;
+            } catch (error) {
+              if (attempt < maxRetries) {
+                console.warn(`Error sending ${type} message, attempt ${attempt + 1}/${maxRetries + 1}:`, error);
+                await requestTokenRefresh();
+              } else {
+                console.error(`Failed to send ${type} message after ${maxRetries + 1} attempts:`, error);
+                return false;
+              }
             }
-          }, 300); // Reduced delay for refresh
+          }
         };
         
-        // Schedule follow-up operations with shorter delay than before
-        setTimeout(triggerFollowupOperations, 500);
-      } catch (error) {
-        console.error("Error in message passing:", error);
-        setError("Error saving cards. Please try again.");
-        setPendingOperations({ save: false, refresh: false, addToBank: false });
-        setIsGenerating(false);
+        // Execute the sequence with better spacing
+        try {
+          // Step 1: Send the ADD_TO_BANK message
+          const addSuccess = await sendMessageWithRetry("ADD_TO_BANK", {
+            cards: enrichedCards,
+            recordId: authData?.recordId || window.recordId || "",
+            userId: userIdToUse,
+            topicId: topicId || ""
+          });
+          
+          if (!addSuccess && !localAddSuccess) {
+            throw new Error("Failed to add cards to bank");
+          }
+          
+          // Wait before sending the save message
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          // Step 2: Send the TRIGGER_SAVE message
+          await sendMessageWithRetry("TRIGGER_SAVE", {
+            recordId: authData?.recordId || window.recordId || ""
+          });
+          
+          // Wait longer before requesting refresh
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Step 3: Send the REQUEST_REFRESH message
+          await sendMessageWithRetry("REQUEST_REFRESH", {
+            recordId: authData?.recordId || window.recordId || ""
+          });
+          
+          // Mark all cards as added
+          setGeneratedCards(prev => 
+            prev.map(card => unadded.some(u => u.id === card.id) 
+              ? { ...card, added: true, processing: false } 
+              : card
+          ));
+          
+          console.log("All cards successfully added to bank");
+        } catch (error) {
+          console.error("Error in add all sequence:", error);
+          setError(`Failed to add all cards: ${error.message}`);
+          
+          // Reset processing state
+          setGeneratedCards(prev => 
+            prev.map(card => ({ ...card, processing: false }))
+          );
+        }
+      } else {
+        console.error("Cannot access parent window for messaging");
+        setError("Failed to communicate with parent window");
+        
+        // Reset processing state
+        setGeneratedCards(prev => 
+          prev.map(card => ({ ...card, processing: false }))
+        );
       }
-    } else {
-      console.error("Cannot access parent window for messaging");
-      setError("Failed to communicate with parent window");
-      setPendingOperations({ save: false, refresh: false, addToBank: false });
+    } catch (error) {
+      console.error("Error in addAllToBank:", error);
+      setError(`Error adding cards: ${error.message}`);
+    } finally {
+      setPendingOperations(prev => ({ ...prev, addToBank: false }));
       setIsGenerating(false);
     }
   };

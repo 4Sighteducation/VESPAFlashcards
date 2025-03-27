@@ -1,0 +1,403 @@
+ VESPA Config initialized: Object
+ Document ready - checking if flashcard app needs initialization
+ VESPA Integration script loaded successfully
+ Developed byKsense Technology Group LLCPRODUCTION MODE - Branch: mainKSENSE DEBUG: INJECTED URL: https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1
+ Object
+ Flashcard app: Scene rendered: scene_1206
+ Initializing Flashcard React app
+ Flashcard app: User is authenticated
+ Flashcard app: Basic user info: Object
+ Flashcard app: Getting complete user data for: 630510eb3c91500021a8fad2
+vespa-academy#flashcards/:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+ Flashcard app: Complete user data: Object
+ CONNECTION FIELD IDs
+ {
+  "emailId": "630510eb3c91500021a8fad2",
+  "schoolId": null,
+  "tutorId": null,
+  "roleId": null
+}
+ Flashcard app: First selector failed, trying alternatives
+ Flashcard app: No rich text field found, looking for the view
+ Flashcard app: View found, creating container
+ Flashcard app [2025-03-27T07:02:57.021Z]: Message from React app: APP_READY
+ MESSAGE RECEIVED
+ {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T07:02:57.022Z",
+  "hasData": "no"
+}
+ Flashcard app: React app is ready, sending user info (first time)
+ Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+ Flashcard app: User data search response: Object
+ Flashcard app: Found existing user data: Object
+ Flashcard app: Loaded 14 cards, including 0 multiple choice cards
+ Flashcard app: Sent user info to React app
+ Flashcard app [2025-03-27T07:02:57.627Z]: Message from React app: AUTH_CONFIRMED
+ MESSAGE RECEIVED
+ {
+  "type": "AUTH_CONFIRMED",
+  "timestamp": "2025-03-27T07:02:57.627Z",
+  "hasData": "no"
+}
+ Flashcard app: Authentication confirmed by React app
+ Flashcard app [2025-03-27T07:02:57.633Z]: Message from React app: APP_READY
+ MESSAGE RECEIVED
+ {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T07:02:57.633Z",
+  "hasData": "no"
+}
+ Flashcard app: Ignoring duplicate APP_READY message
+api.knack.com/v1/objects/object_102/records:1   Failed to load resource: the server responded with a status of 403 ()
+ Flashcard app [2025-03-27T07:03:04.752Z]: Message from React app: REQUEST_TOKEN_REFRESH
+ MESSAGE RECEIVED
+ {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:04.752Z",
+  "hasData": "no"
+}
+api.knack.com/v1/objects/object_102/records:1   Failed to load resource: the server responded with a status of 403 ()
+ Flashcard app [2025-03-27T07:03:06.088Z]: Message from React app: REQUEST_TOKEN_REFRESH
+ MESSAGE RECEIVED
+ {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:06.088Z",
+  "hasData": "no"
+}
+api.knack.com/v1/objects/object_102/records:1   Failed to load resource: the server responded with a status of 403 ()
+ Flashcard app [2025-03-27T07:03:07.314Z]: Message from React app: REQUEST_TOKEN_REFRESH
+ MESSAGE RECEIVED
+ {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:07.314Z",
+  "hasData": "no"
+}
+ Flashcard app [2025-03-27T07:03:16.871Z]: Message from React app: ADD_TO_BANK
+ MESSAGE RECEIVED
+ {
+  "type": "ADD_TO_BANK",
+  "timestamp": "2025-03-27T07:03:16.871Z",
+  "hasData": "yes"
+}
+ Flashcard app: Adding cards to bank: Object
+ Flashcard app [2025-03-27T07:03:16.871Z]: Starting handleAddToBank with 2 cards
+ Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+ Flashcard app: User data search response: Object
+ Flashcard app: Found existing user data: Object
+ Flashcard app: Loaded 14 cards, including 0 multiple choice cards
+ Flashcard app [2025-03-27T07:03:17.102Z]: Starting handleAddToBank with 2 cards
+ Flashcard app [2025-03-27T07:03:17.339Z]: Processing 14 existing items
+ Flashcard app [2025-03-27T07:03:17.340Z]: Found 14 topic shells and 0 existing cards before adding 2 new cards
+ Flashcard app [2025-03-27T07:03:17.340Z]: Updated topic shell 1.2 isEmpty flag to false
+ Flashcard app [2025-03-27T07:03:17.340Z]: Processed 2 new cards after deduplication
+ Flashcard app [2025-03-27T07:03:17.340Z]: Adding 2 new Box 1 entries
+ Flashcard app [2025-03-27T07:03:17.340Z]: Sending update with 16 total items
+ Flashcard app [2025-03-27T07:03:17.367Z]: Message from React app: APP_READY
+ MESSAGE RECEIVED
+ {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T07:03:17.367Z",
+  "hasData": "no"
+}
+ Flashcard app: Ignoring duplicate APP_READY message
+ Flashcard app [2025-03-27T07:03:17.467Z]: Message from React app: SAVE_DATA
+ MESSAGE RECEIVED
+ {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-27T07:03:17.467Z",
+  "hasData": "yes"
+}
+ Flashcard app [2025-03-27T07:03:17.467Z]: Saving data from React app: Object
+ SAVE_DATA REQUEST RECEIVED
+ {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-27T07:03:17.467Z"
+}
+ Flashcard app [2025-03-27T07:03:17.467Z]: Saving with field preservation for user: 630510eb3c91500021a8fad2
+ Flashcard app [2025-03-27T07:03:17.468Z]: Message from React app: SAVE_DATA
+ MESSAGE RECEIVED
+ {
+  "type": "SAVE_DATA",
+  "timestamp": "2025-03-27T07:03:17.468Z",
+  "hasData": "yes"
+}
+ Flashcard app [2025-03-27T07:03:17.468Z]: Saving data from React app: Object
+ SAVE_DATA REQUEST RECEIVED
+ {
+  "preserveFields": true,
+  "hasRecordId": "yes",
+  "timestamp": "2025-03-27T07:03:17.468Z"
+}
+ Save already in progress, queueing this save
+ Flashcard app [2025-03-27T07:03:17.800Z]: Successfully added 2 cards to bank
+ Flashcard app [2025-03-27T07:03:17.801Z]: Message from React app: REQUEST_UPDATED_DATA
+ MESSAGE RECEIVED
+ {
+  "type": "REQUEST_UPDATED_DATA",
+  "timestamp": "2025-03-27T07:03:17.801Z",
+  "hasData": "no"
+}
+ Flashcard app [2025-03-27T07:03:17.801Z]: Requested updated data
+ Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+api.knack.com/v1/objects/object_102/records:1   Failed to load resource: the server responded with a status of 403 ()
+ Flashcard app [2025-03-27T07:03:17.807Z]: Message from React app: REQUEST_TOKEN_REFRESH
+ MESSAGE RECEIVED
+ {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:17.807Z",
+  "hasData": "no"
+}
+ Flashcard app [2025-03-27T07:03:17.850Z]: Found 1 existing topic lists for merging
+ Flashcard app [2025-03-27T07:03:17.851Z]: Found 14 existing topic metadata items for merging
+ Flashcard app [2025-03-27T07:03:17.851Z]: Updated topic list for subject: Chemistry
+ UPDATING WITH MERGED DATA
+KnackJavascript4kk.js:233 {
+  "originalTopicListsCount": 1,
+  "newTopicListsCount": 1,
+  "mergedTopicListsCount": 1,
+  "originalMetadataCount": 14,
+  "newMetadataCount": 14,
+  "mergedMetadataCount": 14,
+  "recordId": "67e4f8018d8ef602f77a8793",
+  "timestamp": "2025-03-27T07:03:17.851Z"
+}
+api.knack.com/v1/objects/object_102/records:1 
+            
+            
+            Failed to load resource: the server responded with a status of 403 ()
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:18.052Z]: Message from React app: REQUEST_TOKEN_REFRESH
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:18.052Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:717 Flashcard app: User data search response: Object
+KnackJavascript4kk.js:722 Flashcard app: Found existing user data: Object
+KnackJavascript4kk.js:745 Flashcard app: Loaded 16 cards, including 2 multiple choice cards
+KnackJavascript4kk.js:640 Flashcard app [2025-03-27T07:03:18.100Z]: Sending refreshed data to React app
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:18.104Z]: Message from React app: APP_READY
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T07:03:18.104Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:401 Flashcard app: Ignoring duplicate APP_READY message
+api.knack.com/v1/objects/object_102/records:1 
+            
+            
+            Failed to load resource: the server responded with a status of 403 ()
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:18.441Z]: Message from React app: REQUEST_TOKEN_REFRESH
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:18.441Z",
+  "hasData": "no"
+}
+api.knack.com/v1/objects/object_102/records:1 
+            
+            
+            Failed to load resource: the server responded with a status of 403 ()
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:18.623Z]: Message from React app: REQUEST_TOKEN_REFRESH
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:18.624Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:1405 Flashcard app [2025-03-27T07:03:18.689Z]: Successfully saved topic list data: 67e4f8018d8ef602f77a8793
+KnackJavascript4kk.js:232 SAVE SUCCESS
+KnackJavascript4kk.js:233 {
+  "recordId": "67e4f8018d8ef602f77a8793",
+  "timestamp": "2025-03-27T07:03:18.689Z"
+}
+KnackJavascript4kk.js:1453 Flashcard app [2025-03-27T07:03:18.689Z]: Verifying data save for record: 67e4f8018d8ef602f77a8793
+KnackJavascript4kk.js:1416 Flashcard app [2025-03-27T07:03:18.689Z]: Creating topic shells for 1 topic lists
+KnackJavascript4kk.js:1549 Flashcard app [2025-03-27T07:03:18.689Z]: Creating topic shells from 1 topic lists
+KnackJavascript4kk.js:2568 Processing queued save
+KnackJavascript4kk.js:1254 Flashcard app [2025-03-27T07:03:18.690Z]: Saving with field preservation for user: 630510eb3c91500021a8fad2
+api.knack.com/v1/objects/object_102/records:1 
+            
+            
+            Failed to load resource: the server responded with a status of 403 ()
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:18.777Z]: Message from React app: REQUEST_TOKEN_REFRESH
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:18.777Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:1823 Flashcard app [2025-03-27T07:03:19.001Z]: Created 14 topic shells with consistent colors and metadata
+KnackJavascript4kk.js:1892 Flashcard app [2025-03-27T07:03:19.001Z]: Deduplication complete: 14 new + 14 existing = 14 final shells
+KnackJavascript4kk.js:1281 Flashcard app [2025-03-27T07:03:19.280Z]: Found 1 existing topic lists for merging
+KnackJavascript4kk.js:1297 Flashcard app [2025-03-27T07:03:19.280Z]: Found 14 existing topic metadata items for merging
+KnackJavascript4kk.js:1338 Flashcard app [2025-03-27T07:03:19.280Z]: Updated topic list for subject: Chemistry
+KnackJavascript4kk.js:232 UPDATING WITH MERGED DATA
+KnackJavascript4kk.js:233 {
+  "originalTopicListsCount": 1,
+  "newTopicListsCount": 1,
+  "mergedTopicListsCount": 1,
+  "originalMetadataCount": 14,
+  "newMetadataCount": 14,
+  "mergedMetadataCount": 14,
+  "recordId": "67e4f8018d8ef602f77a8793",
+  "timestamp": "2025-03-27T07:03:19.280Z"
+}
+api.knack.com/v1/objects/object_102/records:1 
+            
+            
+            Failed to load resource: the server responded with a status of 403 ()
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:19.292Z]: Message from React app: REQUEST_TOKEN_REFRESH
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:19.292Z",
+  "hasData": "no"
+}
+api.knack.com/v1/objects/object_102/records:1 
+            
+            
+            Failed to load resource: the server responded with a status of 403 ()
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:19.566Z]: Message from React app: REQUEST_TOKEN_REFRESH
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:19.566Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:1405 Flashcard app [2025-03-27T07:03:19.745Z]: Successfully saved topic list data: 67e4f8018d8ef602f77a8793
+KnackJavascript4kk.js:232 SAVE SUCCESS
+KnackJavascript4kk.js:233 {
+  "recordId": "67e4f8018d8ef602f77a8793",
+  "timestamp": "2025-03-27T07:03:19.745Z"
+}
+KnackJavascript4kk.js:1453 Flashcard app [2025-03-27T07:03:19.745Z]: Verifying data save for record: 67e4f8018d8ef602f77a8793
+KnackJavascript4kk.js:1416 Flashcard app [2025-03-27T07:03:19.745Z]: Creating topic shells for 1 topic lists
+KnackJavascript4kk.js:1549 Flashcard app [2025-03-27T07:03:19.745Z]: Creating topic shells from 1 topic lists
+KnackJavascript4kk.js:1918 Flashcard app [2025-03-27T07:03:19.752Z]: Successfully added 14 topic shells (after deduplication)
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:19.753Z]: Message from React app: REQUEST_UPDATED_DATA
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_UPDATED_DATA",
+  "timestamp": "2025-03-27T07:03:19.753Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:622 Flashcard app [2025-03-27T07:03:19.753Z]: Requested updated data
+KnackJavascript4kk.js:677 Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+api.knack.com/v1/objects/object_102/records:1 
+            
+            
+            Failed to load resource: the server responded with a status of 403 ()
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:19.787Z]: Message from React app: REQUEST_TOKEN_REFRESH
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:19.787Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:1823 Flashcard app [2025-03-27T07:03:19.957Z]: Created 14 topic shells with consistent colors and metadata
+KnackJavascript4kk.js:1892 Flashcard app [2025-03-27T07:03:19.957Z]: Deduplication complete: 14 new + 14 existing = 14 final shells
+api.knack.com/v1/objects/object_102/records:1 
+            
+            
+            Failed to load resource: the server responded with a status of 403 ()
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:20.045Z]: Message from React app: REQUEST_TOKEN_REFRESH
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:20.045Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:717 Flashcard app: User data search response: Object
+KnackJavascript4kk.js:722 Flashcard app: Found existing user data: Object
+KnackJavascript4kk.js:745 Flashcard app: Loaded 16 cards, including 2 multiple choice cards
+KnackJavascript4kk.js:640 Flashcard app [2025-03-27T07:03:20.069Z]: Sending refreshed data to React app
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:20.071Z]: Message from React app: APP_READY
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T07:03:20.071Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:401 Flashcard app: Ignoring duplicate APP_READY message
+api.knack.com/v1/objects/object_102/records:1 
+            
+            
+            Failed to load resource: the server responded with a status of 403 ()
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:20.191Z]: Message from React app: REQUEST_TOKEN_REFRESH
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:20.191Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:1918 Flashcard app [2025-03-27T07:03:20.262Z]: Successfully added 14 topic shells (after deduplication)
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:20.263Z]: Message from React app: REQUEST_UPDATED_DATA
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_UPDATED_DATA",
+  "timestamp": "2025-03-27T07:03:20.263Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:622 Flashcard app [2025-03-27T07:03:20.263Z]: Requested updated data
+KnackJavascript4kk.js:677 Flashcard app: Loading user data for: 630510eb3c91500021a8fad2
+api.knack.com/v1/objects/object_102/records:1 
+            
+            
+            Failed to load resource: the server responded with a status of 403 ()
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:20.364Z]: Message from React app: REQUEST_TOKEN_REFRESH
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "REQUEST_TOKEN_REFRESH",
+  "timestamp": "2025-03-27T07:03:20.364Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:717 Flashcard app: User data search response: Object
+KnackJavascript4kk.js:722 Flashcard app: Found existing user data: Object
+KnackJavascript4kk.js:745 Flashcard app: Loaded 16 cards, including 2 multiple choice cards
+KnackJavascript4kk.js:640 Flashcard app [2025-03-27T07:03:20.442Z]: Sending refreshed data to React app
+App.js:1531 [Init] Sent ready message to parent
+KnackJavascript4kk.js:389 Flashcard app [2025-03-27T07:03:20.490Z]: Message from React app: APP_READY
+KnackJavascript4kk.js:232 MESSAGE RECEIVED
+KnackJavascript4kk.js:233 {
+  "type": "APP_READY",
+  "timestamp": "2025-03-27T07:03:20.490Z",
+  "hasData": "no"
+}
+KnackJavascript4kk.js:401 Flashcard app: Ignoring duplicate APP_READY message
+KnackJavascript4kk.js:232 VERIFICATION RESULT
+KnackJavascript4kk.js:233 {
+  "recordId": "67e4f8018d8ef602f77a8793",
+  "hasTopicLists": "yes",
+  "hasCardBank": "yes",
+  "timestamp": "2025-03-27T07:03:20.906Z"
+}
+KnackJavascript4kk.js:1482 Flashcard app [2025-03-27T07:03:20.906Z]: Verification successful: Topic lists present with 1 items
+KnackJavascript4kk.js:1490 Flashcard app [2025-03-27T07:03:20.906Z]: Topic lists contain topics - save fully verified
+KnackJavascript4kk.js:1502 Flashcard app [2025-03-27T07:03:20.906Z]: Card bank contains 14 topic shells and 2 cards
+KnackJavascript4kk.js:1514 Flashcard app [2025-03-27T07:03:20.906Z]: 2 of 2 cards have topicId references
+KnackJavascript4kk.js:232 VERIFICATION RESULT
+KnackJavascript4kk.js:233 {
+  "recordId": "67e4f8018d8ef602f77a8793",
+  "hasTopicLists": "yes",
+  "hasCardBank": "yes",
+  "timestamp": "2025-03-27T07:03:21.959Z"
+}
+KnackJavascript4kk.js:1482 Flashcard app [2025-03-27T07:03:21.959Z]: Verification successful: Topic lists present with 1 items
+KnackJavascript4kk.js:1490 Flashcard app [2025-03-27T07:03:21.959Z]: Topic lists contain topics - save fully verified
+KnackJavascript4kk.js:1502 Flashcard app [2025-03-27T07:03:21.959Z]: Card bank contains 14 topic shells and 2 cards
+KnackJavascript4kk.js:1514 Flashcard app [2025-03-27T07:03:21.959Z]: 2 of 2 cards have topicId references
+
+                
+          
+          
+          
+         Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again

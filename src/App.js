@@ -1512,6 +1512,124 @@ function App() {
             showStatus("Your flashcards are being saved...");
             break;
 
+          case "KNACK_DATA":
+            console.log("Received data from Knack:", event.data);
+            
+            if (event.data.cards && Array.isArray(event.data.cards)) {
+              try {
+                // Restore multiple choice options if they exist
+                const restoredCards = restoreMultipleChoiceOptions(event.data.cards);
+                
+                // Update app state with the loaded cards
+                setAllCards(restoredCards);
+                console.log(`Loaded ${restoredCards.length} cards from Knack and restored multiple choice options`);
+                
+                // Load color mapping
+                if (event.data.colorMapping) {
+                  setSubjectColorMapping(event.data.colorMapping);
+                  console.log("Loaded color mapping from Knack");
+                }
+                
+                // Load spaced repetition data
+                if (event.data.spacedRepetition) {
+                  setSpacedRepetitionData(event.data.spacedRepetition);
+                  console.log("Loaded spaced repetition data from Knack");
+                }
+                
+                // Load topic lists
+                if (event.data.topicLists && Array.isArray(event.data.topicLists)) {
+                  setTopicLists(event.data.topicLists);
+                  console.log(`Loaded ${event.data.topicLists.length} topic lists from Knack`);
+                }
+                
+                // Load topic metadata
+                if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
+                  setTopicMetadata(event.data.topicMetadata);
+                  console.log(`Loaded ${event.data.topicMetadata.length} topic metadata entries from Knack`);
+                }
+                
+                // Always ensure loading state is cleared
+                setLoading(false);
+                setLoadingMessage("");
+              } catch (error) {
+                console.error("Error processing Knack data:", error);
+                setLoading(false);
+                setLoadingMessage("");
+                showStatus("Error loading cards. Please refresh the page.");
+              }
+            }
+            break;
+
+          case "AUTH_ERROR":
+            console.error("Authentication error received:", event.data.data?.message || "Unknown auth error");
+            
+            // Ensure loading state is cleared first
+            setLoading(false);
+            setLoadingMessage("");
+            
+            // Show error message to user
+            showStatus(event.data.data?.message || "Authentication error. Please refresh the page.");
+            
+            // If we're in the AIGenerator view, consider returning to card bank
+            if (view === "aiGenerator") {
+              setTimeout(() => {
+                // Give user time to see the error message before redirecting
+                setView("cardBank");
+              }, 3000);
+            }
+            break;
+
+          case "REQUEST_TOKEN_REFRESH":
+            console.log("[Token] Token refresh requested, current token status:", {
+              hasAuth: !!auth,
+              tokenAge: auth ? new Date() - new Date(auth.timestamp || 0) : null,
+              recordId
+            });
+            
+            // Counter to avoid infinite refresh loops
+            const refreshCount = event.data.refreshCount || 0;
+            
+            // If we've already tried refreshing too many times, show an error
+            if (refreshCount > 3) {
+              console.error("[Token] Too many refresh attempts, session may be invalid");
+              showStatus("Session error. Please refresh the page.");
+              
+              // Clear loading state
+              setLoading(false);
+              setLoadingMessage("");
+              return;
+            }
+            
+            // Send message to parent window to request token refresh
+            if (window.parent !== window) {
+              // Include the refresh counter to prevent loops
+              window.parent.postMessage({
+                type: "REQUEST_TOKEN_REFRESH",
+                recordId: recordId || event.data?.recordId || "",
+                refreshCount: refreshCount + 1,
+                timestamp: new Date().toISOString()
+              }, "*");
+              
+              console.log("[Token] Requested token refresh from parent window");
+              
+              // Show status indicating refresh attempt
+              showStatus("Refreshing session...");
+              
+              // Set a timeout to clear the status after a few seconds
+              setTimeout(() => {
+                // Clear status message if it's still showing "Refreshing session..."
+                if (statusMessage.includes("Refreshing session")) {
+                  showStatus("");
+                }
+              }, 3000);
+            } else {
+              // We're not in an iframe, try to reload data from localStorage
+              console.log("[Token] Not in iframe, trying local reload");
+              loadFromLocalStorage();
+              showStatus("Refreshed data from local storage");
+            }
+            break;
+
           default:
             console.log("[Message Handler] Unknown message type:", event.data.type);
         }
@@ -1619,150 +1737,6 @@ function App() {
     const cardsToDisplay = getFilteredCards();
     openPrintModal(cardsToDisplay, "All Flashcards");
   };
-
-  // Process messages from parent window
-  useEffect(() => {
-    const handleMessage = (event) => {
-      // Only process messages that have the expected format
-      if (event.data && typeof event.data === 'object' && event.data.type) {
-        if (event.data.type === 'KNACK_DATA') {
-          console.log("Received data from Knack:", event.data);
-          
-          if (event.data.cards && Array.isArray(event.data.cards)) {
-            try {
-              // Restore multiple choice options if they exist
-              const restoredCards = restoreMultipleChoiceOptions(event.data.cards);
-              
-              // Update app state with the loaded cards
-              setAllCards(restoredCards);
-              console.log(`Loaded ${restoredCards.length} cards from Knack and restored multiple choice options`);
-              
-              // Load color mapping
-              if (event.data.colorMapping) {
-                setSubjectColorMapping(event.data.colorMapping);
-                console.log("Loaded color mapping from Knack");
-              }
-              
-              // Load spaced repetition data
-              if (event.data.spacedRepetition) {
-                setSpacedRepetitionData(event.data.spacedRepetition);
-                console.log("Loaded spaced repetition data from Knack");
-              }
-              
-              // Load topic lists
-              if (event.data.topicLists && Array.isArray(event.data.topicLists)) {
-                setTopicLists(event.data.topicLists);
-                console.log(`Loaded ${event.data.topicLists.length} topic lists from Knack`);
-              }
-              
-              // Load topic metadata
-              if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
-                setTopicMetadata(event.data.topicMetadata);
-                console.log(`Loaded ${event.data.topicMetadata.length} topic metadata entries from Knack`);
-              }
-              
-              // Always ensure loading state is cleared
-              setLoading(false);
-              setLoadingMessage("");
-            } catch (error) {
-              console.error("Error processing Knack data:", error);
-              setLoading(false);
-              setLoadingMessage("");
-              showStatus("Error loading cards. Please refresh the page.");
-            }
-          }
-        }
-        
-        // Handle AUTH_ERROR message - authentication issues
-        if (event.data.type === 'AUTH_ERROR') {
-          console.error("Authentication error received:", event.data.data?.message || "Unknown auth error");
-          
-          // Ensure loading state is cleared first
-          setLoading(false);
-          setLoadingMessage("");
-          
-          // Show error message to user
-          showStatus(event.data.data?.message || "Authentication error. Please refresh the page.");
-          
-          // If we're in the AIGenerator view, consider returning to card bank
-          if (view === "aiGenerator") {
-            setTimeout(() => {
-              // Give user time to see the error message before redirecting
-              setView("cardBank");
-            }, 3000);
-          }
-        }
-        
-        // Handle REQUEST_TOKEN_REFRESH - attempt to refresh the authentication token
-        if (event.data.type === 'REQUEST_TOKEN_REFRESH') {
-          console.log("Token refresh requested");
-          
-          // Send message to parent window to request token refresh
-          if (window.parent !== window) {
-            window.parent.postMessage({
-              type: "REQUEST_TOKEN_REFRESH",
-              recordId: recordId
-            }, "*");
-            
-            console.log("Requested token refresh from parent window");
-            
-            // Show status indicating refresh attempt
-            showStatus("Refreshing session...");
-          }
-        }
-        
-        // Handle ADD_TO_BANK action from AICardGenerator
-        if (event.data.type === 'ADD_TO_BANK') {
-          console.log("ADD_TO_BANK action received in secondary handler:", event.data);
-          try {
-            if (event.data.data && event.data.data.cards && Array.isArray(event.data.data.cards)) {
-              const newCards = event.data.data.cards;
-              
-              // Process each card, preserving all its metadata
-              newCards.forEach(card => {
-                // Ensure all necessary properties are set
-                if (!card.subject) {
-                  console.warn("Card missing subject:", card.id);
-                  card.subject = "General";
-                }
-                
-                if (!card.topic) {
-                  console.warn("Card missing topic:", card.id);
-                  card.topic = "General";
-                }
-                
-                // Explicitly ensure exam type and board are set, even if they're missing
-                card.examType = card.examType || "Course";
-                card.examBoard = card.examBoard || "General";
-                
-                // Ensure boxNum and review dates are set
-                card.boxNum = card.boxNum || 1;
-                card.lastReviewed = card.lastReviewed || new Date().toISOString();
-                card.nextReviewDate = card.nextReviewDate || new Date().toISOString();
-                
-                // Add the card to state
-                addCard(card);
-              });
-              
-              console.log(`Successfully added ${newCards.length} cards to bank with topic information preserved`);
-              showStatus(`Added ${newCards.length} cards to your flashcard bank`);
-              
-              // Make sure we aren't stuck in a loading state
-              setLoading(false);
-            }
-          } catch (error) {
-            console.error("Error processing ADD_TO_BANK action:", error);
-            showStatus("Error adding cards to bank");
-            // Ensure we exit the loading state if there's an error
-            setLoading(false);
-          }
-        }
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [showStatus, setAllCards, setSubjectColorMapping, setSpacedRepetitionData, setTopicLists, setTopicMetadata, addCard, recordId, view]);
 
   // Show loading state
   if (loading) {

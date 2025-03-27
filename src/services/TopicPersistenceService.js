@@ -30,6 +30,28 @@ const debugLog = (title, data) => {
 };
 
 /**
+ * Add a centralized token refresh utility
+ * @returns {Promise<boolean>} - Success status
+ */
+export const requestTokenRefresh = async () => {
+  console.log("Centralized token refresh requested");
+  
+  if (window.parent && window.parent !== window) {
+    // Send a message to parent requesting token refresh
+    window.parent.postMessage({ 
+      type: "REQUEST_TOKEN_REFRESH", 
+      timestamp: new Date().toISOString() 
+    }, "*");
+    
+    // Return a promise that resolves after waiting for potential refresh
+    return new Promise(resolve => setTimeout(resolve, 1500));
+  }
+  
+  // No parent frame, can't refresh token
+  return Promise.resolve(false);
+};
+
+/**
  * Find a user's record ID in Knack
  * @param {string} userId - User ID to find
  * @param {Object} auth - Auth object containing token
@@ -47,7 +69,7 @@ export const findUserRecordId = async (userId, auth) => {
 
   // Keep track of retry attempts
   let retryCount = 0;
-  const maxRetries = 2;
+  const maxRetries = 3; // Increased from 2
 
   while (retryCount <= maxRetries) {
     try {
@@ -70,22 +92,9 @@ export const findUserRecordId = async (userId, auth) => {
         
         // Check specifically for authentication errors
         if (searchResponse.status === 403 || errorText.includes("Invalid token")) {
-          // Try to request token refresh
+          // Try to request token refresh using our centralized function
           console.warn(`Authentication error on retry ${retryCount}, requesting token refresh`);
-          
-          if (window.parent && window.parent !== window) {
-            // Send a message to parent requesting token refresh
-            window.parent.postMessage({ 
-              type: "REQUEST_TOKEN_REFRESH", 
-              timestamp: new Date().toISOString() 
-            }, "*");
-            
-            // Wait a moment before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          } else {
-            // No parent to ask for token refresh, fail faster
-            throw new Error(`Authentication failed: ${errorText}`);
-          }
+          await requestTokenRefresh();
           
           // Increment retry count and try again
           retryCount++;
@@ -139,8 +148,8 @@ export const findUserRecordId = async (userId, auth) => {
       // Increment retry count
       retryCount++;
       
-      // Add a small delay before retry
-      await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
+      // Add a small delay before retry with exponential backoff
+      await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, retryCount - 1)));
     }
   }
 
@@ -629,8 +638,27 @@ export const loadTopicLists = async (userId, auth) => {
     debugLog("Loading topic lists", { userId });
     
     try {
-      // Find the user's record ID
-      const recordId = await findUserRecordId(userId, auth);
+      // Try to get the record ID
+      let recordId;
+      try {
+        recordId = await findUserRecordId(userId, auth);
+      } catch (error) {
+        // If token expired, try to refresh it once and retry
+        if (error.message.includes("Authentication") || error.message.includes("Invalid token")) {
+          console.log("Auth error finding record ID, trying token refresh");
+          await requestTokenRefresh();
+          
+          // Try again after token refresh
+          try {
+            recordId = await findUserRecordId(userId, auth);
+          } catch (secondError) {
+            console.error("Second attempt failed after token refresh:", secondError);
+            throw secondError;
+          }
+        } else {
+          throw error;
+        }
+      }
 
       // Get user data
       const userData = await getUserData(recordId, auth);
