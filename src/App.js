@@ -1,4 +1,4 @@
-﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿﻿﻿﻿﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -1415,13 +1415,8 @@ function App() {
                     recordId: recordId
                   }, "*");
                   
-                  // Set a fallback timeout to ensure we don't get stuck in loading state
-                  setTimeout(() => {
-                    if (loading) {
-                      console.log("[Add To Bank Result] Data refresh timed out, reverting to manual refresh");
-                      window.location.reload();
-                    }
-                  }, 5000);
+                  // No fallback timeout - wait for KNACK_DATA message instead
+                  // The data will eventually come through even if it takes longer than 5 seconds
                 } else {
                   // If we're not in an iframe, just reload from localStorage
                   loadFromLocalStorage();
@@ -1463,13 +1458,8 @@ function App() {
                   recordId: recordId
                 }, "*");
                 
-                // Set a fallback timeout to ensure we don't get stuck in loading state
-                setTimeout(() => {
-                  if (loading) {
-                    console.log("[Topic Shells] Data refresh timed out, reverting to manual refresh");
-                    window.location.reload();
-                  }
-                }, 5000);
+                // No fallback timeout - wait for KNACK_DATA message instead
+                // The data will eventually come through even if it takes longer than 5 seconds
               } else {
                 // If we're not in an iframe, just reload from localStorage
                 loadFromLocalStorage();
@@ -1623,6 +1613,7 @@ function App() {
         if (event.data.cards && Array.isArray(event.data.cards)) {
           const restoredCards = restoreMultipleChoiceOptions(event.data.cards);
           setAllCards(restoredCards);
+          updateSpacedRepetitionData(restoredCards);
           console.log(`Loaded ${event.data.cards.length} cards from Knack and restored multiple choice options`);
         }
         
@@ -1656,6 +1647,7 @@ function App() {
           console.log(`Loaded ${event.data.topicMetadata.length} topic metadata entries from Knack`);
         }
         
+        // Always turn off loading when receiving KNACK_DATA
         setLoading(false);
       }
       

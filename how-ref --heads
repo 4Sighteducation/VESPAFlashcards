@@ -1,2 +1,0 @@
-* [32m(HEAD detached at fc4ab80)[m fc4ab80 Fix metadata association and AI card generator crashes: 1) Fixed color mapping in App.js to prevent crash, 2) Improved topic shell persistence to prevent duplicates, 3) Enhanced card metadata handling in AI Generator
-  main                      [m 689745f Fix build errors: add missing state variables in AICardGenerator.jsx
