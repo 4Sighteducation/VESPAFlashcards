@@ -302,8 +302,7 @@ function App() {
         userTopics: safeSerializeData(userTopics),
         topicLists: safeSerializeData(topicLists),
         topicMetadata: safeSerializeData(topicMetadata),
-        preserveFields: true,
-        additionalFields: additionalFields
+        preserveFields: true
       };
       
       console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${recordId})`);
@@ -335,7 +334,7 @@ function App() {
       setIsSaving(false);
       showStatus("Saved to browser storage");
     }
-  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, additionalFields, isSaving, saveToLocalStorage, showStatus]);
+  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus]);
 
   // Generate a random vibrant color
   const getRandomColor = useCallback(() => {
