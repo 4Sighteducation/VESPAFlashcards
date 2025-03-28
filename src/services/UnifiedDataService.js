@@ -837,8 +837,27 @@ export const saveTopicShells = async (topicShells, userId, auth) => {
       };
     });
     
+    // Find cards associated with each topic and update the topic shells
+    // This ensures topics properly track their cards
+    const topicShellsWithCards = validatedTopicShells.map(topic => {
+      // Find all cards with this topicId
+      const associatedCards = existingCards.filter(card => card.topicId === topic.id);
+      
+      if (associatedCards.length > 0) {
+        // This topic has associated cards, update it
+        return {
+          ...topic,
+          isEmpty: false,
+          cards: associatedCards.map(card => card.id),
+          updated: new Date().toISOString()
+        };
+      }
+      
+      return topic;
+    });
+    
     // Combine updated topic shells with existing cards
-    const updatedBankData = [...validatedTopicShells, ...existingCards];
+    const updatedBankData = [...topicShellsWithCards, ...existingCards];
     
     debugLog("Updated bank data", {
       totalItems: updatedBankData.length,
