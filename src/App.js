@@ -39,6 +39,11 @@ import {
   needsMigration
 } from './utils/CardDataProcessor';
 
+import saveQueueManager from './services/SaveQueueManager';
+import cardTopicRelationshipManager from './services/CardTopicRelationshipManager';
+import messageHandler from './utils/MessageHandler';
+import saveVerificationService from './services/SaveVerificationService';
+
 // API Keys and constants
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
@@ -320,7 +325,7 @@ function App() {
     return null;
   }, [recordId, auth]);
 
-  // Modify the saveData function to use the ensureRecordId function
+  // Replace the existing saveData function
   const saveData = useCallback(async () => {
     // Check if we're authenticated
     if (!auth) {
@@ -344,78 +349,128 @@ function App() {
     console.log("[Save] Saving to localStorage first");
     saveToLocalStorage();
     
-    // If we're in an iframe, send data to parent window
-    if (window.parent !== window) {
-      console.log("[Save] Preparing data for Knack integration");
-      
-      // Get recordId safely - use the new ensureRecordId function
+    try {
+      // Get recordId safely
       let safeRecordId = recordId;
       if (!safeRecordId) {
         safeRecordId = await ensureRecordId();
+        if (!safeRecordId) {
+          throw new Error("No record ID available for save");
+        }
       }
       
-      if (!safeRecordId) {
-        console.error("[Save] No record ID available, cannot save to Knack");
+      // Use SaveQueueManager if available
+      if (saveQueueManager) {
+        console.log("[Save] Using SaveQueueManager for transaction-based save");
+        
+        // Begin a transaction
+        const transactionId = saveQueueManager.beginTransaction();
+        
+        // Add cards operation if we have cards
+        if (allCards && allCards.length > 0) {
+          saveQueueManager.addOperation({
+            type: 'saveCards',
+            cards: allCards
+          });
+        }
+        
+        // Add color mapping operation
+        if (subjectColorMapping) {
+          saveQueueManager.addOperation({
+            type: 'updateColorMapping',
+            colorMapping: subjectColorMapping
+          });
+        }
+        
+        // Add spaced repetition data if available
+        if (spacedRepetitionData) {
+          saveQueueManager.addOperation({
+            type: 'updateSpacedRepetition',
+            data: spacedRepetitionData
+          });
+        }
+        
+        // Add topic lists if available
+        if (topicLists && topicLists.length > 0) {
+          saveQueueManager.addOperation({
+            type: 'saveTopicLists',
+            topicLists: topicLists
+          });
+        }
+        
+        // Add topic metadata if available
+        if (topicMetadata && topicMetadata.length > 0) {
+          saveQueueManager.addOperation({
+            type: 'saveTopicMetadata',
+            topicMetadata: topicMetadata
+          });
+        }
+        
+        // Commit the transaction
+        await saveQueueManager.commitTransaction();
+        
+        console.log("[Save] Transaction committed successfully");
         setIsSaving(false);
-        showStatus("Error: Missing record ID for save");
+        showStatus("Save complete");
         return;
       }
       
-      // Ensure data is serializable by running it through JSON.stringify + JSON.parse
-      // This prevents circular references and other serialization issues
-      const safeSerializeData = (data) => {
-        try {
-          return JSON.parse(JSON.stringify(data));
-        } catch (e) {
-          console.error("[Save] Serialization error:", e);
-          // Try to clean the data manually
-          return {
-            ...data,
-            _cleaned: true
-          };
+      // Fallback to iframe message-based save if no SaveQueueManager
+      if (window.parent !== window) {
+        console.log("[Save] Preparing data for Knack integration");
+        
+        // Prepare the data payload for Knack
+        const safeData = {
+          recordId: safeRecordId,
+          cards: JSON.parse(JSON.stringify(allCards)),
+          colorMapping: JSON.parse(JSON.stringify(subjectColorMapping)), 
+          spacedRepetition: JSON.parse(JSON.stringify(spacedRepetitionData)),
+          userTopics: JSON.parse(JSON.stringify(userTopics)),
+          topicLists: JSON.parse(JSON.stringify(topicLists)),
+          topicMetadata: JSON.parse(JSON.stringify(topicMetadata)),
+          preserveFields: true
+        };
+        
+        console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${safeRecordId})`);
+        
+        // Use messageHandler if available
+        if (messageHandler) {
+          console.log("[Save] Using MessageHandler for communication");
+          
+          try {
+            const result = await messageHandler.saveData(safeData);
+            console.log("[Save] MessageHandler save result:", result);
+            setIsSaving(false);
+            showStatus("Save complete");
+          } catch (error) {
+            console.error("[Save] MessageHandler save failed:", error);
+            setIsSaving(false);
+            showStatus("Save failed: " + error.message);
+          }
+          
+          return;
         }
-      };
-      
-      // Prepare the data payload for Knack
-      const safeData = {
-        recordId: safeRecordId,
-        cards: safeSerializeData(allCards),
-        colorMapping: safeSerializeData(subjectColorMapping), 
-        spacedRepetition: safeSerializeData(spacedRepetitionData),
-        userTopics: safeSerializeData(userTopics),
-        topicLists: safeSerializeData(topicLists),
-        topicMetadata: safeSerializeData(topicMetadata),
-        preserveFields: true
-      };
-      
-      console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${safeRecordId})`);
-      
-      // Add a timeout to clear the saving state if no response is received
-      const saveTimeout = setTimeout(() => {
-        console.log("[Save] No save response received within timeout, resetting save state");
-        setIsSaving(false);
-        showStatus("Save status unknown - check your data");
-      }, 15000); // 15 second timeout
-      
-      // Store the timeout ID so we can clear it if we get a response
-      window.currentSaveTimeout = saveTimeout;
-      
-      // Send save message to parent window
-      window.parent.postMessage(
-        {
+        
+        // Fallback to direct postMessage
+        window.parent.postMessage({
           type: "SAVE_DATA",
           data: safeData
-        },
-        "*"
-      );
-
-      console.log("[Save] Message sent to parent window");
-      showStatus("Saving your flashcards...");
-    } else {
-      // If we're in standalone mode, mark as saved immediately
-      console.log("[Save] Running in standalone mode");
+        }, "*");
+        
+        // Set a timeout to clear the saving state
+        setTimeout(() => {
+          setIsSaving(false);
+          showStatus("Save complete");
+        }, 2000);
+      } else {
+        console.log("[Save] Not in iframe, no parent window to send data to");
+        setIsSaving(false);
+        showStatus("Save complete (local only)");
+      }
+    } catch (error) {
+      console.error("[Save] Error during save operation:", error);
       setIsSaving(false);
-      showStatus("Saved to browser storage");
+      showStatus("Save failed: " + error.message);
     }
   }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus, ensureRecordId, recordId]);
 
@@ -1261,543 +1316,162 @@ function App() {
   const readyMessageSentRef = useRef(false);
   
   useEffect(() => {
-    // Prevent duplicate message sending
-    let hasReceivedUserInfo = false;
-    
-    // Function to handle new verification messages
-    const handleVerificationMessage = (event) => {
-      const { type, success, error, reason } = event.data;
+    // If we're in an iframe, set up communication with the parent
+    if (window.parent !== window) {
+      console.log("[App] Setting up communication with parent window");
       
-      console.log(`[Verification] Received ${type}`, event.data);
-      
-      switch (type) {
-        case 'VERIFICATION_COMPLETE':
-          // Clear any save timeouts
-          if (window.currentSaveTimeout) {
-            clearTimeout(window.currentSaveTimeout);
-            window.currentSaveTimeout = null;
-          }
-          
-          // Handle verification result
-          if (success) {
-            showStatus("Save verified successfully");
-          } else {
-            showStatus("Save completed, verification pending");
-          }
-          break;
-          
-        case 'VERIFICATION_SKIPPED':
-          // Just log the reason
-          console.log(`[Verification] Skipped: ${reason}`);
-          break;
-          
-        case 'VERIFICATION_FAILED':
-          console.error(`[Verification] Failed: ${error}`);
-          showStatus("Warning: Save verification failed");
-          break;
-          
-        default:
-          // Unhandled verification message
-          console.log(`[Verification] Unhandled message type: ${type}`);
-      }
-    };
-    
-    const handleMessage = (event) => {
-      // Avoid logging every message to reduce console spam
-      if (event.data && event.data.type !== 'PING') {
-        console.log(`[Message Handler ${new Date().toISOString()}] From parent: ${event.data?.type}`);
-      }
-
-      if (event.data && event.data.type) {
+      // Function to handle messages from the parent window
+      const handleMessage = (event) => {
+        if (!event.data || !event.data.type) return;
+        
+        console.log(`[App] Received message from parent: ${event.data.type}`);
+        
         switch (event.data.type) {
-          case "KNACK_USER_INFO":
-            // IMPORTANT: Only process auth once to prevent loops
-            if (authProcessedRef.current) {
-              console.log("[User Info] Already processed, ignoring duplicate message");
-              return;
-            }
-            
-            // Set the flag immediately to prevent race conditions
-            authProcessedRef.current = true;
-            console.log("[User Info] First-time processing of user data");
-            
-            // Process student data if we have a role of "student"
-            const userRole = event.data.data?.role || "";
-            let userStudentData = {};
-            
-            // Extract school data from any user
-            const schoolData = cleanHtmlTags(event.data.data?.field_122 || "");
-            
-            // Process tutor information
-            let tutorData = "";
-            // If there's a tutor field directly in the data, use it
-            if (event.data.data?.field_1682) {
-              tutorData = cleanHtmlTags(event.data.data.field_1682 || "");
-            }
-            
-            if (userRole === "student" && event.data.data?.studentData) {
-              try {
-                // Extract student data (cleaning HTML tags if needed)
-                const studentData = event.data.data.studentData || {};
-                
-                // Extract yearGroup, tutorGroup and tutor from studentData
-                userStudentData = {
-                  tutorGroup: cleanHtmlTags(studentData.field_565 || ""),
-                  yearGroup: cleanHtmlTags(studentData.field_548 || ""),
-                  tutor: cleanHtmlTags(studentData.field_1682 || tutorData || ""), // Use direct field if available
-                  school: schoolData
-                };
-                
-                console.log("[User Info] Processed student data");
-              } catch (e) {
-                console.error("[User Info] Error processing student data:", e);
+          case 'KNACK_USER_INFO':
+            if (event.data.data) {
+              // Set auth information
+              setAuth({
+                id: event.data.data.id,
+                email: event.data.data.email,
+                name: event.data.data.name || '',
+                token: event.data.data.token,
+                appId: event.data.data.appId
+              });
+              
+              // Set record ID if available
+              if (event.data.data.userData && event.data.data.userData.recordId) {
+                setRecordId(event.data.data.userData.recordId);
               }
-            } else {
-              // For non-student users, just extract the school data
-              userStudentData = {
-                school: schoolData,
-                tutor: tutorData // Include tutor data for all user types
-              };
-            }
-            
-            // Initialize AuthManager with the complete authentication data
-            const authData = {
-              ...event.data.data,
-              ...userStudentData
-            };
-            
-            // Set auth state for React components
-            setAuth(authData);
-            
-            // Initialize the centralized AuthManager with the same data
-            initializeAuthManager(authData);
-            console.log("[User Info] Initialized AuthManager with user data");
-
-            // If user data was included, process it
-            if (event.data.data?.userData) {
-              try {
-                // Use our safe parsing function to handle potential corrupted JSON
-                const userData = safeParseJSON(event.data.data.userData);
-
-                // Store the recordId if available
-                if (userData.recordId) {
-                  setRecordId(userData.recordId);
-                  console.log("[User Info] Stored recordId:", userData.recordId);
-                  
-                  // Store in localStorage for recovery
-                  try {
-                    localStorage.setItem('flashcards_auth', JSON.stringify({ recordId: userData.recordId }));
-                    console.log("[User Info] Stored record ID in localStorage for recovery");
-                  } catch (e) {
-                    console.error("[User Info] Error storing record ID in localStorage:", e);
-                  }
-                }
-
-                // Process cards
+              
+              // Load data from user data if available
+              if (event.data.data.userData) {
+                const userData = event.data.data.userData;
+                
+                // Load cards
                 if (userData.cards && Array.isArray(userData.cards)) {
-                  const restoredCards = restoreMultipleChoiceOptions(userData.cards);
-                  setAllCards(restoredCards);
-                  updateSpacedRepetitionData(restoredCards);
-                  console.log("[User Info] Restored multiple choice options for cards");
+                  setAllCards(userData.cards);
+                  updateSpacedRepetitionData(userData.cards);
                 }
                 
-                // Process color mapping
+                // Load color mapping
                 if (userData.colorMapping) {
                   setSubjectColorMapping(userData.colorMapping);
                 }
                 
-                // Process spaced repetition data if separate
-                if (userData.spacedRepetition) {
-                  setSpacedRepetitionData(userData.spacedRepetition);
-                }
-                
-                // Process user topics if available
-                if (userData.userTopics) {
-                  setUserTopics(userData.userTopics);
-                }
-                
-                // Process topic lists if available
+                // Load topic lists
                 if (userData.topicLists && Array.isArray(userData.topicLists)) {
                   setTopicLists(userData.topicLists);
-                  console.log("[User Info] Loaded topic lists from Knack:", userData.topicLists.length);
-                }
-                
-                // Process topic metadata if available
-                if (userData.topicMetadata && Array.isArray(userData.topicMetadata)) {
-                  setTopicMetadata(userData.topicMetadata);
-                  console.log("[User Info] Loaded topic metadata from Knack:", userData.topicMetadata.length);
-                }
-                
-                // Additional logging to help with debugging
-                console.log("[User Info] Successfully processed user data from Knack");
-              } catch (e) {
-                console.error("[User Info] Error processing userData JSON:", e);
-                showStatus("Error loading your data. Loading from local storage instead.");
-                loadFromLocalStorage();
-              }
-            } else {
-              // If no user data, load from localStorage
-              console.log("[User Info] No user data received, falling back to localStorage");
-              loadFromLocalStorage();
-            }
-            
-            setLoading(false);
-            
-            // Confirm receipt of auth info (only do this once)
-            if (window.parent !== window) {
-              console.log("[User Info] Sending AUTH_CONFIRMED message");
-              window.parent.postMessage({ type: "AUTH_CONFIRMED" }, "*");
-            }
-            break;
-
-          case "SAVE_RESULT":
-            console.log("[Save Result] Received:", event.data.success);
-            
-            // Clear any save timeouts
-            if (window.currentSaveTimeout) {
-              clearTimeout(window.currentSaveTimeout);
-              window.currentSaveTimeout = null;
-            }
-            
-            setIsSaving(false);
-            if (event.data.success) {
-              showStatus("Saved successfully!");
-            } else {
-              showStatus("Error saving data. Changes saved locally.");
-            }
-            break;
-            
-          case "LOAD_SAVED_DATA":
-            console.log("[Load Data] Received updated data from Knack");
-
-            if (event.data.data) {
-              try {
-                // Process cards
-                if (event.data.data.cards && Array.isArray(event.data.data.cards)) {
-                  const restoredCards = restoreMultipleChoiceOptions(event.data.data.cards);
-                  setAllCards(restoredCards);
-                  updateSpacedRepetitionData(restoredCards);
-                  console.log("[Load Data] Restored multiple choice options for cards");
-                }
-
-                // Process color mapping
-                if (event.data.data.colorMapping) {
-                  setSubjectColorMapping(safeParseJSON(event.data.data.colorMapping));
-                }
-
-                // Process spaced repetition data if separate
-                if (event.data.data.spacedRepetition) {
-                  setSpacedRepetitionData(safeParseJSON(event.data.data.spacedRepetition));
-                }
-                
-                // Process user topics if available
-                if (event.data.data.userTopics) {
-                  setUserTopics(safeParseJSON(event.data.data.userTopics));
-                }
-                
-                // Process topic lists if available
-                if (event.data.data.topicLists) {
-                  setTopicLists(safeParseJSON(event.data.data.topicLists));
-                  console.log("[Load Data] Loaded topic lists:", 
-                    Array.isArray(safeParseJSON(event.data.data.topicLists)) ? 
-                    safeParseJSON(event.data.data.topicLists).length : 'none');
-                }
-                
-                // Process topic metadata if available
-                if (event.data.data.topicMetadata) {
-                  setTopicMetadata(safeParseJSON(event.data.data.topicMetadata));
-                  console.log("[Load Data] Loaded topic metadata:",
-                    Array.isArray(safeParseJSON(event.data.data.topicMetadata)) ?
-                    safeParseJSON(event.data.data.topicMetadata).length : 'none');
-                }
-                
-                showStatus("Updated with latest data from server");
-              } catch (error) {
-                console.error("[Load Data] Error processing updated data:", error);
-                showStatus("Error loading updated data");
-              }
-            }
-            break;
-
-          case "ADD_TO_BANK_RESULT":
-            console.log("[Add To Bank Result] Received:", event.data);
-            if (event.data.success) {
-              showStatus("Cards added to bank successfully!");
-              
-              // If shouldReload flag is set, request updated data instead of full page reload
-              if (event.data.shouldReload) {
-                console.log("[Add To Bank Result] Requesting updated data...");
-                setLoading(true);
-                setLoadingMessage("Refreshing card data...");
-                
-                // Send a message to parent window to request updated data
-                if (window.parent !== window) {
-                  window.parent.postMessage({
-                    type: "REQUEST_UPDATED_DATA",
-                    recordId: recordId
-                  }, "*");
-                  
-                  // No fallback timeout - wait for KNACK_DATA message instead
-                  // The data will eventually come through even if it takes longer than 5 seconds
-                } else {
-                  // If we're not in an iframe, just reload from localStorage
-                  loadFromLocalStorage();
-                  setLoading(false);
-                }
-              }
-            } else {
-              showStatus("Error adding cards to bank. Try refreshing the page.");
-              
-              // If there was an error, try to refresh data anyway after a short delay
-              // This can help recover from temporary issues
-              setTimeout(() => {
-                if (window.parent !== window) {
-                  window.parent.postMessage({
-                    type: "REQUEST_UPDATED_DATA",
-                    recordId: recordId
-                  }, "*");
-                  
-                  console.log("[Add To Bank Result] Requested data refresh after error");
-                }
-              }, 2000);
-            }
-            break;
-            
-          case "TOPIC_SHELLS_CREATED":
-            console.log("[Topic Shells] Created successfully:", event.data);
-            showStatus(`Created ${event.data.count} topic shells!`);
-            
-            // If shouldReload flag is set, request updated data instead of full page reload
-            if (event.data.shouldReload) {
-              console.log("[Topic Shells] Requesting updated data...");
-              setLoading(true);
-              setLoadingMessage("Refreshing card data...");
-              
-              // Send a message to parent window to request updated data
-              if (window.parent !== window) {
-                window.parent.postMessage({
-                  type: "REQUEST_UPDATED_DATA",
-                  recordId: recordId
-                }, "*");
-                
-                // No fallback timeout - wait for KNACK_DATA message instead
-                // The data will eventually come through even if it takes longer than 5 seconds
-              } else {
-                // If we're not in an iframe, just reload from localStorage
-                loadFromLocalStorage();
-                setLoading(false);
-              }
-            }
-            break;
-            
-          case "RELOAD_APP_DATA":
-            console.log("[Reload] Explicit reload request received");
-            showStatus("Refreshing data...");
-            
-            // Instead of reloading the whole page, use the data refresh mechanism
-            if (window.parent !== window) {
-              window.parent.postMessage({
-                type: "REQUEST_UPDATED_DATA",
-                recordId: recordId
-              }, "*");
-              
-              console.log("[Reload] Requested updated data instead of full page reload");
-              
-              // Set a brief loading state but don't show full initialization screen
-              setLoadingMessage("Refreshing your flashcards...");
-              
-              // Add a timeout to clear loading state in case no response is received
-              setTimeout(() => {
-                setLoading(false);
-                setLoadingMessage("");
-              }, 5000);
-            } else {
-              // If not in an iframe, refresh from localStorage
-              loadFromLocalStorage();
-            }
-            break;
-
-          case "REQUEST_REFRESH":
-            console.log("[Refresh] App refresh requested:", event.data);
-            
-            // Instead of setting loading state which shows init screen,
-            // just reload the data silently
-            if (window.parent !== window) {
-              window.parent.postMessage({
-                type: "REQUEST_UPDATED_DATA",
-                recordId: recordId || event.data?.data?.recordId
-              }, "*");
-              
-              console.log("[Refresh] Requested data refresh without showing loading screen");
-              
-              // Add a timeout to clear loading state in case the response never comes
-              setTimeout(() => {
-                setLoading(false);
-                setLoadingMessage("");
-              }, 3000);
-            } else {
-              // If we're not in an iframe, just reload from localStorage
-              loadFromLocalStorage();
-              // Ensure we're not in loading state
-              setLoading(false);
-              setLoadingMessage("");
-            }
-            break;
-
-          case "SAVE_OPERATION_QUEUED":
-            // Data save has been queued on the server
-            console.log("[Message Handler] Save operation queued");
-            
-            // Don't reset the saving state - keep it active
-            // since we're still in the save process
-            
-            showStatus("Your flashcards are being saved (queued)...");
-            break;
-
-          case "SAVE_OPERATION_FAILED":
-            console.error("[Message Handler] Save operation failed:", event.data.error);
-            
-            // Clear any save timeouts
-            if (window.currentSaveTimeout) {
-              clearTimeout(window.currentSaveTimeout);
-              window.currentSaveTimeout = null;
-            }
-            
-            setIsSaving(false);
-            showStatus("Error saving data: " + (event.data.error || "Unknown error"));
-            break;
-            
-          case "KNACK_DATA":
-            console.log("Received data from Knack:", event.data);
-            
-            if (event.data.cards && Array.isArray(event.data.cards)) {
-              try {
-                // Restore multiple choice options if they exist
-                const restoredCards = restoreMultipleChoiceOptions(event.data.cards);
-                
-                // Update app state with the loaded cards
-                setAllCards(restoredCards);
-                console.log(`Loaded ${restoredCards.length} cards from Knack and restored multiple choice options`);
-                
-                // Load color mapping
-                if (event.data.colorMapping) {
-                  setSubjectColorMapping(event.data.colorMapping);
-                  console.log("Loaded color mapping from Knack");
-                }
-                
-                // Load spaced repetition data
-                if (event.data.spacedRepetition) {
-                  setSpacedRepetitionData(event.data.spacedRepetition);
-                  console.log("Loaded spaced repetition data from Knack");
-                }
-                
-                // Load topic lists
-                if (event.data.topicLists && Array.isArray(event.data.topicLists)) {
-                  setTopicLists(event.data.topicLists);
-                  console.log(`Loaded ${event.data.topicLists.length} topic lists from Knack`);
                 }
                 
                 // Load topic metadata
-                if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
-                  setTopicMetadata(event.data.topicMetadata);
-                  console.log(`Loaded ${event.data.topicMetadata.length} topic metadata entries from Knack`);
+                if (userData.topicMetadata && Array.isArray(userData.topicMetadata)) {
+                  setTopicMetadata(userData.topicMetadata);
                 }
-                
-                // Always ensure loading state is cleared
-                setLoading(false);
-                setLoadingMessage("");
-              } catch (error) {
-                console.error("Error processing Knack data:", error);
-                setLoading(false);
-                setLoadingMessage("");
-                showStatus("Error loading cards. Please refresh the page.");
               }
+              
+              // Notify parent that auth is confirmed
+              window.parent.postMessage({
+                type: 'AUTH_CONFIRMED'
+              }, '*');
+              
+              setLoading(false);
             }
             break;
-
-          case "AUTH_ERROR":
-            console.error("Authentication error received:", event.data.data?.message || "Unknown auth error");
             
-            // Ensure loading state is cleared first
-            setLoading(false);
-            setLoadingMessage("");
+          case 'KNACK_DATA':
+            // Handle refreshed data
+            if (event.data.cards && Array.isArray(event.data.cards)) {
+              setAllCards(event.data.cards);
+              updateSpacedRepetitionData(event.data.cards);
+            }
             
-            // Show error message to user
-            showStatus(event.data.data?.message || "Authentication error. Please refresh the page.");
+            if (event.data.colorMapping) {
+              setSubjectColorMapping(event.data.colorMapping);
+            }
             
-            // If we're in the AIGenerator view, consider returning to card bank
-            if (view === "aiGenerator") {
-              setTimeout(() => {
-                // Give user time to see the error message before redirecting
-                setView("cardBank");
-              }, 3000);
+            if (event.data.recordId) {
+              setRecordId(event.data.recordId);
+            }
+            
+            if (event.data.topicLists && Array.isArray(event.data.topicLists)) {
+              setTopicLists(event.data.topicLists);
+            }
+            
+            if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
+              setTopicMetadata(event.data.topicMetadata);
+            }
+            
+            break;
+            
+          case 'SAVE_RESULT':
+            // Handle save result
+            setIsSaving(false);
+            if (event.data.success) {
+              showStatus("Save complete");
+            } else {
+              showStatus(`Save failed: ${event.data.error || 'Unknown error'}`);
             }
             break;
-
-          case "REQUEST_TOKEN_REFRESH":
-            console.log("[Token] Using AuthManager to handle token refresh");
             
-            // Call our new centralized token refresh utility
-            handleTokenRefreshRequest(
-              recordId,
-              showStatus,
-              setLoading,
-              loadFromLocalStorage
-            ).then(success => {
-              if (success) {
-                console.log("[Token] Token refresh initiated successfully");
-              } else {
-                console.warn("[Token] Token refresh could not be initiated");
-              }
-            });
-            break;
-
-          case "VERIFICATION_COMPLETE":
-          case "VERIFICATION_SKIPPED":
-          case "VERIFICATION_FAILED":
-            handleVerificationMessage(event);
-            break;
-
-          default:
-            console.log("[Message Handler] Unknown message type:", event.data.type);
+          // Add other case handlers as needed...
         }
+      };
+      
+      // Register message handler
+      window.addEventListener('message', handleMessage);
+      
+      // Use the messageHandler if available
+      if (messageHandler) {
+        messageHandler.addListener('authentication', (authData) => {
+          if (authData) {
+            setAuth({
+              id: authData.id,
+              email: authData.email,
+              name: authData.name || '',
+              token: authData.token,
+              appId: authData.appId
+            });
+            
+            if (authData.userData && authData.userData.recordId) {
+              setRecordId(authData.userData.recordId);
+            }
+            
+            setLoading(false);
+          }
+        });
       }
-    };
-
-    // Set up listener for messages from parent window
-    window.addEventListener("message", handleMessage);
-
-    // Track if we've sent the initial ready message
-    let readyMessageSent = false;
-    
-    // Send ready message only once
-    const sendReadyMessage = () => {
-      if (!readyMessageSent && window.parent !== window) {
-        window.parent.postMessage({ type: "APP_READY" }, "*");
-        console.log("[Init] Sent ready message to parent");
-        readyMessageSent = true;
+      
+      // Notify parent that app is ready
+      console.log("[App] Sending APP_READY message to parent");
+      window.parent.postMessage({
+        type: 'APP_READY'
+      }, '*');
+      
+      // Share persistence services with parent window
+      if (saveQueueManager && cardTopicRelationshipManager) {
+        console.log("[App] Sharing persistence services with parent window");
+        window.parent.postMessage({
+          type: 'PERSISTENCE_SERVICES_READY',
+          services: {
+            unifiedPersistenceManager: saveQueueManager,
+            topicShellManager: cardTopicRelationshipManager,
+            saveVerificationService: saveVerificationService
+          }
+        }, '*');
       }
-    };
-    
-    // Send ready message or initialize standalone mode
-    if (window.parent !== window) {
-      sendReadyMessage();
+      
+      // Cleanup
+      return () => {
+        window.removeEventListener('message', handleMessage);
+        if (messageHandler) {
+          // Cleanup any messageHandler listeners here
+        }
+      };
     } else {
-      // In standalone mode, load from localStorage
-      console.log("[Init] Running in standalone mode");
-      setAuth({
-        id: "test-user",
-        email: "test@example.com",
-        name: "Test User",
-      });
-      loadFromLocalStorage();
+      // Not in an iframe, proceed with normal initialization
       setLoading(false);
     }
-
-    return () => {
-      window.removeEventListener("message", handleMessage);
-    };
-  }, [showStatus, updateSpacedRepetitionData, loadFromLocalStorage]);
+  }, [updateSpacedRepetitionData, showStatus]);
 
   // Function to extract user-specific topics for a subject
   const getUserTopicsForSubject = useCallback(
@@ -1896,6 +1570,111 @@ function App() {
       window.removeEventListener('topicRefreshNeeded', handleTopicRefreshNeeded);
     };
   }, [showStatus, loadFromLocalStorage, recordId]);
+
+  // Initialize the services
+  const initializeServices = useCallback(() => {
+    console.log("[App] Initializing services");
+    
+    // Connect SaveQueueManager with MessageHandler
+    if (saveQueueManager && messageHandler) {
+      messageHandler.setSaveQueueManager(saveQueueManager);
+      console.log("[App] Connected SaveQueueManager to MessageHandler");
+    }
+    
+    // Set up CardTopicRelationshipManager
+    if (cardTopicRelationshipManager) {
+      cardTopicRelationshipManager.initialize(allCards, topicLists);
+      console.log("[App] Initialized CardTopicRelationshipManager");
+    }
+    
+    // Set up SaveVerificationService
+    if (saveVerificationService) {
+      console.log("[App] Initialized SaveVerificationService");
+    }
+  }, [allCards, topicLists]);
+
+  // Call initializeServices when auth and recordId are available
+  useEffect(() => {
+    if (auth && recordId) {
+      initializeServices();
+    }
+  }, [auth, recordId, initializeServices]);
+
+  // Replace or update the handleAddToBank function
+  const handleAddToBank = useCallback((cards) => {
+    console.log("[AddToBank] Adding cards to bank:", cards.length);
+    
+    // Use SaveQueueManager if available
+    if (saveQueueManager) {
+      setIsSaving(true);
+      
+      // Begin transaction
+      const transactionId = saveQueueManager.beginTransaction();
+      
+      // Add operation
+      saveQueueManager.addOperation({
+        type: 'addToBank',
+        cards: cards,
+        recordId: recordId
+      });
+      
+      // Commit transaction
+      saveQueueManager.commitTransaction()
+        .then(() => {
+          console.log("[AddToBank] Transaction committed successfully");
+          setIsSaving(false);
+          showStatus("Cards added to bank");
+        })
+        .catch(error => {
+          console.error("[AddToBank] Transaction failed:", error);
+          setIsSaving(false);
+          showStatus("Failed to add cards: " + error.message);
+        });
+      
+      return;
+    }
+    
+    // Fallback to messageHandler or direct postMessage
+    if (window.parent !== window) {
+      setIsSaving(true);
+      
+      // Use messageHandler if available
+      if (messageHandler) {
+        messageHandler.addToBank(cards, recordId)
+          .then(result => {
+            console.log("[AddToBank] Cards added successfully:", result);
+            setIsSaving(false);
+            showStatus("Cards added to bank");
+          })
+          .catch(error => {
+            console.error("[AddToBank] Failed to add cards:", error);
+            setIsSaving(false);
+            showStatus("Failed to add cards: " + error.message);
+          });
+        
+        return;
+      }
+      
+      // Fallback to direct postMessage
+      window.parent.postMessage({
+        type: 'ADD_TO_BANK',
+        data: {
+          cards: cards,
+          recordId: recordId
+        }
+      }, '*');
+      
+      // Set a timeout to clear the saving state
+      setTimeout(() => {
+        setIsSaving(false);
+        showStatus("Cards added to bank");
+      }, 2000);
+    } else {
+      // Not in iframe, add to local state only
+      setAllCards(prevCards => [...prevCards, ...cards]);
+      showStatus("Cards added (local only)");
+    }
+  }, [recordId, showStatus, setIsSaving]);
 
   // Show loading state
   if (loading) {
