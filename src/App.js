@@ -1310,196 +1310,403 @@ function App() {
     return () => clearInterval(intervalId);
   }, [auth, allCards, saveData]);
 
-  // Initialize communication with parent window (Knack)
-  // Reference to track if auth has been processed to prevent loops
-  const authProcessedRef = useRef(false);
-  const readyMessageSentRef = useRef(false);
-  
+  // Effect for handling communication with parent window (Knack)
   useEffect(() => {
-    // If we're in an iframe, set up communication with the parent
-    if (window.parent !== window) {
-      console.log("[App] Setting up communication with parent window");
-      
-      // Function to handle messages from the parent window
-      const handleMessage = (event) => {
-        if (!event.data || !event.data.type) return;
-        
-        console.log(`[App] Received message from parent: ${event.data.type}`);
-        
-        switch (event.data.type) {
-          case 'KNACK_USER_INFO':
-            if (event.data.data) {
-              // Set auth information
-              setAuth({
-                id: event.data.data.id,
-                email: event.data.data.email,
-                name: event.data.data.name || '',
-                token: event.data.data.token,
-                appId: event.data.data.appId
-              });
-              
-              // Set record ID if available
-              if (event.data.data.userData && event.data.data.userData.recordId) {
-                setRecordId(event.data.data.userData.recordId);
+    const isInsideIframe = window.parent !== window;
+    console.log(`[App] Running inside iframe: ${isInsideIframe}`);
+
+    if (isInsideIframe) {
+      console.log("[App] Setting up message listener for parent communication.");
+
+      const handleMessage = async (event) => {
+        // ----- SECURITY: Replace '*' with your Knack app's origin -----
+        // const KNACK_ORIGIN = 'https://yourapp.knack.com';
+        // if (event.origin !== KNACK_ORIGIN) {
+        //   console.warn(`[App] Message ignored from unexpected origin: ${event.origin}`);
+        //   return;
+        // }
+        // ---------------------------------------------------------------
+
+        if (!event.data || !event.data.type) {
+          // console.log("[App] Message ignored: No data or type property.");
+          return;
+        }
+
+        console.log(`[App] Received message type: ${event.data.type}`);
+        // Use a debugLog helper if available, otherwise simple log
+        // debugLog(`[App] RECEIVED MESSAGE PAYLOAD (${event.data.type})`, event.data.data); 
+        console.log(`[App] Payload for ${event.data.type}:`, event.data.data);
+
+
+        // Check if essential services are ready before processing most messages
+        // Assuming core services needed for most operations are these:
+        const servicesInitialized = saveQueueManager && cardTopicRelationshipManager /* && other services like topicShellManager? */;
+        const essentialMessages = ['KNACK_USER_INFO', 'AUTH_REFRESH_RESULT', 'HEALTH_CHECK_ACK', 'RECORD_ID_RESPONSE', 'KNACK_DATA']; // Messages that can run before full service init or handle their own loading
+
+        if (!servicesInitialized && !essentialMessages.includes(event.data.type)) {
+           console.warn(`[App] Services not fully initialized, cannot process message type: ${event.data.type}`);
+           // Send error back for requests needing services
+           if (event.data.type.startsWith('REQUEST_')) {
+                window.parent.postMessage({ type: `${event.data.type}_RESULT`, success: false, error: "React app services not ready" }, '*'); // Replace '*' with KNACK_ORIGIN
+           }
+           return;
+        }
+
+        try { // Wrap processing in try/catch
+          switch (event.data.type) {
+            case 'KNACK_USER_INFO':
+              console.log("[App] Processing KNACK_USER_INFO");
+              setLoadingMessage("Processing user data...");
+              const userDataPayload = event.data.data;
+              if (userDataPayload && userDataPayload.id) { // Basic validation
+                setAuth({
+                  id: userDataPayload.id,
+                  email: userDataPayload.email,
+                  name: userDataPayload.name || '',
+                  token: userDataPayload.token,
+                  appId: userDataPayload.appId,
+                  emailId: userDataPayload.emailId,
+                  schoolId: userDataPayload.schoolId,
+                  tutorId: userDataPayload.tutorId,
+                  roleId: userDataPayload.roleId,
+                });
+
+                const initialData = userDataPayload.userData || {};
+                const newRecordId = initialData.recordId || null;
+                setRecordId(newRecordId); // Store record ID
+
+                // --- Load initial data from the payload ---
+                const parseJsonSafe = (jsonString, fallback = null) => {
+                    if (typeof jsonString === 'object') return jsonString; // Already parsed
+                    try { return jsonString ? JSON.parse(jsonString) : fallback; }
+                    catch (e) { console.warn("Failed to parse JSON:", e, jsonString); return fallback; }
+                };
+
+                const cardsData = parseJsonSafe(initialData.cards, []);
+                const colorMapData = parseJsonSafe(initialData.colorMapping, {});
+                const topicListsData = parseJsonSafe(initialData.topicLists, []);
+                const topicMetadataData = parseJsonSafe(initialData.topicMetadata, []);
+                const srData = initialData.spacedRepetition || {};
+                const parsedSrData = {
+                   box1: parseJsonSafe(srData.box1, []), box2: parseJsonSafe(srData.box2, []),
+                   box3: parseJsonSafe(srData.box3, []), box4: parseJsonSafe(srData.box4, []),
+                   box5: parseJsonSafe(srData.box5, [])
+                };
+
+                // --- Apply Migrations ---
+                // Ensure migrateTypeToQuestionType exists and is imported/defined
+                 const migrate = (d) => d; // Placeholder if migration func not ready
+                 // const migrate = (d) => migrateTypeToQuestionType(d); 
+                 const migratedCards = migrate(cardsData);
+                 const migratedSrData = {
+                    box1: migrate(parsedSrData.box1), box2: migrate(parsedSrData.box2),
+                    box3: migrate(parsedSrData.box3), box4: migrate(parsedSrData.box4),
+                    box5: migrate(parsedSrData.box5),
+                 };
+
+                console.log(`[App] Initializing with Record ID: ${newRecordId}, Cards: ${migratedCards.length}`);
+                setAllCards(migratedCards);
+                setSubjectColorMapping(colorMapData);
+                setTopicLists(topicListsData);
+                setTopicMetadata(topicMetadataData);
+                setSpacedRepetitionData(migratedSrData);
+
+                // Initialize services *after* setting initial state
+                initializeServices(); // Ensure this uses the new state
+
+                setLoading(false);
+                showStatus("Flashcards loaded");
+
+                // --- Send confirmation back to parent ---
+                console.log("[App] Sending AUTH_CONFIRMED to parent.");
+                window.parent.postMessage({ type: 'AUTH_CONFIRMED', success: true, recordId: newRecordId }, '*'); // Replace '*' with KNACK_ORIGIN
+
+              } else {
+                 console.error("[App] KNACK_USER_INFO received without valid data payload.");
+                 setError("Failed to receive user data.");
+                 window.parent.postMessage({ type: 'AUTH_CONFIRMED', success: false, error: "Missing user data payload" }, '*'); // Replace '*' with KNACK_ORIGIN
               }
-              
-              // Load data from user data if available
-              if (event.data.data.userData) {
-                const userData = event.data.data.userData;
-                
-                // Load cards
-                if (userData.cards && Array.isArray(userData.cards)) {
-                  setAllCards(userData.cards);
-                  updateSpacedRepetitionData(userData.cards);
+              break;
+
+            case 'KNACK_DATA': // Handle refreshed data from parent
+                 console.log("[App] Processing KNACK_DATA (refresh)");
+                 setLoadingMessage("Refreshing data...");
+                 setLoading(true);
+                 const refreshData = event.data; // Data is directly in event.data
+                 if (refreshData && refreshData.recordId) {
+                     // Ensure migrateTypeToQuestionType exists and is imported/defined
+                     const migrate = (d) => d; // Placeholder if migration func not ready
+                     // const migrate = (d) => migrateTypeToQuestionType(d); 
+                     const migratedCards = migrate(refreshData.cards || []);
+                     const migratedSrData = {
+                         box1: migrate(refreshData.spacedRepetition?.box1 || []), box2: migrate(refreshData.spacedRepetition?.box2 || []),
+                         box3: migrate(refreshData.spacedRepetition?.box3 || []), box4: migrate(refreshData.spacedRepetition?.box4 || []),
+                         box5: migrate(refreshData.spacedRepetition?.box5 || []),
+                     };
+
+                     console.log(`[App] Refreshing with Record ID: ${refreshData.recordId}, Cards: ${migratedCards.length}`);
+                     setAllCards(migratedCards);
+                     setSubjectColorMapping(refreshData.colorMapping || {});
+                     setTopicLists(refreshData.topicLists || []);
+                     setTopicMetadata(refreshData.topicMetadata || []);
+                     setSpacedRepetitionData(migratedSrData);
+                     setRecordId(refreshData.recordId); // Ensure recordId is up-to-date
+
+                     // Re-initialize services with new data
+                     initializeServices();
+
+                     setLoading(false);
+                     showStatus("Data refreshed");
+                     // Send confirmation? Optional.
+                     // window.parent.postMessage({ type: 'DATA_REFRESH_CONFIRMED', success: true }, '*');
+                 } else {
+                     console.warn("[App] Received KNACK_DATA without sufficient payload.");
+                     setLoading(false);
+                     showStatus("Data refresh failed (invalid payload)");
+                     // window.parent.postMessage({ type: 'DATA_REFRESH_CONFIRMED', success: false, error: 'Invalid payload' }, '*');
+                 }
+                 break;
+
+            case 'REQUEST_SAVE_DATA':
+                console.log("[App] Received REQUEST_SAVE_DATA");
+                setIsSaving(true);
+                setLoadingMessage("Saving changes...");
+                let saveResult = { success: false, error: "Save operation failed", recordId: recordId };
+                try {
+                    // saveData function should now handle queuing and committing via SaveQueueManager
+                    // Ensure saveData is async and returns a promise indicating completion
+                    await saveData(); 
+
+                    console.log("[App] Save operation completed successfully via saveData function.");
+                    saveResult = { success: true, recordId: recordId };
+                    showStatus("Changes saved successfully");
+
+                } catch (error) {
+                    console.error("[App] Error processing REQUEST_SAVE_DATA:", error);
+                    saveResult.error = error.message || "Unknown save error";
+                    showStatus(`Save failed: ${saveResult.error}`);
+                } finally {
+                    setIsSaving(false);
+                    setLoadingMessage("");
+                    // --- Send result back to parent ---
+                    console.log("[App] Sending SAVE_RESULT to parent:", saveResult);
+                    window.parent.postMessage({ type: 'SAVE_RESULT', ...saveResult }, '*'); // Replace '*' with KNACK_ORIGIN
                 }
-                
-                // Load color mapping
-                if (userData.colorMapping) {
-                  setSubjectColorMapping(userData.colorMapping);
+                break;
+
+             case 'REQUEST_ADD_TO_BANK':
+                 console.log("[App] Received REQUEST_ADD_TO_BANK");
+                 setIsSaving(true);
+                 let addResult = { success: false, error: "Add to bank failed" };
+                 try {
+                     const cardsToAdd = event.data.data?.cards;
+                     const requestRecordId = event.data.data?.recordId; // Knack script might send the recordId it knows
+                     
+                     const targetRecordId = recordId || requestRecordId; // Use local recordId first, fallback to request's
+                     if (!targetRecordId) throw new Error("Missing record ID for adding to bank.");
+
+                     if (!cardsToAdd || !Array.isArray(cardsToAdd)) throw new Error("Invalid card data for adding to bank.");
+                     if (!saveQueueManager) throw new Error("SaveQueueManager service not available.");
+
+                     // --- Use SaveQueueManager ---
+                     console.log(`[App] Adding ${cardsToAdd.length} cards to bank via SaveQueueManager for record ${targetRecordId}`);
+                     saveQueueManager.addOperation({
+                        type: 'addToBank',
+                        cards: cardsToAdd,
+                        recordId: targetRecordId
+                     });
+                     // Commit immediately after adding to bank seems appropriate
+                     await saveQueueManager.commitTransaction();
+
+                     console.log("[App] Add to bank operation completed successfully.");
+                     addResult = { success: true };
+                     showStatus("Cards added to bank successfully.");
+                     // Update local state if handleAddToBank wasn't called or doesn't cover this path
+                     // This assumes handleAddToBank already updated the local state optimistically
+                     // setAllCards(prev => [...prev, ...cardsToAdd]);
+
+                 } catch (error) {
+                     console.error("[App] Error processing REQUEST_ADD_TO_BANK:", error);
+                     addResult.error = error.message || "Unknown error adding to bank";
+                     showStatus(`Add to bank failed: ${addResult.error}`);
+                 } finally {
+                     setIsSaving(false);
+                     // --- Send result back to parent ---
+                     console.log("[App] Sending ADD_TO_BANK_RESULT to parent:", addResult);
+                     window.parent.postMessage({ type: 'ADD_TO_BANK_RESULT', ...addResult }, '*'); // Replace '*' with KNACK_ORIGIN
+                 }
+                 break;
+
+             case 'REQUEST_CREATE_TOPIC_SHELLS':
+                console.log("[App] Received REQUEST_CREATE_TOPIC_SHELLS");
+                setIsSaving(true);
+                let topicResult = { success: false, error: "Topic shell creation failed", count: 0 };
+                try {
+                    const topicListsToProcess = event.data.data?.topicLists;
+                    const requestRecordId = event.data.data?.recordId;
+                    
+                    const targetRecordId = recordId || requestRecordId;
+                    if (!targetRecordId) throw new Error("Missing record ID for topic shells.");
+
+                    if (!topicListsToProcess || !Array.isArray(topicListsToProcess)) throw new Error("Invalid topic list data.");
+                    
+                    // Check for the appropriate service (topicShellManager might be the name or integrated into another)
+                    const topicProcessorService = null; // Find the correct service instance variable
+                    // E.g., if CardTopicRelationshipManager handles this:
+                    // const topicProcessorService = cardTopicRelationshipManager;
+                    // if (!topicProcessorService && !saveQueueManager) throw new Error("Topic processing service not available."); 
+                    if (!saveQueueManager) throw new Error("Required service (SaveQueueManager or TopicShellManager) not available."); // Adjust check
+
+                    // --- Use appropriate service ---
+                    // Example: If handled by SaveQueueManager
+                    if (saveQueueManager) {
+                        console.log(`[App] Queuing createTopicShells operation via SaveQueueManager for record ${targetRecordId}`);
+                        saveQueueManager.addOperation({
+                            type: 'createTopicShells', // Ensure SaveQueueManager handles this type
+                            recordId: targetRecordId,
+                            topicLists: topicListsToProcess
+                        });
+                        await saveQueueManager.commitTransaction(); // Commit immediately? Or batch with other saves?
+                        topicResult = { success: true, count: topicListsToProcess.reduce((acc, list) => acc + (list.topics?.length || 0), 0) }; // Calculate count
+                    } 
+                    // Example: If handled by a specific topicShellManager
+                    /* else if (topicProcessorService && typeof topicProcessorService.createOrUpdateShells === 'function') { 
+                        console.log(`[App] Using TopicShellManager for record ${targetRecordId}`);
+                        const result = await topicProcessorService.createOrUpdateShells(targetRecordId, topicListsToProcess); 
+                        topicResult = { success: result.success, count: result.count, error: result.error };
+                    } */
+                    else {
+                       throw new Error("No suitable service found to handle topic shell creation.");
+                    }
+
+                    console.log(`[App] Topic shell operation completed: ${topicResult.success ? 'Success' : 'Failure'}`);
+                    showStatus(topicResult.success ? "Topic shells updated." : `Topic shell update failed: ${topicResult.error || 'Unknown error'}`);
+                    // Update local state (e.g., topicMetadata) if needed after success
+                    if (topicResult.success) {
+                       // Request data refresh? Or assume Knack script handles it?
+                       // May need to update local topicLists/topicMetadata state here
+                       // setTopicLists(...) / setTopicMetadata(...)
+                    }
+
+                } catch (error) {
+                    console.error("[App] Error processing REQUEST_CREATE_TOPIC_SHELLS:", error);
+                    topicResult.error = error.message || "Unknown error creating topic shells";
+                    showStatus(`Topic shell update failed: ${topicResult.error}`);
+                } finally {
+                    setIsSaving(false);
+                    // --- Send result back to parent ---
+                    console.log("[App] Sending TOPIC_SHELLS_RESULT to parent:", topicResult);
+                    window.parent.postMessage({ type: 'TOPIC_SHELLS_RESULT', ...topicResult }, '*'); // Replace '*' with KNACK_ORIGIN
                 }
-                
-                // Load topic lists
-                if (userData.topicLists && Array.isArray(userData.topicLists)) {
-                  setTopicLists(userData.topicLists);
-                }
-                
-                // Load topic metadata
-                if (userData.topicMetadata && Array.isArray(userData.topicMetadata)) {
-                  setTopicMetadata(userData.topicMetadata);
-                }
-              }
-              
-              // Notify parent that auth is confirmed
-              window.parent.postMessage({
-                type: 'AUTH_CONFIRMED'
-              }, '*');
-              
-              setLoading(false);
-            }
-            break;
-            
-          case 'KNACK_DATA':
-            // Handle refreshed data
-            if (event.data.cards && Array.isArray(event.data.cards)) {
-              setAllCards(event.data.cards);
-              updateSpacedRepetitionData(event.data.cards);
-            }
-            
-            if (event.data.colorMapping) {
-              setSubjectColorMapping(event.data.colorMapping);
-            }
-            
-            if (event.data.recordId) {
-              setRecordId(event.data.recordId);
-            }
-            
-            if (event.data.topicLists && Array.isArray(event.data.topicLists)) {
-              setTopicLists(event.data.topicLists);
-            }
-            
-            if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
-              setTopicMetadata(event.data.topicMetadata);
-            }
-            
-            break;
-            
-          case 'SAVE_RESULT':
-            // Handle save result
-            setIsSaving(false);
-            if (event.data.success) {
-              showStatus("Save complete");
-            } else {
-              showStatus(`Save failed: ${event.data.error || 'Unknown error'}`);
-            }
-            break;
-            
-          // Add other case handlers as needed...
+                break;
+
+            case 'AUTH_REFRESH_RESULT': // Knack sends its current token
+                 console.log("[App] Received AUTH_REFRESH_RESULT");
+                 if (event.data.success && event.data.token) {
+                    console.log("[App] Updating auth token.");
+                    setAuth(prevAuth => ({ ...prevAuth, token: event.data.token }));
+                    // Re-initialize services that depend on the token, if necessary
+                    // e.g., saveQueueManager.updateToken(event.data.token);
+                 } else {
+                    console.error("[App] Token refresh failed in parent:", event.data.error);
+                    showStatus("Authentication refresh failed. Please reload.");
+                 }
+                 break;
+
+             case 'RECORD_ID_RESPONSE': // Parent sends the record ID if requested
+                 console.log("[App] Received RECORD_ID_RESPONSE");
+                 if (event.data.recordId && !recordId) { // Set only if not already set
+                     setRecordId(event.data.recordId);
+                     console.log(`[App] Record ID set to: ${event.data.recordId}`);
+                     // Initialize services if not already done and auth exists
+                     // Check if services are initialized before calling initializeServices again
+                     const servicesNeedInit = !saveQueueManager; // Adjust this check based on core services
+                     if (auth && !loading && servicesNeedInit) { 
+                        console.log("[App] Initializing services after receiving Record ID.");
+                        initializeServices();
+                     }
+                 } else if (event.data.recordId && recordId && event.data.recordId !== recordId) {
+                     console.warn(`[App] Received different Record ID (${event.data.recordId}) than current (${recordId}). Ignoring.`);
+                 } else {
+                     console.warn("[App] Received RECORD_ID_RESPONSE without a recordId or already have one.");
+                 }
+                 break;
+
+             case 'HEALTH_CHECK_ACK': // Acknowledgment from parent
+                console.log("[App] Received HEALTH_CHECK_ACK from parent. Connection confirmed.");
+                break;
+
+            default:
+              console.warn(`[App] Unhandled message type received: ${event.data.type}`);
+          }
+        } catch (err) {
+            console.error(`[App] Error processing message type ${event.data.type}:`, err);
+            // Send a generic error back to parent for requests
+             if (event.data.type.startsWith('REQUEST_')) {
+                 window.parent.postMessage({ type: `${event.data.type}_RESULT`, success: false, error: `React app error: ${err.message}` }, '*'); // Replace '*' with KNACK_ORIGIN
+             }
         }
       };
-      
-      // Register message handler
+
+      // Register the single message handler
       window.addEventListener('message', handleMessage);
-      
-      // Use the messageHandler if available
-      if (messageHandler) {
-        messageHandler.addListener('authentication', (authData) => {
-          if (authData) {
-            setAuth({
-              id: authData.id,
-              email: authData.email,
-              name: authData.name || '',
-              token: authData.token,
-              appId: authData.appId
-            });
-            
-            if (authData.userData && authData.userData.recordId) {
-              setRecordId(authData.userData.recordId);
-            }
-            
-            setLoading(false);
-          }
-        });
-      }
-      
-      // Notify parent that app is ready
+
+      // --- REMOVED Service Attachment Block ---
+      /*
+      console.log("[App] Attaching services to window for Knack script access.");
+      window.saveQueueManager = saveQueueManager;
+      // ... other attachments ...
+      */
+
+      // --- REMOVED PERSISTENCE_SERVICES_READY postMessage ---
+      /*
+      console.log("[App] Sending PERSISTENCE_SERVICES_READY signal...");
+      window.parent.postMessage({ type: 'PERSISTENCE_SERVICES_READY' }, '*');
+      */
+
+      // --- Notify parent that app is ready ---
+      // Needs to be sent AFTER listener is attached
       console.log("[App] Sending APP_READY message to parent");
-      window.parent.postMessage({
-        type: 'APP_READY'
-      }, '*');
+      window.parent.postMessage({ type: 'APP_READY' }, '*'); // Replace '*' with KNACK_ORIGIN
 
-      // Share persistence services with parent window
-      if (saveQueueManager && cardTopicRelationshipManager && saveVerificationService) {
-        // --- Assign services to the iframe's window object --- 
-        // Use the actual service instance variables you have defined/initialized
-        console.log("[App] Attaching services to window for Knack script access.");
-        window.saveQueueManager = saveQueueManager;
-        window.cardTopicRelationshipManager = cardTopicRelationshipManager;
-        window.messageHandler = messageHandler; // Assuming messageHandler is the instance
-        window.saveVerificationService = saveVerificationService;
+      // --- Optional: Send Health Check on startup ---
+      console.log("[App] Sending HEALTH_CHECK to parent.");
+      window.parent.postMessage({ type: 'HEALTH_CHECK' }, '*'); // Replace '*' with KNACK_ORIGIN
 
-        // Attach older service names if the Knack script might still look for them as fallbacks
-        // Ensure these variables (e.g., unifiedPersistenceManagerInstance) exist if you uncomment
-        // window.unifiedPersistenceManager = unifiedPersistenceManagerInstance;
-        // window.topicShellManager = topicShellManagerInstance;
-        // window.metadataManager = metadataManagerInstance;
-        // window.colorManager = colorManagerInstance;
-        // window.dataOperationQueue = dataOperationQueueInstance;
 
-        // --- Send only the signal that services are ready (optional, Knack script now loads on APP_READY) --- 
-        // This message might not be strictly necessary anymore if the Knack script waits for APP_READY
-        // and then tries to access window.serviceName, but can be kept for confirmation.
-        console.log("[App] Sending PERSISTENCE_SERVICES_READY signal to parent (services attached to window).");
-        window.parent.postMessage({
-          type: 'PERSISTENCE_SERVICES_READY'
-          // NO 'services' payload here - this was causing the DataCloneError
-        }, '*');
+      // --- REMOVED Request Record ID (now part of KNACK_USER_INFO processing or specific request) ---
 
-      } else {
-        // Optional: Log if services aren't ready when expected
-        console.warn("[App] Not all primary persistence services available to attach to window.", {
-            sqm: !!saveQueueManager,
-            ctrm: !!cardTopicRelationshipManager,
-            svs: !!saveVerificationService
-        });
-        // Send an error message or prevent APP_READY? Depends on requirements.
-      }
 
-      // Cleanup
+      // Cleanup function
       return () => {
+        console.log("[App] Removing message listener.");
         window.removeEventListener('message', handleMessage);
-        if (messageHandler) {
-          // Cleanup any messageHandler listeners here if needed
-        }
       };
     } else {
-      // Not in an iframe, proceed with normal initialization
-      console.log("[App] Not running in an iframe.");
-      // Load from local storage or perform other non-iframe initialization
-      loadFromLocalStorage(); // Example: Load local data if not in iframe
+      // Not in an iframe, proceed with normal initialization (e.g., local storage)
+      console.log("[App] Not running in an iframe. Initializing locally.");
+      setLoadingMessage("Loading data from local storage...");
+      loadFromLocalStorage(); // Assumes this sets state
+      initializeServices();   // Initialize services for local use
       setLoading(false);
+      // No parent communication needed
     }
-  // Update dependencies array if necessary, e.g., add messageHandler if it's a state/prop
-  }, [updateSpacedRepetitionData, showStatus, loadFromLocalStorage, saveQueueManager, cardTopicRelationshipManager, messageHandler, saveVerificationService]); // Add service instances to dependency array
+  // Dependencies: List all external variables/functions used inside the effect
+  // that might change over time. This is crucial for correctness.
+  // IMPORTANT: Review this list carefully based on your actual implementation.
+  }, [
+      // State setters:
+      setAuth, setRecordId, setAllCards, setSubjectColorMapping, setTopicLists,
+      setTopicMetadata, setSpacedRepetitionData, setLoading, setError,
+      setIsSaving, showStatus, setLoadingMessage,
+      // Service instances:
+      saveQueueManager, cardTopicRelationshipManager, // Add topicShellManager if used directly
+      // State values read/used:
+      recordId, auth, loading, // Add other state if read directly inside effect
+      // Callback functions used:
+      loadFromLocalStorage, initializeServices, saveData, // Ensure migrateTypeToQuestionType, debugLog are stable or included
+      // Added migrateTypeToQuestionType if it's defined within App component
+  ]);
 
   // Function to extract user-specific topics for a subject
   const getUserTopicsForSubject = useCallback(
@@ -1630,79 +1837,37 @@ function App() {
 
   // Replace or update the handleAddToBank function
   const handleAddToBank = useCallback((cards) => {
-    console.log("[AddToBank] Adding cards to bank:", cards.length);
-    
-    // Use SaveQueueManager if available
-    if (saveQueueManager) {
-      setIsSaving(true);
-      
-      // Begin transaction
-      const transactionId = saveQueueManager.beginTransaction();
-      
-      // Add operation
-      saveQueueManager.addOperation({
-        type: 'addToBank',
-        cards: cards,
-        recordId: recordId
-      });
-      
-      // Commit transaction
-      saveQueueManager.commitTransaction()
-        .then(() => {
-          console.log("[AddToBank] Transaction committed successfully");
-          setIsSaving(false);
-          showStatus("Cards added to bank");
-        })
-        .catch(error => {
-          console.error("[AddToBank] Transaction failed:", error);
-          setIsSaving(false);
-          showStatus("Failed to add cards: " + error.message);
+    console.log("[App] handleAddToBank called with", cards.length, "cards.");
+    // This function should primarily update the local state.
+    // The actual saving/syncing will be triggered by a REQUEST_ADD_TO_BANK message from the parent.
+    // OR, if using SaveQueueManager, it queues the operation.
+
+    // Update local state immediately for responsiveness
+    setAllCards(prevCards => [...prevCards, ...cards]);
+    // Update SR data if applicable (ensure logic exists)
+    // updateSpacedRepetitionData(prevData => ({ ...prevData, /* add cards to appropriate box? */ }));
+    showStatus(`${cards.length} card(s) added locally.`);
+
+    // If using SaveQueueManager, queue the operation
+    if (saveQueueManager && recordId) {
+        console.log("[App] Queuing addToBank operation via SaveQueueManager.");
+        saveQueueManager.addOperation({
+            type: 'addToBank',
+            cards: cards,
+            recordId: recordId
         });
-      
-      return;
-    }
-    
-    // Fallback to messageHandler or direct postMessage
-    if (window.parent !== window) {
-      setIsSaving(true);
-      
-      // Use messageHandler if available
-      if (messageHandler) {
-        messageHandler.addToBank(cards, recordId)
-          .then(result => {
-            console.log("[AddToBank] Cards added successfully:", result);
-            setIsSaving(false);
-            showStatus("Cards added to bank");
-          })
-          .catch(error => {
-            console.error("[AddToBank] Failed to add cards:", error);
-            setIsSaving(false);
-            showStatus("Failed to add cards: " + error.message);
-          });
-        
-        return;
-      }
-      
-      // Fallback to direct postMessage
-      window.parent.postMessage({
-        type: 'ADD_TO_BANK',
-        data: {
-          cards: cards,
-          recordId: recordId
-        }
-      }, '*');
-      
-      // Set a timeout to clear the saving state
-      setTimeout(() => {
-        setIsSaving(false);
-        showStatus("Cards added to bank");
-      }, 2000);
+        // Optionally trigger a save process immediately or let it batch
+        // Triggering save immediately after add to bank seems reasonable
+        saveData(); // Assuming saveData uses SaveQueueManager now
     } else {
-      // Not in iframe, add to local state only
-      setAllCards(prevCards => [...prevCards, ...cards]);
-      showStatus("Cards added (local only)");
+        console.warn("[App] SaveQueueManager not available or recordId missing. AddToBank not queued for saving.");
+        // If not using SaveQueueManager, we rely on the Knack script requesting the save later.
+        // Add a flag or mechanism to indicate pending changes if needed.
     }
-  }, [recordId, showStatus, setIsSaving]);
+
+    // --- REMOVED Direct postMessage('ADD_TO_BANK') logic ---
+
+  }, [recordId, showStatus, setAllCards, saveQueueManager, saveData /*, updateSpacedRepetitionData */]);
 
   // Show loading state
   if (loading) {
