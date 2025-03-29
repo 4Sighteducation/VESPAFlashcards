@@ -1704,7 +1704,8 @@ function App() {
       // State values read/used:
       recordId, auth, loading, // Add other state if read directly inside effect
       // Callback functions used:
-      loadFromLocalStorage, initializeServices, saveData, // Ensure migrateTypeToQuestionType, debugLog are stable or included
+      loadFromLocalStorage, saveData, // Ensure migrateTypeToQuestionType, debugLog are stable or included
+      // REMOVED initializeServices from dependencies to avoid potential loop/race condition
       // Added migrateTypeToQuestionType if it's defined within App component
   ]);
 
