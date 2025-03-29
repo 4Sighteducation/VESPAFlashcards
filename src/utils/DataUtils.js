@@ -2,8 +2,7 @@
  * DataUtils.js - Utilities for data validation, versioning, and safety mechanisms
  */
 
-// Current data schema version
-export const CURRENT_SCHEMA_VERSION = "1.0";
+import { SCHEMA_VERSION } from './UnifiedDataModel';
 
 // App version from package.json
 export const APP_VERSION = process.env.REACT_APP_VERSION || "1.0.0";
@@ -17,48 +16,11 @@ export const addVersionMetadata = (data) => {
   return {
     ...data,
     _metadata: {
-      schemaVersion: CURRENT_SCHEMA_VERSION,
+      schemaVersion: SCHEMA_VERSION,
       appVersion: APP_VERSION,
       lastUpdated: new Date().toISOString(),
       updateCount: (data._metadata?.updateCount || 0) + 1,
     }
-  };
-};
-
-/**
- * Check if data has valid schema version
- * @param {Object} data - The data to check
- * @returns {Object} - Result with validity and upgraded data if needed
- */
-export const checkAndUpgradeSchema = (data) => {
-  // If there's no metadata, add it
-  if (!data._metadata) {
-    console.log("Adding metadata to data without versioning");
-    return {
-      valid: true,
-      upgraded: true,
-      data: addVersionMetadata(data)
-    };
-  }
-
-  // Check version and upgrade if needed
-  const dataVersion = data._metadata.schemaVersion || "0.9";
-  
-  if (dataVersion === CURRENT_SCHEMA_VERSION) {
-    return { valid: true, upgraded: false, data };
-  }
-
-  // Upgrade path logic
-  console.log(`Upgrading data schema from ${dataVersion} to ${CURRENT_SCHEMA_VERSION}`);
-  
-  // Upgrade logic would go here, based on version paths
-  // Example: if (dataVersion === "0.9") { /* upgrade from 0.9 to 1.0 */ }
-  
-  // For now, just update the version metadata
-  return {
-    valid: true,
-    upgraded: true,
-    data: addVersionMetadata(data)
   };
 };
 
@@ -113,7 +75,8 @@ export const calculateDataSignature = (data) => {
     // Simple implementation - could be enhanced with actual hashing
     const signatureObj = {
       cardCount: Array.isArray(data.cards) ? data.cards.length : 0,
-      subjectCount: data.colorMapping ? Object.keys(data.colorMapping).length : 0,
+      subjectCount: data.subjects ? data.subjects.length : 
+                   (data.colorMapping ? Object.keys(data.colorMapping).length : 0),
       lastCardId: Array.isArray(data.cards) && data.cards.length > 0 
         ? data.cards[data.cards.length - 1].id 
         : null,
@@ -213,7 +176,7 @@ export const localStorageHelpers = {
         const minimalData = {
           cards: Array.isArray(data.cards) ? data.cards : [],
           _metadata: {
-            schemaVersion: CURRENT_SCHEMA_VERSION,
+            schemaVersion: SCHEMA_VERSION,
             emergency: true,
             lastUpdated: new Date().toISOString()
           }
@@ -256,19 +219,11 @@ export const localStorageHelpers = {
         }
       }
       
-      // Check and upgrade schema if needed
-      const { valid, upgraded, data: validatedData } = checkAndUpgradeSchema(data);
-      
-      if (!valid) {
-        throw new Error("Invalid data schema");
-      }
-      
-      if (upgraded) {
-        // Save the upgraded data
-        localStorage.setItem(key, JSON.stringify(validatedData));
-      }
-      
-      return { success: true, data: validatedData, source: "primary" };
+      return { 
+        success: true, 
+        data: data, 
+        source: "primary" 
+      };
     } catch (error) {
       console.error("Error loading from localStorage:", error);
       
@@ -285,12 +240,12 @@ export const localStorageHelpers = {
           const backupData = safeParseJSON(backupJson, null);
           
           if (backupData) {
-            // Check and upgrade if needed
-            const { valid, data: validatedBackup } = checkAndUpgradeSchema(backupData);
-            if (valid) {
-              console.log("Successfully loaded from backup");
-              return { success: true, data: validatedBackup, source: "backup" };
-            }
+            console.log("Successfully loaded from backup");
+            return { 
+              success: true, 
+              data: backupData, 
+              source: "backup" 
+            };
           }
         }
         
@@ -300,7 +255,11 @@ export const localStorageHelpers = {
           const emergencyData = safeParseJSON(emergencyJson, null);
           if (emergencyData) {
             console.log("Loaded from emergency backup");
-            return { success: true, data: emergencyData, source: "emergency" };
+            return { 
+              success: true, 
+              data: emergencyData, 
+              source: "emergency" 
+            };
           }
         }
       } catch (backupError) {
@@ -308,7 +267,11 @@ export const localStorageHelpers = {
       }
       
       // Return default value if all else fails
-      return { success: false, data: defaultValue, source: "default" };
+      return { 
+        success: false, 
+        data: defaultValue, 
+        source: "default" 
+      };
     }
   },
   
@@ -324,6 +287,7 @@ export const localStorageHelpers = {
     
     // List of keys to backup
     const keysToBackup = [
+      'flashcards_app',
       'flashcards',
       'colorMapping',
       'spacedRepetition',
@@ -372,8 +336,9 @@ export const dataLogger = {
     if (data) {
       console.log("Data Stats:", {
         cards: Array.isArray(data.cards) ? data.cards.length : 0,
-        subjects: data.colorMapping ? Object.keys(data.colorMapping).length : 0,
-        version: data._metadata ? data._metadata.schemaVersion : 'unknown'
+        subjects: Array.isArray(data.subjects) ? data.subjects.length : 0,
+        topics: Array.isArray(data.topics) ? data.topics.length : 0,
+        version: data._metadata ? data._metadata.schemaVersion : SCHEMA_VERSION
       });
     }
     
@@ -399,8 +364,9 @@ export const dataLogger = {
     if (result.data) {
       console.log("Data Stats:", {
         cards: Array.isArray(result.data.cards) ? result.data.cards.length : 0,
-        subjects: result.data.colorMapping ? Object.keys(result.data.colorMapping).length : 0,
-        version: result.data._metadata ? result.data._metadata.schemaVersion : 'unknown'
+        subjects: Array.isArray(result.data.subjects) ? result.data.subjects.length : 0,
+        topics: Array.isArray(result.data.topics) ? result.data.topics.length : 0,
+        version: result.data._metadata ? result.data._metadata.schemaVersion : SCHEMA_VERSION
       });
     }
     
@@ -412,130 +378,64 @@ export const dataLogger = {
   },
   
   /**
-   * Log error in data operations
-   * @param {string} context - Context of the error
+   * Log an error
+   * @param {string} context - Error context
    * @param {Error} error - Error object
-   * @param {Object} additionalInfo - Additional information
    */
-  logError: (context, error, additionalInfo = {}) => {
+  logError: (context, error) => {
     console.group(`❌ Error: ${context}`);
+    console.log("Timestamp:", new Date().toISOString());
     console.error("Error:", error);
-    
-    if (Object.keys(additionalInfo).length > 0) {
-      console.log("Additional Info:", additionalInfo);
-    }
-    
     console.groupEnd();
   }
 };
 
 /**
- * Multiple Choice Options Persistence
- * Functions to ensure options are preserved across page refreshes
+ * Functions for handling multiple choice options in cards
  */
-
-const OPTIONS_STORAGE_KEY = 'multiple_choice_options_backup';
-
-/**
- * Store multiple choice options in localStorage as a backup
- * @param {Array} cards - Array of card objects
- * @returns {boolean} - Success status
- */
-export const backupMultipleChoiceOptions = (cards) => {
-  try {
-    if (!Array.isArray(cards)) {
-      console.error("backupMultipleChoiceOptions: Cards is not an array");
-      return false;
-    }
+export const multipleChoiceHelpers = {
+  /**
+   * Back up multiple choice options from cards
+   * @param {Array} cards - Array of cards
+   */
+  backupMultipleChoiceOptions: (cards) => {
+    if (!Array.isArray(cards)) return;
     
-    // Extract only multiple choice cards with options
-    const multipleChoiceCards = cards.filter(card => 
-      card && 
-      card.id && 
-      (card.questionType === 'multiple_choice' || (card.options && Array.isArray(card.options) && card.options.length > 0))
-    );
-    
-    // Create a map of card IDs to their options
-    const optionsMap = {};
-    multipleChoiceCards.forEach(card => {
-      if (card.options && Array.isArray(card.options) && card.options.length > 0) {
-        optionsMap[card.id] = {
-          options: [...card.options],
-          questionType: card.questionType || 'multiple_choice',
-          timestamp: new Date().toISOString()
-        };
+    cards.forEach(card => {
+      if (card && card.questionType === 'multiple_choice' && 
+          card.options && Array.isArray(card.options) && card.options.length > 0) {
+        
+        // Make sure savedOptions exists and is an array
+        if (!card.savedOptions || !Array.isArray(card.savedOptions)) {
+          card.savedOptions = [];
+        }
+        
+        // Copy options to savedOptions
+        card.savedOptions = [...card.options];
       }
     });
+  },
+  
+  /**
+   * Restore multiple choice options for cards
+   * @param {Array} cards - Array of cards
+   */
+  restoreMultipleChoiceOptions: (cards) => {
+    if (!Array.isArray(cards)) return;
     
-    // Store in localStorage
-    localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify(optionsMap));
-    console.log(`Backed up options for ${Object.keys(optionsMap).length} multiple choice cards`);
-    return true;
-  } catch (error) {
-    console.error("Error backing up multiple choice options:", error);
-    return false;
-  }
-};
-
-/**
- * Restore multiple choice options from localStorage
- * @param {Array} cards - Array of card objects
- * @returns {Array} - Cards with restored options
- */
-export const restoreMultipleChoiceOptions = (cards) => {
-  try {
-    if (!Array.isArray(cards)) {
-      console.error("restoreMultipleChoiceOptions: Cards is not an array");
-      return cards;
-    }
-    
-    // Get backup from localStorage
-    const backupString = localStorage.getItem(OPTIONS_STORAGE_KEY);
-    if (!backupString) {
-      console.log("No multiple choice options backup found");
-      return cards;
-    }
-    
-    const optionsMap = safeParseJSON(backupString, {});
-    if (!optionsMap || Object.keys(optionsMap).length === 0) {
-      console.log("Empty or invalid multiple choice options backup");
-      return cards;
-    }
-    
-    // Restore options to cards that need them
-    const restoredCards = cards.map(card => {
-      if (!card || !card.id) return card;
-      
-      const backup = optionsMap[card.id];
-      
-      // Check if this card needs options restoration
-      if (backup && backup.options && Array.isArray(backup.options) && backup.options.length > 0) {
-        // Card needs restoration if it's missing options or has empty options
-        const needsRestoration = !card.options || !Array.isArray(card.options) || card.options.length === 0;
-        
-        if (needsRestoration) {
-          console.log(`Restoring options for card ${card.id}`);
-          return {
-            ...card,
-            options: [...backup.options],
-            savedOptions: [...backup.options],
-            questionType: backup.questionType || card.questionType || 'multiple_choice'
-          };
+    cards.forEach(card => {
+      if (card && card.questionType === 'multiple_choice') {
+        // Check if options are missing or empty but savedOptions exists
+        if ((!card.options || !Array.isArray(card.options) || card.options.length === 0) &&
+            card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+          
+          // Restore options from savedOptions
+          card.options = [...card.savedOptions];
         }
       }
-      
-      return card;
     });
-    
-    // Count how many cards were restored
-    const restoredCount = restoredCards.filter((card, index) => 
-      card && cards[index] && card.options && (!cards[index].options || cards[index].options.length === 0)
-    ).length;
-    
-    console.log(`Restored options for ${restoredCount} multiple choice cards`);
-    return restoredCards;
-  } catch (error) {
-    console.error("Error restoring multiple choice options:", error);
-    return cards;
   }
 };
+
+// Export functions from multipleChoiceHelpers
+export const { backupMultipleChoiceOptions, restoreMultipleChoiceOptions } = multipleChoiceHelpers;

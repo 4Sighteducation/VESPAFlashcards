@@ -3,6 +3,7 @@
  * 
  * This module defines a unified data model for flashcards, topics, and subjects,
  * with proper relationships and a hierarchical structure.
+ * Updated to schema version 2.0 with refined relationships and structure.
  */
 
 // Constants for entity types
@@ -12,8 +13,8 @@ export const ENTITY_TYPES = {
   CARD: 'card'
 };
 
-// Current schema version
-export const SCHEMA_VERSION = '1.0';
+// Update schema version to 2.0
+export const SCHEMA_VERSION = '2.0';
 
 /**
  * Generate a unique ID with optional prefix and timestamp
@@ -41,8 +42,13 @@ export const createSubject = (name, color = '#3cb44b', options = {}) => {
     examBoard: options.examBoard || '',
     examType: options.examType || '',
     type: ENTITY_TYPES.SUBJECT,
-    created: new Date().toISOString(),
-    updated: new Date().toISOString()
+    metadata: {
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      createdBy: options.createdBy || '',
+      isHidden: options.isHidden || false,
+      sortOrder: options.sortOrder || 0
+    }
   };
 };
 
@@ -57,17 +63,24 @@ export const createSubject = (name, color = '#3cb44b', options = {}) => {
 export const createTopic = (name, subjectId, parentId = null, options = {}) => {
   return {
     id: generateId('topic'),
-    parentId: parentId,
     subjectId: subjectId,
+    parentId: parentId,
     name: name,
     fullName: options.fullName || name,
     color: options.color || '#9ec2a2',
-    cards: [],
-    isEmpty: true,
+    isEmpty: options.isEmpty !== undefined ? options.isEmpty : true,
     level: options.level || (parentId ? 2 : 1),
+    cardIds: options.cardIds || [],
     type: ENTITY_TYPES.TOPIC,
-    created: new Date().toISOString(),
-    updated: new Date().toISOString()
+    metadata: {
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      examBoard: options.examBoard || '',
+      examType: options.examType || '',
+      description: options.description || '',
+      isShell: options.isShell !== undefined ? options.isShell : false,
+      sortOrder: options.sortOrder || 0
+    }
   };
 };
 
@@ -88,26 +101,36 @@ export const createCard = (question, answer, topicId, subjectId, options = {}) =
     id: cardId,
     topicId: topicId,
     subjectId: subjectId,
-    subject: options.subject || '',
-    topic: options.topic || '',
-    examBoard: options.examBoard || '',
-    examType: options.examType || '',
+    type: ENTITY_TYPES.CARD,
     question: question,
     answer: answer,
-    detailedAnswer: options.detailedAnswer || '',
-    additionalInfo: options.additionalInfo || '',
-    type: ENTITY_TYPES.CARD,
     questionType: options.questionType || 'short_answer',
-    options: options.options || [],
-    savedOptions: options.options || [],
-    correctAnswer: options.correctAnswer || '',
     cardColor: options.cardColor || '#46f0f0',
     textColor: options.textColor || '',
+    
+    // Spaced repetition properties
     boxNum: options.boxNum || 1,
-    lastReviewed: null,
-    nextReviewDate: timestamp,
-    createdAt: timestamp,
-    updatedAt: timestamp
+    lastReviewed: options.lastReviewed || null,
+    nextReviewDate: options.nextReviewDate || timestamp,
+    
+    // Type-specific properties
+    options: options.options || [],
+    savedOptions: options.savedOptions || options.options || [],
+    correctAnswer: options.correctAnswer || '',
+    detailedAnswer: options.detailedAnswer || '',
+    
+    // Metadata
+    metadata: {
+      created: timestamp,
+      updated: timestamp,
+      version: options.version || 1,
+      examBoard: options.examBoard || '',
+      examType: options.examType || '',
+      difficulty: options.difficulty || 3,
+      tags: options.tags || [],
+      source: options.source || 'User Created',
+      aiModel: options.aiModel || ''
+    }
   };
 };
 
@@ -119,102 +142,12 @@ export const createEmptyDataStructure = () => {
   return {
     version: SCHEMA_VERSION,
     lastUpdated: new Date().toISOString(),
+    userId: '',
+    recordId: '',
     subjects: [],
     topics: [],
     cards: []
   };
-};
-
-/**
- * Convert from the old data structure to the unified data model
- * @param {Array} oldCards - Array of cards in the old format
- * @param {Object} colorMapping - Subject color mapping
- * @returns {Object} - Data in the unified model format
- */
-export const convertFromOldFormat = (oldCards = [], colorMapping = {}) => {
-  const result = createEmptyDataStructure();
-  const subjectMap = new Map(); // Track subjects by name
-  const topicMap = new Map();   // Track topics by name within subject
-  
-  // Process all cards to extract subjects and topics
-  oldCards.forEach(card => {
-    if (!card) return;
-    
-    const subjectName = card.subject || 'General';
-    const topicName = card.topic || 'General';
-    
-    // Create or retrieve subject
-    let subject;
-    if (!subjectMap.has(subjectName)) {
-      // Get color from mapping or generate a default
-      const baseColor = colorMapping[subjectName]?.base || '#3cb44b';
-      subject = createSubject(subjectName, baseColor, {
-        examBoard: card.examBoard || '',
-        examType: card.examType || ''
-      });
-      subjectMap.set(subjectName, subject);
-      result.subjects.push(subject);
-    } else {
-      subject = subjectMap.get(subjectName);
-    }
-    
-    // Create or retrieve topic
-    const topicKey = `${subjectName}:${topicName}`;
-    let topic;
-    if (!topicMap.has(topicKey)) {
-      // Get topic color from mapping or derive from subject
-      const topicColor = colorMapping[subjectName]?.topics?.[topicName] || subject.color;
-      topic = createTopic(topicName, subject.id, null, {
-        color: topicColor,
-        fullName: topicName
-      });
-      topicMap.set(topicKey, topic);
-      result.topics.push(topic);
-    } else {
-      topic = topicMap.get(topicKey);
-    }
-    
-    // Create card in new format
-    const newCard = createCard(
-      card.question || card.front || '',
-      card.answer || card.back || '',
-      topic.id,
-      subject.id,
-      {
-        subject: subjectName,
-        topic: topicName,
-        examBoard: card.examBoard || '',
-        examType: card.examType || '',
-        detailedAnswer: card.detailedAnswer || '',
-        additionalInfo: card.additionalInfo || '',
-        questionType: card.questionType || 'short_answer',
-        options: card.options || [],
-        savedOptions: card.savedOptions || card.options || [],
-        correctAnswer: card.correctAnswer || '',
-        cardColor: card.cardColor || card.color || subject.color,
-        textColor: card.textColor || '',
-        boxNum: card.boxNum || 1
-      }
-    );
-    
-    // Preserve original ID if it exists
-    if (card.id) {
-      newCard.id = card.id;
-    }
-    
-    // Preserve timestamps if they exist
-    if (card.createdAt) newCard.createdAt = card.createdAt;
-    if (card.updatedAt) newCard.updatedAt = card.updatedAt;
-    
-    // Add card to the cards array
-    result.cards.push(newCard);
-    
-    // Update topic's cards array and isEmpty flag
-    topic.cards.push(newCard.id);
-    topic.isEmpty = false;
-  });
-  
-  return result;
 };
 
 /**
@@ -246,16 +179,16 @@ export const convertToOldFormat = (unifiedData) => {
     
     return {
       id: card.id,
-      subject: subject?.name || card.subject || 'General',
-      topic: topic?.fullName || card.topic || 'General',
-      examBoard: card.examBoard || '',
-      examType: card.examType || '',
+      subject: subject?.name || 'General',
+      topic: topic?.name || 'General',
+      examBoard: card.metadata?.examBoard || topic?.metadata?.examBoard || subject?.examBoard || '',
+      examType: card.metadata?.examType || topic?.metadata?.examType || subject?.examType || '',
       question: card.question || '',
       answer: card.answer || '',
       front: card.question || '',  // For backward compatibility
       back: card.answer || '',     // For backward compatibility
       detailedAnswer: card.detailedAnswer || '',
-      additionalInfo: card.additionalInfo || '',
+      additionalInfo: card.metadata?.description || '',
       type: 'card',
       questionType: card.questionType || 'short_answer',
       options: card.options || [],
@@ -266,8 +199,8 @@ export const convertToOldFormat = (unifiedData) => {
       boxNum: card.boxNum || 1,
       lastReviewed: card.lastReviewed,
       nextReviewDate: card.nextReviewDate,
-      createdAt: card.createdAt || new Date().toISOString(),
-      updatedAt: card.updatedAt || new Date().toISOString()
+      createdAt: card.metadata?.created || new Date().toISOString(),
+      updatedAt: card.metadata?.updated || new Date().toISOString()
     };
   });
 };
@@ -327,6 +260,85 @@ export const getTopicsForSubject = (unifiedData, subjectId) => {
   return unifiedData.topics.filter(topic => topic.subjectId === subjectId);
 };
 
+/**
+ * Generate a topic color from a subject color
+ * @param {string} subjectColor - Subject color in hex format
+ * @param {number} topicIndex - Index of the topic
+ * @param {number} totalTopics - Total number of topics for the subject
+ * @returns {string} - Generated topic color
+ */
+export const generateTopicColor = (subjectColor, topicIndex, totalTopics) => {
+  // Simple implementation for now
+  const hue = parseInt(subjectColor.substring(1, 3), 16) % 360;
+  const saturation = 70 + (topicIndex % 3) * 10;
+  const lightness = 40 + (topicIndex / totalTopics) * 30;
+  
+  return hslToHex(hue, saturation, lightness);
+};
+
+/**
+ * Convert HSL to hex color
+ * @param {number} h - Hue (0-360)
+ * @param {number} s - Saturation (0-100)
+ * @param {number} l - Lightness (0-100)
+ * @returns {string} - Hex color
+ */
+export const hslToHex = (h, s, l) => {
+  h /= 360;
+  s /= 100;
+  l /= 100;
+  
+  let r, g, b;
+  
+  if (s === 0) {
+    r = g = b = l; // achromatic
+  } else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  
+  const toHex = x => {
+    const hex = Math.round(x * 255).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+  
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
+/**
+ * Calculate contrast text color for a background color
+ * @param {string} backgroundColor - Background color in hex format
+ * @returns {string} - Contrast text color (#000000 or #ffffff)
+ */
+export const getContrastTextColor = (backgroundColor) => {
+  // Remove # if present
+  const hex = backgroundColor.replace('#', '');
+  
+  // Convert to RGB
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  // Calculate relative luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  
+  // Return white for dark backgrounds, black for light backgrounds
+  return luminance > 0.5 ? '#000000' : '#ffffff';
+};
+
 export default {
   ENTITY_TYPES,
   SCHEMA_VERSION,
@@ -335,11 +347,13 @@ export default {
   createTopic,
   createCard,
   createEmptyDataStructure,
-  convertFromOldFormat,
   convertToOldFormat,
   findTopicById,
   findSubjectById,
   getCardsForTopic,
   getCardsForSubject,
-  getTopicsForSubject
+  getTopicsForSubject,
+  generateTopicColor,
+  hslToHex,
+  getContrastTextColor
 }; 

@@ -1448,16 +1448,29 @@ function App() {
       }, '*');
       
       // Share persistence services with parent window
-      if (saveQueueManager && cardTopicRelationshipManager) {
-        console.log("[App] Sharing persistence services with parent window");
+      if (saveQueueManager && cardTopicRelationshipManager && saveVerificationService) { 
+        // --- Added: Assign services to window object --- 
+        window.unifiedPersistenceManager = saveQueueManager;
+        window.topicShellManager = cardTopicRelationshipManager;
+        window.saveVerificationService = saveVerificationService;
+        // Note: If metadataManager, colorManager, dataOperationQueue are also needed by KnackJavascript4s.js,
+        // ensure they are initialized/imported in App.js and assign them to the window object here too.
+        // e.g., window.metadataManager = metadataManagerInstance;
+        console.log("[App] Persistence services assigned to window object.");
+
+        // --- Modified: Send only the signal, not the service objects --- 
+        console.log("[App] Sending PERSISTENCE_SERVICES_READY signal to parent.");
         window.parent.postMessage({
-          type: 'PERSISTENCE_SERVICES_READY',
-          services: {
-            unifiedPersistenceManager: saveQueueManager,
-            topicShellManager: cardTopicRelationshipManager,
-            saveVerificationService: saveVerificationService
-          }
+          type: 'PERSISTENCE_SERVICES_READY' 
+          // No 'services' payload
         }, '*');
+      } else {
+        // Optional: Log if services aren't ready when expected
+        console.warn("[App] Not all persistence services available to share with parent window.", {
+            sqm: !!saveQueueManager, 
+            ctrm: !!cardTopicRelationshipManager, 
+            svs: !!saveVerificationService
+        });
       }
       
       // Cleanup
