@@ -1446,45 +1446,60 @@ function App() {
       window.parent.postMessage({
         type: 'APP_READY'
       }, '*');
-      
-      // Share persistence services with parent window
-      if (saveQueueManager && cardTopicRelationshipManager && saveVerificationService) { 
-        // --- Added: Assign services to window object --- 
-        window.unifiedPersistenceManager = saveQueueManager;
-        window.topicShellManager = cardTopicRelationshipManager;
-        window.saveVerificationService = saveVerificationService;
-        // Note: If metadataManager, colorManager, dataOperationQueue are also needed by KnackJavascript4s.js,
-        // ensure they are initialized/imported in App.js and assign them to the window object here too.
-        // e.g., window.metadataManager = metadataManagerInstance;
-        console.log("[App] Persistence services assigned to window object.");
 
-        // --- Modified: Send only the signal, not the service objects --- 
-        console.log("[App] Sending PERSISTENCE_SERVICES_READY signal to parent.");
+      // Share persistence services with parent window
+      if (saveQueueManager && cardTopicRelationshipManager && saveVerificationService) {
+        // --- Assign services to the iframe's window object --- 
+        // Use the actual service instance variables you have defined/initialized
+        console.log("[App] Attaching services to window for Knack script access.");
+        window.saveQueueManager = saveQueueManager;
+        window.cardTopicRelationshipManager = cardTopicRelationshipManager;
+        window.messageHandler = messageHandler; // Assuming messageHandler is the instance
+        window.saveVerificationService = saveVerificationService;
+
+        // Attach older service names if the Knack script might still look for them as fallbacks
+        // Ensure these variables (e.g., unifiedPersistenceManagerInstance) exist if you uncomment
+        // window.unifiedPersistenceManager = unifiedPersistenceManagerInstance;
+        // window.topicShellManager = topicShellManagerInstance;
+        // window.metadataManager = metadataManagerInstance;
+        // window.colorManager = colorManagerInstance;
+        // window.dataOperationQueue = dataOperationQueueInstance;
+
+        // --- Send only the signal that services are ready (optional, Knack script now loads on APP_READY) --- 
+        // This message might not be strictly necessary anymore if the Knack script waits for APP_READY
+        // and then tries to access window.serviceName, but can be kept for confirmation.
+        console.log("[App] Sending PERSISTENCE_SERVICES_READY signal to parent (services attached to window).");
         window.parent.postMessage({
-          type: 'PERSISTENCE_SERVICES_READY' 
-          // No 'services' payload
+          type: 'PERSISTENCE_SERVICES_READY'
+          // NO 'services' payload here - this was causing the DataCloneError
         }, '*');
+
       } else {
         // Optional: Log if services aren't ready when expected
-        console.warn("[App] Not all persistence services available to share with parent window.", {
-            sqm: !!saveQueueManager, 
-            ctrm: !!cardTopicRelationshipManager, 
+        console.warn("[App] Not all primary persistence services available to attach to window.", {
+            sqm: !!saveQueueManager,
+            ctrm: !!cardTopicRelationshipManager,
             svs: !!saveVerificationService
         });
+        // Send an error message or prevent APP_READY? Depends on requirements.
       }
-      
+
       // Cleanup
       return () => {
         window.removeEventListener('message', handleMessage);
         if (messageHandler) {
-          // Cleanup any messageHandler listeners here
+          // Cleanup any messageHandler listeners here if needed
         }
       };
     } else {
       // Not in an iframe, proceed with normal initialization
+      console.log("[App] Not running in an iframe.");
+      // Load from local storage or perform other non-iframe initialization
+      loadFromLocalStorage(); // Example: Load local data if not in iframe
       setLoading(false);
     }
-  }, [updateSpacedRepetitionData, showStatus]);
+  // Update dependencies array if necessary, e.g., add messageHandler if it's a state/prop
+  }, [updateSpacedRepetitionData, showStatus, loadFromLocalStorage, saveQueueManager, cardTopicRelationshipManager, messageHandler, saveVerificationService]); // Add service instances to dependency array
 
   // Function to extract user-specific topics for a subject
   const getUserTopicsForSubject = useCallback(
