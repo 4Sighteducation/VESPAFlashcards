@@ -1534,7 +1534,7 @@ function App() {
                 if (window.parent !== window) {
                   window.parent.postMessage({
                     type: "REQUEST_UPDATED_DATA",
-                    recordId: recordId
+                    data: { recordId: recordId }
                   }, "*");
                   
                   // No fallback timeout - wait for KNACK_DATA message instead
@@ -1554,7 +1554,7 @@ function App() {
                 if (window.parent !== window) {
                   window.parent.postMessage({
                     type: "REQUEST_UPDATED_DATA",
-                    recordId: recordId
+                    data: { recordId: recordId }
                   }, "*");
                   
                   console.log("[Add To Bank Result] Requested data refresh after error");
@@ -1577,7 +1577,7 @@ function App() {
               if (window.parent !== window) {
                 window.parent.postMessage({
                   type: "REQUEST_UPDATED_DATA",
-                  recordId: recordId
+                  data: { recordId: recordId }
                 }, "*");
                 
                 // No fallback timeout - wait for KNACK_DATA message instead
@@ -1598,7 +1598,7 @@ function App() {
             if (window.parent !== window) {
               window.parent.postMessage({
                 type: "REQUEST_UPDATED_DATA",
-                recordId: recordId
+                data: { recordId: recordId }
               }, "*");
               
               console.log("[Reload] Requested updated data instead of full page reload");
@@ -1625,7 +1625,7 @@ function App() {
             if (window.parent !== window) {
               window.parent.postMessage({
                 type: "REQUEST_UPDATED_DATA",
-                recordId: recordId || event.data?.data?.recordId
+                data: { recordId: recordId || event.data?.data?.recordId }
               }, "*");
               
               console.log("[Refresh] Requested data refresh without showing loading screen");
@@ -1881,7 +1881,7 @@ function App() {
       if (window.parent !== window) {
         window.parent.postMessage({
           type: "REQUEST_UPDATED_DATA",
-          recordId: recordId
+          data: { recordId: recordId }
         }, "*");
         
         console.log("[Topic Refresh] Requested data refresh from parent window");
