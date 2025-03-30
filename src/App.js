@@ -1706,6 +1706,13 @@ function App() {
                 // Always ensure loading state is cleared
                 setLoading(false);
                 setLoadingMessage("");
+
+                // Redirect back to card bank if refresh happened from AI Generator
+                if (view === 'aiGenerator') {
+                  console.log("[KNACK_DATA Handler] Refresh likely completed after AI generation, redirecting to cardBank.");
+                  setView('cardBank');
+                }
+
               } catch (error) {
                 console.error("Error processing Knack data:", error);
                 setLoading(false);

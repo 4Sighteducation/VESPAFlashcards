@@ -140,28 +140,31 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   };
   
   // Group cards by subject and topic, with special handling for topic shells
-  const groupedCards = useMemo(() => {
+  const { groupedCards, topicShells } = useMemo(() => {
     const bySubjectAndTopic = {};
-    const topicShells = {}; // Track topic shells by ID
+    const shells = {}; // Rename to avoid conflict in return object
     
+    // Ensure cards is an array before processing
+    if (!Array.isArray(cards)) {
+      console.error("FlashcardList received non-array cards prop:", cards);
+      return { groupedCards: {}, topicShells: {} }; // Return empty objects if cards is invalid
+    }
+
     // First pass: identify and separate topic shells from regular cards
     cards.forEach(item => {
       if (item.type === 'topic' && item.isShell) {
-        // This is a topic shell - store it separately for proper handling
         const subject = item.subject || "General";
         
-        if (!topicShells[subject]) {
-          topicShells[subject] = {};
+        if (!shells[subject]) {
+          shells[subject] = {};
         }
         
-        // Use the topic's name as the topic key
         const topicName = item.name || item.topic || "Unknown Topic";
-        topicShells[subject][item.id] = {
+        shells[subject][item.id] = {
           ...item,
-          topicName, // Store the name for reference
+          topicName,
         };
         
-        // Initialize the subject and topic structure if needed
         if (!bySubjectAndTopic[subject]) {
           bySubjectAndTopic[subject] = {};
         }
@@ -174,7 +177,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     
     // Second pass: organize regular cards into their topics
     cards.forEach(item => {
-      if (item.type !== 'topic') { // Only process regular cards, not topic shells
+      if (item.type !== 'topic') {
         const subject = item.subject || "General";
         const topic = item.topic || "General";
         
@@ -191,18 +194,49 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     });
     
     console.log("FlashcardList processed items with special topic shell handling:", {
-      topicShellCount: Object.keys(topicShells).reduce((count, subject) => 
-        count + Object.keys(topicShells[subject]).length, 0),
+      topicShellCount: Object.keys(shells).reduce((count, subject) => 
+        count + Object.keys(shells[subject]).length, 0),
       regularCardCount: Object.keys(bySubjectAndTopic).reduce((count, subject) => {
         return count + Object.keys(bySubjectAndTopic[subject]).reduce((subCount, topic) => 
           subCount + bySubjectAndTopic[subject][topic].length, 0);
       }, 0),
-      topicShells
+      topicShells: shells // Log the shells object
     });
 
-    return bySubjectAndTopic;
+    // Return both grouped cards and the shells map
+    return { groupedCards: bySubjectAndTopic, topicShells: shells };
   }, [cards]);
   
+  // Sort subjects based on creation date (earliest first)
+  const sortedSubjects = useMemo(() => {
+    // Ensure groupedCards is populated before proceeding
+    if (Object.keys(groupedCards).length === 0) return [];
+
+    const subjectsWithDates = Object.keys(groupedCards).map(subject => {
+        // Use the subject object structure if available, otherwise derive from groupedCards
+        const subjectData = cards.find(c => c.subject === subject && c.type === 'subject'); // Example: if subjects are also items
+
+        // Get exam info robustly
+        const { examType, examBoard } = getExamInfo(subject);
+        // Get color robustly
+        const firstItem = cards.find(c => c.subject === subject);
+        const color = firstItem?.baseColor || firstItem?.color || '#f0f0f0'; // Use baseColor or fallback
+
+        return {
+            id: subject, // The subject name acts as ID here
+            title: subjectData?.name || subject, // Use specific title if available
+            cards: groupedCards[subject], // Pass the topics map
+            exam_type: examType,
+            exam_board: examBoard,
+            color: color,
+            creationDate: getSubjectDate(subject) // Get the earliest date for sorting
+        };
+    });
+
+    // Sort by creation date
+    return subjectsWithDates.sort((a, b) => a.creationDate - b.creationDate);
+  }, [groupedCards, cards]); // Recalculate when groupedCards or cards change
+
   // Effect to reset expanded sections when cards change
   useEffect(() => {
     // Initialize all subjects as collapsed by default (changed from auto-expanding the first one)
@@ -210,8 +244,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     setExpandedTopics({});
   }, [cards]);
 
-  // Handle case where there are no cards
-  if (!cards || cards.length === 0) {
+  // Handle case where there are no cards (or processing resulted in no groups)
+  if (!cards || cards.length === 0 || Object.keys(groupedCards).length === 0) {
     return (
       <div className="no-cards-message">
         <h3>No Cards Found</h3>
@@ -907,30 +941,221 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     closeColorEditor();
   };
 
-  // Add this new function to handle clicking the flash icon
+  // Function to initiate AI card generation for a specific topic
   const handleGenerateCardsForTopic = (subject, topicName, topicId, e) => {
-    e.stopPropagation(); // Prevent the topic from toggling open/closed
-    
-    // Get the exam information for this subject
-    const { examType, examBoard } = getExamInfo(subject);
-    
-    // Set the selected topic data
-    setSelectedTopicForCards({
-      id: topicId,
-      name: topicName,
-      subject: subject,
-      examType: examType,
-      examBoard: examBoard
-    });
-    
-    // Show the AICardGenerator for this topic
+    if (e) e.stopPropagation(); // Prevent topic expansion toggle
+
+    console.log(`Initiating card generation for Subject: ${subject}, Topic: ${topicName}, Topic ID: ${topicId}`);
+
+    // Ensure we have the necessary info, especially topicId which comes from the topic shell
+    if (!topicId) {
+      console.warn("Cannot generate cards: Topic ID is missing. Was this topic created via AI Generator?");
+      // Optionally show a user-friendly message here
+      alert("Cannot generate cards for this topic as its unique ID is missing.");
+      return;
+    }
+
+    setSelectedTopicForCards({ subject, topicName, topicId });
     setShowTopicCardGenerator(true);
   };
 
-  // Add this new function to handle closing the card generator
+  // Function to close the topic-specific AI card generator modal
   const handleCloseTopicCardGenerator = () => {
     setShowTopicCardGenerator(false);
     setSelectedTopicForCards(null);
+  };
+
+  // Render a single subject section including its topics
+  const renderSubject = ({ id: subject, title, cards: subjectCardData, exam_board, exam_type, color: subjectColor }) => {
+    const isExpanded = expandedSubjects[subject];
+    const subjectRef = el => subjectRefs.current[subject] = el; // Ref for scrolling
+
+    // Use the pre-processed groupedCards for topic structure
+    const topicsInSubject = groupedCards[subject] || {};
+    const topicNames = Object.keys(topicsInSubject).sort((a, b) => a.localeCompare(b));
+
+    // Retrieve subject-specific metadata (like color) from the first available card or shell
+    // Find the first item (card or shell placeholder) associated with this subject to get color etc.
+    const firstItem = cards.find(c => c.subject === subject);
+    const currentSubjectColor = firstItem?.baseColor || firstItem?.color || '#f0f0f0'; // Use baseColor or fallback
+
+    return (
+      <div key={subject} className="subject-section">
+        {/* Render Subject Header */}
+        {renderSubjectHeader({
+          id: subject,
+          title: title || subject, // Use title if available, else subject name
+          cards: Object.values(topicsInSubject), // Pass topic data for card count etc.
+          exam_board: exam_board || getExamInfo(subject).examBoard,
+          exam_type: exam_type || getExamInfo(subject).examType,
+          color: currentSubjectColor // Pass determined color
+        })}
+
+        {/* Render Topics within the Subject - Conditionally based on subject expansion */}
+        {isExpanded && (
+          <div className="topics-container">
+            {topicNames.length === 0 ? (
+              <div className="no-topics-message">No topics found for this subject.</div>
+            ) : (
+              topicNames.map((topicName) => {
+                const cardsInTopic = topicsInSubject[topicName] || [];
+                const topicKey = `${subject}-${topicName}`;
+                const isTopicExpanded = expandedTopics[topicKey];
+                const topicDate = getTopicDate(cardsInTopic); // Get earliest date for the topic
+
+                // Find the original topic shell object if it exists using the now accessible topicShells map
+                const topicShell = Object.values(topicShells[subject] || {}).find(shell => shell.topicName === topicName);
+                const topicId = topicShell ? topicShell.id : null; // Get ID from shell if available
+                
+                // Assign ref inside the loop using topicKey
+                const topicRef = el => topicRefs.current[topicKey] = el; 
+
+                return (
+                  <div key={topicKey} className="topic-section">
+                    {/* Topic Header */}
+                    <div
+                      className={`topic-header ${isTopicExpanded ? 'expanded' : ''}`}
+                      onClick={() => toggleTopic(subject, topicName)}
+                      ref={topicRef} // Assign ref here
+                    >
+                      <div className="topic-header-content">
+                        <span className="topic-title">{topicName}</span>
+                        <div className="topic-meta">
+                          {topicDate && <span className="topic-date">{topicDate}</span>}
+                          <span className="topic-card-count">
+                            {/* Display count or "Topic Shell" if no cards */}
+                            {cardsInTopic.length > 0
+                              ? `${cardsInTopic.length} ${cardsInTopic.length === 1 ? 'card' : 'cards'}`
+                              : (topicShell ? "(Topic Shell)" : "(Empty Topic)")
+                            }
+                          </span>
+                        </div>
+                      </div>
+                      <div className="topic-actions">
+                         {/* Generate Cards Button - Use topicId */}
+                         <button
+                          className="action-button generate-topic-cards-button"
+                          onClick={(e) => handleGenerateCardsForTopic(subject, topicName, topicId, e)}
+                          title={`Generate AI cards for ${topicName}`}
+                          // Disable if topicId is missing (shouldn't happen if generated via AI)
+                          disabled={!topicId}
+                        >
+                          <FaBolt />
+                          <span className="tooltip">Generate Cards</span>
+                        </button>
+                        {/* Slideshow Button */}
+                        <button
+                          className="action-button slideshow-button"
+                          onClick={(e) => startSlideshow(subject, topicName, e)}
+                          disabled={cardsInTopic.length === 0}
+                          title={`Start slideshow for ${topicName}`}
+                        >
+                          <FaPlay />
+                           <span className="tooltip">Play Topic</span>
+                        </button>
+                         {/* Print Button */}
+                         <button
+                          className="action-button print-button"
+                          onClick={(e) => handlePrintTopic(subject, topicName, e)}
+                          disabled={cardsInTopic.length === 0}
+                          title={`Print cards for ${topicName}`}
+                         >
+                           <FaPrint />
+                           <span className="tooltip">Print Topic</span>
+                         </button>
+                        {/* Delete Topic Button - Consider if deleting shell is allowed */}
+                        <button
+                          className="action-button delete-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Decide if deleting a shell should be allowed or just the cards
+                            // Currently deletes cards only
+                            if (cardsInTopic.length > 0) {
+                                deleteTopicCards(subject, topicName);
+                            } else if (topicShell) {
+                                // Optional: Add logic to delete the topic shell record itself
+                                console.log("Attempting to delete topic shell - implement if needed");
+                                // onDeleteTopicShell(topicShell.id); // Needs implementation
+                                alert("Deleting topic shells directly is not yet supported.");
+                            }
+                          }}
+                          // Disable if no cards AND it's not a deletable shell (if that logic is added)
+                          disabled={cardsInTopic.length === 0 && !topicShell /* && !allowShellDelete */}
+                          title={cardsInTopic.length > 0 ? `Delete all cards in ${topicName}` : (topicShell ? `Delete Topic Shell ${topicName}`: `No cards to delete`)}
+                        >
+                          <FaTimes />
+                           <span className="tooltip">{cardsInTopic.length > 0 ? "Delete Topic Cards" : (topicShell ? "Delete Topic Shell" : "No cards")}</span>
+                        </button>
+                        {/* Toggle Arrow */}
+                        <span className="toggle-arrow">
+                          {isTopicExpanded ? <FaAngleUp /> : <FaAngleDown />}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Render Cards within the Topic - Conditionally based on expansion */}
+                    {/* Only render card container if expanded */}
+                    {isTopicExpanded && (
+                        <div className={`topic-cards-container ${cardsInTopic.length === 0 ? 'empty' : ''}`}>
+                            {cardsInTopic.length > 0 ? (
+                                renderCards(cardsInTopic, subject, topicName, currentSubjectColor)
+                            ) : (
+                                <div className="no-cards-in-topic-message">
+                                    This topic shell is ready. Click the <FaBolt style={{ verticalAlign: 'middle' }} /> button to generate cards.
+                                </div>
+                            )}
+                        </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // AI Card Generator Modal for specific topics
+  const TopicCardGeneratorModal = () => {
+    if (!showTopicCardGenerator || !selectedTopicForCards) {
+      return null;
+    }
+
+    const { subject, topicName, topicId } = selectedTopicForCards;
+
+    // We need to pass the topic ID (Knack record ID) to the generator
+    // Ensure the topicId is correctly retrieved and passed
+    const topicRecordId = topicId || null; // Use ID from topic shell if found
+
+     // Find the subject object to get exam board/type if needed
+     // Get exam info robustly using the helper function
+     const { examBoard, examType } = getExamInfo(subject);
+
+    // Log the props being passed
+    console.log("Rendering AICardGenerator with props:", {
+        isOpen: showTopicCardGenerator,
+        subject,
+        topic: topicName,
+        topicId: topicRecordId, // Ensure this is passed
+        examBoard,
+        examType
+    });
+
+    return (
+      <AICardGenerator
+        isOpen={showTopicCardGenerator}
+        onClose={handleCloseTopicCardGenerator}
+        subject={subject} // Pass subject name
+        topic={topicName}   // Pass topic name
+        topicId={topicRecordId} // Pass topic record ID
+        examBoard={examBoard} // Pass exam board
+        examType={examType}   // Pass exam type
+        // We might need to pass existing cards for context later
+        // existingCards={groupedCards[subject]?.[topicName] || []}
+        // onSave is handled by the main App component via Knack refresh
+      />
+    );
   };
 
   // Render the accordion structure with subjects and topics
@@ -1004,156 +1229,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       )}
       
       <div className="subjects-accordion">
-        {Object.keys(groupedCards)
-          // Sort subjects by the date of their earliest topic
-          .sort((a, b) => getSubjectDate(a) - getSubjectDate(b))
-          .map((subject) => {
-          const topics = Object.keys(groupedCards[subject])
-            // Sort topics by their earliest date
-            .sort((a, b) => {
-              const aCards = groupedCards[subject][a];
-              const bCards = groupedCards[subject][b];
-              
-              const aDate = aCards.filter(card => card.timestamp)
-                .map(card => new Date(card.timestamp).getTime());
-              const bDate = bCards.filter(card => card.timestamp)
-                .map(card => new Date(card.timestamp).getTime());
-              
-              const aMin = aDate.length > 0 ? Math.min(...aDate) : Number.MAX_SAFE_INTEGER;
-              const bMin = bDate.length > 0 ? Math.min(...bDate) : Number.MAX_SAFE_INTEGER;
-              
-              return aMin - bMin;
-            });
-          const totalCardsInSubject = topics.reduce((count, topic) => 
-            count + groupedCards[subject][topic].length, 0);
-          const { examType, examBoard } = getExamInfo(subject);
-          const isExpanded = expandedSubjects[subject];
-          
-          // Get subject color from first card or use default
-          const firstTopic = topics[0];
-          const firstCard = groupedCards[subject][firstTopic]?.[0];
-          const subjectColor = firstCard?.subjectColor || firstCard?.baseColor || firstCard?.cardColor || "#06206e";
-          console.log(`Subject color for ${subject}:`, {
-            subjectColor,
-            firstCardSubjectColor: firstCard?.subjectColor,
-            firstCardBaseColor: firstCard?.baseColor,
-            firstCardCardColor: firstCard?.cardColor,
-            firstCard
-          });
-          const textColor = getContrastColor(subjectColor);
-          
-          return (
-            <div 
-              key={subject} 
-              className="subject-container"
-              data-color={subjectColor}
-              style={{ 
-                '--subject-color': subjectColor 
-              }}
-            >
-              {renderSubjectHeader({ 
-                id: subject, 
-                title: subject, 
-                cards: topics.map(topic => groupedCards[subject][topic]), 
-                exam_board: examBoard, 
-                exam_type: examType,
-                color: subjectColor
-              })}
-              
-              {isExpanded && (
-                <div className="topics-container">
-                  {topics.map((topic) => {
-                    const topicCards = groupedCards[subject][topic];
-                    const topicKey = `${subject}-${topic}`;
-                    const isTopicExpanded = expandedTopics[topicKey];
-                    const topicDate = getTopicDate(topicCards);
-                    
-                    // Use the first card's color for the topic header
-                    const firstCardInTopic = topicCards[0];
-                    const topicColor = firstCardInTopic?.cardColor || firstCardInTopic?.baseColor || '#e0e0e0';
-                    const topicTextColor = getContrastColor(topicColor);
-                    
-                    // Find the topicId if this is a topic shell
-                    const topicShell = topicCards.find(card => card.type === 'topic' && card.isShell);
-                    const topicId = topicShell ? topicShell.id : null;
-                    
-                    return (
-                      <div key={topic} className="topic-group">
-                        <div 
-                          className={`topic-header ${topicCards.length === 0 ? 'empty-topic' : ''}`}
-                          onClick={() => toggleTopic(subject, topic)}
-                          style={{ 
-                            backgroundColor: topicColor,
-                            color: topicTextColor,
-                            borderLeft: 'none'
-                          }}
-                          ref={el => topicRefs.current[`${subject}-${topic}`] = el}
-                        >
-                          <div className="topic-info">
-                            <h3 style={{ color: topicTextColor }}>{topic}</h3>
-                            {topicDate && <span className="topic-date" style={{ color: topicTextColor }}>Added: {topicDate}</span>}
-                          </div>
-                          <div className="topic-actions">
-                            {/* Always show the generate cards button */}
-                            <button
-                              className="generate-cards-button"
-                              onClick={(e) => handleGenerateCardsForTopic(subject, topic, topicId, e)}
-                              title="Generate flashcards for this topic"
-                              style={{ color: topicTextColor, backgroundColor: `${topicTextColor}20` }}
-                            >
-                              <FaBolt />
-                            </button>
-                            
-                            {/* Show slideshow button only when cards exist */}
-                            {topicCards.length > 0 && (
-                              <button
-                                className="slideshow-button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSetShowModalAndSelectedCard(topicCards[0]);
-                                }}
-                                title="Start slideshow"
-                                style={{ color: topicTextColor, backgroundColor: `${topicTextColor}20` }}
-                              >
-                                <span role="img" aria-label="Slideshow">▶️</span>
-                              </button>
-                            )}
-                            <button
-                              className="print-topic-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePrintTopic(subject, topic, topicCards);
-                              }}
-                              title="Print cards in this topic"
-                              style={{ color: topicTextColor, backgroundColor: `${topicTextColor}20` }}
-                            >
-                              <span role="img" aria-label="Print">🖨️</span>
-                            </button>
-                            <button
-                              className="delete-topic-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteTopicCards(subject, topic);
-                              }}
-                              title="Delete all cards in this topic"
-                              style={{ 
-                                color: topicTextColor, 
-                                backgroundColor: 'rgba(255, 0, 0, 0.2)' 
-                              }}
-                            >
-                              <span role="img" aria-label="Delete">🗑️</span>
-                            </button>
-                            <span className="card-count" style={{ color: topicTextColor }}>{topicCards.length} cards</span>
-                          </div>
-                        </div>
-                        {renderCards(topicCards, subject, topic, subjectColor)}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
+        {sortedSubjects.map((subjectData) => {
+          const { id: subject, title, cards, exam_board, exam_type, color, creationDate } = subjectData;
+          return renderSubject({ id: subject, title, cards, exam_board, exam_type, color });
         })}
       </div>
 
