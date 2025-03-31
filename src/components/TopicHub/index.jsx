@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaInfo, FaCheckCircle } from 'react-icons/fa';
 import './styles.css';
 import { generateTopicPrompt } from '../../prompts/topicListPrompt';
-import { generateId } from '../utils/UnifiedDataModel';
+import { generateId } from '../../utils/UnifiedDataModel';
 
 /**
  * TopicHub - Enhanced topic management component
