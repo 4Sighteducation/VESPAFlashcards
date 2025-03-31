@@ -1,22 +1,16 @@
 ﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
-import SubjectsList from "./components/SubjectsList";
-import TopicsList from "./components/TopicsList";
 import CardCreator from "./components/CardCreator";
 import SpacedRepetition from "./components/SpacedRepetition";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Header from "./components/Header";
-import UserProfile from "./components/UserProfile";
 import AICardGenerator from './components/AICardGenerator';
 import PrintModal from './components/PrintModal';
-import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
 import TopicListSyncManager from './components/TopicListSyncManager';
-import authManager from './services/AuthManager';
 import { 
   initializeAuthManager, 
   handleTokenRefreshRequest, 
-  handleAuthRefreshResult 
 } from './utils/AuthAppIntegration';
 import { 
   addVersionMetadata, 
@@ -28,41 +22,15 @@ import {
 } from './utils/DataUtils';
 
 import {
-  migrateCardsToStandard,
-  createStandardCard
-} from './utils/StandardCardModel';
-
-import {
-  sanitizeCards,
   validateCards,
-  prepareForKnack,
-  needsMigration
 } from './utils/CardDataProcessor';
 
 // API Keys and constants
-const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
-const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
-
-// Box descriptions
-const BOX_DESCRIPTIONS = {
-  1: "New cards start here. Review these daily. When answered correctly, they move to Box 2; otherwise they stay here.",
-  2: "Review these cards every other day. Correct responses move them to Box 3; if missed or answered incorrectly, they return to Box 1.",
-  3: "Review these cards every 3 days. Correct responses move them to Box 4; if incorrect or overdue, they return to Box 1.",
-  4: "Review these cards weekly. Correct responses move them to Box 5; if incorrect, they return to Box 1.",
-  5: "Cards here remain indefinitely unless answered incorrectly, which returns them to Box 1."
-};
-
-// Using safeParseJSON from DataUtils instead of local implementation
-
+// Removed unused KNACK_APP_ID
+// Removed unused KNACK_API_KEY
 
 // Helper function to clean HTML tags from strings
-const cleanHtmlTags = (str) => {
-  if (!str) return "";
-  // If it's not a string, convert to string
-  const strValue = String(str);
-  // Remove HTML tags
-  return strValue.replace(/<\/?[^>]+(>|$)/g, "").trim();
-};
+// Removed unused cleanHtmlTags function
 
 function App() {
   // Authentication and user state
@@ -81,14 +49,14 @@ function App() {
   const [currentSubjectColor, setCurrentSubjectColor] = useState("#e6194b");
 
   // Filters and selections
-  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [selectedSubject, /* Removed unused setSelectedSubject */] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
 
   // Topic List Modal state
   const [topicListModalOpen, setTopicListModalOpen] = useState(false);
   const [topicListSubject, setTopicListSubject] = useState(null);
-  const [topicListExamBoard, setTopicListExamBoard] = useState("AQA");
-  const [topicListExamType, setTopicListExamType] = useState("A-Level");
+  const [topicListExamBoard, /* Removed unused setTopicListExamBoard */] = useState("AQA");
+  const [topicListExamType, /* Removed unused setTopicListExamType */] = useState("A-Level");
 
   // Spaced repetition state
   const [currentBox, setCurrentBox] = useState(1);
@@ -565,86 +533,7 @@ function App() {
   );
 
   // Function to refresh subject and topic colors
-  const refreshSubjectAndTopicColors = useCallback((subject, newColor) => {
-    // Remove the confirmation dialog since we'll handle that in the SubjectsList component
-    console.log(`Refreshing colors for subject ${subject} with base color ${newColor}`);
-    
-    // Get all topics for this subject
-    const topicsForSubject = allCards
-      .filter(card => (card.subject || "General") === subject)
-      .map(card => card.topic || "General");
-    
-    // Remove duplicates and sort
-    const uniqueTopics = [...new Set(topicsForSubject)].sort();
-    
-    if (uniqueTopics.length === 0) {
-      console.log(`No topics found for subject ${subject}`);
-      return false;
-    }
-    
-    console.log(`Found ${uniqueTopics.length} topics for subject ${subject}`);
-    
-    // Start by updating the subject color
-    setSubjectColorMapping(prevMapping => {
-      const newMapping = { ...prevMapping };
-      
-      // Create subject entry if it doesn't exist
-      if (!newMapping[subject]) {
-        newMapping[subject] = { base: newColor, topics: {} };
-      } else {
-        newMapping[subject].base = newColor;
-        
-        // Reset topics object
-        newMapping[subject].topics = {};
-      }
-      
-      // Generate new colors for each topic
-      uniqueTopics.forEach((topic, index) => {
-        // Skip the "General" topic - it will use the subject color
-        if (topic === "General") {
-          newMapping[subject].topics[topic] = newColor;
-          return;
-        }
-        
-        // Generate a shade of the base color for this topic
-        const topicColor = generateShade(newColor, index, Math.max(uniqueTopics.length, 5));
-        newMapping[subject].topics[topic] = topicColor;
-        
-        console.log(`Generated color for topic ${topic}: ${topicColor}`);
-      });
-      
-      return newMapping;
-    });
-    
-    // Now update all cards with this subject to use their topic colors
-    setAllCards(prevCards => {
-      return prevCards.map(card => {
-        if ((card.subject || "General") === subject) {
-          const topic = card.topic || "General";
-          // Wait for the state update to complete before accessing values
-          // Instead use calculated colors
-          let topicColor = newColor;
-          
-          if (topic !== "General") {
-            const topicIndex = uniqueTopics.indexOf(topic);
-            topicColor = generateShade(newColor, topicIndex, Math.max(uniqueTopics.length, 5));
-          }
-          
-          // Return updated card with new colors
-          return {
-            ...card,
-            cardColor: topicColor,
-            baseColor: newColor
-          };
-        }
-        return card;
-      });
-    });
-    
-    // Show confirmation to user
-    showStatus("Colors refreshed successfully", "success");
-    return true;
-  }, [allCards, generateShade, showStatus]);
+  // Removed unused refreshSubjectAndTopicColors useCallback
 
   // Generate a color for a subject or topic
   const getColorForSubjectTopic = useCallback(
@@ -809,25 +698,7 @@ function App() {
   }, [updateSpacedRepetitionData, showStatus, saveToLocalStorage]);
 
   // Load data from Knack
-  const loadData = useCallback(async () => {
-    if (!auth) return;
-
-    setLoadingMessage("Loading your flashcards...");
-    setLoading(true);
-
-    try {
-      // Data will be loaded through the Knack integration script
-      // We just wait for messages from the parent window
-      
-      // Load from localStorage as fallback
-      loadFromLocalStorage();
-    } catch (error) {
-      console.error("Error loading data:", error);
-      setError("Failed to load your flashcards. Please refresh and try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [auth, loadFromLocalStorage]);
+  // Removed unused loadData useCallback
 
   // Functions for card operations - defined after their dependencies
   // Add a new card
@@ -1258,7 +1129,6 @@ function App() {
   // Initialize communication with parent window (Knack)
   // Reference to track if auth has been processed to prevent loops
   const authProcessedRef = useRef(false);
-  const readyMessageSentRef = useRef(false);
   
   useEffect(() => {
     // Prevent duplicate message sending
@@ -1823,23 +1693,7 @@ function App() {
   );
   
   // Function to update user topics for a specific subject
-  const updateUserTopicsForSubject = useCallback(
-    (subject, topics) => {
-      if (!subject || !auth) return;
-      
-      setUserTopics(prevTopics => {
-        const newTopics = { ...prevTopics };
-        newTopics[subject] = topics;
-        return newTopics;
-      });
-      
-      // Save changes
-      setTimeout(() => {
-        saveData();
-      }, 500);
-    },
-    [auth, saveData]
-  );
+  // Removed unused updateUserTopicsForSubject useCallback
 
   // Handle opening the topic list modal for a subject
   const handleViewTopicList = useCallback((subject) => {
