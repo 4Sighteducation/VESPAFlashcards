@@ -153,63 +153,70 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   const { groupedCards, topicShells } = useMemo(() => {
     const bySubjectAndTopic = {};
     const shells = {}; // Rename to avoid conflict in return object
-    
-    // Ensure cards is an array before processing
+
     if (!Array.isArray(cards)) {
       console.error("FlashcardList received non-array cards prop:", cards);
-      return { groupedCards: {}, topicShells: {} }; // Return empty objects if cards is invalid
+      return { groupedCards: {}, topicShells: {} };
     }
 
-    // First pass: identify and separate topic shells from regular cards
+    // Helper function to extract the actual topic name
+    const extractTopicName = (item) => {
+      const name = item.name || item.topic || "Unknown Topic";
+      const subject = item.subject || "General";
+      // Check if name starts with subject + colon + space
+      if (name.startsWith(subject + ': ')) {
+        return name.substring(subject.length + 2).trim(); // Extract part after colon and space
+      }
+      // Fallback if pattern doesn't match
+      return name;
+    };
+
+    // First pass: identify and separate topic shells
     cards.forEach(item => {
       if (item.type === 'topic' && item.isShell) {
         const subject = item.subject || "General";
-        
+        const topicName = extractTopicName(item); // Use helper function
+
         if (!shells[subject]) {
           shells[subject] = {};
         }
-        
-        const topicName = item.name || item.topic || "Unknown Topic";
+
+        // Store the shell using its original ID as the key within the subject
         shells[subject][item.id] = {
           ...item,
-          topicName,
+          topicName, // Store the extracted topic name
         };
-        
+
+        // Ensure the structure exists in bySubjectAndTopic even for shells
         if (!bySubjectAndTopic[subject]) {
           bySubjectAndTopic[subject] = {};
         }
-        
-        if (!bySubjectAndTopic[subject][topicName]) {
-          bySubjectAndTopic[subject][topicName] = [];
+        if (!bySubjectAndTopic[subject][topicName]) { // Use extracted topicName as key
+          bySubjectAndTopic[subject][topicName] = []; // Initialize with empty array for potential cards later
         }
       }
     });
-    
+
     // Second pass: organize regular cards into their topics
     cards.forEach(item => {
-      if (item.type !== 'topic') {
+      if (item.type !== 'topic') { // Process actual flashcards
         const subject = item.subject || "General";
-        const topic = item.topic || "General";
-        
+        // Use the same logic to find the topic name, assuming cards also have a 'name' or 'topic' field
+        // If cards have a different structure, adjust accordingly
+        const topicName = item.topic || extractTopicName(item); // Prioritize item.topic if exists for cards
+
         if (!bySubjectAndTopic[subject]) {
           bySubjectAndTopic[subject] = {};
         }
-        
-        if (!bySubjectAndTopic[subject][topic]) {
-          bySubjectAndTopic[subject][topic] = [];
+        if (!bySubjectAndTopic[subject][topicName]) { // Use consistent topicName key
+          bySubjectAndTopic[subject][topicName] = [];
         }
-        
-        bySubjectAndTopic[subject][topic].push(item);
+        bySubjectAndTopic[subject][topicName].push(item);
       }
     });
-    
-    console.log("FlashcardList processed items with special topic shell handling:", {
-      topicShellCount: Object.keys(shells).reduce((count, subject) => 
-        count + Object.keys(shells[subject]).length, 0),
-      regularCardCount: Object.keys(bySubjectAndTopic).reduce((count, subject) => {
-        return count + Object.keys(bySubjectAndTopic[subject]).reduce((subCount, topic) => 
-          subCount + bySubjectAndTopic[subject][topic].length, 0);
-      }, 0),
+
+    console.log("FlashcardList processed items with topic name extraction:", {
+      groupedStructure: bySubjectAndTopic, // Log the final structure
       topicShells: shells // Log the shells object
     });
 
