@@ -76,7 +76,7 @@ const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRef
   return null; // This is a utility component with no UI
 };
 
-const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) => {
+const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, recordId }) => {
   // State for expanded subjects and topics
   const [expandedSubjects, setExpandedSubjects] = useState({});
   const [expandedTopics, setExpandedTopics] = useState({});
@@ -94,6 +94,20 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // Add new state for color editor
   const [colorEditorOpen, setColorEditorOpen] = useState(false);
   const [selectedSubjectForColor, setSelectedSubjectForColor] = useState(null);
+  
+  // State for ColorEditor visibility and configuration
+  const [showColorEditor, setShowColorEditor] = useState(false);
+  const [colorEditorState, setColorEditorState] = useState({ color: '#e6194b', subject: null });
+  
+  // State for AI Card Generator
+  const [showAICardGenerator, setShowAICardGenerator] = useState(false);
+  const [cardGeneratorState, setCardGeneratorState] = useState({
+    subject: '',
+    topic: '',
+    topicId: '',
+    examBoard: '',
+    examType: ''
+  });
   
   // Add new state for mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState({});
@@ -889,13 +903,22 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // Add function to open color editor
   const openColorEditor = (subject, e) => {
     if (e) e.stopPropagation(); // Prevent toggling subject expansion
-    setSelectedSubjectForColor(subject);
-    setColorEditorOpen(true);
+    
+    // Find the color for this subject
+    const subjectObj = sortedSubjects.find(s => s.id === subject);
+    const currentColor = subjectObj?.color || '#e6194b';
+    
+    // Update state
+    setColorEditorState({
+      color: currentColor,
+      subject: subject
+    });
+    setShowColorEditor(true);
   };
   
   // Add function to close color editor
   const closeColorEditor = () => {
-    setColorEditorOpen(false);
+    setShowColorEditor(false);
   };
   
   // Add function to handle color change
@@ -939,7 +962,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // Function to close the topic-specific AI card generator modal
   const handleCloseTopicCardGenerator = () => {
     setShowTopicCardGenerator(false);
-    setSelectedTopicForCards(null);
+    setShowAICardGenerator(false);
   };
 
   // Render a single subject section including its topics
