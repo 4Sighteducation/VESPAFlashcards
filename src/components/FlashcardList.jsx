@@ -152,71 +152,50 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     }));
   };
   
-  // Group cards by subject and topic, handling standardized loaded data
-  const { groupedCards, topicShells } = useMemo(() => {
-    const bySubjectAndTopic = {};
-    const shells = {}; 
-
-    if (!Array.isArray(cards)) {
-      console.error("FlashcardList received non-array cards prop:", cards);
-      return { groupedCards: {}, topicShells: {} };
-    }
-
-    // --- Logic Adjusted for Loaded Data Structure --- 
-    cards.forEach(item => {
-      const subject = item.subject || "General";
-      
-      // Initialize subject group if it doesn't exist
-      if (!bySubjectAndTopic[subject]) {
-        bySubjectAndTopic[subject] = {};
+  // Revised: Group cards by subject and actual topic name, storing shell/cards together
+  const { groupedCards } = useMemo(() => {
+      const bySubjectAndTopic = {};
+  
+      if (!Array.isArray(cards)) {
+          console.error("FlashcardList received non-array cards prop:", cards);
+          return { groupedCards: {} };
       }
-      if (!shells[subject]) {
-        shells[subject] = {};
-      }
-
-      // Determine the topic name - Use item.id or a default if name/topic altered
-      // The actual topic name seems lost after standardization, so we might need
-      // to reconstruct it or rely on the ID/structure if possible.
-      // For shells, let's use the ID as a temporary key, expecting rendering logic 
-      // to display the correct info from the shell object itself.
-      let topicKey = item.topic || "General"; // Fallback to standardized topic
-      if (item.type === 'topic' && item.isShell) {
-         topicKey = item.id; // Use the unique ID for grouping shells
-         shells[subject][item.id] = { ...item, topicName: item.name || item.id }; // Store original name if present
-      } else if (item.type !== 'topic') {
-          topicKey = item.topic || "General"; // Use topic field for regular cards
-      }
-
-      // Initialize topic group if it doesn't exist
-      if (!bySubjectAndTopic[subject][topicKey]) {
-        bySubjectAndTopic[subject][topicKey] = [];
-      }
-
-      // Add the item (card or shell placeholder) to the group
-      // Note: Shells might appear as empty topics initially
-      if (item.type !== 'topic') {
-          bySubjectAndTopic[subject][topicKey].push(item);
-      }
-    });
-
-    // Refine shells: Ensure shells are represented in groupedCards structure
-    Object.keys(shells).forEach(subject => {
-        Object.values(shells[subject]).forEach(shell => {
-            const topicName = shell.topicName || shell.id; // Use extracted name or ID
-            if (!bySubjectAndTopic[subject][topicName]) {
-                bySubjectAndTopic[subject][topicName] = []; // Create topic array if needed
-            }
-            // We might not need to push the shell itself here if FlashcardList renders shells separately
-            // Let's ensure the topic entry exists.
-        });
-    });
-
-    console.log("FlashcardList processed items (adjusted for loaded data):", {
-      groupedStructure: bySubjectAndTopic,
-      topicShells: shells
-    });
-
-    return { groupedCards: bySubjectAndTopic, topicShells: shells };
+  
+      // Helper to extract actual topic name from shell name (or use item.topic for cards)
+      const extractActualTopicName = (item) => {
+        if (item.type === 'topic' && item.isShell && item.name) {
+          const name = item.name;
+          const subject = item.subject || "General";
+          if (name.startsWith(subject + ': ')) {
+            return name.substring(subject.length + 2).trim() || "General"; // Extract part after colon
+          }
+          return name; // Use full name if pattern doesn't match
+        }
+        // For actual cards or shells without a proper name field, use the topic field
+        return item.topic || "General"; 
+      };
+  
+      cards.forEach(item => {
+          const subject = item.subject || "General";
+          const actualTopicName = extractActualTopicName(item); 
+  
+          if (!bySubjectAndTopic[subject]) {
+              bySubjectAndTopic[subject] = {};
+          }
+          if (!bySubjectAndTopic[subject][actualTopicName]) {
+              bySubjectAndTopic[subject][actualTopicName] = []; // Array to hold cards OR the shell
+          }
+  
+          // Add the item (shell or card) to the array for this topic
+          bySubjectAndTopic[subject][actualTopicName].push(item);
+      });
+  
+      console.log("FlashcardList processed items (Revised Grouping):", {
+          groupedStructure: bySubjectAndTopic
+      });
+  
+      // No separate topicShells object needed now
+      return { groupedCards: bySubjectAndTopic };
   }, [cards]);
   
   // Function to get exam type and board directly from the first card in a subject
@@ -983,13 +962,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
       return count + (topicsInSubject[topicName] || []).length;
     }, 0);
     
-    // Count topic shells for the subject header
-    const topicShellCount = Object.values(topicShells[subject] || {}).length;
-    
     // Display logic for card count: show card count if > 0, else show shell count if > 0
     const displayCount = totalCardCount > 0 ? 
       `${totalCardCount} ${totalCardCount === 1 ? 'card' : 'cards'}` :
-      (topicShellCount > 0 ? `${topicShellCount} topic ${topicShellCount === 1 ? 'shell' : 'shells'}` : '0 cards');
+      '0 cards';
 
     return (
       <div key={subject} className="subject-section">
@@ -1012,20 +988,20 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
               <div className="no-topics-message">No topics found for this subject.</div>
             ) : (
               topicNames.map((topicName) => {
-                // *** ADD LOGGING HERE ***
-                console.log(`[Render Topic ${subject}] Mapping Topic Key:`, topicName);
-                const cardsInTopic = topicsInSubject[topicName] || [];
+                // topicName is now the actual topic name (e.g., "Structure of the atom")
+                const itemsInTopic = topicsInSubject[topicName] || [];
                 const topicKey = `${subject}-${topicName}`;
                 const isTopicExpanded = expandedTopics[topicKey];
-                const topicDate = getTopicDate(cardsInTopic); // Get earliest date for the topic
+                
+                // Check if the items are cards or a shell
+                const isShellOnly = itemsInTopic.length === 1 && itemsInTopic[0].type === 'topic' && itemsInTopic[0].isShell;
+                const actualCards = isShellOnly ? [] : itemsInTopic;
+                const topicShell = isShellOnly ? itemsInTopic[0] : null;
+                const topicId = topicShell?.id; // Get ID from shell if present
+                const topicDate = getTopicDate(actualCards); // Calculate date based on actual cards
 
-                // Find the topic shell object using the topicName (which is the ID key)
-                const topicShell = topicShells[subject]?.[topicName]; // Look up by ID key
-                // *** ADD LOGGING HERE ***
-                console.log(`[Render Topic ${subject}] Found Shell:`, topicShell);
-                const displayTopicName = topicShell?.topicName || topicName; // Use stored name or fallback to ID key
-                console.log(`[Render Topic ${subject}] Display Name:`, displayTopicName);
-                const topicId = topicShell?.id || topicName; // Get ID from shell or use the key
+                // Log the findings for this topic
+                console.log(`[Render Topic ${subject}] Topic: ${topicName}, isShellOnly: ${isShellOnly}, Card Count: ${actualCards.length}, Shell Object:`, topicShell);
 
                 // Assign ref inside the loop using topicKey
                 const topicRef = el => topicRefs.current[topicKey] = el;
@@ -1035,72 +1011,69 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
                     {/* Topic Header */}
                     <div
                       className={`topic-header ${isTopicExpanded ? 'expanded' : ''}`}
-                      onClick={() => toggleTopic(subject, topicName)} // Use topicName (ID key) for toggle
-                      ref={topicRef} // Assign ref here
+                      onClick={() => toggleTopic(subject, topicName)} // Use actual topic name
+                      ref={topicRef}
                     >
                       <div className="topic-header-content">
-                        {/* Use displayTopicName for rendering */}
-                        <span className="topic-title">{displayTopicName}</span>
+                        <span className="topic-title">{topicName}</span> {/* Render actual topic name */}
                         <div className="topic-meta">
                           {topicDate && <span className="topic-date">{topicDate}</span>}
                           <span className="topic-card-count">
-                            {/* Display count or "Topic Shell" */}
-                            {cardsInTopic.length > 0
-                              ? `${cardsInTopic.length} ${cardsInTopic.length === 1 ? 'card' : 'cards'}`
-                              : (topicShell ? "(Topic Shell)" : "(Empty Topic)") // Check if shell exists
+                            {/* Display card count or "Topic Shell" */}
+                            {actualCards.length > 0
+                              ? `${actualCards.length} ${actualCards.length === 1 ? 'card' : 'cards'}`
+                              : (isShellOnly ? "(Topic Shell)" : "(Empty Topic)")
                             }
                           </span>
                         </div>
                       </div>
                       <div className="topic-actions">
-                         {/* Generate Cards Button - Use topicId and displayTopicName */}
+                         {/* Generate Cards Button - Enabled only for shells */}
                          <button
                           className="action-button generate-topic-cards-button"
-                          onClick={(e) => handleGenerateCardsForTopic(subject, displayTopicName, topicId, e)}
-                          title={`Generate AI cards for ${displayTopicName}`}
-                          disabled={!topicId}
+                          onClick={(e) => handleGenerateCardsForTopic(subject, topicName, topicId, e)}
+                          title={`Generate AI cards for ${topicName}`}
+                          disabled={!isShellOnly || !topicId} // Only enable for shells with an ID
                         >
                           <FaBolt />
                           <span className="tooltip">Generate Cards</span>
                         </button>
-                        {/* Slideshow Button - Use topicName (ID key) */}
+                        {/* Slideshow Button - Enabled only if cards exist */}
                         <button
                           className="action-button slideshow-button"
-                          onClick={(e) => startSlideshow(subject, topicName, e)} // Use topicName (ID key)
-                          disabled={cardsInTopic.length === 0}
-                          title={`Start slideshow for ${displayTopicName}`}
+                          onClick={(e) => startSlideshow(subject, topicName, e)} // Use actual topic name
+                          disabled={actualCards.length === 0}
+                          title={`Start slideshow for ${topicName}`}
                         >
                           <FaPlay />
                            <span className="tooltip">Play Topic</span>
                         </button>
-                         {/* Print Button - Use topicName (ID key) */}
+                         {/* Print Button - Enabled only if cards exist */}
                          <button
                           className="action-button print-button"
-                          onClick={(e) => handlePrintTopic(subject, topicName, e)} // Use topicName (ID key)
-                          disabled={cardsInTopic.length === 0}
-                          title={`Print cards for ${displayTopicName}`}
+                          onClick={(e) => handlePrintTopic(subject, topicName, e)} // Use actual topic name
+                          disabled={actualCards.length === 0}
+                          title={`Print cards for ${topicName}`}
                          >
                            <FaPrint />
                            <span className="tooltip">Print Topic</span>
                          </button>
-                        {/* Delete Topic Button - Use topicName (ID key) */}
+                        {/* Delete Topic Button - Handles cards or shell */}
                         <button
                           className="action-button delete-button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (cardsInTopic.length > 0) {
-                                deleteTopicCards(subject, topicName); // Use topicName (ID key)
-                            } else if (topicShell) {
-                                // TODO: Implement deletion of the topic shell itself if desired
-                                // onDeleteTopicShell(topicShell.id); // Example call
+                            if (actualCards.length > 0) {
+                                deleteTopicCards(subject, topicName); // Use actual topic name
+                            } else if (isShellOnly) {
                                 alert("Deleting topic shells directly is not yet supported.");
                             }
                           }}
-                          disabled={cardsInTopic.length === 0 && !topicShell}
-                          title={cardsInTopic.length > 0 ? `Delete all cards in ${displayTopicName}` : (topicShell ? `Delete Topic Shell ${displayTopicName}`: `No cards or shell`)}
+                          disabled={actualCards.length === 0 && !isShellOnly}
+                          title={actualCards.length > 0 ? `Delete all cards in ${topicName}` : (isShellOnly ? `Delete Topic Shell ${topicName}`: `No items`)}
                         >
                           <FaTimes />
-                           <span className="tooltip">{cardsInTopic.length > 0 ? "Delete Cards" : (topicShell ? "Delete Shell" : "No Items")}</span>
+                           <span className="tooltip">{actualCards.length > 0 ? "Delete Cards" : (isShellOnly ? "Delete Shell" : "No Items")}</span>
                         </button>
                         {/* Toggle Arrow */}
                         <span className="toggle-arrow">
@@ -1111,9 +1084,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
 
                     {/* Render Cards within the Topic - Conditionally */}
                     {isTopicExpanded && (
-                        <div className={`topic-cards-container ${cardsInTopic.length === 0 ? 'empty' : ''}`}>
-                            {cardsInTopic.length > 0 ? (
-                                renderCards(cardsInTopic, subject, topicName, currentSubjectColor) // Use topicName (ID key)
+                        <div className={`topic-cards-container ${actualCards.length === 0 ? 'empty' : ''}`}>
+                            {actualCards.length > 0 ? (
+                                renderCards(actualCards, subject, topicName, currentSubjectColor) // Use actual topic name
                             ) : (
                                 <div className="no-cards-in-topic-message">
                                     This topic shell is ready. Click the <FaBolt style={{ verticalAlign: 'middle' }} /> button to generate cards.
