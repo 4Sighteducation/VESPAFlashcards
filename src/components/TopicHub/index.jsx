@@ -86,44 +86,45 @@ const TopicHub = ({
     }
   }, [selectedTopic]);
   
+  // Process topics into main topic groupings when topics change
+  useEffect(() => {
+    // Check if topics is a valid array before processing
+    if (topics && Array.isArray(topics) && topics.length > 0) {
+      const topicGroups = {};
+      
+      // Group topics by mainTopic
+      topics.forEach(topic => {
+        // Ensure topic and mainTopic exist before trying to group
+        if (topic && topic.mainTopic) {
+          const mainTopic = topic.mainTopic;
+          if (!topicGroups[mainTopic]) {
+            topicGroups[mainTopic] = [];
+          }
+          topicGroups[mainTopic].push(topic);
+        } else {
+          console.warn("Skipping invalid topic object during grouping:", topic);
+        }
+      });
+      
+      // Convert to array format for rendering
+      const mainTopicArray = Object.keys(topicGroups).map(mainTopicName => ({
+        name: mainTopicName,
+        subtopics: topicGroups[mainTopicName]
+      }));
+      
+      // Update the state used for rendering
+      console.log("[TopicHub] Grouping topics into mainTopics:", mainTopicArray);
+      setMainTopics(mainTopicArray); 
+
+    } else {
+      // If topics is empty or invalid, reset mainTopics
+      setMainTopics([]);
+    }
+  // This effect should run whenever the source 'topics' array changes
+  }, [topics]); 
+
   // API key - matching the format used in AICardGenerator for consistency
   const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
-
-// Process topics into main topic groupings when topics change
-useEffect(() => {
-  // Check if topics is a valid array before processing
-  if (topics && Array.isArray(topics) && topics.length > 0) {
-    const topicGroups = {};
-    
-    // Group topics by mainTopic
-    topics.forEach(topic => {
-      // Ensure topic and mainTopic exist before trying to group
-      if (topic && topic.mainTopic) {
-        const mainTopic = topic.mainTopic;
-        if (!topicGroups[mainTopic]) {
-          topicGroups[mainTopic] = [];
-        }
-        topicGroups[mainTopic].push(topic);
-      } else {
-        console.warn("Skipping invalid topic object during grouping:", topic);
-      }
-    });
-    
-    // Convert to array format for rendering
-    const mainTopicArray = Object.keys(topicGroups).map(mainTopicName => ({
-      name: mainTopicName,
-      subtopics: topicGroups[mainTopicName]
-    }));
-    
-    // Update the state used for rendering
-    setMainTopics(mainTopicArray);
-
-  } else {
-    // If topics is empty or invalid, reset mainTopics
-    setMainTopics([]);
-  }
-// This effect should run whenever the source 'topics' array changes
-}, [topics]); 
 
   // Check cache for existing topics
   const checkTopicCache = (examBoard, examType, subject) => {
