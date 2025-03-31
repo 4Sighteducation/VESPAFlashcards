@@ -77,6 +77,9 @@ const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRef
 };
 
 const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, recordId }) => {
+  // *** ADDED LOGGING HERE ***
+  console.log("[FlashcardList] Received cards prop:", cards);
+
   // State for expanded subjects and topics
   const [expandedSubjects, setExpandedSubjects] = useState({});
   const [expandedTopics, setExpandedTopics] = useState({});
@@ -149,78 +152,70 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     }));
   };
   
-  // Group cards by subject and topic, with special handling for topic shells
+  // Group cards by subject and topic, handling standardized loaded data
   const { groupedCards, topicShells } = useMemo(() => {
     const bySubjectAndTopic = {};
-    const shells = {}; // Rename to avoid conflict in return object
+    const shells = {}; 
 
     if (!Array.isArray(cards)) {
       console.error("FlashcardList received non-array cards prop:", cards);
       return { groupedCards: {}, topicShells: {} };
     }
 
-    // Helper function to extract the actual topic name
-    const extractTopicName = (item) => {
-      const name = item.name || item.topic || "Unknown Topic";
+    // --- Logic Adjusted for Loaded Data Structure --- 
+    cards.forEach(item => {
       const subject = item.subject || "General";
-      // Check if name starts with subject + colon + space
-      if (name.startsWith(subject + ': ')) {
-        return name.substring(subject.length + 2).trim(); // Extract part after colon and space
+      
+      // Initialize subject group if it doesn't exist
+      if (!bySubjectAndTopic[subject]) {
+        bySubjectAndTopic[subject] = {};
       }
-      // Fallback if pattern doesn't match
-      return name;
-    };
+      if (!shells[subject]) {
+        shells[subject] = {};
+      }
 
-    // First pass: identify and separate topic shells
-    cards.forEach(item => {
+      // Determine the topic name - Use item.id or a default if name/topic altered
+      // The actual topic name seems lost after standardization, so we might need
+      // to reconstruct it or rely on the ID/structure if possible.
+      // For shells, let's use the ID as a temporary key, expecting rendering logic 
+      // to display the correct info from the shell object itself.
+      let topicKey = item.topic || "General"; // Fallback to standardized topic
       if (item.type === 'topic' && item.isShell) {
-        const subject = item.subject || "General";
-        const topicName = extractTopicName(item); // Use helper function
+         topicKey = item.id; // Use the unique ID for grouping shells
+         shells[subject][item.id] = { ...item, topicName: item.name || item.id }; // Store original name if present
+      } else if (item.type !== 'topic') {
+          topicKey = item.topic || "General"; // Use topic field for regular cards
+      }
 
-        if (!shells[subject]) {
-          shells[subject] = {};
-        }
+      // Initialize topic group if it doesn't exist
+      if (!bySubjectAndTopic[subject][topicKey]) {
+        bySubjectAndTopic[subject][topicKey] = [];
+      }
 
-        // Store the shell using its original ID as the key within the subject
-        shells[subject][item.id] = {
-          ...item,
-          topicName, // Store the extracted topic name
-        };
-
-        // Ensure the structure exists in bySubjectAndTopic even for shells
-        if (!bySubjectAndTopic[subject]) {
-          bySubjectAndTopic[subject] = {};
-        }
-        if (!bySubjectAndTopic[subject][topicName]) { // Use extracted topicName as key
-          bySubjectAndTopic[subject][topicName] = []; // Initialize with empty array for potential cards later
-        }
+      // Add the item (card or shell placeholder) to the group
+      // Note: Shells might appear as empty topics initially
+      if (item.type !== 'topic') {
+          bySubjectAndTopic[subject][topicKey].push(item);
       }
     });
 
-    // Second pass: organize regular cards into their topics
-    cards.forEach(item => {
-      if (item.type !== 'topic') { // Process actual flashcards
-        const subject = item.subject || "General";
-        // Use the same logic to find the topic name, assuming cards also have a 'name' or 'topic' field
-        // If cards have a different structure, adjust accordingly
-        const topicName = item.topic || extractTopicName(item); // Prioritize item.topic if exists for cards
-
-        if (!bySubjectAndTopic[subject]) {
-          bySubjectAndTopic[subject] = {};
-        }
-        if (!bySubjectAndTopic[subject][topicName]) { // Use consistent topicName key
-          bySubjectAndTopic[subject][topicName] = [];
-        }
-        bySubjectAndTopic[subject][topicName].push(item);
-      }
+    // Refine shells: Ensure shells are represented in groupedCards structure
+    Object.keys(shells).forEach(subject => {
+        Object.values(shells[subject]).forEach(shell => {
+            const topicName = shell.topicName || shell.id; // Use extracted name or ID
+            if (!bySubjectAndTopic[subject][topicName]) {
+                bySubjectAndTopic[subject][topicName] = []; // Create topic array if needed
+            }
+            // We might not need to push the shell itself here if FlashcardList renders shells separately
+            // Let's ensure the topic entry exists.
+        });
     });
 
-    console.log("FlashcardList processed items with topic name extraction:", {
-      groupedStructure: bySubjectAndTopic, // Log the final structure
-      topicShells: shells // Log the shells object
+    console.log("FlashcardList processed items (adjusted for loaded data):", {
+      groupedStructure: bySubjectAndTopic,
+      topicShells: shells
     });
 
-    // Return both grouped cards and the shells map
     return { groupedCards: bySubjectAndTopic, topicShells: shells };
   }, [cards]);
   
