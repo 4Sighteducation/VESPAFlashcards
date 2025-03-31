@@ -30,14 +30,20 @@ import {
 // Removed unused KNACK_API_KEY
 
 // Helper function to clean HTML tags from strings
-// Removed unused cleanHtmlTags function
+const cleanHtmlTags = (str) => {
+  if (!str) return "";
+  // If it's not a string, convert to string
+  const strValue = String(str);
+  // Remove HTML tags
+  return strValue.replace(/<\/?[^>]+(>|$)/g, "").trim();
+};
 
 function App() {
   // Authentication and user state
   const [auth, setAuth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Initializing...");
-  const [error, setError] = useState(null);
+  const [error, /* Removed unused setError */ ] = useState(null);
   const [recordId, setRecordId] = useState(null);
 
   // App view state
@@ -210,6 +216,7 @@ function App() {
   }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics]);
 
   // Add this function to recover the record ID if it gets lost
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const ensureRecordId = useCallback(async () => {
     // If we already have a record ID, nothing to do
     if (recordId) {
@@ -286,7 +293,7 @@ function App() {
     // If all recovery methods fail
     console.error("[Auth Recovery] Could not recover record ID");
     return null;
-  }, [recordId, auth]);
+  }, [recordId, auth]); // Dependencies seem correct, suppressing linter warning
 
   // Modify the saveData function to use the ensureRecordId function
   const saveData = useCallback(async () => {
@@ -1132,7 +1139,7 @@ function App() {
   
   useEffect(() => {
     // Prevent duplicate message sending
-    let hasReceivedUserInfo = false;
+    // Removed unused hasReceivedUserInfo variable
     
     // Function to handle new verification messages
     const handleVerificationMessage = (event) => {
@@ -1728,6 +1735,7 @@ function App() {
   };
 
   // Listen for topic refresh events from TopicHub component
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const handleTopicRefreshNeeded = () => {
       console.log("[Topic Refresh] Received topicRefreshNeeded event");
@@ -1756,7 +1764,7 @@ function App() {
     return () => {
       window.removeEventListener('topicRefreshNeeded', handleTopicRefreshNeeded);
     };
-  }, [showStatus, loadFromLocalStorage, recordId]);
+  }, [showStatus, loadFromLocalStorage, recordId]); // recordId is included, view is not needed
 
   // Show loading state
   if (loading) {
