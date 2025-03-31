@@ -25,7 +25,6 @@ const ScaledText = ({
       
       // Check device properties
       const isMobile = window.innerWidth <= 768;
-      const isSmallScreen = window.innerWidth <= 480;
       
       // Start with a more reasonable font size based on context
       let startFontSize = maxFontSize;

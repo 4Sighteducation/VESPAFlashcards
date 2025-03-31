@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { FaTimes, FaPlus, FaTrash, FaPencilAlt, FaCheck, FaSave, FaFolder } from 'react-icons/fa';
+import { FaTimes, FaCheck } from 'react-icons/fa';
 import './styles.css';
 import TopicGenerationStep from './TopicGenerationStep';
 import TopicReviewStep from './TopicReviewStep';
@@ -30,7 +30,6 @@ const NewTopicModal = ({
 
   // Topic data state
   const [topics, setTopics] = useState([]);
-  const [generatedTopics, setGeneratedTopics] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -84,7 +83,6 @@ const NewTopicModal = ({
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      setGeneratedTopics(mockTopics);
       setTopics(mockTopics);
       
       // Automatically move to review step

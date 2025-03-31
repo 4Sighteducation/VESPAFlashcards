@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import ReactDOM from "react-dom";
 import "./SpacedRepetition.css";
-import Flashcard from "./Flashcard";
 
 const SpacedRepetition = ({
   cards,
@@ -20,15 +19,12 @@ const SpacedRepetition = ({
   // State for subject and topic selection
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
-  const [filteredCards, setFilteredCards] = useState([]);
   
   // Add a state variable to track the last shown empty message
   const [lastEmptyMessageIndex, setLastEmptyMessageIndex] = useState(-1);
   
   // State for card review
   const [selectedOption, setSelectedOption] = useState(null);
-  const [showAnswerFeedback, setShowAnswerFeedback] = useState(false);
-  const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
   const [showReviewDateMessage, setShowReviewDateMessage] = useState(false);
   const [nextReviewDate, setNextReviewDate] = useState(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -293,9 +289,6 @@ const SpacedRepetition = ({
       // If they've already selected once before, just flip the card
       setIsFlipped(true);
       
-      // After flipping, check if answer is correct and show appropriate feedback
-      const currentCard = currentCards[currentIndex];
-      const isCorrect = option === currentCard?.correctAnswer;
       
       setTimeout(() => {
         setShowFlipResponse(true);
@@ -312,9 +305,6 @@ const SpacedRepetition = ({
       // They confirmed, so flip the card
       setIsFlipped(true);
       
-      // After flipping, check if answer is correct and show appropriate feedback
-      const currentCard = currentCards[currentIndex];
-      const isCorrect = selectedOption === currentCard?.correctAnswer;
       
       setTimeout(() => {
         setShowFlipResponse(true);
@@ -402,13 +392,6 @@ const SpacedRepetition = ({
       const nextReviewDate = new Date(now);
       nextReviewDate.setDate(now.getDate() + daysToAdd);
       
-      // Update card with next review date
-      const updatedCard = {
-        ...cardToMove,
-        box: nextBox,
-        lastReviewDate: now.toISOString(),
-        nextReviewDate: nextReviewDate.toISOString()
-      };
       
       // Update card in the deck
       onMoveCard(cardToMove.id, nextBox);
@@ -457,13 +440,6 @@ const SpacedRepetition = ({
       const now = new Date();
       const nextReviewDate = new Date(now);
       
-      // Update card with next review date
-      const updatedCard = {
-        ...cardToMove,
-        box: 1,
-        lastReviewDate: now.toISOString(),
-        nextReviewDate: nextReviewDate.toISOString()
-      };
       
       // Update card in the deck
       onMoveCard(cardToMove.id, 1);
