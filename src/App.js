@@ -1,4 +1,4 @@
-﻿﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import CardCreator from "./components/CardCreator";
@@ -350,25 +350,25 @@ function App() {
           };
         }
       };
-      
-      // Prepare the data payload for Knack
-      const safeData = {
-        recordId: safeRecordId,
+        
+        // Prepare the data payload for Knack
+        const safeData = {
+          recordId: safeRecordId,
         cards: safeSerializeData(allCards),
         colorMapping: safeSerializeData(subjectColorMapping), 
         spacedRepetition: safeSerializeData(spacedRepetitionData),
         userTopics: safeSerializeData(userTopics),
         topicLists: safeSerializeData(topicLists),
         topicMetadata: safeSerializeData(topicMetadata),
-        preserveFields: true
-      };
-      
-      console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${safeRecordId})`);
-      
+          preserveFields: true
+        };
+        
+        console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${safeRecordId})`);
+        
       // Add a timeout to clear the saving state if no response is received
       const saveTimeout = setTimeout(() => {
         console.log("[Save] No save response received within timeout, resetting save state");
-        setIsSaving(false);
+            setIsSaving(false);
         showStatus("Save status unknown - check your data");
       }, 15000); // 15 second timeout
       
@@ -386,10 +386,10 @@ function App() {
 
       console.log("[Save] Message sent to parent window");
       showStatus("Saving your flashcards...");
-    } else {
+      } else {
       // If we're in standalone mode, mark as saved immediately
       console.log("[Save] Running in standalone mode");
-      setIsSaving(false);
+        setIsSaving(false);
       showStatus("Saved to browser storage");
     }
   }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus, ensureRecordId, recordId]);
@@ -1409,17 +1409,17 @@ function App() {
                 
                 // Send a message to parent window to request updated data
                 if (window.parent !== window) {
-                  window.parent.postMessage({
+              window.parent.postMessage({
                     type: "REQUEST_UPDATED_DATA",
                     data: { recordId: recordId }
                   }, "*");
-                  
+              
                   // No fallback timeout - wait for KNACK_DATA message instead
                   // The data will eventually come through even if it takes longer than 5 seconds
                 } else {
                   // If we're not in an iframe, just reload from localStorage
                   loadFromLocalStorage();
-                  setLoading(false);
+              setLoading(false);
                 }
               }
             } else {
@@ -1557,8 +1557,8 @@ function App() {
                 console.log(`Loaded ${restoredCards.length} cards from Knack and restored multiple choice options`);
                 
                 // Load color mapping
-                if (event.data.colorMapping) {
-                  setSubjectColorMapping(event.data.colorMapping);
+            if (event.data.colorMapping) {
+              setSubjectColorMapping(event.data.colorMapping);
                   console.log("Loaded color mapping from Knack");
                 }
                 
@@ -1569,14 +1569,14 @@ function App() {
                 }
                 
                 // Load topic lists
-                if (event.data.topicLists && Array.isArray(event.data.topicLists)) {
-                  setTopicLists(event.data.topicLists);
+            if (event.data.topicLists && Array.isArray(event.data.topicLists)) {
+              setTopicLists(event.data.topicLists);
                   console.log(`Loaded ${event.data.topicLists.length} topic lists from Knack`);
-                }
-                
+            }
+            
                 // Load topic metadata
-                if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
-                  setTopicMetadata(event.data.topicMetadata);
+            if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
+              setTopicMetadata(event.data.topicMetadata);
                   console.log(`Loaded ${event.data.topicMetadata.length} topic metadata entries from Knack`);
                 }
                 
@@ -1666,7 +1666,7 @@ function App() {
     // Send ready message or initialize standalone mode
     if (window.parent !== window) {
       sendReadyMessage();
-    } else {
+      } else {
       // In standalone mode, load from localStorage
       console.log("[Init] Running in standalone mode");
       setAuth({
@@ -1678,7 +1678,7 @@ function App() {
       setLoading(false);
     }
 
-    return () => {
+      return () => {
       window.removeEventListener("message", handleMessage);
     };
   }, [showStatus, updateSpacedRepetitionData, loadFromLocalStorage]);
@@ -1766,6 +1766,14 @@ function App() {
     };
   }, [showStatus, loadFromLocalStorage, recordId]); // recordId is included, view is not needed
 
+  // Filter allCards to get topic shells for the selected subject when modal is open
+  const topicsForModal = (topicListModalOpen && topicListSubject) 
+    ? allCards.filter(item => 
+        item.type === 'topic' && 
+        (item.subject || 'General') === topicListSubject
+      )
+    : []; // Default to empty array if modal isn't open
+
   // Show loading state
   if (loading) {
     return <LoadingSpinner message={loadingMessage} />;
@@ -1811,11 +1819,13 @@ function App() {
           )}
           
           {/* Topic List Modal */}
+          
           <TopicListSyncManager
             isOpen={topicListModalOpen && topicListSubject}
             subject={topicListSubject}
             examBoard={topicListExamBoard}
             examType={topicListExamType}
+            initialTopics={topicsForModal} // Pass the filtered topics
             onClose={() => setTopicListModalOpen(false)}
             onSelectTopic={handleSelectTopicFromList}
             onGenerateCards={handleGenerateCardsFromTopic}

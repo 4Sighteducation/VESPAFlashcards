@@ -3,7 +3,6 @@ import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
 import { loadTopicLists } from '../services/TopicPersistenceService'; // Removed safeParseJSON
-import { saveTopicsUnified } from '../services/EnhancedTopicPersistenceService';
 import TopicHub from '../components/TopicHub';
 
 // Constants for question types and exam boards
@@ -752,14 +751,14 @@ const AICardGenerator = ({
           console.log(`Saving topic list "${list.name}" with ${topics.length} topics`);
           
           // Direct API call to save to both storage fields
-          await saveTopicsUnified(
+        /*await saveTopicsUnified(
             topics, 
             list.subject, 
             list.examBoard, 
             list.examType, 
             userId, 
             auth
-          );
+          );*/
           
           console.log(`Successfully saved topic list "${list.name}"`);
         } catch (innerError) {

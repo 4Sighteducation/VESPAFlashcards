@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaDatabase, FaInfo, FaCheckCircle } from 'react-icons/fa';
+import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaInfo, FaCheckCircle } from 'react-icons/fa';
 import './styles.css';
 import { generateTopicPrompt } from '../../prompts/topicListPrompt';
 
@@ -27,7 +27,7 @@ const TopicHub = ({
   const [mainTopics, setMainTopics] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
   const [newTopicInput, setNewTopicInput] = useState({ mainTopic: '', subtopic: '' });
   const [useExistingMainTopic, setUseExistingMainTopic] = useState(true);
   
@@ -42,7 +42,7 @@ const TopicHub = ({
   
   // Cache system
   const topicCache = useRef({});
-  const [usingCache, setUsingCache] = useState(false);
+  const [, setUsingCache] = useState(false);
   const lastRequestTimestamp = useRef(0);
   const MIN_REQUEST_INTERVAL = 3000; // 3 seconds between API calls
   
@@ -53,8 +53,8 @@ const TopicHub = ({
   const [editMainTopicValue, setEditMainTopicValue] = useState('');
   
   // State for deletion confirmation
-  const [showDeleteMainTopicDialog, setShowDeleteMainTopicDialog] = useState(false);
-  const [mainTopicToDelete, setMainTopicToDelete] = useState(null);
+  const [, setShowDeleteMainTopicDialog] = useState(false);
+  const [, setMainTopicToDelete] = useState(null);
   
   // State for save/proceed functionality
   const [listName, setListName] = useState(`${subject} - ${examBoard} ${examType}`);
@@ -70,7 +70,6 @@ const TopicHub = ({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   
   // Additional state for UI and loading
-  const [darkMode, setDarkMode] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   
@@ -89,6 +88,42 @@ const TopicHub = ({
   
   // API key - matching the format used in AICardGenerator for consistency
   const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
+
+// Process topics into main topic groupings when topics change
+useEffect(() => {
+  // Check if topics is a valid array before processing
+  if (topics && Array.isArray(topics) && topics.length > 0) {
+    const topicGroups = {};
+    
+    // Group topics by mainTopic
+    topics.forEach(topic => {
+      // Ensure topic and mainTopic exist before trying to group
+      if (topic && topic.mainTopic) {
+        const mainTopic = topic.mainTopic;
+        if (!topicGroups[mainTopic]) {
+          topicGroups[mainTopic] = [];
+        }
+        topicGroups[mainTopic].push(topic);
+      } else {
+        console.warn("Skipping invalid topic object during grouping:", topic);
+      }
+    });
+    
+    // Convert to array format for rendering
+    const mainTopicArray = Object.keys(topicGroups).map(mainTopicName => ({
+      name: mainTopicName,
+      subtopics: topicGroups[mainTopicName]
+    }));
+    
+    // Update the state used for rendering
+    setMainTopics(mainTopicArray);
+
+  } else {
+    // If topics is empty or invalid, reset mainTopics
+    setMainTopics([]);
+  }
+// This effect should run whenever the source 'topics' array changes
+}, [topics]); 
 
   // Check cache for existing topics
   const checkTopicCache = (examBoard, examType, subject) => {
@@ -350,7 +385,7 @@ const TopicHub = ({
             // Try to extract a section number and use it as part of main topic
             const sectionMatch = processedTopicStr.match(/(\d+\.\d+(\.\d+)?)\s*(.*)/);
             if (sectionMatch) {
-              const [, sectionNum, , content] = sectionMatch;
+              const [, , , content] = sectionMatch;
               mainTopic = content.trim() || processedTopicStr;
               subtopic = mainTopic; // Use main topic as subtopic
             } else {
@@ -483,53 +518,6 @@ const TopicHub = ({
     } finally {
       setIsGenerating(false);
     }
-  };
-  
-  // Generate fallback prompt for when specific exam topics can't be found
-  const generateFallbackPrompt = (examBoard, examType, subject, academicYear) => {
-    return `You are an education expert. Create a comprehensive list of topics that would TYPICALLY appear in a ${examBoard} ${examType} ${subject} curriculum for the ${academicYear} academic year.
-
-YOUR RESPONSE MUST BE ONLY THE JSON ARRAY WITH NO OTHER TEXT - THIS IS CRITICAL.
-
-Even without the exact specification, provide your best approximation based on standard curricula for this subject at this level.
-
-Choose one format:
-
-Format 1 - If this subject typically has main topics and subtopics:
-[
-  {
-    "id": "1.1",
-    "topic": "Main Topic 1: Subtopic 1",
-    "mainTopic": "Main Topic 1",
-    "subtopic": "Subtopic 1"
-  }
-]
-
-Format 2 - If this subject typically doesn't have a clear main/subtopic structure:
-[
-  "Topic 1",
-  "Topic 2",
-  "Topic 3"
-]
-
-HANDLING OPTIONAL TOPICS:
-If the curriculum typically includes optional topics:
-- Include all optional topics in your response
-- Mark optional topics by adding "[Optional]" at the beginning of the topic name
-- If options are grouped, include the group, e.g. "[Optional - Option 1] Topic Name"
-
-CRITICAL REQUIREMENTS:
-- ENSURE YOUR RESPONSE BEGINS WITH "[" AND ENDS WITH "]"
-- DO NOT ADD ANY TEXT BEFORE OR AFTER THE JSON ARRAY
-- DO NOT INCLUDE "OPTION 1:" OR ANY OTHER LABELS
-- Be comprehensive - include ALL typical topics for this subject
-- Use appropriate subject terminology
-- Organize topics in a logical curriculum sequence
-- Provide 15-30 topics depending on the subject's breadth
-- Format topic strings as "Main Topic: Subtopic" where appropriate
-- Be specific and detailed in topic descriptions
-
-This is a fallback request since the exact curriculum couldn't be found. Your goal is to create a reasonable approximation of standard topics for this subject.`;
   };
   
   // Get fallback topics for specific subjects
@@ -836,8 +824,6 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
     ];
   };
 
-  // Use the imported generateTopicPrompt function
-  
   // Toggle expansion of a main topic
   const toggleMainTopic = (topicName) => {
     setExpandedTopics(prev => ({
@@ -1024,18 +1010,6 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
   const showDeleteMainTopicConfirmation = (mainTopicName) => {
     setMainTopicToDelete(mainTopicName);
     setShowDeleteMainTopicDialog(true);
-  };
-  
-  // Delete a main topic and all its subtopics
-  const deleteMainTopic = () => {
-    if (!mainTopicToDelete) return;
-    
-    // Remove all topics with this main topic name
-    setTopics(prev => prev.filter(topic => topic.mainTopic !== mainTopicToDelete));
-    
-    // Close the dialog and reset state
-    setShowDeleteMainTopicDialog(false);
-    setMainTopicToDelete(null);
   };
   
   // Handle regenerating all topics
@@ -1723,7 +1697,7 @@ This is a fallback request since the exact curriculum couldn't be found. Your go
   
   // Main render method
   return (
-    <div className={`topic-hub ${darkMode ? 'dark-mode' : ''}`}>
+    <div className={`topic-hub`}>
       {renderGenerator()}
       {renderSaveDialog()}
       {renderSelectDialog()}
