@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
-import { loadTopicLists, safeParseJSON } from '../services/TopicPersistenceService';
+import { loadTopicLists } from '../services/TopicPersistenceService'; // Removed safeParseJSON
 import { saveTopicsUnified } from '../services/EnhancedTopicPersistenceService';
 import TopicHub from '../components/TopicHub';
 
@@ -52,8 +52,6 @@ const BRIGHT_COLORS = [
 
 // API keys - using the correct environment variables
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
-const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
-const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 
 // Debug logging helper
 const debugLog = (title, data) => {
@@ -62,23 +60,8 @@ const debugLog = (title, data) => {
   return data; // Return data for chaining
 };
 
-// Safely remove HTML tags from a string to avoid issues with connected fields
-const sanitizeField = (value) => {
-  if (!value) return "";
-  if (typeof value !== 'string') return String(value);
-  
-  // Remove HTML tags
-  return value.replace(/<[^>]*>/g, "")
-    // Remove any markdown characters
-    .replace(/[*_~`#]/g, "")
-    // Replace special chars with their text equivalents
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .trim();
-};
+// Helper function for delays
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const AICardGenerator = ({ 
   onAddCard, 
@@ -94,7 +77,7 @@ const AICardGenerator = ({
 }) => {
   // Step management state
   const [currentStep, setCurrentStep] = useState(1);
-  const [totalSteps, setTotalSteps] = useState(7);
+  const totalSteps = 7; // Re-add the totalSteps constant
   
   // Form data state
   const [formData, setFormData] = useState({
@@ -116,9 +99,6 @@ const AICardGenerator = ({
   
   // Results states
   const [generatedCards, setGeneratedCards] = useState([]);
-  
-  // Progress tracking
-  const [completedSteps, setCompletedSteps] = useState({});
   
   // New states for hierarchical topics and saved topic lists
   const [hierarchicalTopics, setHierarchicalTopics] = useState([]);
@@ -191,7 +171,7 @@ const AICardGenerator = ({
   }, [auth, userId]);
 
   // Load saved topic lists from Knack using our centralized service
-  const loadTopicListsFromKnack = async () => {
+  const loadTopicListsFromKnack = useCallback(async () => { // Added useCallback
     try {
       // Check if we're authenticated or have a user ID
       if (!auth || !userId) {
@@ -214,7 +194,7 @@ const AICardGenerator = ({
       console.error("Error loading topic lists from Knack:", error);
       return [];
     }
-  };
+  }, [auth, userId]); // Added dependencies for useCallback
 
   // Effect to update available subjects when exam type changes
   useEffect(() => {
@@ -290,7 +270,7 @@ const AICardGenerator = ({
     } else {
       setAvailableTopics([]);
     }
-  }, [formData.subject, formData.examBoard, formData.examType]);
+  }, [formData.subject, formData.examBoard, formData.examType, currentStep, formData.newSubject, isGenerating]); // Added missing dependencies
 
   // Get fallback topics for specific subjects (to use when API calls fail)
   const getFallbackTopics = (examBoard, examType, subject) => {
@@ -811,44 +791,6 @@ const AICardGenerator = ({
     }, 300);
   };
 
-  // Render hierarchical topics
-  const renderHierarchicalTopics = () => {
-    if (hierarchicalTopics.length === 0) {
-      return null;
-    }
-    
-    return (
-      <div className="hierarchical-topics">
-        <div className="topics-header">
-          <h3>Generated Topics</h3>
-          <div className="topic-actions">
-            <button 
-              className="save-topics-button"
-              onClick={() => setShowSaveTopicDialog(true)}
-            >
-              Save Topic List
-            </button>
-          </div>
-        </div>
-        
-        <div className="topics-list">
-          {hierarchicalTopics.map((topicData, index) => {
-            // Check if it's a main topic or subtopic
-            const isSubtopic = topicData.topic.includes(":");
-            const mainTopic = isSubtopic ? topicData.topic.split(":")[0].trim() : topicData.topic;
-            const subtopic = isSubtopic ? topicData.topic.split(":")[1].trim() : null;
-            
-            return (
-              <div key={index} className={`topic-card ${isSubtopic ? 'subtopic' : 'main-topic'}`}>
-                <h4>{topicData.topic}</h4>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
   // Render topic save dialog
   const renderSaveTopicDialog = () => {
     if (!showSaveTopicDialog) {
@@ -911,11 +853,6 @@ const AICardGenerator = ({
       // Regular field update
       setFormData(prev => ({ ...prev, [name]: value }));
     }
-  };
-
-  // Handle color selection
-  const handleColorSelect = (color) => {
-    setFormData(prev => ({ ...prev, subjectColor: color }));
   };
 
   // Enhanced handleNextStep function with robust state management to prevent initialization screen issues
@@ -1018,7 +955,7 @@ const AICardGenerator = ({
   };
 
   // Generate cards using OpenAI API with enhanced stability and comprehensive error handling
-  const generateCards = async () => {
+  const generateCards = useCallback(async () => {
     // Check if we're already generating to prevent duplicate calls
     if (isGenerating) {
       console.log("Card generation already in progress, ignoring duplicate call");
@@ -1188,21 +1125,21 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
           // For rate limits, wait longer before retry
           if (response.status === 429) {
             console.warn(`Rate limit (${response.status}) on attempt ${attempts+1}, waiting before retry...`);
-            await new Promise(resolve => setTimeout(resolve, 2000 * (attempts + 1)));
+            await delay(2000 * (attempts + 1)); // Use delay helper
             attempts++;
             continue;
           }
           
           // For other errors, just retry with backoff
           console.warn(`API error (${response.status}) on attempt ${attempts+1}, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempts + 1)));
+          await delay(1000 * (attempts + 1)); // Use delay helper
           attempts++;
           
         } catch (fetchError) {
           console.error(`Network error on attempt ${attempts+1}:`, fetchError);
           
           // On network error, wait and retry
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempts + 1)));
+          await delay(1000 * (attempts + 1)); // Use delay helper
           attempts++;
           
           // Throw if we've tried too many times
@@ -1393,7 +1330,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [isGenerating, formData, examType, examBoard, initialSubject, initialTopic, subjects, requestTokenRefresh]); // Added dependencies for useCallback
 
   // Call to generate cards when arriving at the final step
   // This useEffect is now a backup in case the direct call fails
@@ -1430,7 +1367,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
         generateCardsWithStableData();
       }, 500); // Increased delay for more stability
     }
-  }, [currentStep, generatedCards.length, isGenerating]);
+  }, [currentStep, generatedCards.length, isGenerating, formData, generateCards]); // Added missing formData and generateCards
 
   // Helper function to clean AI response
   const cleanOpenAIResponse = (text) => {
@@ -1438,7 +1375,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
   };
 
   // Enhanced helper function to request token refresh with improved reliability and retry logic
-  const requestTokenRefresh = async () => {
+  const requestTokenRefresh = useCallback(async () => { // Wrap in useCallback
     console.log(`[${new Date().toISOString()}] AICardGenerator requesting token refresh`);
     
     // Global tracking variable to prevent duplicate requests across components
@@ -1515,12 +1452,13 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
           
           // Add retry logic - try 3 more times with increasing delays
           for (let i = 1; i <= 3; i++) {
-            setTimeout(() => {
+            // Pass 'i' as an argument to setTimeout's callback
+            setTimeout((retryNum) => {
               // Only retry if we haven't received a response yet
               if (!receivedResponse) {
-                sendRefreshRequest(i);
+                sendRefreshRequest(retryNum); // Use the passed argument
               }
-            }, 1000 * i); // Progressive backoff: 1s, 2s, 3s
+            }, 1000 * i, i); // Pass 'i' here
           }
           
           // Set a timeout to ensure we don't wait forever
@@ -1541,7 +1479,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     
     window.tokenRefreshInProgress = false;
     return Promise.resolve(false);
-  };
+  }, []); // No external dependencies from component scope needed here
 
   // Completely enhanced handleAddCard function with improved error handling and stable metadata
   const handleAddCard = (card) => {
@@ -1931,9 +1869,6 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     setGeneratedCards([]);
     setIsGenerating(true);
     
-    // Keep the existing color when regenerating
-    const currentColor = formData.subjectColor;
-    
     // We want to keep all the existing parameters the same,
     // including the color, but generate new cards
     generateCards();
@@ -2304,62 +2239,6 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     }
   };
 
-  // Updated function to render topic selection UI
-  const renderTopicSelectionUI = () => {
-    return (
-      <div className="topic-selection-container">
-        <button
-          className="generate-topics-button"
-          onClick={handleGenerateTopics}
-          disabled={isGenerating || !(formData.subject || formData.newSubject)}
-        >
-          {isGenerating ? "Generating..." : "Generate Topics"}
-        </button>
-        
-        {formData.topic && (
-          <div className="selected-topic">
-            <span>Selected Topic: <strong>{formData.topic}</strong></span>
-            <button 
-              className="change-topic-btn"
-              onClick={() => setFormData(prev => ({ ...prev, topic: '' }))}
-            >
-              Change
-            </button>
-          </div>
-        )}
-        
-        <div className="topic-input-section">
-          <label>Or Enter a New Topic:</label>
-          <input
-            type="text"
-            name="newTopic"
-            value={formData.newTopic}
-            onChange={handleChange}
-            placeholder="Enter a specific topic"
-          />
-        </div>
-        
-        {error && <div className="error-message">{error}</div>}
-      </div>
-    );
-  };
-
-  // Effect to update the progress based on steps completed
-  useEffect(() => {
-    // Update progress steps completion status
-    const newCompletedSteps = {};
-    
-    // Mark previous steps as completed
-    for (let i = 1; i < currentStep; i++) {
-      newCompletedSteps[i] = true;
-    }
-    
-    // Check if current step is complete
-    newCompletedSteps[currentStep] = canProceed();
-    
-    setCompletedSteps(newCompletedSteps);
-  }, [currentStep, formData]);
-
   // Step 7: Confirmation Step and Generated Cards
   const renderConfirmation = () => {
     // Ensure subject is displayed as a string
@@ -2593,13 +2472,6 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     width: '100%',
     maxWidth: '300px',
     margin: '0 auto 20px',
-    display: 'block'
-  };
-
-  const formLabelStyle = {
-    fontSize: '14px',
-    marginBottom: '5px',
-    fontWeight: 'normal',
     display: 'block'
   };
 
@@ -2992,56 +2864,6 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
       setPendingOperations(prev => ({ ...prev, addToBank: false }));
       setIsGenerating(false);
     }
-  };
-
-  // When user clicks on "Add to Bank" button in the card preview section
-  const renderAddToBank = () => {
-    if (generatedCards.length === 0 || isGenerating) return null;
-    
-    // Style for the button
-    const buttonStyle = {
-      minWidth: "100%",
-      margin: "8px 0",
-      padding: "12px",
-      backgroundColor: "#4CAF50",
-      color: "white",
-      border: "none",
-      borderRadius: "8px",
-      fontSize: "16px",
-      fontWeight: "bold",
-      cursor: "pointer",
-      boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)",
-      transition: "background-color 0.3s ease"
-    };
-    
-    // Count how many cards haven't been added yet
-    const unaddedCount = generatedCards.filter(card => !card.added).length;
-    
-    // Determine button text based on how many cards are unadded
-    let buttonText = "Add to Bank";
-    if (unaddedCount === 0) {
-      buttonText = "All Cards Added";
-    } else if (unaddedCount < generatedCards.length) {
-      buttonText = `Add ${unaddedCount} Card${unaddedCount > 1 ? 's' : ''} to Bank`;
-    } else {
-      buttonText = `Add ${generatedCards.length} Card${generatedCards.length > 1 ? 's' : ''} to Bank`;
-    }
-    
-    return (
-      <div className="add-to-bank-container">
-        <button 
-          onClick={addAllToBank} 
-          style={{
-            ...buttonStyle,
-            backgroundColor: unaddedCount === 0 ? "#888" : "#4CAF50",
-            cursor: unaddedCount === 0 ? "not-allowed" : "pointer"
-          }}
-          disabled={unaddedCount === 0}
-        >
-          {buttonText}
-        </button>
-      </div>
-    );
   };
 
   // Add the handleClose function to replace the one that was removed during our previous edits
