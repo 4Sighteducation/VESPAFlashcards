@@ -1006,81 +1006,90 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
         {/* Render Topics within the Subject - Conditionally based on subject expansion */}
         {isExpanded && (
           <div className="topics-container">
+            {/* *** ADD LOGGING HERE *** */}
+            {console.log(`[Render Subject ${subject}] Topic Names:`, topicNames)}
             {topicNames.length === 0 ? (
               <div className="no-topics-message">No topics found for this subject.</div>
             ) : (
               topicNames.map((topicName) => {
+                // *** ADD LOGGING HERE ***
+                console.log(`[Render Topic ${subject}] Mapping Topic Key:`, topicName);
                 const cardsInTopic = topicsInSubject[topicName] || [];
                 const topicKey = `${subject}-${topicName}`;
                 const isTopicExpanded = expandedTopics[topicKey];
                 const topicDate = getTopicDate(cardsInTopic); // Get earliest date for the topic
 
-                // Find the original topic shell object using the topicShells map
-                const topicShell = Object.values(topicShells[subject] || {}).find(shell => shell.topicName === topicName);
-                const topicId = topicShell ? topicShell.id : null; // Get ID from shell if available
-                
+                // Find the topic shell object using the topicName (which is the ID key)
+                const topicShell = topicShells[subject]?.[topicName]; // Look up by ID key
+                // *** ADD LOGGING HERE ***
+                console.log(`[Render Topic ${subject}] Found Shell:`, topicShell);
+                const displayTopicName = topicShell?.topicName || topicName; // Use stored name or fallback to ID key
+                console.log(`[Render Topic ${subject}] Display Name:`, displayTopicName);
+                const topicId = topicShell?.id || topicName; // Get ID from shell or use the key
+
                 // Assign ref inside the loop using topicKey
-                const topicRef = el => topicRefs.current[topicKey] = el; 
+                const topicRef = el => topicRefs.current[topicKey] = el;
 
                 return (
                   <div key={topicKey} className="topic-section">
                     {/* Topic Header */}
                     <div
                       className={`topic-header ${isTopicExpanded ? 'expanded' : ''}`}
-                      onClick={() => toggleTopic(subject, topicName)}
+                      onClick={() => toggleTopic(subject, topicName)} // Use topicName (ID key) for toggle
                       ref={topicRef} // Assign ref here
                     >
                       <div className="topic-header-content">
-                        <span className="topic-title">{topicName}</span>
+                        {/* Use displayTopicName for rendering */}
+                        <span className="topic-title">{displayTopicName}</span>
                         <div className="topic-meta">
                           {topicDate && <span className="topic-date">{topicDate}</span>}
                           <span className="topic-card-count">
                             {/* Display count or "Topic Shell" */}
                             {cardsInTopic.length > 0
                               ? `${cardsInTopic.length} ${cardsInTopic.length === 1 ? 'card' : 'cards'}`
-                              : (topicShell ? "(Topic Shell)" : "(Empty Topic)")
+                              : (topicShell ? "(Topic Shell)" : "(Empty Topic)") // Check if shell exists
                             }
                           </span>
                         </div>
                       </div>
                       <div className="topic-actions">
-                         {/* Generate Cards Button - Use topicId */}
+                         {/* Generate Cards Button - Use topicId and displayTopicName */}
                          <button
                           className="action-button generate-topic-cards-button"
-                          onClick={(e) => handleGenerateCardsForTopic(subject, topicName, topicId, e)}
-                          title={`Generate AI cards for ${topicName}`}
-                          disabled={!topicId} // Only enable if it's a shell with an ID
+                          onClick={(e) => handleGenerateCardsForTopic(subject, displayTopicName, topicId, e)}
+                          title={`Generate AI cards for ${displayTopicName}`}
+                          disabled={!topicId}
                         >
                           <FaBolt />
                           <span className="tooltip">Generate Cards</span>
                         </button>
-                        {/* Slideshow Button */}
+                        {/* Slideshow Button - Use topicName (ID key) */}
                         <button
                           className="action-button slideshow-button"
-                          onClick={(e) => startSlideshow(subject, topicName, e)}
+                          onClick={(e) => startSlideshow(subject, topicName, e)} // Use topicName (ID key)
                           disabled={cardsInTopic.length === 0}
-                          title={`Start slideshow for ${topicName}`}
+                          title={`Start slideshow for ${displayTopicName}`}
                         >
                           <FaPlay />
                            <span className="tooltip">Play Topic</span>
                         </button>
-                         {/* Print Button */}
+                         {/* Print Button - Use topicName (ID key) */}
                          <button
                           className="action-button print-button"
-                          onClick={(e) => handlePrintTopic(subject, topicName, e)}
+                          onClick={(e) => handlePrintTopic(subject, topicName, e)} // Use topicName (ID key)
                           disabled={cardsInTopic.length === 0}
-                          title={`Print cards for ${topicName}`}
+                          title={`Print cards for ${displayTopicName}`}
                          >
                            <FaPrint />
                            <span className="tooltip">Print Topic</span>
                          </button>
-                        {/* Delete Topic Button - Deletes cards or shell */}
+                        {/* Delete Topic Button - Use topicName (ID key) */}
                         <button
                           className="action-button delete-button"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (cardsInTopic.length > 0) {
-                                deleteTopicCards(subject, topicName); // Deletes cards
+                                deleteTopicCards(subject, topicName); // Use topicName (ID key)
                             } else if (topicShell) {
                                 // TODO: Implement deletion of the topic shell itself if desired
                                 // onDeleteTopicShell(topicShell.id); // Example call
@@ -1088,7 +1097,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
                             }
                           }}
                           disabled={cardsInTopic.length === 0 && !topicShell}
-                          title={cardsInTopic.length > 0 ? `Delete all cards in ${topicName}` : (topicShell ? `Delete Topic Shell ${topicName}`: `No cards or shell`)}
+                          title={cardsInTopic.length > 0 ? `Delete all cards in ${displayTopicName}` : (topicShell ? `Delete Topic Shell ${displayTopicName}`: `No cards or shell`)}
                         >
                           <FaTimes />
                            <span className="tooltip">{cardsInTopic.length > 0 ? "Delete Cards" : (topicShell ? "Delete Shell" : "No Items")}</span>
@@ -1104,7 +1113,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
                     {isTopicExpanded && (
                         <div className={`topic-cards-container ${cardsInTopic.length === 0 ? 'empty' : ''}`}>
                             {cardsInTopic.length > 0 ? (
-                                renderCards(cardsInTopic, subject, topicName, currentSubjectColor)
+                                renderCards(cardsInTopic, subject, topicName, currentSubjectColor) // Use topicName (ID key)
                             ) : (
                                 <div className="no-cards-in-topic-message">
                                     This topic shell is ready. Click the <FaBolt style={{ verticalAlign: 'middle' }} /> button to generate cards.
