@@ -1092,128 +1092,62 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     );
   };
 
-  
-
-  // Render the accordion structure with subjects and topics
+  // Main component render return statement
   return (
-    <div className="flashcard-list">
-      {/* Scroll Manager component */}
-      <ScrollManager 
+    <div className="flashcard-list-container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {showColorEditor && (
+        <ColorEditor
+          initialColor={colorEditorState.color}
+          onClose={closeColorEditor}
+          onSave={handleColorChange}
+          subject={colorEditorState.subject}
+        />
+      )}
+      
+      {showAICardGenerator && (
+        <AICardGenerator
+          initialSubject={cardGeneratorState.subject}
+          initialTopic={cardGeneratorState.topic}
+          initialTopicId={cardGeneratorState.topicId}
+          examBoard={cardGeneratorState.examBoard}
+          examType={cardGeneratorState.examType}
+          recordId={recordId}
+          onClose={handleCloseTopicCardGenerator}
+          onAddCard={onUpdateCard}
+        />
+      )}
+      
+      {/* Print modal */}
+      {printModalOpen && (
+        <PrintModal
+          cards={cardsToPrint}
+          title={printTitle}
+          onClose={() => setPrintModalOpen(false)}
+        />
+      )}
+      
+      {/* Card modal */}
+      {showModalAndSelectedCard && selectedCard && (
+        <CardModal />
+      )}
+      
+      {/* Main accordion container with topic shells */}
+      <div className="accordion-container" style={{ 
+        flex: 1, 
+        overflowY: 'auto',
+        maxHeight: 'calc(100vh - 120px)',
+        padding: '0 10px' 
+      }}>
+        {sortedSubjects.map(subject => renderSubject(subject))}
+      </div>
+      
+      {/* Scroll manager component */}
+      <ScrollManager
         expandedSubjects={expandedSubjects}
         expandedTopics={expandedTopics}
         subjectRefs={subjectRefs}
         topicRefs={topicRefs}
       />
-      
-      {printModalOpen && (
-        <PrintModal 
-          cards={cardsToPrint} 
-          title={printTitle} 
-          onClose={() => setPrintModalOpen(false)} 
-        />
-      )}
-      
-      {/* Topic-specific Card Generator */}
-      {showTopicCardGenerator && selectedTopicForCards && (
-        <div className="topic-card-generator-modal">
-          <div className="topic-card-generator-wrapper">
-            <button 
-              className="close-generator-button"
-              onClick={handleCloseTopicCardGenerator}
-            >
-              <FaTimes />
-            </button>
-            <AICardGenerator
-              onClose={handleCloseTopicCardGenerator}
-              onAddCard={(card) => {
-                // Add the generated card directly - no need to close generator
-                if (onUpdateCard && card) {
-                  try {
-                    console.log("Adding card to flashcard list:", card);
-                    
-                    // Ensure the card has metadata
-                    const enrichedCard = {
-                      ...card,
-                      subject: selectedTopicForCards.subject,
-                      topic: selectedTopicForCards.name,
-                      examBoard: selectedTopicForCards.examBoard,
-                      examType: selectedTopicForCards.examType,
-                      topicId: selectedTopicForCards.id
-                    };
-                    
-                    // Add a small delay before updating to prevent UI freezes
-                    setTimeout(() => {
-                      onUpdateCard(enrichedCard);
-                    }, 500);
-                  } catch (err) {
-                    console.error("Error adding card:", err);
-                  }
-                }
-              }}
-              initialSubject={selectedTopicForCards.subject}
-              initialTopic={selectedTopicForCards.name}
-              examBoard={selectedTopicForCards.examBoard || ""}
-              examType={selectedTopicForCards.examType || ""}
-              subjects={[selectedTopicForCards.subject]}
-              auth={window.VESPA_USER_AUTH || {recordId: window.recordId}} 
-              userId={window.VESPA_USER_ID || "current_user"}
-              topicId={selectedTopicForCards.id}
-              startAtStep={5} // Start at the cards generation step
-            />
-          </div>
-        </div>
-      )}
-      
-      <div className="subjects-accordion">
-        {sortedSubjects.map((subjectData) => {
-          const { id: subject, title, cards, exam_board, exam_type, color  } = subjectData;
-          return renderSubject({ id: subject, title, cards, exam_board, exam_type, color });
-        })}
-      </div>
-
-      {showModalAndSelectedCard && <CardModal />}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirmation && (
-        <div className="delete-confirm-overlay">
-          <div className="delete-confirm-modal">
-            <h3>Confirm Deletion</h3>
-            <p>
-              {showDeleteConfirmation.type === 'subject' 
-                ? `Are you sure you want to delete all ${showDeleteConfirmation.count} cards in ${showDeleteConfirmation.subject}?` 
-                : `Are you sure you want to delete all ${showDeleteConfirmation.count} cards in ${showDeleteConfirmation.topic}?`}
-            </p>
-            <p>This action cannot be undone.</p>
-            <div className="delete-confirm-actions">
-              <button 
-                className="cancel-btn"
-                onClick={() => setShowDeleteConfirmation(null)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="confirm-btn"
-                onClick={showDeleteConfirmation.onConfirm}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add the color editor modal */}
-      {colorEditorOpen && selectedSubjectForColor && (
-        <ColorEditor
-          subject={selectedSubjectForColor}
-          subjectColor={
-            cards.find(card => (card.subject || "General") === selectedSubjectForColor)?.cardColor ||
-            "#007bff"
-          }
-          onClose={closeColorEditor}
-          onSelectColor={handleColorChange}
-        />
-      )}
     </div>
   );
 };

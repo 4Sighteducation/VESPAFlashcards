@@ -1808,18 +1808,39 @@ function App() {
       
       const finalItems = [...updatedItems, ...newItems];
       console.log(`[App.js] Merged items. Old count: ${existingItems.length}, New count: ${finalItems.length}`);
+      
+      // Debug dump of the topic shells being added
+      console.log("[CRITICAL DEBUG] Topic shells to be saved:", 
+        topicShells.map(shell => ({
+          id: shell.id,
+          type: shell.type,
+          name: shell.name,
+          subject: shell.subject
+        }))
+      );
+      
       return finalItems;
     });
 
     // Trigger an immediate save after adding shells to persist to Knack (field_2979)
-    // Use setTimeout to ensure state update completes first
+    // Use setTimeout with a longer delay to ensure state update completes first
     setTimeout(() => {
       console.log("[App.js] Triggering save after adding topic shells");
+      console.log("[CRITICAL DEBUG] Current allCards state before save:", 
+        allCards.filter(item => item.type === 'topic').length,
+        "topic shells"
+      );
       saveData();
       showStatus("Topic shells saved successfully");
-    }, 100);
+      
+      // Second save attempt with longer delay as backup
+      setTimeout(() => {
+        console.log("[App.js] Trigger backup save to ensure topic shells are saved");
+        saveData();
+      }, 2000);
+    }, 500);
 
-  }, [setAllCards, saveData, showStatus]);
+  }, [allCards, setAllCards, saveData, showStatus]);
 
   // Show loading state
   if (loading) {
