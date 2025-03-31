@@ -6,15 +6,6 @@
  */
 
 import UnifiedDataModel from '../utils/UnifiedDataModel';
-import { safeParseJSON } from '../utils/DataUtils';
-
-// Color palette for subject/topic assignment
-const BRIGHT_COLORS = [
-  "#e6194b", "#3cb44b", "#ffe119", "#0082c8", "#f58231",
-  "#911eb4", "#46f0f0", "#f032e6", "#d2f53c", "#fabebe",
-  "#008080", "#e6beff", "#aa6e28", "#fffac8", "#800000",
-  "#aaffc3", "#808000", "#ffd8b1", "#000080", "#808080"
-];
 
 // API constants
 const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_KEY || "64fc50bc3cd0ac00254bb62b";
@@ -79,74 +70,6 @@ const parseSafeJSON = (jsonString, defaultValue = []) => {
       return defaultValue;
     }
   }
-};
-
-/**
- * Create a greyed-out version of a color for empty topic shells
- * @param {string} baseColor - The base color in hex format
- * @returns {string} - Greyed-out color in hex format
- */
-const createGreyedOutColor = (baseColor) => {
-  if (!baseColor) return '#e0e0e0'; // Default grey if no color provided
-  
-  try {
-    // Remove # if present
-    const hex = baseColor.replace('#', '');
-    
-    // Convert to RGB - fixed parsing for correct RGB extraction
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    
-    // Mix with grey (desaturate and lighten)
-    const greyMix = 0.7; // 70% grey mix
-    const greyR = Math.floor(r * (1 - greyMix) + 200 * greyMix);
-    const greyG = Math.floor(g * (1 - greyMix) + 200 * greyMix);
-    const greyB = Math.floor(b * (1 - greyMix) + 200 * greyMix);
-    
-    // Convert back to hex
-    return `#${greyR.toString(16).padStart(2, '0')}${greyG.toString(16).padStart(2, '0')}${greyB.toString(16).padStart(2, '0')}`;
-  } catch (error) {
-    console.error("[UnifiedDataService] Error creating greyed-out color:", error);
-    return '#e0e0e0'; // Default grey if there's an error
-  }
-};
-
-/**
- * Get existing color mapping for subjects
- * @param {Object} userData - User data from Knack
- * @returns {Object} - Map of subject names to colors
- */
-const getColorMapping = (userData) => {
-  if (!userData[FIELD_MAPPING.colorMapping]) return {};
-  
-  try {
-    return parseSafeJSON(userData[FIELD_MAPPING.colorMapping], {});
-  } catch (error) {
-    console.error("[UnifiedDataService] Error parsing color mapping:", error);
-    return {};
-  }
-};
-
-/**
- * Create or update color mapping
- * @param {Object} userData - User data from Knack
- * @param {Object} colorMap - Map of subject names to colors
- * @returns {string} - Stringified color mapping
- */
-const updateColorMapping = (userData, subjectColorMap) => {
-  const existingMap = getColorMapping(userData);
-  const updatedMap = { ...existingMap, ...subjectColorMap };
-  return JSON.stringify(updatedMap);
-};
-
-/**
- * Generate a unique ID
- * @param {string} prefix - Prefix for the ID ('topic', 'card', etc.)
- * @returns {string} - Unique ID
- */
-const generateId = (prefix = 'item') => {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 };
 
 /**

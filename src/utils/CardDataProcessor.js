@@ -5,7 +5,6 @@
 
 import { 
   createStandardCard, 
-  validateCard, 
   prepareCardsForKnack, 
   migrateCardsToStandard,
   enhanceSpacedRepetitionData,
