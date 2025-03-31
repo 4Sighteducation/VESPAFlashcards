@@ -74,37 +74,7 @@ const TopicHub = ({
   const [loadingStatus, setLoadingStatus] = useState('');
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   
-  // Process topics into main topic groupings when topics change
-  useEffect(() => {
-    if (topics && topics.length > 0) {
-      const topicGroups = {};
-      
-      // Group topics by mainTopic
-      topics.forEach(topic => {
-        const mainTopic = topic.mainTopic;
-        if (!topicGroups[mainTopic]) {
-          topicGroups[mainTopic] = [];
-        }
-        topicGroups[mainTopic].push(topic);
-      });
-      
-      // Convert to array format for rendering
-      const mainTopicArray = Object.keys(topicGroups).map(mainTopic => ({
-        name: mainTopic,
-        subtopics: topicGroups[mainTopic]
-      }));
-      
-      setMainTopics(mainTopicArray);
-      
-      // If this is the first time processing topics, expand the first main topic
-      if (mainTopicArray.length > 0 && Object.keys(expandedTopics).length === 0) {
-        setExpandedTopics({ [mainTopicArray[0].name]: true });
-      }
-    } else {
-      setMainTopics([]);
-    }
-  }, [topics]);
-  
+   
   // Load saved content guidance when a topic is selected
   useEffect(() => {
     if (selectedTopic) {

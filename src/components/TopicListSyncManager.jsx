@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import NewTopicModal from "./NewTopicModal";
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
 import { 
@@ -52,15 +52,8 @@ const TopicListSyncManager = ({
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   
-  // Load existing topic lists from Knack when the component mounts or subject changes
-  useEffect(() => {
-    if (isOpen && auth && userId) {
-      loadTopicListsFromKnack();
-    }
-  }, [isOpen, auth, userId, subject]);
-  
   // Function to load topic lists from Knack
-  const loadTopicListsFromKnack = async () => {
+  const loadTopicListsFromKnack = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -95,7 +88,14 @@ const TopicListSyncManager = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId, auth, subject, examBoard, examType]);
+  
+  // Load existing topic lists from Knack when the component mounts or subject changes
+  useEffect(() => {
+    if (isOpen && auth && userId) {
+      loadTopicListsFromKnack();
+    }
+  }, [isOpen, auth, userId, subject, loadTopicListsFromKnack]);
   
   // Set up page unload protection when component mounts
   useEffect(() => {
@@ -119,7 +119,7 @@ const TopicListSyncManager = ({
         loadTopicListsFromKnack();
       }
     }
-  }, [subject, examBoard, examType]);
+  }, [subject, examBoard, examType, currentTopics.length, isLoading, loadTopicListsFromKnack]);
 
   // Generate topics using OpenAI (this will be called from the modal)
   const generateTopics = async () => {

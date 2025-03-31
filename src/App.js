@@ -293,7 +293,7 @@ function App() {
     // If all recovery methods fail
     console.error("[Auth Recovery] Could not recover record ID");
     return null;
-  }, [recordId, auth]); // Dependencies seem correct, suppressing linter warning
+  }, [recordId, auth]);
 
   // Modify the saveData function to use the ensureRecordId function
   const saveData = useCallback(async () => {

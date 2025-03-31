@@ -11,7 +11,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
   const [optionsToDisplay, setOptionsToDisplay] = useState([]);
   const [error, setError] = useState(null);
   
-  // Attempt to initialize options from props or recover from card
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     try {
       setError(null);

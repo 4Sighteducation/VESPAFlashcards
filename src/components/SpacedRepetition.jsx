@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import ReactDOM from "react-dom";
 import "./SpacedRepetition.css";
 import Flashcard from "./Flashcard";
@@ -38,10 +38,7 @@ const SpacedRepetition = ({
   const [boxSubjects, setBoxSubjects] = useState([]);
   const [expandedSubjects, setExpandedSubjects] = useState({});
   const [expandedTopics, setExpandedTopics] = useState({});
-  const [reviewableCards, setReviewableCards] = useState({
-    subjects: {},
-    topics: {}
-  });
+  const [reviewableCards, setReviewableCards] = useState({ subjects: {}, topics: {} });
   
   // State for study modal
   const [showStudyModal, setShowStudyModal] = useState(false);
@@ -81,6 +78,49 @@ const SpacedRepetition = ({
     return emptyStateMessages[randomIndex];
   };
   
+  // Update current study cards based on filtering
+  const updateCurrentCards = useCallback((grouped) => {
+    let cardsToStudy = [];
+    
+    if (selectedSubject && selectedTopic) {
+      // Filter by both subject and topic
+      cardsToStudy = grouped[selectedSubject]?.[selectedTopic] || [];
+    } else if (selectedSubject) {
+      // Filter by subject only
+      const topicsForSubject = grouped[selectedSubject] || {};
+      cardsToStudy = Object.values(topicsForSubject).flat();
+    } else {
+      // No filters, include all cards for current box
+      cardsToStudy = Object.values(grouped)
+        .map(topicMap => Object.values(topicMap).flat())
+        .flat();
+    }
+
+    // Filter out cards that have been reviewed and should no longer be in this box
+    const today = new Date();
+    const reviewableCards = cardsToStudy.filter(card => {
+      // If card has no next review date or is due for review
+      return !card.nextReviewDate || new Date(card.nextReviewDate) <= today;
+    });
+    
+    // If we have no reviewable cards but the study modal is open, we should close it
+    if (reviewableCards.length === 0 && showStudyModal) {
+      setShowStudyModal(false);
+      // Show a message to the user
+      alert("No cards available for review at this time. Please check back later.");
+      // Reset selection
+      setSelectedSubject(null);
+      setSelectedTopic(null);
+    }
+    
+    setCurrentCards(reviewableCards);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setShowFlipResponse(false);
+    setShowFlipResponseOverlay(false);
+    setStudyCompleted(false);
+  }, [selectedSubject, selectedTopic, showStudyModal]);
+  
   // Group cards by subject and topic and filter for review availability
   useEffect(() => {
     if (cards && cards.length > 0) {
@@ -102,7 +142,7 @@ const SpacedRepetition = ({
       }, {});
       
       setGroupedBoxCards(grouped);
-      setBoxSubjects(Object.keys(grouped));
+      setBoxSubjects(Object.keys(grouped).sort());
       
       // Mark reviewable subjects and topics
       const reviewable = {
@@ -144,51 +184,8 @@ const SpacedRepetition = ({
       setReviewableCards({ subjects: {}, topics: {} });
       setCurrentCards([]);
     }
-  }, [cards, currentBox, selectedSubject, selectedTopic]);
+  }, [cards, currentBox, selectedSubject, selectedTopic, spacedRepetitionData, updateCurrentCards]);
   
-  // Update current study cards based on filtering
-  const updateCurrentCards = (grouped) => {
-    let cardsToStudy = [];
-    
-    if (selectedSubject && selectedTopic) {
-      // Filter by both subject and topic
-      cardsToStudy = grouped[selectedSubject]?.[selectedTopic] || [];
-    } else if (selectedSubject) {
-      // Filter by subject only
-      const topicsForSubject = grouped[selectedSubject] || {};
-      cardsToStudy = Object.values(topicsForSubject).flat();
-    } else {
-      // No filters, include all cards for current box
-      cardsToStudy = Object.values(grouped)
-        .map(topicMap => Object.values(topicMap).flat())
-        .flat();
-    }
-
-    // Filter out cards that have been reviewed and should no longer be in this box
-    const today = new Date();
-    const reviewableCards = cardsToStudy.filter(card => {
-      // If card has no next review date or is due for review
-      return !card.nextReviewDate || new Date(card.nextReviewDate) <= today;
-    });
-    
-    // If we have no reviewable cards but the study modal is open, we should close it
-    if (reviewableCards.length === 0 && showStudyModal) {
-      setShowStudyModal(false);
-      // Show a message to the user
-      alert("No cards available for review at this time. Please check back later.");
-      // Reset selection
-      setSelectedSubject(null);
-      setSelectedTopic(null);
-    }
-    
-    setCurrentCards(reviewableCards);
-    setCurrentIndex(0);
-    setIsFlipped(false);
-    setShowFlipResponse(false);
-    setShowFlipResponseOverlay(false);
-    setStudyCompleted(false);
-  };
-
   // Toggle expansion of a subject
   const toggleExpandSubject = (subject) => {
     setExpandedSubjects(prev => ({
