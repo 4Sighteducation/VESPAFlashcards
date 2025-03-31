@@ -1254,7 +1254,9 @@ function App() {
             if (event.data.data?.userData) {
               try {
                 // Use our safe parsing function to handle potential corrupted JSON
+                console.log("[User Info] Raw userData from Knack:", event.data.data.userData); // Log raw data
                 const userData = safeParseJSON(event.data.data.userData);
+                console.log("[User Info] Parsed userData object:", userData); // Log parsed object
 
                 // Store the recordId if available
                 if (userData.recordId) {
@@ -1272,10 +1274,14 @@ function App() {
 
                 // Process cards
                 if (userData.cards && Array.isArray(userData.cards)) {
+                  console.log("[User Info] Found userData.cards array:", userData.cards); // Log the cards array
                   const restoredCards = restoreMultipleChoiceOptions(userData.cards);
+                  console.log("[User Info] Calling setAllCards with:", restoredCards); // Log what's being set
                   setAllCards(restoredCards);
                   updateSpacedRepetitionData(restoredCards);
                   console.log("[User Info] Restored multiple choice options for cards");
+                } else {
+                   console.warn("[User Info] userData.cards is missing or not an array:", userData.cards);
                 }
                 
                 // Process color mapping
