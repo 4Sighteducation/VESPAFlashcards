@@ -2036,6 +2036,9 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
           <div className="step-content">
             <h2>Topic Hub</h2>
             
+            {/* Log the onFinalizeTopics prop to verify it's being passed correctly */}
+            {console.log("AICardGenerator: Rendering TopicHub with onFinalizeTopics prop:", !!onFinalizeTopics)}
+            
             <TopicHub
               subject={formData.subject || formData.newSubject}
               examBoard={formData.examBoard}
@@ -2044,6 +2047,10 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
               recordId={recordId} 
               onSaveTopicList={null} // This prop is no longer used by TopicHub directly
               onFinalizeTopics={onFinalizeTopics} // Pass the handler down
+              onClose={() => {
+                console.log("TopicHub closed - returning to card bank");
+                onClose && onClose();
+              }}
               onSelectTopic={(topic) => {
                 // Set the selected topic and move to the next step
                 setSelectedTopic(topic); // Add this line to set the selected topic

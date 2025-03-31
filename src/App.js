@@ -1574,7 +1574,7 @@ function App() {
                   console.log(`Loaded ${event.data.topicLists.length} topic lists from Knack`);
             }
             
-                // Load topic metadata
+                // Load topic metadata if available
             if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
               setTopicMetadata(event.data.topicMetadata);
                   console.log(`Loaded ${event.data.topicMetadata.length} topic metadata entries from Knack`);
@@ -1811,10 +1811,15 @@ function App() {
       return finalItems;
     });
 
-    // Optionally trigger an immediate save after adding shells
-    // saveData(); // Consider if needed, or rely on auto-save/user save
+    // Trigger an immediate save after adding shells to persist to Knack (field_2979)
+    // Use setTimeout to ensure state update completes first
+    setTimeout(() => {
+      console.log("[App.js] Triggering save after adding topic shells");
+      saveData();
+      showStatus("Topic shells saved successfully");
+    }, 100);
 
-  }, [setAllCards /* Add other dependencies if needed */]);
+  }, [setAllCards, saveData, showStatus]);
 
   // Show loading state
   if (loading) {

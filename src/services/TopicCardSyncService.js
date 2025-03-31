@@ -144,6 +144,7 @@ export function safeAddToBank(existingData, newCards) {
   let existingItems = [];
   try {
     existingItems = safeParseJSON(existingData[FIELD_MAPPING.cardBankData], []);
+    console.log("[TopicCardSyncService] Total existing items in field_2979:", existingItems.length);
   } catch (e) {
     console.error('[TopicCardSyncService] Error parsing existing items:', e);
     existingItems = [];
@@ -155,7 +156,8 @@ export function safeAddToBank(existingData, newCards) {
   debugLog("EXISTING DATA SPLIT", {
     topicCount: existingTopics.length,
     cardCount: existingCards.length,
-    topicSample: existingTopics.length > 0 ? existingTopics[0].name || existingTopics[0].topic : null
+    topicSample: existingTopics.length > 0 ? existingTopics[0].name || existingTopics[0].topic : null,
+    topicIds: existingTopics.slice(0, 5).map(t => t.id)
   });
   
   // Ensure all new cards have type='card'

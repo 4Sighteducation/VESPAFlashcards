@@ -1028,12 +1028,22 @@ const TopicHub = ({
   const handleSaveTopicList = useCallback(() => {
     console.log("handleSaveTopicList triggered");
     
+    // Add a guard to prevent repeated runs if topics are already saved
+    if (topicListSaved) {
+      console.log("Topics already saved, ignoring duplicate save request");
+      return;
+    }
+    
     // Basic validation
     if (!topics || topics.length === 0) {
       console.error("No topics available to finalize.");
       setError("No topics available to save."); // Use setError if needed
       return;
     }
+
+    console.log("TOPIC HUB: Creating topic shells from", topics.length, "topics");
+    console.log("TOPIC HUB: First few topics:", topics.slice(0, 3));
+    console.log("TOPIC HUB: Subject:", subject, "examBoard:", examBoard, "examType:", examType);
 
     // Format topics into topic shells for the unified model
     const topicShells = topics.map(topic => ({
@@ -1051,13 +1061,15 @@ const TopicHub = ({
       updated: new Date().toISOString()
     }));
 
-    console.log("Formatted topic shells:", topicShells);
+    console.log("TOPIC HUB: Created", topicShells.length, "topic shells");
+    console.log("TOPIC HUB: First few shells:", topicShells.slice(0, 3));
 
     // Call the prop passed down from App.js to update the main state
     if (onFinalizeTopics) {
       try {
+        console.log("TOPIC HUB: Calling onFinalizeTopics with", topicShells.length, "shells");
         onFinalizeTopics(topicShells);
-        console.log("Called onFinalizeTopics with shells.");
+        console.log("TOPIC HUB: onFinalizeTopics call completed successfully");
         
         // Update local state to show success
         setTopicListSaved(true);
@@ -1071,7 +1083,7 @@ const TopicHub = ({
       console.error("onFinalizeTopics prop is missing!");
       setError("Save functionality is not configured correctly.");
     }
-  }, [topics, subject, examBoard, examType, onFinalizeTopics, setTopicListSaved, setShowSuccessModal, setError]); // Add dependencies
+  }, [topics, subject, examBoard, examType, onFinalizeTopics, topicListSaved]);
   
   // Handle selecting a topic to continue with card generation
   const handleSelectTopic = () => {
@@ -1152,7 +1164,10 @@ const TopicHub = ({
               Cancel
             </button>
             <button 
-              onClick={handleSaveTopicList}
+              onClick={() => {
+                handleSaveTopicList();
+                setShowSaveDialog(false);
+              }}
               className="save-button"
             >
               <FaSave /> Confirm and Save Shells
@@ -1577,8 +1592,12 @@ const TopicHub = ({
           <div className="success-actions">
             <button 
               onClick={() => {
+                // First hide the modal
                 setShowSuccessModal(false);
-                onClose && onClose();
+                // Then close the component after a short delay to prevent state conflicts
+                setTimeout(() => {
+                  onClose && onClose();
+                }, 50);
               }} 
               className="finish-button"
             >
