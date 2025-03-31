@@ -140,6 +140,142 @@ const AICardGenerator = ({
     addToBank: false
   });
 
+  // Enhanced helper function to request token refresh with improved reliability and retry logic
+  // eslint-disable-next-line no-use-before-define 
+  const requestTokenRefresh = useCallback(async () => { // Wrap in useCallback
+    console.log(`[${new Date().toISOString()}] AICardGenerator requesting token refresh`);
+    
+    // Global tracking variable to prevent duplicate requests across components
+    if (!window.tokenRefreshInProgress) {
+      window.tokenRefreshInProgress = true;
+    } else {
+      console.log("Token refresh already in progress, waiting for completion");
+      // Wait for existing refresh to complete with improved reliability
+      return new Promise(resolve => {
+        let attempts = 0;
+        const maxAttempts = 10; // More attempts for reliability
+        
+        const checkInterval = setInterval(() => {
+          attempts++;
+          if (!window.tokenRefreshInProgress) {
+            clearInterval(checkInterval);
+            console.log(`[${new Date().toISOString()}] Existing token refresh completed`);
+            resolve(true);
+          }
+          
+          if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            // Reset the flag if we're giving up waiting
+            window.tokenRefreshInProgress = false;
+            console.log(`[${new Date().toISOString()}] Timed out waiting for existing token refresh`);
+            resolve(false);
+          }
+        }, 500); // Longer interval for less CPU usage
+      });
+    }
+    
+    try {
+      if (window.parent && window.parent !== window) {
+        // Create a more robust system with message acknowledgment and retries
+        return new Promise((resolve) => {
+          let receivedResponse = false;
+          
+          // Function to handle token refresh response
+          const messageHandler = (event) => {
+            if (event.data && 
+                (event.data.type === "AUTH_REFRESH" || 
+                 event.data.type === "TOKEN_REFRESH_RESULT")) {
+              // Prevent duplicate handling
+              if (receivedResponse) return;
+              receivedResponse = true;
+              
+              // Remove listener once we get a response
+              window.removeEventListener('message', messageHandler);
+              window.tokenRefreshInProgress = false;
+              
+              console.log(`[${new Date().toISOString()}] Received token refresh response:`, event.data.type);
+              resolve(true);
+            }
+          };
+          
+          // Add listener for response
+          window.addEventListener('message', messageHandler);
+          
+          // Function to send refresh request with retry capability
+          const sendRefreshRequest = (retryCount = 0) => {
+            // Send a message to parent requesting token refresh
+            window.parent.postMessage({ 
+              type: "REQUEST_TOKEN_REFRESH", 
+              timestamp: new Date().toISOString(),
+              source: "AICardGenerator",
+              retryCount
+            }, "*");
+            
+            console.log(`[${new Date().toISOString()}] Sent token refresh request (attempt ${retryCount + 1})`);
+          };
+          
+          // Send initial request
+          sendRefreshRequest();
+          
+          // Add retry logic - try 3 more times with increasing delays
+          for (let i = 1; i <= 3; i++) {
+            // Pass 'i' as an argument to setTimeout's callback
+            // eslint-disable-next-line no-loop-func
+            setTimeout((retryNum) => {
+              // Only retry if we haven't received a response yet
+              if (!receivedResponse) {
+                sendRefreshRequest(retryNum); // Use the passed argument
+              }
+            }, 1000 * i, i); // Pass 'i' here
+          }
+          
+          // Set a timeout to ensure we don't wait forever
+          setTimeout(() => {
+            if (!receivedResponse) {
+              window.removeEventListener('message', messageHandler);
+              window.tokenRefreshInProgress = false;
+              console.log(`[${new Date().toISOString()}] Token refresh timed out`);
+              resolve(false);
+            }
+          }, 3000);
+        });
+      }
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error in token refresh:`, error);
+      window.tokenRefreshInProgress = false;
+    }
+    
+    window.tokenRefreshInProgress = false;
+    return Promise.resolve(false);
+  }, []); // Added dependencies for useCallback // Added currentStep
+
+    // Load saved topic lists from Knack using our centralized service
+  const loadTopicListsFromKnack = useCallback(async () => { // Added useCallback
+    try {
+      // Check if we're authenticated or have a user ID
+      if (!auth || !userId) {
+        console.log("No authentication data or userId, skipping Knack load");
+        return [];
+      }
+      
+      console.log("Loading topic lists from Knack for user:", userId);
+      
+      // Use our centralized service to load topic lists
+      const { topicLists: knackTopicLists } = await loadTopicLists(userId, auth);
+      
+            if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
+              console.log("Successfully loaded topic lists from Knack:", knackTopicLists);
+              return knackTopicLists;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error("Error loading topic lists from Knack:", error);
+      return [];
+    }
+  }, [auth, userId]); // Added dependencies for useCallback // Added currentStep
+
+
   // Load saved topic lists from both localStorage and Knack on mount
   useEffect(() => {
     // Only proceed if authenticated
@@ -166,35 +302,10 @@ const AICardGenerator = ({
     }
     
     // Initialize available subjects and topics
-    const examTypes = formData.examType ? ["GCSE", "A-Level"] : [];
-    setAvailableSubjects(subjects.filter(s => examTypes.includes(s.examType)));
-  }, [auth, userId]);
+    const examTypes = formData.examType ? ["GCSE", "A-Level"] : []; // Uses formData.examType
+    setAvailableSubjects(subjects.filter(s => examTypes.includes(s.examType))); // Uses subjects
+  }, [auth, userId, formData.examType, loadTopicListsFromKnack, subjects]); // Missing: formData.examType, loadTopicListsFromKnack, subjects
 
-  // Load saved topic lists from Knack using our centralized service
-  const loadTopicListsFromKnack = useCallback(async () => { // Added useCallback
-    try {
-      // Check if we're authenticated or have a user ID
-      if (!auth || !userId) {
-        console.log("No authentication data or userId, skipping Knack load");
-        return [];
-      }
-      
-      console.log("Loading topic lists from Knack for user:", userId);
-      
-      // Use our centralized service to load topic lists
-      const { topicLists: knackTopicLists } = await loadTopicLists(userId, auth);
-      
-            if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
-              console.log("Successfully loaded topic lists from Knack:", knackTopicLists);
-              return knackTopicLists;
-      }
-      
-      return [];
-    } catch (error) {
-      console.error("Error loading topic lists from Knack:", error);
-      return [];
-    }
-  }, [auth, userId]); // Added dependencies for useCallback
 
   // Effect to update available subjects when exam type changes
   useEffect(() => {
@@ -1330,8 +1441,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     } finally {
       setIsGenerating(false);
     }
-  }, [isGenerating, formData, examType, examBoard, initialSubject, initialTopic, subjects, requestTokenRefresh]); // Added dependencies for useCallback
-
+  }, [isGenerating, formData, examType, examBoard, initialSubject, initialTopic, subjects, requestTokenRefresh, currentStep]);
   // Call to generate cards when arriving at the final step
   // This useEffect is now a backup in case the direct call fails
   useEffect(() => {
@@ -1371,115 +1481,9 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
 
   // Helper function to clean AI response
   const cleanOpenAIResponse = (text) => {
-    return text.replace(/```json\s*/g, "").replace(/```/g, "").trim();
+    return text.replace(/```json\\s*/g, "").replace(/```/g, "").trim();
   };
 
-  // Enhanced helper function to request token refresh with improved reliability and retry logic
-  const requestTokenRefresh = useCallback(async () => { // Wrap in useCallback
-    console.log(`[${new Date().toISOString()}] AICardGenerator requesting token refresh`);
-    
-    // Global tracking variable to prevent duplicate requests across components
-    if (!window.tokenRefreshInProgress) {
-      window.tokenRefreshInProgress = true;
-    } else {
-      console.log("Token refresh already in progress, waiting for completion");
-      // Wait for existing refresh to complete with improved reliability
-      return new Promise(resolve => {
-        let attempts = 0;
-        const maxAttempts = 10; // More attempts for reliability
-        
-        const checkInterval = setInterval(() => {
-          attempts++;
-          if (!window.tokenRefreshInProgress) {
-            clearInterval(checkInterval);
-            console.log(`[${new Date().toISOString()}] Existing token refresh completed`);
-            resolve(true);
-          }
-          
-          if (attempts >= maxAttempts) {
-            clearInterval(checkInterval);
-            // Reset the flag if we're giving up waiting
-            window.tokenRefreshInProgress = false;
-            console.log(`[${new Date().toISOString()}] Timed out waiting for existing token refresh`);
-            resolve(false);
-          }
-        }, 500); // Longer interval for less CPU usage
-      });
-    }
-    
-    try {
-      if (window.parent && window.parent !== window) {
-        // Create a more robust system with message acknowledgment and retries
-        return new Promise((resolve) => {
-          let receivedResponse = false;
-          
-          // Function to handle token refresh response
-          const messageHandler = (event) => {
-            if (event.data && 
-                (event.data.type === "AUTH_REFRESH" || 
-                 event.data.type === "TOKEN_REFRESH_RESULT")) {
-              // Prevent duplicate handling
-              if (receivedResponse) return;
-              receivedResponse = true;
-              
-              // Remove listener once we get a response
-              window.removeEventListener('message', messageHandler);
-              window.tokenRefreshInProgress = false;
-              
-              console.log(`[${new Date().toISOString()}] Received token refresh response:`, event.data.type);
-              resolve(true);
-            }
-          };
-          
-          // Add listener for response
-          window.addEventListener('message', messageHandler);
-          
-          // Function to send refresh request with retry capability
-          const sendRefreshRequest = (retryCount = 0) => {
-            // Send a message to parent requesting token refresh
-            window.parent.postMessage({ 
-              type: "REQUEST_TOKEN_REFRESH", 
-              timestamp: new Date().toISOString(),
-              source: "AICardGenerator",
-              retryCount
-            }, "*");
-            
-            console.log(`[${new Date().toISOString()}] Sent token refresh request (attempt ${retryCount + 1})`);
-          };
-          
-          // Send initial request
-          sendRefreshRequest();
-          
-          // Add retry logic - try 3 more times with increasing delays
-          for (let i = 1; i <= 3; i++) {
-            // Pass 'i' as an argument to setTimeout's callback
-            setTimeout((retryNum) => {
-              // Only retry if we haven't received a response yet
-              if (!receivedResponse) {
-                sendRefreshRequest(retryNum); // Use the passed argument
-              }
-            }, 1000 * i, i); // Pass 'i' here
-          }
-          
-          // Set a timeout to ensure we don't wait forever
-          setTimeout(() => {
-            if (!receivedResponse) {
-              window.removeEventListener('message', messageHandler);
-              window.tokenRefreshInProgress = false;
-              console.log(`[${new Date().toISOString()}] Token refresh timed out`);
-              resolve(false);
-            }
-          }, 3000);
-        });
-      }
-    } catch (error) {
-      console.error(`[${new Date().toISOString()}] Error in token refresh:`, error);
-      window.tokenRefreshInProgress = false;
-    }
-    
-    window.tokenRefreshInProgress = false;
-    return Promise.resolve(false);
-  }, []); // No external dependencies from component scope needed here
 
   // Completely enhanced handleAddCard function with improved error handling and stable metadata
   const handleAddCard = (card) => {
@@ -1610,7 +1614,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
       // Then use the message passing to the parent window as the main approach
       if (window.parent && window.parent.postMessage) {
         // Make sure we have valid auth data
-        const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
+       //onst authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
         
         console.log("Adding card via parent window messaging");
         
@@ -1893,8 +1897,8 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     return luminance > 0.5 ? '#000000' : '#ffffff';
   };
 
-  // Function to handle generating topics from the main screen
-  const handleGenerateTopics = async () => {
+  // Function to handle generating topics from the main screen/
+ /* const handleGenerateTopics = async () => {
     try {
       setIsGenerating(true);
       setError(null);
@@ -1938,7 +1942,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
       setIsGenerating(false);
     }
   };
-
+*/
   // Add a function to reset state after card operations to fix initialization screen issue
   const resetAfterCardOperation = () => {
     // This function helps recover from initialization screen issues
@@ -2666,8 +2670,8 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     const localTopic = stableTopic || formData.topic || formData.newTopic || initialTopic || "General";
     
     // Additional values for communication
-    const recordIdToUse = recordId || (typeof auth === 'object' && auth.recordId ? auth.recordId : null) || window.recordId || '';
-    const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
+    //const recordIdToUse = recordId || (typeof auth === 'object' && auth.recordId ? auth.recordId : null) || window.recordId || '';
+    ///onst userIdToUse = userId || window.VESPA_USER_ID || "current_user";
     
     // Log that we're using stable values
     debugLog("Starting addAllToBank with stable metadata", {

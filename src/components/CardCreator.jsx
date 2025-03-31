@@ -189,22 +189,22 @@ const CardCreator = ({
   };
 
   // Reset the form
-  const resetForm = () => {
-    setSubject("");
-    setTopic("");
-    setQuestionType("short_answer");
-    setQuestion("");
-    setAnswer("");
-    setKeyPoints("");
-    setDetailedAnswer("");
-    setAdditionalInfo("");
-    setOptions(["", "", "", ""]);
-    setCorrectOption("");
-    setAcronym("");
-    setExplanation("");
-    setNewSubject("");
-    setNewTopic("");
-  };
+  // const resetForm = () => {
+  //   setSubject("");
+  //   setTopic("");
+  //   setQuestionType("short_answer");
+  //   setQuestion("");
+  //   setAnswer("");
+  //   setKeyPoints("");
+  //   setDetailedAnswer("");
+  //   setAdditionalInfo("");
+  //   setOptions(["", "", "", ""]);
+  //   setCorrectOption("");
+  //   setAcronym("");
+  //   setExplanation("");
+  //   setNewSubject("");
+  //   setNewTopic("");
+  // };
 
   // Handle option change for multiple choice
   const handleOptionChange = (index, value) => {
