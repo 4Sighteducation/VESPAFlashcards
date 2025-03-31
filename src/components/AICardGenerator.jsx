@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
-import { loadTopicLists } from '../services/TopicPersistenceService'; // Removed safeParseJSON
 import TopicHub from '../components/TopicHub';
 
 // Constants for question types and exam boards
@@ -72,7 +71,8 @@ const AICardGenerator = ({
   initialTopic = "",
   examBoard = "AQA",
   examType = "A-Level",
-  recordId
+  recordId,
+  initialTopicsProp
 }) => {
   // Step management state
   const [currentStep, setCurrentStep] = useState(1);
@@ -138,6 +138,24 @@ const AICardGenerator = ({
     refresh: false,
     addToBank: false
   });
+
+// Initialize availableTopics state when initialTopicsProp changes
+useEffect(() => {
+  // Check if the prop has valid topic data
+  if (initialTopicsProp && Array.isArray(initialTopicsProp) && initialTopicsProp.length > 0) {
+    // Assuming 'availableTopics' holds the list used in the UI (e.g., Step 4)
+    // Or maybe you need to set 'hierarchicalTopics'? Adjust if needed.
+    setAvailableTopics(initialTopicsProp); 
+    setHierarchicalTopics(initialTopicsProp); // Also set hierarchical if needed
+    
+    console.log(`[AICardGenerator] Initialized with ${initialTopicsProp.length} topics from prop.`);
+  } else {
+    // If no initial topics are passed, clear the state
+    setAvailableTopics([]);
+    setHierarchicalTopics([]);
+  }
+// This effect runs when the prop containing the initial topics changes
+}, [initialTopicsProp]); 
 
   // Enhanced helper function to request token refresh with improved reliability and retry logic
   // eslint-disable-next-line no-use-before-define 
@@ -248,64 +266,8 @@ const AICardGenerator = ({
     return Promise.resolve(false);
   }, []); // Added dependencies for useCallback // Added currentStep
 
-    // Load saved topic lists from Knack using our centralized service
-  const loadTopicListsFromKnack = useCallback(async () => { // Added useCallback
-    try {
-      // Check if we're authenticated or have a user ID
-      if (!auth || !userId) {
-        console.log("No authentication data or userId, skipping Knack load");
-        return [];
-      }
-      
-      console.log("Loading topic lists from Knack for user:", userId);
-      
-      // Use our centralized service to load topic lists
-      const { topicLists: knackTopicLists } = await loadTopicLists(userId, auth);
-      
-            if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
-              console.log("Successfully loaded topic lists from Knack:", knackTopicLists);
-              return knackTopicLists;
-      }
-      
-      return [];
-    } catch (error) {
-      console.error("Error loading topic lists from Knack:", error);
-      return [];
-    }
-  }, [auth, userId]); // Added dependencies for useCallback // Added currentStep
 
-
-  // Load saved topic lists from both localStorage and Knack on mount
-  useEffect(() => {
-    // Only proceed if authenticated
-    if (auth && userId) {
-      console.log("User authenticated, loading topic lists from Knack");
-      // Load from Knack
-      loadTopicListsFromKnack()
-        .then(knackLists => {
-          if (knackLists && knackLists.length > 0) {
-            setSavedTopicLists(knackLists);
-            console.log("Loaded topic lists from Knack:", knackLists);
-          } else {
-            setSavedTopicLists([]);
-          }
-        })
-        .catch(error => {
-          console.error("Error loading topic lists from Knack:", error);
-          setSavedTopicLists([]);
-        });
-    } else {
-      // If not authenticated, we can't use topic lists (user-specific feature)
-      console.log("User not authenticated, no topic lists will be available");
-      setSavedTopicLists([]);
-    }
-    
-    // Initialize available subjects and topics
-    const examTypes = formData.examType ? ["GCSE", "A-Level"] : []; // Uses formData.examType
-    setAvailableSubjects(subjects.filter(s => examTypes.includes(s.examType))); // Uses subjects
-  }, [auth, userId, formData.examType, loadTopicListsFromKnack, subjects]); // Missing: formData.examType, loadTopicListsFromKnack, subjects
-
-
+ 
   // Effect to update available subjects when exam type changes
   useEffect(() => {
     if (formData.examType) {
