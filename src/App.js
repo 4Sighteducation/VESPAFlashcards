@@ -296,7 +296,7 @@ function App() {
   }, [recordId, auth]);
 
   // Modify the saveData function to use the ensureRecordId function
-  const saveData = useCallback(async () => {
+  const saveData = useCallback(async (data, preserveFields = false) => {
     // Check if we're authenticated
     if (!auth) {
       console.log("[Save] No authentication available, saving locally only");
@@ -354,16 +354,16 @@ function App() {
         // Prepare the data payload for Knack
         const safeData = {
           recordId: safeRecordId,
-        cards: safeSerializeData(allCards),
+        cards: safeSerializeData(data),
         colorMapping: safeSerializeData(subjectColorMapping), 
         spacedRepetition: safeSerializeData(spacedRepetitionData),
         userTopics: safeSerializeData(userTopics),
         topicLists: safeSerializeData(topicLists),
         topicMetadata: safeSerializeData(topicMetadata),
-          preserveFields: true
+          preserveFields: preserveFields
         };
         
-        console.log(`[Save] Sending data to Knack (${allCards.length} cards, record ID: ${safeRecordId})`);
+        console.log(`[Save] Sending data to Knack (${data.length} cards, record ID: ${safeRecordId})`);
         
       // Add a timeout to clear the saving state if no response is received
       const saveTimeout = setTimeout(() => {
@@ -1790,28 +1790,30 @@ function App() {
     }
     console.log("[App.js] Received finalized topic shells:", topicShells);
     
+    let finalMergedItems = []; // To capture the merged state
+    
     // Merge new shells with existing cards/shells in allCards
     setAllCards(prevAllCards => {
       const existingItems = Array.isArray(prevAllCards) ? prevAllCards : [];
-      // NOTE: Assumes a utility function UnifiedDataModel.mergeItems exists or needs to be implemented
-      // For now, simple concat - replace with proper merge later if needed
+      
       const newItems = topicShells.filter(shell => 
         !existingItems.some(existing => existing.type === 'topic' && existing.id === shell.id)
       );
+      
       const updatedItems = existingItems.map(existing => {
         if (existing.type === 'topic') {
           const updatedShell = topicShells.find(shell => shell.id === existing.id);
-          return updatedShell ? updatedShell : existing;
+          return updatedShell ? { ...existing, ...updatedShell } : existing; // Ensure update merges properly
         }
         return existing;
       });
       
-      const finalItems = [...updatedItems, ...newItems];
-      console.log(`[App.js] Merged items. Old count: ${existingItems.length}, New count: ${finalItems.length}`);
+      finalMergedItems = [...updatedItems, ...newItems]; // Update the scoped variable
+      console.log(`[App.js] Merged items. Old count: ${existingItems.length}, New count: ${finalMergedItems.length}`);
       
       // Debug dump of the topic shells being added
-      console.log("[CRITICAL DEBUG] Topic shells to be saved:", 
-        topicShells.map(shell => ({
+      console.log("[CRITICAL DEBUG] Topic shells AFTER merge logic:", 
+        finalMergedItems.filter(item => item.type === 'topic').map(shell => ({
           id: shell.id,
           type: shell.type,
           name: shell.name,
@@ -1819,28 +1821,28 @@ function App() {
         }))
       );
       
-      return finalItems;
+      return finalMergedItems; // Return the merged array for state update
     });
 
-    // Trigger an immediate save after adding shells to persist to Knack (field_2979)
-    // Use setTimeout with a longer delay to ensure state update completes first
+    // Trigger an immediate save, passing the correctly merged items
+    // Use setTimeout to ensure the setAllCards has likely started processing,
+    // but pass the data directly to avoid relying on its completion.
     setTimeout(() => {
       console.log("[App.js] Triggering save after adding topic shells");
-      console.log("[CRITICAL DEBUG] Current allCards state before save:", 
-        allCards.filter(item => item.type === 'topic').length,
-        "topic shells"
-      );
-      saveData();
-      showStatus("Topic shells saved successfully");
+      // CRITICAL CHANGE: Pass the finalMergedItems directly to saveData
+      saveData(finalMergedItems, true); // Pass the merged items and preserveFields = true
+      showStatus("Topic shells added and save triggered.");
       
-      // Second save attempt with longer delay as backup
+      // Keep backup save, but it should also use the correct data if needed
+      // Note: The backup save might still face issues if state hasn't fully updated,
+      // but the primary save call should now work correctly.
       setTimeout(() => {
-        console.log("[App.js] Trigger backup save to ensure topic shells are saved");
-        saveData();
+        console.log("[App.js] Trigger backup save");
+        saveData(); // Backup uses current state, might be slightly delayed
       }, 2000);
-    }, 500);
+    }, 50); // Reduced delay as we pass data directly
 
-  }, [allCards, setAllCards, saveData, showStatus]);
+  }, [setAllCards, saveData, showStatus]); // Removed allCards from deps as we use prevAllCards
 
   // Show loading state
   if (loading) {

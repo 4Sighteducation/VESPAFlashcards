@@ -728,8 +728,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   };
 
   // Render subject header with delete button
-  const renderSubjectHeader = ({ id: subject, title, cards, exam_board, exam_type, color }) => {
-    const cardCount = cards.flat().length;
+  const renderSubjectHeader = ({ id: subject, title, displayCount, exam_board, exam_type, color }) => {
     // Calculate appropriate text color based on background
     const textColor = getContrastColor(color);
 
@@ -747,7 +746,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
           <div className="subject-meta">
             {exam_type && <span className={`meta-tag ${exam_type === 'GCSE' ? 'gcse' : 'a-level'}`}>{exam_type}</span>}
             {exam_board && <span className="meta-tag">{exam_board}</span>}
-            <span className="card-count">{cardCount} {cardCount === 1 ? 'card' : 'cards'}</span>
+            <span className="card-count">{displayCount}</span>
           </div>
         </div>
         
@@ -966,17 +965,29 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   };
 
   // Render a single subject section including its topics
-  const renderSubject = ({ id: subject, title, cards: subjectCardData, exam_board, exam_type, color: subjectColor }) => {
+  const renderSubject = (subjectData) => {
+    const { id: subject, title, exam_board, exam_type } = subjectData;
     const isExpanded = expandedSubjects[subject];
 
     // Use the pre-processed groupedCards for topic structure
     const topicsInSubject = groupedCards[subject] || {};
     const topicNames = Object.keys(topicsInSubject).sort((a, b) => a.localeCompare(b));
 
-    // Retrieve subject-specific metadata (like color) from the first available card or shell
-    // Find the first item (card or shell placeholder) associated with this subject to get color etc.
-    const firstItem = cards.find(c => c.subject === subject);
-    const currentSubjectColor = firstItem?.baseColor || firstItem?.color || '#f0f0f0'; // Use baseColor or fallback
+    // Retrieve subject color from the pre-calculated sortedSubjects data
+    const currentSubjectColor = subjectData.color || '#f0f0f0';
+
+    // Count total cards for the subject header
+    const totalCardCount = topicNames.reduce((count, topicName) => {
+      return count + (topicsInSubject[topicName] || []).length;
+    }, 0);
+    
+    // Count topic shells for the subject header
+    const topicShellCount = Object.values(topicShells[subject] || {}).length;
+    
+    // Display logic for card count: show card count if > 0, else show shell count if > 0
+    const displayCount = totalCardCount > 0 ? 
+      `${totalCardCount} ${totalCardCount === 1 ? 'card' : 'cards'}` :
+      (topicShellCount > 0 ? `${topicShellCount} topic ${topicShellCount === 1 ? 'shell' : 'shells'}` : '0 cards');
 
     return (
       <div key={subject} className="subject-section">
@@ -984,7 +995,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
         {renderSubjectHeader({
           id: subject,
           title: title || subject, // Use title if available, else subject name
-          cards: Object.values(topicsInSubject), // Pass topic data for card count etc.
+          displayCount: displayCount, // Pass the calculated display count
           exam_board: exam_board || getExamInfo(subject).examBoard,
           exam_type: exam_type || getExamInfo(subject).examType,
           color: currentSubjectColor // Pass determined color
@@ -1002,7 +1013,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
                 const isTopicExpanded = expandedTopics[topicKey];
                 const topicDate = getTopicDate(cardsInTopic); // Get earliest date for the topic
 
-                // Find the original topic shell object if it exists using the now accessible topicShells map
+                // Find the original topic shell object using the topicShells map
                 const topicShell = Object.values(topicShells[subject] || {}).find(shell => shell.topicName === topicName);
                 const topicId = topicShell ? topicShell.id : null; // Get ID from shell if available
                 
@@ -1022,7 +1033,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
                         <div className="topic-meta">
                           {topicDate && <span className="topic-date">{topicDate}</span>}
                           <span className="topic-card-count">
-                            {/* Display count or "Topic Shell" if no cards */}
+                            {/* Display count or "Topic Shell" */}
                             {cardsInTopic.length > 0
                               ? `${cardsInTopic.length} ${cardsInTopic.length === 1 ? 'card' : 'cards'}`
                               : (topicShell ? "(Topic Shell)" : "(Empty Topic)")
@@ -1036,8 +1047,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
                           className="action-button generate-topic-cards-button"
                           onClick={(e) => handleGenerateCardsForTopic(subject, topicName, topicId, e)}
                           title={`Generate AI cards for ${topicName}`}
-                          // Disable if topicId is missing (shouldn't happen if generated via AI)
-                          disabled={!topicId}
+                          disabled={!topicId} // Only enable if it's a shell with an ID
                         >
                           <FaBolt />
                           <span className="tooltip">Generate Cards</span>
@@ -1062,28 +1072,24 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
                            <FaPrint />
                            <span className="tooltip">Print Topic</span>
                          </button>
-                        {/* Delete Topic Button - Consider if deleting shell is allowed */}
+                        {/* Delete Topic Button - Deletes cards or shell */}
                         <button
                           className="action-button delete-button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Decide if deleting a shell should be allowed or just the cards
-                            // Currently deletes cards only
                             if (cardsInTopic.length > 0) {
-                                deleteTopicCards(subject, topicName);
+                                deleteTopicCards(subject, topicName); // Deletes cards
                             } else if (topicShell) {
-                                // Optional: Add logic to delete the topic shell record itself
-                                console.log("Attempting to delete topic shell - implement if needed");
-                                // onDeleteTopicShell(topicShell.id); // Needs implementation
+                                // TODO: Implement deletion of the topic shell itself if desired
+                                // onDeleteTopicShell(topicShell.id); // Example call
                                 alert("Deleting topic shells directly is not yet supported.");
                             }
                           }}
-                          // Disable if no cards AND it's not a deletable shell (if that logic is added)
-                          disabled={cardsInTopic.length === 0 && !topicShell /* && !allowShellDelete */}
-                          title={cardsInTopic.length > 0 ? `Delete all cards in ${topicName}` : (topicShell ? `Delete Topic Shell ${topicName}`: `No cards to delete`)}
+                          disabled={cardsInTopic.length === 0 && !topicShell}
+                          title={cardsInTopic.length > 0 ? `Delete all cards in ${topicName}` : (topicShell ? `Delete Topic Shell ${topicName}`: `No cards or shell`)}
                         >
                           <FaTimes />
-                           <span className="tooltip">{cardsInTopic.length > 0 ? "Delete Topic Cards" : (topicShell ? "Delete Topic Shell" : "No cards")}</span>
+                           <span className="tooltip">{cardsInTopic.length > 0 ? "Delete Cards" : (topicShell ? "Delete Shell" : "No Items")}</span>
                         </button>
                         {/* Toggle Arrow */}
                         <span className="toggle-arrow">
@@ -1092,8 +1098,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
                       </div>
                     </div>
 
-                    {/* Render Cards within the Topic - Conditionally based on expansion */}
-                    {/* Only render card container if expanded */}
+                    {/* Render Cards within the Topic - Conditionally */}
                     {isTopicExpanded && (
                         <div className={`topic-cards-container ${cardsInTopic.length === 0 ? 'empty' : ''}`}>
                             {cardsInTopic.length > 0 ? (
@@ -1154,14 +1159,15 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
         <CardModal />
       )}
       
-      {/* Main accordion container with topic shells */}
+      {/* Main accordion container */}
       <div className="accordion-container" style={{ 
         flex: 1, 
         overflowY: 'auto',
         maxHeight: 'calc(100vh - 120px)',
         padding: '0 10px' 
       }}>
-        {sortedSubjects.map(subject => renderSubject(subject))}
+        {/* Map over sortedSubjects which contains pre-calculated data */}
+        {sortedSubjects.map(subjectData => renderSubject(subjectData))}
       </div>
       
       {/* Scroll manager component */}
