@@ -121,9 +121,11 @@ export function isAuthManagerInitialized(auth) {
   return isInitialized;
 }
 
-export default {
+const AuthAppIntegration = {
   initializeAuthManager,
   handleTokenRefreshRequest,
   handleAuthRefreshResult,
   isAuthManagerInitialized
 };
+
+export default AuthAppIntegration;

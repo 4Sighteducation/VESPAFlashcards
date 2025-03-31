@@ -327,7 +327,7 @@ export const getTopicsForSubject = (unifiedData, subjectId) => {
   return unifiedData.topics.filter(topic => topic.subjectId === subjectId);
 };
 
-export default {
+const UnifiedDataModel = {
   ENTITY_TYPES,
   SCHEMA_VERSION,
   generateId,
@@ -343,3 +343,5 @@ export default {
   getCardsForSubject,
   getTopicsForSubject
 }; 
+
+export default UnifiedDataModel; 
