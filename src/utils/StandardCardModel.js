@@ -174,6 +174,9 @@ export const createStandardCard = (data = {}) => {
       standardCard.acronym = sanitizeHtml(data.acronym || '');
       standardCard.explanation = sanitizeHtml(data.explanation || '');
       break;
+    default:
+      // Do nothing for other types or if type is unknown
+      break;
   }
   
   return standardCard;
@@ -275,6 +278,9 @@ export const convertCardFormat = (card, targetFormat = 'storage') => {
       delete convertedCard.boxNum;
       delete convertedCard.lastReviewed;
       delete convertedCard.nextReviewDate;
+      break;
+    default:
+      // If format is unknown, return the standard storage format
       break;
   }
   

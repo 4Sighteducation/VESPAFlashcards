@@ -848,7 +848,7 @@ const SpacedRepetition = ({
                 <span className="card-topic">{currentCard.topic || ""}</span>
               </div>
               {/* Check for either additionalInfo or detailedAnswer */}
-              {(currentCard.additionalInfo || currentCard.detailedAnswer) && (
+              {((currentCard.additionalInfo || currentCard.detailedAnswer)) && (
                 <button 
                   className="info-btn" 
                   onClick={toggleInfoModal}
@@ -909,7 +909,7 @@ const SpacedRepetition = ({
                 <span className="card-topic">{currentCard.topic || ""}</span>
               </div>
               {/* Check for either additionalInfo or detailedAnswer */}
-              {(currentCard.additionalInfo || currentCard.detailedAnswer) && (
+              {((currentCard.additionalInfo || currentCard.detailedAnswer)) && (
                 <button 
                   className="info-btn" 
                   onClick={toggleInfoModal}

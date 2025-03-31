@@ -119,7 +119,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
   const cleanOptionText = (option) => {
     if (!option) return '';
     // Match patterns like a), a., (a), a-, etc. at beginning of string
-    const prefixRegex = /^([a-z][\.\)\-\:]|\([a-z]\))\s*/i;
+    const prefixRegex = /^([a-z][.)\-:]|\([a-z]\))\s*/i;
     return option.replace(prefixRegex, '').trim();
   };
 
