@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaInfo, FaCheckCircle } from 'react-icons/fa';
 import './styles.css';
 import { generateTopicPrompt } from '../../prompts/topicListPrompt';
+import { generateId } from '../utils/UnifiedDataModel';
 
 /**
  * TopicHub - Enhanced topic management component
@@ -19,7 +20,8 @@ const TopicHub = ({
   onGenerateCards,
   academicYear = "2024-2025",
   onClose,
-  recordId
+  recordId,
+  onFinalizeTopics
 }) => {
   // State for topic management
   const [topics, setTopics] = useState(initialTopics);
@@ -72,6 +74,8 @@ const TopicHub = ({
   // Additional state for UI and loading
   const [loadingStatus, setLoadingStatus] = useState('');
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
+  
+  const [topicListSaved, setTopicListSaved] = useState(false);
   
    
   // Load saved content guidance when a topic is selected
@@ -1020,111 +1024,54 @@ const TopicHub = ({
     }
   };
   
-  // Handle saving topic list
-  const handleSaveTopicList = () => {
-    // Toggle save dialog visibility
-    setShowSaveDialog(false);
+  // Handle saving topic list - REVISED LOGIC
+  const handleSaveTopicList = useCallback(() => {
+    console.log("handleSaveTopicList triggered");
     
-    // Check if we have at least one topic
+    // Basic validation
     if (!topics || topics.length === 0) {
-      setErrorMessage("No topics to save");
-      setErrorDetails("Please generate or add topics before saving.");
-      setShowErrorModal(true);
+      console.error("No topics available to finalize.");
+      setError("No topics available to save."); // Use setError if needed
       return;
     }
-    
-    // Format topics for saving with additional validation
-    const topicListForSave = topics.map(topic => {
-      // Ensure each required property exists
-      if (!topic) {
-        console.error("Found null/undefined topic in topics array");
-        return {
-          id: `topic_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          name: "Unknown Topic",
-          mainTopic: "Unknown",
-          subtopic: "Unknown",
-          topic: "Unknown Topic"
-        };
-      }
-      
-      return {
-        id: topic.id || `topic_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        name: `${topic.mainTopic || ''}: ${topic.subtopic || ''}`.trim() || "Unknown Topic",
-        mainTopic: topic.mainTopic || subject || "Unknown",
-        subtopic: topic.subtopic || "General",
-        topic: `${topic.mainTopic || ''}: ${topic.subtopic || ''}`.trim() || "Unknown Topic"
-      };
-    });
-    
-    // Log the formatted topic list for debugging
-    console.log("Formatted topic list for save:", topicListForSave);
-    
-    // Create the complete topicList object with metadata
-    const completeTopicList = {
-      name: `${subject} - ${examBoard} ${examType}`,
-      topics: topicListForSave,
-      examBoard: examBoard,
-      examType: examType,
-      subject: subject
-    };
-    
-    // Call the parent's onSaveTopicList callback with the formatted topics
-    if (onSaveTopicList) {
-      setLoadingStatus("Saving your topic list...");
-      setShowLoadingOverlay(true);
-      
+
+    // Format topics into topic shells for the unified model
+    const topicShells = topics.map(topic => ({
+      id: topic.id || generateId('topic'), // Use imported generateId
+      type: 'topic', // Explicitly set type
+      name: topic.topic || topic.name || 'Unknown Topic', // Use consistent name property if possible
+      subject: topic.mainTopic || subject || "Unknown Subject", // Get subject from topic or prop
+      examBoard: topic.examBoard || examBoard || "Unknown Board", // Get examBoard from topic or prop
+      examType: topic.examType || examType || "Unknown Type", // Get examType from topic or prop
+      color: topic.color || '#cccccc', // Default grey or assign later
+      isShell: true,
+      isEmpty: true,
+      cards: [], // Shells start empty
+      created: topic.created || new Date().toISOString(),
+      updated: new Date().toISOString()
+    }));
+
+    console.log("Formatted topic shells:", topicShells);
+
+    // Call the prop passed down from App.js to update the main state
+    if (onFinalizeTopics) {
       try {
-        // Send complete object with proper metadata
-        const metadata = {
-          subject,
-          examBoard,
-          examType,
-          recordId
-        };
+        onFinalizeTopics(topicShells);
+        console.log("Called onFinalizeTopics with shells.");
         
-        // Log the complete objects being passed to parent
-        console.log("Sending topic list object to parent:", completeTopicList);
-        console.log("With metadata:", metadata);
-        
-        // Handle both promise-based and callback-based implementations
-        const result = onSaveTopicList(completeTopicList, metadata);
-        
-        // If the result is a promise, handle it with then/catch
-        if (result && typeof result.then === 'function') {
-          result.then((response) => {
-            console.log("Topic save result:", response);
-            setShowLoadingOverlay(false);
-            
-            if (response && response.success) {
-              // Show success modal
-              setShowSuccessModal(true);
-            } else {
-              // Handle error
-              setErrorMessage("Error saving topic list");
-              setErrorDetails(response?.error || "An unknown error occurred.");
-              setShowErrorModal(true);
-            }
-          }).catch((error) => {
-            console.error("Error saving topic list:", error);
-            setShowLoadingOverlay(false);
-            setErrorMessage("Error saving topic list");
-            setErrorDetails(error?.message || "An unknown error occurred.");
-            setShowErrorModal(true);
-          });
-        } else {
-          console.log("Topic save completed (non-promise style)");
-          setShowLoadingOverlay(false);
-          setShowSuccessModal(true);
-        }
+        // Update local state to show success
+        setTopicListSaved(true);
+        setShowSuccessModal(true); // Show the success modal
+        setError(null); // Clear any previous errors
       } catch (error) {
-        console.error("Exception saving topic list:", error);
-        setShowLoadingOverlay(false);
-        setErrorMessage("Error saving topic list");
-        setErrorDetails(error?.message || "An unexpected error occurred.");
-        setShowErrorModal(true);
+        console.error("Error calling onFinalizeTopics:", error);
+        setError("Failed to finalize topics in main app state.");
       }
+    } else {
+      console.error("onFinalizeTopics prop is missing!");
+      setError("Save functionality is not configured correctly.");
     }
-  };
+  }, [topics, subject, examBoard, examType, onFinalizeTopics, setTopicListSaved, setShowSuccessModal, setError]); // Add dependencies
   
   // Handle selecting a topic to continue with card generation
   const handleSelectTopic = () => {
@@ -1199,29 +1146,17 @@ const TopicHub = ({
       <div className="modal-overlay">
         <div className="save-topic-dialog">
           <h3>Save Topic List</h3>
-          <p>Enter a name for this topic list so you can access it later.</p>
-          
-          <div className="save-topic-form">
-            <input
-              type="text"
-              value={listName}
-              onChange={(e) => setListName(e.target.value)}
-              placeholder="Topic List Name"
-              className="topic-list-name-input"
-            />
-            
-            <div className="save-topic-actions">
-              <button onClick={() => setShowSaveDialog(false)} className="cancel-button">
-                Cancel
-              </button>
-              <button 
-                onClick={handleSaveTopicList} 
-                className="save-button"
-                disabled={!listName.trim()}
-              >
-                <FaSave /> Save Topic List
-              </button>
-            </div>
+          <p>Confirm saving these topics as shells in your main card bank.</p>
+          <div className="save-topic-actions">
+            <button onClick={() => setShowSaveDialog(false)} className="cancel-button">
+              Cancel
+            </button>
+            <button 
+              onClick={handleSaveTopicList}
+              className="save-button"
+            >
+              <FaSave /> Confirm and Save Shells
+            </button>
           </div>
         </div>
       </div>
@@ -1643,34 +1578,7 @@ const TopicHub = ({
             <button 
               onClick={() => {
                 setShowSuccessModal(false);
-                
-                // Show a loading indicator
-                setLoadingStatus("Finalizing your topic shells...");
-                setShowLoadingOverlay(true);
-                
-                // Wait another 1 second before refreshing data
-                console.log("Finishing topic shell creation, waiting 1 more second...");
-                setTimeout(() => {
-                  console.log("Requesting data refresh...");
-                  // Completely exit the Topic Hub
-                  onClose && onClose();
-                  
-                  // Instead of force reloading the page, request updated data
-                  if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({
-                      type: "REQUEST_UPDATED_DATA",
-                      recordId: recordId,
-                      timestamp: new Date().toISOString()
-                    }, '*');
-                    
-                    console.log("Sent REQUEST_UPDATED_DATA message instead of reloading page");
-                  } else {
-                    // If we're not in an iframe, fall back to localStorage refresh
-                    console.log("Not in iframe, using fallback refresh method");
-                    // Trigger a global event that App.js can listen for
-                    window.dispatchEvent(new CustomEvent('topicRefreshNeeded'));
-                  }
-                }, 1000); // Additional 1 second buffer
+                onClose && onClose();
               }} 
               className="finish-button"
             >

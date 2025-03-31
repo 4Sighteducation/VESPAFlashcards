@@ -782,7 +782,7 @@ const SpacedRepetition = ({
     }
 
     // Additional safety check - if we have cards but the current card is invalid or missing properties
-    if (!currentCard || !currentCard.front && !currentCard.question) {
+    if (!currentCard || (!currentCard.front && !currentCard.question)) {
       return (
         <div className="empty-box">
           <h3>Invalid Card Detected</h3>

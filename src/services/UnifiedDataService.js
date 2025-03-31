@@ -831,7 +831,7 @@ export const saveTopicShells = async (topicShells, userId, auth) => {
   }
 };
 
-export default {
+const UnifiedDataService = {
   loadUserData,
   saveUserData,
   addCardsToUnifiedData,
@@ -841,3 +841,5 @@ export default {
   fixMultipleChoiceCards,
   fixMultipleChoiceInUnifiedData
 };
+
+export default UnifiedDataService;

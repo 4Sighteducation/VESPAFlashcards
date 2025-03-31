@@ -1774,6 +1774,48 @@ function App() {
       )
     : []; // Default to empty array if modal isn't open
 
+  // Filter allCards to get topic shells for the selected subject for AI Generator
+  const topicsForAICG = (view === "aiGenerator" && selectedSubject) 
+    ? allCards.filter(item => 
+        item.type === 'topic' && 
+        (item.subject || 'General') === selectedSubject
+      )
+    : [];
+
+  // Handler for TopicHub to finalize topics and add shells to main state
+  const handleFinalizeTopics = useCallback((topicShells) => {
+    if (!Array.isArray(topicShells)) {
+      console.error("handleFinalizeTopics received invalid data:", topicShells);
+      return;
+    }
+    console.log("[App.js] Received finalized topic shells:", topicShells);
+    
+    // Merge new shells with existing cards/shells in allCards
+    setAllCards(prevAllCards => {
+      const existingItems = Array.isArray(prevAllCards) ? prevAllCards : [];
+      // NOTE: Assumes a utility function UnifiedDataModel.mergeItems exists or needs to be implemented
+      // For now, simple concat - replace with proper merge later if needed
+      const newItems = topicShells.filter(shell => 
+        !existingItems.some(existing => existing.type === 'topic' && existing.id === shell.id)
+      );
+      const updatedItems = existingItems.map(existing => {
+        if (existing.type === 'topic') {
+          const updatedShell = topicShells.find(shell => shell.id === existing.id);
+          return updatedShell ? updatedShell : existing;
+        }
+        return existing;
+      });
+      
+      const finalItems = [...updatedItems, ...newItems];
+      console.log(`[App.js] Merged items. Old count: ${existingItems.length}, New count: ${finalItems.length}`);
+      return finalItems;
+    });
+
+    // Optionally trigger an immediate save after adding shells
+    // saveData(); // Consider if needed, or rely on auto-save/user save
+
+  }, [setAllCards /* Add other dependencies if needed */]);
+
   // Show loading state
   if (loading) {
     return <LoadingSpinner message={loadingMessage} />;
@@ -1935,8 +1977,11 @@ function App() {
               userId={auth?.id}
               initialSubject={selectedSubject}
               initialTopic={selectedTopic}
+              initialTopicsProp={topicsForAICG}
               examBoard={topicListExamBoard}
               examType={topicListExamType}
+              recordId={recordId}
+              onFinalizeTopics={handleFinalizeTopics}
             />
           )}
 

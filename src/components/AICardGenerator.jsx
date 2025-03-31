@@ -72,7 +72,8 @@ const AICardGenerator = ({
   examBoard = "AQA",
   examType = "A-Level",
   recordId,
-  initialTopicsProp
+  initialTopicsProp,
+  onFinalizeTopics // Accept the new prop
 }) => {
   // Step management state
   const [currentStep, setCurrentStep] = useState(1);
@@ -2039,64 +2040,10 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
               subject={formData.subject || formData.newSubject}
               examBoard={formData.examBoard}
               examType={formData.examType}
-              initialTopics={hierarchicalTopics}
-              recordId={recordId} // Add recordId for topic saving
-              onSaveTopicList={(topicList, metadata) => {
-                console.log("Received topic list to save:", topicList);
-                console.log("With metadata:", metadata);
-                
-                // Ensure we have a properly structured topic list
-                if (!topicList || !topicList.topics || !Array.isArray(topicList.topics)) {
-                  console.error("Invalid topic list structure received", topicList);
-                  return { success: false, error: "Invalid topic list structure" };
-                }
-                
-                // Create a new saved list with proper structure validation
-                const newSavedList = {
-                  id: generateId('topiclist'),
-                  name: topicList.name || `${metadata.subject} - ${metadata.examBoard} ${metadata.examType}`,
-                  examBoard: metadata.examBoard,
-                  examType: metadata.examType,
-                  subject: metadata.subject,
-                  topics: Array.isArray(topicList.topics) ? topicList.topics.map(topic => ({
-                    id: topic.id || generateId('topic'),
-                    topic: topic.topic || topic.name || `Unknown Topic`,
-                    mainTopic: topic.mainTopic || metadata.subject,
-                    subtopic: topic.subtopic || "General"
-                  })) : [],
-                  created: new Date().toISOString(),
-                  userId: userId
-                };
-                
-                console.log("Created well-formed topic list:", newSavedList);
-                
-                // Add to state
-                const updatedLists = [...savedTopicLists, newSavedList];
-                setSavedTopicLists(updatedLists);
-                
-                // Save to Knack and return a promise
-                return new Promise((resolve, reject) => {
-                  // Create a separate standalone copy of the list to avoid reference issues
-                  const listsToSave = JSON.parse(JSON.stringify(updatedLists));
-                  console.log("About to save lists:", listsToSave);
-                  
-                  saveTopicListToKnack(listsToSave)
-                    .then(success => {
-                      if (success) {
-                        console.log("Topic list saved:", newSavedList.name);
-                        setTopicListSaved(true);
-                        resolve({ success: true });
-                      } else {
-                        console.error("Failed to save topic list to Knack");
-                        reject(new Error("Failed to save topic list"));
-                      }
-                    })
-                    .catch(err => {
-                      console.error("Error in save operation:", err);
-                      reject(err);
-                    });
-                });
-              }}
+              initialTopics={hierarchicalTopics} // Keep passing internal state
+              recordId={recordId} 
+              onSaveTopicList={null} // This prop is no longer used by TopicHub directly
+              onFinalizeTopics={onFinalizeTopics} // Pass the handler down
               onSelectTopic={(topic) => {
                 // Set the selected topic and move to the next step
                 setSelectedTopic(topic); // Add this line to set the selected topic

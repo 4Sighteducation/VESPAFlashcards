@@ -51,21 +51,7 @@ export const getContrastColor = (hexColor) => {
   }
 };
 
-// Add this function to better scale questions
-const getAppropriateQuestionSize = (contentLength, isInModal, isMobile) => {
-  // Start with larger font sizes 
-  let size = isInModal ? 
-    (isMobile ? 18 : 24) : // Modal view
-    (isMobile ? 16 : 20);  // Regular view
-    
-  // Reduce for longer content
-  if (contentLength > 200) size -= 2;
-  if (contentLength > 300) size -= 2;
-  if (contentLength > 400) size -= 2;
-  
-  // Ensure minimum readable size
-  return Math.max(size, isMobile ? 14 : 16);
-};
+// Removed unused commented-out function: getAppropriateQuestionSize
 
 const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, preview = false, style = {}, isInModal = false, onClick }) => {
   const [isFlipped, setIsFlipped] = useState(false);
