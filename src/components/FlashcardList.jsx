@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, {useState, useEffect, useMemo, useRef, useCallback} from "react";
 import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
-import ReactDOM from 'react-dom';
 import "./FlashcardList.css";
-import { FaLayerGroup, FaUniversity, FaGraduationCap, FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes, FaBolt } from 'react-icons/fa';
+import { FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes, FaBolt } from 'react-icons/fa';
 import ColorEditor from "./ColorEditor";
-import { getContrastColor } from '../helper';
 import AICardGenerator from "./AICardGenerator";
 
 // ScrollManager component to handle scrolling to elements
@@ -82,8 +80,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // State for expanded subjects and topics
   const [expandedSubjects, setExpandedSubjects] = useState({});
   const [expandedTopics, setExpandedTopics] = useState({});
-  const [showCardModal, setShowCardModal] = useState(false);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [cardsToPrint, setCardsToPrint] = useState([]);
   const [printTitle, setPrintTitle] = useState("");
@@ -94,11 +90,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // Add refs for scrolling to subjects and topics
   const subjectRefs = useRef({});
   const topicRefs = useRef({});
-  
-  // Track last expanded subjects and topics for ScrollManager
-  const [lastExpandedSubject, setLastExpandedSubject] = useState(null);
-  const [lastExpandedTopic, setLastExpandedTopic] = useState(null);
-  
+   
   // Add new state for color editor
   const [colorEditorOpen, setColorEditorOpen] = useState(false);
   const [selectedSubjectForColor, setSelectedSubjectForColor] = useState(null);
@@ -106,6 +98,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // Add new state for mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState({});
   const menuRef = useRef({});
+  
+  // Add back state setters for tracking last expanded items for scrolling
+  const [, setLastExpandedSubject] = useState(null); 
+  const [, setLastExpandedTopic] = useState(null);
   
   // New state for topic-specific card generation
   const [showTopicCardGenerator, setShowTopicCardGenerator] = useState(false);
@@ -207,6 +203,108 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     return { groupedCards: bySubjectAndTopic, topicShells: shells };
   }, [cards]);
   
+  // Function to get exam type and board directly from the first card in a subject
+   const getExamInfo = useCallback((subject) => { 
+          try {
+            let examBoard = null;
+            let examType = null;
+            
+            // First, try to find a topic shell with this subject that has metadata
+            const subjectTopics = groupedCards[subject]; // <-- Uses groupedCards
+            if (subjectTopics) {
+              // Look through all topics in this subject
+              for (const topicName in subjectTopics) {
+                const cards = subjectTopics[topicName];
+                if (cards && cards.length > 0) {
+                  // Find any topic shell or card with metadata
+                  const cardWithMetadata = cards.find(
+                    card => card.examBoard && card.examType
+                  );
+                  
+                  if (cardWithMetadata) {
+                    examBoard = cardWithMetadata.examBoard;
+                    examType = cardWithMetadata.examType;
+                    console.log(`Found metadata in card for ${subject}:`, { examBoard, examType });
+                    break;
+                  }
+                }
+              }
+            }
+      
+      // If metadata not found, try other methods
+      if (!examBoard || !examType) {
+        // Try to extract exam board and type from the subject name itself
+        // Common patterns are: "[Board] [Type] [Subject]" like "Edexcel A-Level Dance"
+        
+        // List of known exam boards to look for in the subject name
+        const knownBoards = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA', 'Cambridge', 'IB', 'Pearson'];
+        // List of known exam types to look for in the subject name
+        const knownTypes = ['GCSE', 'A-Level', 'AS-Level', 'BTEC', 'Diploma', 'Certificate', 'Foundation', 'Higher'];
+        
+        // Pattern 1: Check if any known board is in the subject name
+        for (const board of knownBoards) {
+          if (subject.includes(board)) {
+            examBoard = board;
+            break;
+          }
+        }
+        
+        // Pattern 2: Check if any known type is in the subject name
+        for (const type of knownTypes) {
+          if (subject.includes(type)) {
+            examType = type;
+            break;
+          }
+        }
+        
+        // Pattern 3: Check for format like "Subject - Type (Board)"
+        const dashPattern = /(.+)\\s*-\\s*(.+)\\s*\\((.+)\\)/;
+        const dashMatch = subject.match(dashPattern);
+        if (dashMatch && dashMatch.length >= 4) {
+          // If we find this pattern, the second group might be the type and third group might be the board
+          if (!examType) examType = dashMatch[2].trim();
+          if (!examBoard) examBoard = dashMatch[3].trim();
+        }
+        
+        // Manual fallbacks for specific subjects from the logs
+        if (subject === 'Dance' || subject === 'dance') {
+          examBoard = 'Edexcel';
+          examType = 'A-Level';
+        }
+        if (subject === 'Environmental Science') {
+          examBoard = 'AQA';
+          examType = 'A-Level';
+        }
+      }
+      
+      // Set fallback values to ensure metadata displays something
+      if (!examType) examType = "Course";
+      if (!examBoard) examBoard = "General";
+      
+      return { examType, examBoard };
+    } catch (error) {
+      console.error("Error in getExamInfo:", error);
+      return { examType: "Course", examBoard: "General" };
+    }
+  }, [groupedCards]); 
+  
+  // Function to get the earliest creation date for a subject (based on its first topic)
+  const getSubjectDate = useCallback((subject) => { // Add useCallback here
+    const topics = Object.keys(groupedCards[subject]); // <-- Uses groupedCards
+    if (topics.length === 0) return 0;
+    
+    const topicDates = topics.map(topic => {
+      const cardsInTopic = groupedCards[subject][topic]; // <-- Uses groupedCards
+      const dates = cardsInTopic
+        .filter(card => card.timestamp)
+        .map(card => new Date(card.timestamp).getTime());
+      
+      return dates.length > 0 ? Math.min(...dates) : Number.MAX_SAFE_INTEGER;
+    });
+    
+    return Math.min(...topicDates);
+  }, [groupedCards]);
+  
   // Sort subjects based on creation date (earliest first)
   const sortedSubjects = useMemo(() => {
     // Ensure groupedCards is populated before proceeding
@@ -235,7 +333,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
 
     // Sort by creation date
     return subjectsWithDates.sort((a, b) => a.creationDate - b.creationDate);
-  }, [groupedCards, cards]); // Recalculate when groupedCards or cards change
+  }, [groupedCards, cards, getExamInfo, getSubjectDate]);
 
   // Effect to reset expanded sections when cards change
   useEffect(() => {
@@ -305,91 +403,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     return brightness > 120 ? '#000000' : '#ffffff';
   };
 
-  // Function to get exam type and board directly from the first card in a subject
-  const getExamInfo = (subject) => {
-    try {
-      let examBoard = null;
-      let examType = null;
-      
-      // First, try to find a topic shell with this subject that has metadata
-      const subjectTopics = groupedCards[subject];
-      if (subjectTopics) {
-        // Look through all topics in this subject
-        for (const topicName in subjectTopics) {
-          const cards = subjectTopics[topicName];
-          if (cards && cards.length > 0) {
-            // Find any topic shell or card with metadata
-            const cardWithMetadata = cards.find(
-              card => card.examBoard && card.examType
-            );
-            
-            if (cardWithMetadata) {
-              examBoard = cardWithMetadata.examBoard;
-              examType = cardWithMetadata.examType;
-              console.log(`Found metadata in card for ${subject}:`, { examBoard, examType });
-              break;
-            }
-          }
-        }
-      }
-      
-      // If metadata not found, try other methods
-      if (!examBoard || !examType) {
-        // Try to extract exam board and type from the subject name itself
-        // Common patterns are: "[Board] [Type] [Subject]" like "Edexcel A-Level Dance"
-        
-        // List of known exam boards to look for in the subject name
-        const knownBoards = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA', 'Cambridge', 'IB', 'Pearson'];
-        // List of known exam types to look for in the subject name
-        const knownTypes = ['GCSE', 'A-Level', 'AS-Level', 'BTEC', 'Diploma', 'Certificate', 'Foundation', 'Higher'];
-        
-        // Pattern 1: Check if any known board is in the subject name
-        for (const board of knownBoards) {
-          if (subject.includes(board)) {
-            examBoard = board;
-            break;
-          }
-        }
-        
-        // Pattern 2: Check if any known type is in the subject name
-        for (const type of knownTypes) {
-          if (subject.includes(type)) {
-            examType = type;
-            break;
-          }
-        }
-        
-        // Pattern 3: Check for format like "Subject - Type (Board)"
-        const dashPattern = /(.+)\s*-\s*(.+)\s*\((.+)\)/;
-        const dashMatch = subject.match(dashPattern);
-        if (dashMatch && dashMatch.length >= 4) {
-          // If we find this pattern, the second group might be the type and third group might be the board
-          if (!examType) examType = dashMatch[2].trim();
-          if (!examBoard) examBoard = dashMatch[3].trim();
-        }
-        
-        // Manual fallbacks for specific subjects from the logs
-        if (subject === 'Dance' || subject === 'dance') {
-          examBoard = 'Edexcel';
-          examType = 'A-Level';
-        }
-        if (subject === 'Environmental Science') {
-          examBoard = 'AQA';
-          examType = 'A-Level';
-        }
-      }
-      
-      // Set fallback values to ensure metadata displays something
-      if (!examType) examType = "Course";
-      if (!examBoard) examBoard = "General";
-      
-      return { examType, examBoard };
-    } catch (error) {
-      console.error("Error in getExamInfo:", error);
-      return { examType: "Course", examBoard: "General" };
-    }
-  };
-  
   // Function to format date as DD/MM/YYYY
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -413,41 +426,12 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     const earliestDate = new Date(Math.min(...dates));
     return formatDate(earliestDate);
   };
-  
-  // Function to get the earliest creation date for a subject (based on its first topic)
-  const getSubjectDate = (subject) => {
-    const topics = Object.keys(groupedCards[subject]);
-    if (topics.length === 0) return 0;
-    
-    const topicDates = topics.map(topic => {
-      const cardsInTopic = groupedCards[subject][topic];
-      const dates = cardsInTopic
-        .filter(card => card.timestamp)
-        .map(card => new Date(card.timestamp).getTime());
-      
-      return dates.length > 0 ? Math.min(...dates) : Number.MAX_SAFE_INTEGER;
-    });
-    
-    return Math.min(...topicDates);
-  };
 
   // Open print modal for a specific set of cards
   const openPrintModal = (cardsForPrinting, title) => {
     setCardsToPrint(cardsForPrinting);
     setPrintTitle(title);
     setPrintModalOpen(true);
-  };
-
-  // Print all cards
-  const handlePrintAllCards = (e) => {
-    e.stopPropagation(); // Prevent toggling the subject expansion
-    const allCards = [];
-    Object.values(groupedCards).forEach(topicGroups => {
-      Object.values(topicGroups).forEach(topicCards => {
-        allCards.push(...topicCards);
-      });
-    });
-    openPrintModal(allCards, "All Flashcards");
   };
 
   // Print subject cards
@@ -464,11 +448,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   const handlePrintTopic = (subject, topic, e) => {
     e.stopPropagation(); // Prevent toggling the topic expansion
     openPrintModal(groupedCards[subject][topic], `${subject} - ${topic}`);
-  };
-
-  const handleCardClick = (card) => {
-    // No longer automatically show slideshow on click
-    // We'll use a dedicated button for this instead
   };
 
   // Add the missing function to handle showing modal and setting selected card
@@ -623,7 +602,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
 
     // Responsive layout variables
     const isMobile = window.innerWidth <= 768;
-    const isLandscape = window.innerWidth > window.innerHeight;
 
     // Safely determine card color accounting for missing properties
     const cardBgColor = selectedCard?.cardColor || '#3cb44b';
@@ -737,7 +715,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
 
   // Render subject header with delete button
   const renderSubjectHeader = ({ id: subject, title, cards, exam_board, exam_type, color }) => {
-    const isExpanded = expandedSubjects[subject];
     const cardCount = cards.flat().length;
     // Calculate appropriate text color based on background
     const textColor = getContrastColor(color);
@@ -968,7 +945,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
   // Render a single subject section including its topics
   const renderSubject = ({ id: subject, title, cards: subjectCardData, exam_board, exam_type, color: subjectColor }) => {
     const isExpanded = expandedSubjects[subject];
-    const subjectRef = el => subjectRefs.current[subject] = el; // Ref for scrolling
 
     // Use the pre-processed groupedCards for topic structure
     const topicsInSubject = groupedCards[subject] || {};
@@ -1116,47 +1092,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
     );
   };
 
-  // AI Card Generator Modal for specific topics
-  const TopicCardGeneratorModal = () => {
-    if (!showTopicCardGenerator || !selectedTopicForCards) {
-      return null;
-    }
-
-    const { subject, topicName, topicId } = selectedTopicForCards;
-
-    // We need to pass the topic ID (Knack record ID) to the generator
-    // Ensure the topicId is correctly retrieved and passed
-    const topicRecordId = topicId || null; // Use ID from topic shell if found
-
-     // Find the subject object to get exam board/type if needed
-     // Get exam info robustly using the helper function
-     const { examBoard, examType } = getExamInfo(subject);
-
-    // Log the props being passed
-    console.log("Rendering AICardGenerator with props:", {
-        isOpen: showTopicCardGenerator,
-        subject,
-        topic: topicName,
-        topicId: topicRecordId, // Ensure this is passed
-        examBoard,
-        examType
-    });
-
-    return (
-      <AICardGenerator
-        isOpen={showTopicCardGenerator}
-        onClose={handleCloseTopicCardGenerator}
-        subject={subject} // Pass subject name
-        topic={topicName}   // Pass topic name
-        topicId={topicRecordId} // Pass topic record ID
-        examBoard={examBoard} // Pass exam board
-        examType={examType}   // Pass exam type
-        // We might need to pass existing cards for context later
-        // existingCards={groupedCards[subject]?.[topicName] || []}
-        // onSave is handled by the main App component via Knack refresh
-      />
-    );
-  };
+  
 
   // Render the accordion structure with subjects and topics
   return (
@@ -1230,7 +1166,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList }) =
       
       <div className="subjects-accordion">
         {sortedSubjects.map((subjectData) => {
-          const { id: subject, title, cards, exam_board, exam_type, color, creationDate } = subjectData;
+          const { id: subject, title, cards, exam_board, exam_type, color  } = subjectData;
           return renderSubject({ id: subject, title, cards, exam_board, exam_type, color });
         })}
       </div>
