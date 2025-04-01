@@ -684,6 +684,8 @@
             };
             if (iframeWindow) {
               console.log("Flashcard app: ---> SENDING KNACK_USER_INFO to React app", userDataToSend); // <-- ADDED LOG
+              // *** ADDED LOGGING HERE ***
+              debugLog("DATA BEING SENT TO REACT (KNACK_USER_INFO)", userDataToSend);
               iframeWindow.postMessage({ type: 'KNACK_USER_INFO', data: userDataToSend }, '*');
             }
             authSent = true;
@@ -778,6 +780,8 @@
               cardArray = standardizeCards(cardArray); // Ensure cards have standard structure
               userData.cards = cardArray;
               console.log(`Flashcard app: Loaded ${userData.cards.length} cards/shells from ${FIELD_MAPPING.cardBankData}`);
+              // *** ADDED LOGGING HERE ***
+              debugLog("PARSED CARD BANK DATA (field_2979)", userData.cards);
             }
   
             // --- Load Spaced Repetition Data (field_2986 - field_2990) ---

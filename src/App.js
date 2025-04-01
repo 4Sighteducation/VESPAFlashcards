@@ -1984,6 +1984,7 @@ function App() {
                       onDeleteCard={deleteCard} 
                       onUpdateCard={updateCard}
                       onViewTopicList={handleViewTopicList}
+                      onUpdateSubjectColor={updateColorMapping}
                     />
                   )}
                 </div>

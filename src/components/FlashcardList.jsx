@@ -76,7 +76,7 @@ const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRef
   return null; // This is a utility component with no UI
 };
 
-const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, recordId }) => {
+const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, recordId, onUpdateSubjectColor }) => {
   // *** ADDED LOGGING HERE ***
   console.log("[FlashcardList] Received cards prop:", cards);
 
@@ -901,24 +901,17 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     setShowColorEditor(false);
   };
   
-  // Add function to handle color change
+  // Add function to handle color change - Modified to call prop
   const handleColorChange = (color, applyToAllTopics = false) => {
-    if (selectedSubjectForColor && onUpdateCard) {
-      // Update all cards with this subject to have the new color
-      const cardsToUpdate = cards.filter(card => 
-        (card.subject || "General") === selectedSubjectForColor
-      );
-      
-      cardsToUpdate.forEach(card => {
-        const updatedCard = { 
-          ...card, 
-          cardColor: color,
-          baseColor: color // Store the base color as well for reference
-        };
-        onUpdateCard(updatedCard);
-      });
+    const subject = colorEditorState.subject; // Get subject from state where it was stored
+    if (subject && onUpdateSubjectColor) {
+      // Call the prop function passed from App.js
+      console.log(`[FlashcardList] Calling onUpdateSubjectColor for ${subject} with color ${color}, applyToAll: ${applyToAllTopics}`);
+      onUpdateSubjectColor(subject, null, color, applyToAllTopics);
+    } else {
+      console.error("[FlashcardList] Cannot handle color change: Missing subject or onUpdateSubjectColor prop.");
     }
-    closeColorEditor();
+    closeColorEditor(); // Close the editor modal
   };
 
   // Function to initiate AI card generation for a specific topic
@@ -1109,9 +1102,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     <div className="flashcard-list-container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {showColorEditor && (
         <ColorEditor
-          initialColor={colorEditorState.color}
+          subjectColor={colorEditorState.color}
           onClose={closeColorEditor}
-          onSave={handleColorChange}
+          onSelectColor={handleColorChange}
           subject={colorEditorState.subject}
         />
       )}
