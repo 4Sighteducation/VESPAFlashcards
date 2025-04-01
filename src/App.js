@@ -144,7 +144,14 @@ function App() {
         ...new Set(
           allCards
             .filter((card) => (card.subject || "General") === subject)
-            .map((card) => card.topic || "General")
+            .map((item) => {
+              if (item.type === 'topic' && item.isShell && item.name) {
+                // Extract from shell name, handling potential 'Subject: Topic' format
+                const nameParts = item.name.split(': ');
+                return nameParts.length > 1 ? nameParts[1].trim() : item.name;
+              }
+              return item.topic || "General"; // Fallback for cards or improperly named shells
+            })
         ),
       ];
       return topics.sort();
@@ -438,10 +445,17 @@ function App() {
             // Get all topics for this subject from current cards
             const topicsForSubject = allCards
               .filter(card => (card.subject || "General") === subject)
-              .map(card => card.topic || "General");
+              .map(item => {
+                if (item.type === 'topic' && item.isShell && item.name) {
+                  // Extract from shell name, handling potential 'Subject: Topic' format
+                  const nameParts = item.name.split(': ');
+                  return nameParts.length > 1 ? nameParts[1].trim() : item.name;
+                }
+                return item.topic || "General"; // Fallback for cards or improperly named shells
+              });
             
             // Remove duplicates and sort
-            const uniqueTopics = [...new Set(topicsForSubject)].sort();
+            const uniqueTopics = [...new Set(topicsForSubject)].filter(t => t !== "General").sort();
             
             console.log(`Found topics for subject ${subject}:`, uniqueTopics);
             
@@ -489,41 +503,50 @@ function App() {
       
       // Also update the cards that use this subject/topic to reflect the new color
       setAllCards(prevCards => {
-        const updatedCards = prevCards.map(card => {
-          // Check if the card belongs to the subject being updated
-          if ((card.subject || "General") === subject) {
+        const updatedCards = prevCards.map(item => {
+          // Check if the item belongs to the subject being updated
+          if ((item.subject || "General") === subject) {
             
-            // Determine the new base color for the subject
-            const newBaseColor = colorToUse; // The color passed in for the subject update
+            // Determine the new base color for the subject - ensure it's valid
+            const newBaseColor = colorToUse || '#cccccc'; // Fallback color
             
-            // Create a copy of the card to modify
-            let updatedCard = { ...card };
+            // Create a copy of the item to modify
+            let updatedItem = { ...item };
             
-            // Always update the subjectColor field to the new base color
-            updatedCard.subjectColor = newBaseColor;
-            
-            // We only update cardColor IF this is a specific TOPIC update OR 
-            // if the card's topic is 'General' and we're updating the subject.
-            if (topic && (card.topic || "General") === topic) {
-              // Specific topic update: Set cardColor directly
-              updatedCard.cardColor = colorToUse; 
-            } else if (!topic && (card.topic || "General") === "General") {
-              // Subject update, card is 'General': Use the new base color
-              updatedCard.cardColor = newBaseColor;
-            } 
-            // else: card belongs to a specific topic, but we're updating the subject's
-            // base color. Leave cardColor as is for now. getColorForSubjectTopic
-            // will handle providing the correct shade later based on the mapping.
+            // *** ROBUST UPDATE LOGIC ***
+            // 1. Always update subjectColor for both cards and shells
+            updatedItem.subjectColor = newBaseColor;
 
-            // Ensure 'baseColor' field (if used) reflects the subject's base color
-            updatedCard.baseColor = newBaseColor; 
+            // 2. Update baseColor field if it exists (for consistency)
+            if (updatedItem.hasOwnProperty('baseColor')) {
+                updatedItem.baseColor = newBaseColor;
+            }
 
-            // Return the updated card object
-            return updatedCard;
+            // 3. Update cardColor ONLY for actual cards (type: 'card')
+            if (updatedItem.type !== 'topic') { // Apply only to cards, not shells
+                if (topic && (item.topic || "General") === topic) {
+                    // Specific topic update: Set cardColor directly
+                    updatedItem.cardColor = newBaseColor; // Use the specific color chosen for the topic
+                } else if (!topic && (item.topic || "General") === "General") {
+                    // Subject update, card is 'General': Use the new base subject color
+                    updatedItem.cardColor = newBaseColor;
+                } 
+                // else: Card belongs to a specific topic during a subject update.
+                // We leave cardColor alone. It will get its color dynamically 
+                // from the mapping via getColorForSubjectTopic when rendered.
+            }
+            // Ensure essential fields are preserved (spread operator handles this, but good to be mindful)
+            // updatedItem.id = item.id;
+            // updatedItem.name = item.name;
+            // updatedItem.type = item.type;
+            // etc...
+
+            // Return the updated item object
+            return updatedItem;
           }
           
-          // If the card doesn't belong to the subject, return it unchanged
-          return card;
+          // If the item doesn't belong to the subject, return it unchanged
+          return item;
         });
         
         // Log the first few cards for debugging
@@ -567,10 +590,17 @@ function App() {
           // Get all topics for this subject
           const topicsForSubject = allCards
             .filter(card => (card.subject || "General") === subject)
-            .map(card => card.topic || "General");
+            .map(item => {
+              if (item.type === 'topic' && item.isShell && item.name) {
+                // Extract from shell name, handling potential 'Subject: Topic' format
+                const nameParts = item.name.split(': ');
+                return nameParts.length > 1 ? nameParts[1].trim() : item.name;
+              }
+              return item.topic || "General"; // Fallback for cards or improperly named shells
+            });
           
           // Remove duplicates and sort
-          const uniqueTopics = [...new Set(topicsForSubject)].sort();
+          const uniqueTopics = [...new Set(topicsForSubject)].filter(t => t !== "General").sort();
           
           // Find index of this topic
           const topicIndex = uniqueTopics.indexOf(topic);
