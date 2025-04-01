@@ -76,7 +76,7 @@ const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRef
   return null; // This is a utility component with no UI
 };
 
-const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, recordId, onUpdateSubjectColor }) => {
+const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, recordId, onUpdateSubjectColor, subjectColorMapping }) => {
   // *** ADDED LOGGING HERE ***
   console.log("[FlashcardList] Received cards prop:", cards);
 
@@ -176,6 +176,12 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
       };
   
       cards.forEach(item => {
+          // *** ADD VALIDATION CHECK ***
+          if (!item || typeof item !== 'object' || !item.id || !item.subject) {
+            console.warn("[FlashcardList Grouping] Skipping invalid item:", item);
+            return; // Skip this item if it's invalid
+          }
+
           const subject = item.subject || "General";
           const actualTopicName = extractActualTopicName(item); 
   
@@ -311,9 +317,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
 
         // Get exam info robustly
         const { examType, examBoard } = getExamInfo(subject);
-        // Get color robustly
-        const firstItem = cards.find(c => c.subject === subject);
-        const color = firstItem?.baseColor || firstItem?.color || '#f0f0f0'; // Use baseColor or fallback
+        
+        // *** GET COLOR FROM MAPPING, NOT FROM CARD ***
+        const color = subjectColorMapping[subject]?.base || '#f0f0f0'; 
 
         return {
             id: subject, // The subject name acts as ID here
@@ -321,14 +327,14 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
             cards: groupedCards[subject], // Pass the topics map
             exam_type: examType,
             exam_board: examBoard,
-            color: color,
+            color: color, // Use the color derived from the mapping
             creationDate: getSubjectDate(subject) // Get the earliest date for sorting
         };
     });
 
     // Sort by creation date
     return subjectsWithDates.sort((a, b) => a.creationDate - b.creationDate);
-  }, [groupedCards, cards, getExamInfo, getSubjectDate]);
+  }, [groupedCards, cards, getExamInfo, getSubjectDate, subjectColorMapping]);
 
   // Effect to reset expanded sections when cards change
   useEffect(() => {
@@ -1062,30 +1068,12 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
                             }
                           }}
                           disabled={actualCards.length === 0 && !isShellOnly}
-                          title={actualCards.length > 0 ? `Delete all cards in ${topicName}` : (isShellOnly ? `Delete Topic Shell ${topicName}`: `No items`)}
+                          title={actualCards.length > 0 ? `Delete Topic` : `No cards to delete`}
                         >
-                          <FaTimes />
-                           <span className="tooltip">{actualCards.length > 0 ? "Delete Cards" : (isShellOnly ? "Delete Shell" : "No Items")}</span>
+                          <span role="img" aria-label="Delete">🗑️</span>
                         </button>
-                        {/* Toggle Arrow */}
-                        <span className="toggle-arrow">
-                          {isTopicExpanded ? <FaAngleUp /> : <FaAngleDown />}
-                        </span>
                       </div>
                     </div>
-
-                    {/* Render Cards within the Topic - Conditionally */}
-                    {isTopicExpanded && (
-                        <div className={`topic-cards-container ${actualCards.length === 0 ? 'empty' : ''}`}>
-                            {actualCards.length > 0 ? (
-                                renderCards(actualCards, subject, topicName, currentSubjectColor) // Use actual topic name
-                            ) : (
-                                <div className="no-cards-in-topic-message">
-                                    This topic shell is ready. Click the <FaBolt style={{ verticalAlign: 'middle' }} /> button to generate cards.
-                                </div>
-                            )}
-                        </div>
-                    )}
                   </div>
                 );
               })
@@ -1096,32 +1084,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     );
   };
 
-  // Main component render return statement
   return (
-    <div className="flashcard-list-container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {colorEditorOpen && (
-        <ColorEditor
-          subjectColor={colorEditorState.color}
-          onClose={closeColorEditor}
-          onSelectColor={handleColorChange}
-          subject={selectedSubjectForColor}
-        />
-      )}
-      
-      {showAICardGenerator && (
-        <AICardGenerator
-          initialSubject={cardGeneratorState.subject}
-          initialTopic={cardGeneratorState.topic}
-          initialTopicId={cardGeneratorState.topicId}
-          examBoard={cardGeneratorState.examBoard}
-          examType={cardGeneratorState.examType}
-          recordId={recordId}
-          onClose={handleCloseTopicCardGenerator}
-          onAddCard={onUpdateCard}
-        />
-      )}
-      
-      {/* Print modal */}
+    <div className="flashcard-list">
+      {sortedSubjects.map(renderSubject)}
       {printModalOpen && (
         <PrintModal
           cards={cardsToPrint}
@@ -1129,30 +1094,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
           onClose={() => setPrintModalOpen(false)}
         />
       )}
-      
-      {/* Card modal */}
-      {showModalAndSelectedCard && selectedCard && (
+      {showModalAndSelectedCard && (
         <CardModal />
       )}
-      
-      {/* Main accordion container */}
-      <div className="accordion-container" style={{ 
-        flex: 1, 
-        overflowY: 'auto',
-        maxHeight: 'calc(100vh - 120px)',
-        padding: '0 10px' 
-      }}>
-        {/* Map over sortedSubjects which contains pre-calculated data */}
-        {sortedSubjects.map(subjectData => renderSubject(subjectData))}
-      </div>
-      
-      {/* Scroll manager component */}
-      <ScrollManager
-        expandedSubjects={expandedSubjects}
-        expandedTopics={expandedTopics}
-        subjectRefs={subjectRefs}
-        topicRefs={topicRefs}
-      />
     </div>
   );
 };

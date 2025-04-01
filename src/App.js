@@ -1986,6 +1986,7 @@ function App() {
                       onUpdateCard={updateCard}
                       onViewTopicList={handleViewTopicList}
                       onUpdateSubjectColor={updateColorMapping}
+                      subjectColorMapping={subjectColorMapping}
                     />
                   )}
                 </div>
