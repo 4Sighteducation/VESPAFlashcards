@@ -1050,7 +1050,7 @@ const TopicHub = ({
       id: topic.id || generateId('topic'), // Use imported generateId
       type: 'topic', // Explicitly set type
       name: topic.topic || topic.name || 'Unknown Topic', // Use consistent name property if possible
-      subject: topic.mainTopic || subject || "Unknown Subject", // Get subject from topic or prop
+      subject: subject || "Unknown Subject", 
       examBoard: topic.examBoard || examBoard || "Unknown Board", // Get examBoard from topic or prop
       examType: topic.examType || examType || "Unknown Type", // Get examType from topic or prop
       color: topic.color || '#cccccc', // Default grey or assign later
