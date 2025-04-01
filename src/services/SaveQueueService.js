@@ -45,38 +45,89 @@ class SaveQueueService {
     try {
       console.log(`[SaveQueue] Processing operation: ${operation.type}`);
       
-      // Prepare the save data
-      const saveData = this.prepareSaveData(operation);
+      // Check if we're in an iframe
+      if (window.parent === window) {
+        console.error("[SaveQueue] Not in iframe, cannot send messages to parent");
+        throw new Error("Not in iframe, cannot send messages to parent");
+      }
       
-      // Send save message to parent window
-      window.parent.postMessage({
-        type: "SAVE_DATA",
-        data: saveData
-      }, "*");
-
-      // Set up message listener for save result
-      const messageHandler = (event) => {
-        if (event.data && event.data.type === 'SAVE_RESULT') {
-          window.removeEventListener('message', messageHandler);
-          
-          if (event.data.success) {
-            console.log(`[SaveQueue] Save successful for: ${operation.type}`);
-            this.handleSaveSuccess(operation);
-          } else {
-            console.error(`[SaveQueue] Save failed for: ${operation.type}`, event.data.error);
-            this.handleSaveError(operation, new Error(event.data.error));
+      // Prepare the save data with proper error handling
+      let saveData;
+      try {
+        saveData = this.prepareSaveData(operation);
+      } catch (prepError) {
+        console.error("[SaveQueue] Error preparing save data:", prepError);
+        this.handleSaveError(operation, prepError);
+        return;
+      }
+      
+      // For SAVE_DATA type, we need to use 'data' field
+      // For other types, preserve the operation type and use payload
+      const messageData = operation.type === 'SAVE_DATA' 
+        ? { type: operation.type, data: saveData }
+        : { type: operation.type, data: saveData };
+        
+      console.log(`[SaveQueue] Sending message to parent: ${operation.type}`);
+      
+      // Create a promise to track the response
+      const responsePromise = new Promise((resolve, reject) => {
+        // Function to handle response
+        const messageHandler = (event) => {
+          // Handle SAVE_RESULT message type
+          if (event.data && event.data.type === 'SAVE_RESULT') {
+            window.removeEventListener('message', messageHandler);
+            clearTimeout(timeoutId);
+            
+            if (event.data.success) {
+              console.log(`[SaveQueue] Received success response for: ${operation.type}`);
+              resolve(true);
+            } else {
+              console.error(`[SaveQueue] Received error response for: ${operation.type}:`, event.data.error);
+              reject(new Error(event.data.error || "Unknown error from Knack"));
+            }
           }
-        }
-      };
-
-      window.addEventListener('message', messageHandler);
-
-      // Set timeout for operation
-      setTimeout(() => {
-        window.removeEventListener('message', messageHandler);
-        this.handleSaveError(operation, new Error('Save operation timed out'));
-      }, 10000);
-
+          
+          // Handle specific response types for other operations
+          if (event.data && (
+              event.data.type === 'ADD_TO_BANK_RESULT' || 
+              event.data.type === 'TOPIC_LISTS_UPDATE_RESULT' ||
+              event.data.type === 'TOPIC_METADATA_UPDATE_RESULT' ||
+              event.data.type === 'TOPIC_EVENT_RESULT' ||
+              event.data.type === 'CARDS_UPDATED_RESULT'
+          )) {
+            window.removeEventListener('message', messageHandler);
+            clearTimeout(timeoutId);
+            
+            if (event.data.success) {
+              console.log(`[SaveQueue] Received success response for: ${operation.type}`);
+              resolve(true);
+            } else {
+              console.error(`[SaveQueue] Received error response for: ${operation.type}:`, event.data.error);
+              reject(new Error(event.data.error || "Unknown error from Knack"));
+            }
+          }
+        };
+        
+        // Add the message listener
+        window.addEventListener('message', messageHandler);
+        
+        // Set timeout to prevent waiting forever
+        const timeoutId = setTimeout(() => {
+          window.removeEventListener('message', messageHandler);
+          reject(new Error('Save operation timed out after 15 seconds'));
+        }, 15000); // 15 second timeout
+      });
+      
+      // Send the message to the parent window
+      window.parent.postMessage(messageData, "*");
+      
+      // Wait for response
+      try {
+        await responsePromise;
+        this.handleSaveSuccess(operation);
+      } catch (responseError) {
+        this.handleSaveError(operation, responseError);
+      }
     } catch (error) {
       console.error(`[SaveQueue] Error processing save operation: ${operation.type}`, error);
       this.handleSaveError(operation, error);
@@ -87,9 +138,49 @@ class SaveQueueService {
    * Prepare data for saving
    */
   prepareSaveData(operation) {
+    console.log(`[SaveQueue] Preparing data for ${operation.type} operation`);
+    
+    // Ensure recordId exists
+    if (!operation.payload?.recordId) {
+      console.error("[SaveQueue] Missing recordId in operation", operation);
+      throw new Error("Missing recordId in save operation");
+    }
+
+    // For the SAVE_DATA operation, pass through the payload directly
+    if (operation.type === 'SAVE_DATA') {
+      // Validate payload structure
+      const payload = operation.payload;
+      
+      // Log the payload structure for debugging
+      console.log("[SaveQueue] Processing SAVE_DATA with payload structure:", {
+        recordId: payload.recordId,
+        has_cards: Array.isArray(payload.cards),
+        cards_length: Array.isArray(payload.cards) ? payload.cards.length : 'N/A',
+        has_colorMapping: !!payload.colorMapping,
+        has_spacedRepetition: !!payload.spacedRepetition,
+        preserveFields: !!payload.preserveFields
+      });
+      
+      // Ensure required fields exist
+      const safePayload = {
+        recordId: payload.recordId,
+        cards: Array.isArray(payload.cards) ? payload.cards : [],
+        colorMapping: payload.colorMapping || {},
+        spacedRepetition: payload.spacedRepetition || { box1: [], box2: [], box3: [], box4: [], box5: [] },
+        userTopics: payload.userTopics || {},
+        topicLists: Array.isArray(payload.topicLists) ? payload.topicLists : [],
+        topicMetadata: Array.isArray(payload.topicMetadata) ? payload.topicMetadata : [],
+        preserveFields: payload.preserveFields || false
+      };
+      
+      // Ensure data is serializable
+      return this.ensureSerializable(safePayload);
+    }
+    
+    // Handle legacy operation types
     const baseData = {
-      recordId: operation.recordId,
-      preserveFields: operation.preserveFields,
+      recordId: operation.payload?.recordId || operation.recordId,
+      preserveFields: operation.payload?.preserveFields || operation.preserveFields || false,
       timestamp: new Date().toISOString()
     };
 
@@ -98,25 +189,35 @@ class SaveQueueService {
       case 'cards':
         return {
           ...baseData,
-          cards: this.ensureSerializable(operation.data)
+          cards: this.ensureSerializable(operation.payload || operation.data || [])
         };
       case 'colors':
         return {
           ...baseData,
-          colorMapping: this.ensureSerializable(operation.data)
+          colorMapping: this.ensureSerializable(operation.payload || operation.data || {})
         };
       case 'topics':
         return {
           ...baseData,
-          topicLists: this.ensureSerializable(operation.data)
+          topicLists: this.ensureSerializable(operation.payload || operation.data || [])
         };
+      case 'ADD_TO_BANK':
+        // For ADD_TO_BANK, we need to pass the operation payload directly
+        return this.ensureSerializable(operation.payload || {});
+      case 'TOPIC_LISTS_UPDATED':
+      case 'TOPIC_METADATA_UPDATED':
+      case 'TOPIC_EVENT': 
+      case 'CARDS_UPDATED':
+        // For these event types, pass the payload directly
+        return this.ensureSerializable(operation.payload || {});
       case 'full':
         return {
           ...baseData,
-          ...this.ensureSerializable(operation.data)
+          ...this.ensureSerializable(operation.payload || operation.data || {})
         };
       default:
-        throw new Error(`Unknown save operation type: ${operation.type}`);
+        console.warn(`[SaveQueue] Unknown save operation type: ${operation.type}, using payload directly`);
+        return this.ensureSerializable(operation.payload || {});
     }
   }
 
@@ -140,11 +241,15 @@ class SaveQueueService {
    * Handle save error
    */
   handleSaveError(operation, error) {
+    console.error(`[SaveQueue] Save error:`, error.message, operation);
+    
     const attempts = this.retryAttempts.get(operation) || 0;
     
     if (attempts < this.maxRetries) {
       // Increment retry count
       this.retryAttempts.set(operation, attempts + 1);
+      
+      console.log(`[SaveQueue] Retrying operation (attempt ${attempts + 1}/${this.maxRetries})`);
       
       // Retry after delay
       setTimeout(() => {
@@ -153,6 +258,7 @@ class SaveQueueService {
       }, this.retryDelay * Math.pow(2, attempts));
     } else {
       // Max retries reached, remove from queue and reject
+      console.error(`[SaveQueue] Max retries (${this.maxRetries}) reached, giving up on operation:`, operation.type);
       this.queue.shift();
       this.retryAttempts.delete(operation);
       operation.reject(error);

@@ -347,108 +347,148 @@ function App() {
         return;
       }
       
+      // If no specific data was passed, use current state
+      const dataToSave = data || { 
+        cards: allCards,
+        subjectColorMapping,
+        spacedRepetitionData,
+        userTopics,
+        topicLists,
+        topicMetadata
+      };
+      
       // Ensure data is serializable by running it through JSON.stringify + JSON.parse
       // This prevents circular references and other serialization issues
-      const safeSerializeData = (data) => {
+      const safeSerializeData = (sourceData) => {
+        if (!sourceData) return [];
         try {
-          return JSON.parse(JSON.stringify(data));
+          if (Array.isArray(sourceData)) {
+            return JSON.parse(JSON.stringify(sourceData));
+          } else if (typeof sourceData === 'object') {
+            return JSON.parse(JSON.stringify(sourceData));
+          } else {
+            console.warn("[Save] Unexpected data type:", typeof sourceData);
+            return [];
+          }
         } catch (e) {
           console.error("[Save] Serialization error:", e);
-          // Try to clean the data manually
-          return {
-            ...data,
-            _cleaned: true
-          };
+          // Return empty array/object based on expected type
+          return Array.isArray(sourceData) ? [] : {};
         }
       };
-        
-        // Prepare the data payload for Knack
-        const safeData = {
-          recordId: safeRecordId,
-        cards: safeSerializeData(data),
-        colorMapping: safeSerializeData(subjectColorMapping), 
-        spacedRepetition: safeSerializeData(spacedRepetitionData),
-        userTopics: safeSerializeData(userTopics),
-        topicLists: safeSerializeData(topicLists),
-        topicMetadata: safeSerializeData(topicMetadata),
-          preserveFields: preserveFields
-        };
-        
-        // *** DETAILED LOGGING BEFORE SENDING ***
-        console.log(`[Save] Sending data to Knack (${safeData.cards.length} items, record ID: ${safeRecordId})`);
-        console.log("[Save] Payload structure:", {
-          recordId: safeData.recordId,
-          cards_count: safeData.cards.length,
-          colorMapping_keys: Object.keys(safeData.colorMapping || {}),
-          spacedRepetition_box1_count: safeData.spacedRepetition?.box1?.length || 0,
-          userTopics_keys: Object.keys(safeData.userTopics || {}),
-          topicLists_count: safeData.topicLists?.length || 0,
-          topicMetadata_count: safeData.topicMetadata?.length || 0,
-          preserveFields: safeData.preserveFields
-        });
-        // Log a sample of the cards/shells being sent, focusing on type and name
-        const sampleItems = safeData.cards.slice(0, 15).map(item => ({ 
+      
+      // Validate that we have cards data
+      const cardsData = Array.isArray(dataToSave.cards) ? dataToSave.cards : allCards;
+      
+      // Prepare the data payload for Knack with proper validation
+      const safeData = {
+        recordId: safeRecordId,
+        cards: safeSerializeData(cardsData || []),
+        colorMapping: safeSerializeData(dataToSave.subjectColorMapping || subjectColorMapping || {}),
+        spacedRepetition: safeSerializeData(dataToSave.spacedRepetitionData || spacedRepetitionData || { box1: [], box2: [], box3: [], box4: [], box5: [] }),
+        userTopics: safeSerializeData(dataToSave.userTopics || userTopics || {}),
+        topicLists: safeSerializeData(dataToSave.topicLists || topicLists || []),
+        topicMetadata: safeSerializeData(dataToSave.topicMetadata || topicMetadata || []),
+        preserveFields: preserveFields
+      };
+      
+      // Additional validation to prevent null/undefined arrays
+      if (!Array.isArray(safeData.cards)) safeData.cards = [];
+      if (!Array.isArray(safeData.topicLists)) safeData.topicLists = [];
+      if (!Array.isArray(safeData.topicMetadata)) safeData.topicMetadata = [];
+      
+      // *** DETAILED LOGGING BEFORE SENDING ***
+      console.log(`[Save] Sending data to Knack (${safeData.cards.length} items, record ID: ${safeRecordId})`);
+      console.log("[Save] Payload structure:", {
+        recordId: safeData.recordId,
+        cards_count: safeData.cards.length,
+        colorMapping_keys: Object.keys(safeData.colorMapping || {}),
+        spacedRepetition_box1_count: safeData.spacedRepetition?.box1?.length || 0,
+        userTopics_keys: Object.keys(safeData.userTopics || {}),
+        topicLists_count: safeData.topicLists.length,
+        topicMetadata_count: safeData.topicMetadata.length,
+        preserveFields: safeData.preserveFields
+      });
+      
+      // Only try to log sample items if we have cards
+      if (Array.isArray(safeData.cards) && safeData.cards.length > 0) {
+        try {
+          // Log a sample of the cards/shells being sent, focusing on type and name
+          const sampleItems = safeData.cards.slice(0, 15).map(item => ({
             id: item.id, 
             type: item.type, 
             name: item.name, 
             subject: item.subject, 
             topic: item.topic, 
             isShell: item.isShell,
-            color: item.cardColor, // Log the color being saved
-            subjectColor: item.subjectColor // Log the subject color field
-        }));
-        console.log("[Save] Sample items being sent:", sampleItems);
-        // Log ALL topic shells being sent
-        const topicShellsBeingSent = safeData.cards.filter(item => item.type === 'topic');
-        console.log(`[Save] ALL ${topicShellsBeingSent.length} Topic Shells being sent:`, topicShellsBeingSent);
-        // *** END DETAILED LOGGING ***
-        
+            color: item.cardColor,
+            subjectColor: item.subjectColor
+          }));
+          console.log("[Save] Sample items being sent:", sampleItems);
+          
+          // Log topic shells being sent
+          const topicShells = safeData.cards.filter(item => item && item.type === 'topic');
+          console.log(`[Save] ALL ${topicShells.length} Topic Shells being sent:`, topicShells);
+        } catch (logError) {
+          console.warn("[Save] Error logging sample items:", logError);
+        }
+      } else {
+        console.log("[Save] No cards to log in sample");
+      }
+      // *** END DETAILED LOGGING ***
+      
       // Add a timeout to clear the saving state if no response is received
       const saveTimeout = setTimeout(() => {
         console.log("[Save] No save response received within timeout, resetting save state");
-            setIsSaving(false);
+        setIsSaving(false);
         showStatus("Save status unknown - check your data");
       }, 15000); // 15 second timeout
       
       // Store the timeout ID so we can clear it if we get a response
       window.currentSaveTimeout = saveTimeout;
       
-      // *** Add to SaveQueue instead ***
-      // Ensure dataToSave contains all necessary fields expected by KnackJavascript6a.js
-      // Knack script expects: { recordId, cards, colorMapping, spacedRepetition, userTopics, topicLists, topicMetadata, preserveFields }
-      const payloadForKnack = {
-          recordId: safeRecordId,
-          cards: safeData.cards,
-          colorMapping: safeData.colorMapping,
-          spacedRepetition: safeData.spacedRepetition,
-          userTopics: safeData.userTopics,
-          topicLists: safeData.topicLists,
-          topicMetadata: safeData.topicMetadata,
-          preserveFields: safeData.preserveFields
-      };
-      console.log("[App] Adding SAVE_DATA to queue with payload:", payloadForKnack);
+      // Use SaveQueueService to send the data
+      console.log("[App] Adding SAVE_DATA to queue with payload structure:", {
+        recordId: safeData.recordId,
+        cards_count: safeData.cards.length,
+        has_data: !!safeData
+      });
 
-      saveQueueService.addToQueue({ type: 'SAVE_DATA', payload: payloadForKnack })
-        .then(() => {
-            console.log("[App] SAVE_DATA request successfully processed by SaveQueueService.");
-            // showStatus("Flashcards saved!"); // Optionally update status on success
-            // setIsSaving(false);
-        })
-        .catch(error => {
-            console.error("[App] Error queuing/processing SAVE_DATA request:", error);
-            // showStatus("Error saving flashcards."); // Optionally update status on error
-            // setIsSaving(false);
-            // Potentially clear the timeout if it was set before queueing
-            // if (window.currentSaveTimeout) clearTimeout(window.currentSaveTimeout);
-        });
-
+      saveQueueService.addToQueue({ 
+        type: 'SAVE_DATA', 
+        payload: safeData
+      })
+      .then(() => {
+        console.log("[App] SAVE_DATA request successfully processed by SaveQueueService");
+        
+        // Clear the timeout as we've received a response
+        if (window.currentSaveTimeout) {
+          clearTimeout(window.currentSaveTimeout);
+          window.currentSaveTimeout = null;
+        }
+        
+        setIsSaving(false);
+        showStatus("Saved successfully!");
+      })
+      .catch(error => {
+        console.error("[App] Error in SAVE_DATA operation:", error);
+        
+        // Clear the timeout as we've received a response
+        if (window.currentSaveTimeout) {
+          clearTimeout(window.currentSaveTimeout);
+          window.currentSaveTimeout = null;
+        }
+        
+        setIsSaving(false);
+        showStatus("Error saving data: " + error.message);
+      });
     } else {
       // If we're in standalone mode, mark as saved immediately
       console.log("[Save] Running in standalone mode");
-        setIsSaving(false);
+      setIsSaving(false);
       showStatus("Saved to browser storage");
     }
-  }, [auth, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus, ensureRecordId, recordId]);
+  }, [auth, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus, ensureRecordId, recordId, allCards]);
 
   // Generate a random vibrant color
   const getRandomColor = useCallback(() => {
