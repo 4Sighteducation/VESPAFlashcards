@@ -142,29 +142,33 @@ const TopicCreationModal = ({
 
   // Function to proceed to the next step
   const handleNext = () => {
+    console.log(`[TopicCreationModal] handleNext called. Current step: ${currentStep}, Total steps: ${totalSteps}`);
     setError(null);
 
+    // Validation checks
     if (currentStep === 1 && !formData.examType) {
+      console.log("[TopicCreationModal] Validation failed: Exam Type missing.");
       setError("Please select an Exam Type.");
       return;
     }
     if (currentStep === 2 && !formData.examBoard) {
+      console.log("[TopicCreationModal] Validation failed: Exam Board missing.");
       setError("Please select an Exam Board.");
       return;
     }
     if (currentStep === 3 && !formData.subject) {
+      console.log(`[TopicCreationModal] Validation failed: Subject missing. Value: '${formData.subject}'`);
       setError("Please enter a Subject.");
       return;
     }
-    // Optional: Add check for duplicate subject name here
-    // if (currentStep === 3 && existingSubjects.includes(formData.subject.trim())) {
-    //   setError("A subject with this name already exists.");
-    //   return;
-    // }
+    console.log("[TopicCreationModal] Validation passed for step", currentStep);
 
-
+    // Check if we can advance
     if (currentStep < totalSteps) {
+      console.log(`[TopicCreationModal] Advancing from step ${currentStep} to ${currentStep + 1}`);
       setCurrentStep(currentStep + 1);
+    } else {
+      console.log("[TopicCreationModal] Already at the last step or beyond.");
     }
   };
 
