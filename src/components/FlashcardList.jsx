@@ -888,26 +888,25 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     const subjectObj = sortedSubjects.find(s => s.id === subject);
     const currentColor = subjectObj?.color || '#e6194b';
     
-    // Update state
-    setColorEditorState({
-      color: currentColor,
-      subject: subject
-    });
-    setShowColorEditor(true);
+    // *** USE NEW STATE SETTERS ***
+    setColorEditorState({ color: currentColor, subject: subject }); // Keep this to pass initial color
+    setSelectedSubjectForColor(subject);
+    setColorEditorOpen(true);
   };
   
   // Add function to close color editor
   const closeColorEditor = () => {
-    setShowColorEditor(false);
+    setColorEditorOpen(false);
+    setSelectedSubjectForColor(null);
   };
   
   // Add function to handle color change - Modified to call prop
   const handleColorChange = (color, applyToAllTopics = false) => {
-    const subject = colorEditorState.subject; // Get subject from state where it was stored
+    const subject = selectedSubjectForColor; // *** GET SUBJECT FROM NEW STATE ***
     if (subject && onUpdateSubjectColor) {
       // Call the prop function passed from App.js
       console.log(`[FlashcardList] Calling onUpdateSubjectColor for ${subject} with color ${color}, applyToAll: ${applyToAllTopics}`);
-      onUpdateSubjectColor(subject, null, color, applyToAllTopics);
+      onUpdateSubjectColor(subject, null, color, applyToAllTopics); // Pass subject, null topic, new color
     } else {
       console.error("[FlashcardList] Cannot handle color change: Missing subject or onUpdateSubjectColor prop.");
     }
@@ -1100,12 +1099,12 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   // Main component render return statement
   return (
     <div className="flashcard-list-container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {showColorEditor && (
+      {colorEditorOpen && (
         <ColorEditor
           subjectColor={colorEditorState.color}
           onClose={closeColorEditor}
           onSelectColor={handleColorChange}
-          subject={colorEditorState.subject}
+          subject={selectedSubjectForColor}
         />
       )}
       

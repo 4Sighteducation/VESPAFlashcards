@@ -370,7 +370,34 @@ function App() {
           preserveFields: preserveFields
         };
         
-        console.log(`[Save] Sending data to Knack (${data.length} cards, record ID: ${safeRecordId})`);
+        // *** DETAILED LOGGING BEFORE SENDING ***
+        console.log(`[Save] Sending data to Knack (${safeData.cards.length} items, record ID: ${safeRecordId})`);
+        console.log("[Save] Payload structure:", {
+          recordId: safeData.recordId,
+          cards_count: safeData.cards.length,
+          colorMapping_keys: Object.keys(safeData.colorMapping || {}),
+          spacedRepetition_box1_count: safeData.spacedRepetition?.box1?.length || 0,
+          userTopics_keys: Object.keys(safeData.userTopics || {}),
+          topicLists_count: safeData.topicLists?.length || 0,
+          topicMetadata_count: safeData.topicMetadata?.length || 0,
+          preserveFields: safeData.preserveFields
+        });
+        // Log a sample of the cards/shells being sent, focusing on type and name
+        const sampleItems = safeData.cards.slice(0, 15).map(item => ({ 
+            id: item.id, 
+            type: item.type, 
+            name: item.name, 
+            subject: item.subject, 
+            topic: item.topic, 
+            isShell: item.isShell,
+            color: item.cardColor, // Log the color being saved
+            subjectColor: item.subjectColor // Log the subject color field
+        }));
+        console.log("[Save] Sample items being sent:", sampleItems);
+        // Log ALL topic shells being sent
+        const topicShellsBeingSent = safeData.cards.filter(item => item.type === 'topic');
+        console.log(`[Save] ALL ${topicShellsBeingSent.length} Topic Shells being sent:`, topicShellsBeingSent);
+        // *** END DETAILED LOGGING ***
         
       // Add a timeout to clear the saving state if no response is received
       const saveTimeout = setTimeout(() => {
@@ -399,7 +426,7 @@ function App() {
         setIsSaving(false);
       showStatus("Saved to browser storage");
     }
-  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus, ensureRecordId, recordId]);
+  }, [auth, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus, ensureRecordId, recordId]);
 
   // Generate a random vibrant color
   const getRandomColor = useCallback(() => {
@@ -501,69 +528,13 @@ function App() {
         return newMapping;
       });
       
-      // Also update the cards that use this subject/topic to reflect the new color
-      setAllCards(prevCards => {
-        const updatedCards = prevCards.map(item => {
-          // Check if the item belongs to the subject being updated
-          if ((item.subject || "General") === subject) {
-            
-            // Determine the new base color for the subject - ensure it's valid
-            const newBaseColor = colorToUse || '#cccccc'; // Fallback color
-            
-            // Create a copy of the item to modify
-            let updatedItem = { ...item };
-            
-            // *** ROBUST UPDATE LOGIC ***
-            // 1. Always update subjectColor for both cards and shells
-            updatedItem.subjectColor = newBaseColor;
-
-            // 2. Update baseColor field if it exists (for consistency)
-            if (updatedItem.hasOwnProperty('baseColor')) {
-                updatedItem.baseColor = newBaseColor;
-            }
-
-            // 3. Update cardColor ONLY for actual cards (type: 'card')
-            if (updatedItem.type !== 'topic') { // Apply only to cards, not shells
-                if (topic && (item.topic || "General") === topic) {
-                    // Specific topic update: Set cardColor directly
-                    updatedItem.cardColor = newBaseColor; // Use the specific color chosen for the topic
-                } else if (!topic && (item.topic || "General") === "General") {
-                    // Subject update, card is 'General': Use the new base subject color
-                    updatedItem.cardColor = newBaseColor;
-                } 
-                // else: Card belongs to a specific topic during a subject update.
-                // We leave cardColor alone. It will get its color dynamically 
-                // from the mapping via getColorForSubjectTopic when rendered.
-            }
-            // Ensure essential fields are preserved (spread operator handles this, but good to be mindful)
-            // updatedItem.id = item.id;
-            // updatedItem.name = item.name;
-            // updatedItem.type = item.type;
-            // etc...
-
-            // Return the updated item object
-            return updatedItem;
-          }
-          
-          // If the item doesn't belong to the subject, return it unchanged
-          return item;
-        });
-        
-        // Log the first few cards for debugging
-        if (updatedCards.length > 0) {
-          console.log("Sample cards after color update logic:", updatedCards.slice(0, 3).map(c => ({ id: c.id, subject: c.subject, topic: c.topic, type: c.type, subjectColor: c.subjectColor, cardColor: c.cardColor })));
-        }
-        
-        return updatedCards;
-      });
-      
       // Save changes (only to localStorage for mapping, Knack save handled elsewhere)
       // Note: The main saveData() call is needed after this to persist to Knack if necessary
       setTimeout(() => saveToLocalStorage(), 100); // Save mapping update locally
       // Consider triggering a full saveData() if Knack persistence is needed immediately
       // setTimeout(() => saveData(), 200); // Example: Trigger full save shortly after
     },
-    [allCards, generateShade, getRandomColor, saveToLocalStorage]
+    [generateShade, getRandomColor, saveToLocalStorage] // Removed allCards dependency
   );
 
   // Function to refresh subject and topic colors
