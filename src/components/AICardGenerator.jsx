@@ -2544,118 +2544,108 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
       
       console.log(`Adding ALL cards for subject: ${stableSubject}, topic: ${stableTopic}`);
       
-      // Normalize generated cards - ensure all cards have proper structure
-      const normalizedCards = generatedCards.map(card => {
-        // Ensure card has a proper ID
-        const cardId = card.id || `card_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      // Cards have already been generated with the proper subject & topic
+      const cardsToAdd = [...generatedCards];
+      
+      // Process each card to ensure it's ready for storage
+      const processedCards = cardsToAdd.map(card => {
+        // Deep clone the card to avoid reference issues
+        const processedCard = JSON.parse(JSON.stringify(card));
         
-        // Ensure proper question type
-        let questionType = card.questionType || 'short_answer';
-        
-        // Normalize options for multiple choice cards
-        let options = [];
-        if (questionType === 'multiple_choice' && Array.isArray(card.options)) {
-          // Ensure options have the right structure
-          options = card.options.map(opt => {
-            // If option is already an object, return it with validation
-            if (typeof opt === 'object' && opt !== null) {
-              return {
-                text: typeof opt.text === 'string' ? opt.text : String(opt.text || ''),
-                isCorrect: Boolean(opt.isCorrect)
-              };
+        // Ensure multiple choice options are properly formatted
+        if (processedCard.questionType === 'multiple_choice' && processedCard.options) {
+          // Make sure options is an array of strings
+          const cleanedOptions = processedCard.options.map(option => {
+            if (typeof option === 'string') {
+              return option;
+            } 
+            else if (option && typeof option === 'object' && option.text) {
+              return option.text;
             }
-            // If option is a string, convert to object
-            return {
-              text: typeof opt === 'string' ? opt : String(opt || ''),
-              isCorrect: false // Default to false
-            };
+            else {
+              // Convert to string as a fallback
+              try {
+                return String(option);
+              } catch (e) {
+                console.warn('Failed to convert option to string:', option);
+                return 'Option';
+              }
+            }
           });
           
-          // Make sure we have a valid correct answer somewhere
-          const hasCorrectOption = options.some(opt => opt.isCorrect);
-          if (!hasCorrectOption && options.length > 0) {
-            // Default to first option being correct if none marked
-            options[0].isCorrect = true;
+          processedCard.options = cleanedOptions;
+          
+          // Also ensure correctAnswer is a string
+          if (processedCard.correctAnswer && typeof processedCard.correctAnswer !== 'string') {
+            try {
+              processedCard.correctAnswer = String(processedCard.correctAnswer);
+            } catch (e) {
+              console.warn('Failed to convert correctAnswer to string:', processedCard.correctAnswer);
+            }
           }
         }
         
-        // Return normalized card
-        return {
-          id: cardId,
-          subject: stableSubject,
-          topic: stableTopic,
-          examBoard: stableExamBoard,
-          examType: stableExamType,
-          question: card.question || '',
-          answer: card.answer || card.back || '',
-          questionType: questionType,
-          options: options,
-          savedOptions: [...options], // Keep a copy of options for recovery
-          cardColor: card.cardColor || formData.cardColor || '#3cb44b', // Use form data color or default
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
+        return processedCard;
       });
       
-      // First save locally if we have a local handler
-      if (onAddCard && typeof onAddCard === 'function') {
+      // Add cards to the local state first
+      let successCount = 0;
+      
+      for (const card of processedCards) {
         try {
-          // Add each card to the local state
-          normalizedCards.forEach(card => {
-            console.log(`Adding card locally: ${card.id}`);
+          const cardId = card.id;
+          console.log(`Adding card locally: ${cardId}`);
+          
+          if (onAddCard) {
             onAddCard(card);
-          });
-          console.log(`${normalizedCards.length} cards added locally successfully`);
-        } catch (error) {
-          console.error("Error adding cards locally:", error);
+            successCount++;
+            
+            // Also update the color for this topic if needed
+            // Note: updateColorMapping would need to be passed as a prop
+            // if (updateColorMapping && card.subject && card.topic) {
+            //   updateColorMapping(card.subject, card.topic, card.color || currentGeneratedColor, false);
+            // }
+          } else {
+            console.error("onAddCard function not available");
+            setError("Cannot add cards - missing handler function");
+          }
+        } catch (e) {
+          console.error("Error adding card locally:", e);
         }
       }
       
-      // Then save to Knack if we're in iframe
-      if (window.parent !== window) {
-        try {
-          console.log(`Sending ${normalizedCards.length} cards to Knack via ADD_TO_BANK`);
-          
-          // Use the sendMessageWithRetry function for more reliable delivery
-          await sendMessageWithRetry('ADD_TO_BANK', {
-            recordId: recordId || userId,
-            cards: normalizedCards
-          });
-          
-          console.log("ADD_TO_BANK message successfully sent and processed");
-          setOperationSuccess(true);
-          setSavedCount(normalizedCards.length);
-          
-          // Open success modal
-          setShowSuccessModal(true);
-          
-          // Make sure success modal shows
-          setSuccessModal({
-            show: true,
-            addedCards: normalizedCards
-          });
-        } catch (error) {
-          console.error("Error adding cards to bank:", error);
-          setError(`Error saving cards: ${error.message}`);
-        }
-      } else {
-        // In standalone mode, just show success
-        console.log("Standalone mode: ADD_TO_BANK operation simulated successfully");
+      console.log(`${successCount} cards added locally successfully`);
+      
+      // Now send to Knack for permanent storage
+      // Only proceed if we successfully added at least one card locally
+      if (successCount > 0) {
+        console.log(`Sending ${successCount} cards to Knack via ADD_TO_BANK`);
+        
+        sendMessageWithRetry({
+          type: 'ADD_TO_BANK',
+          recordId,
+          cardsCount: successCount
+        });
+        
+        // Display success message
         setOperationSuccess(true);
-        setSavedCount(normalizedCards.length);
+        setSavedCount(successCount);
         setShowSuccessModal(true);
         
-        // Make sure success modal shows
-        setSuccessModal({
-            show: true,
-            addedCards: normalizedCards
-        });
+        // Reset state after brief delay
+        setTimeout(() => {
+          setOperationSuccess(false);
+          setShowSuccessModal(false);
+        }, 3000);
+      } else {
+        console.error("No cards were successfully added locally");
+        setError("Failed to add cards locally");
       }
+      
+      setPendingOperations({ ...pendingOperations, addToBank: false });
     } catch (error) {
       console.error("Error in addAllToBank:", error);
-      setError(`Error: ${error.message}`);
-    } finally {
-      // Ensure we reset the pending operation flag
+      setError(`Failed to add cards: ${error.message}`);
       setPendingOperations({ ...pendingOperations, addToBank: false });
     }
   };

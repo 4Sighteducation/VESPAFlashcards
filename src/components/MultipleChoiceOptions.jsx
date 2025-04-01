@@ -115,9 +115,26 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
     }
   }, [options, card, optionsToDisplay.length]);
 
-  // Clean option text by removing letter prefixes (a., a), etc.)
+  // Clean option text by removing letter prefixes (a.), a), etc.)
   const cleanOptionText = (option) => {
     if (!option) return '';
+    
+    // Guard against non-string options
+    if (typeof option !== 'string') {
+      // If option is an object with a text property, use that
+      if (option && typeof option === 'object' && typeof option.text === 'string') {
+        option = option.text;
+      } else {
+        // Otherwise convert to string or return empty string
+        try {
+          option = String(option);
+        } catch (e) {
+          console.warn('Failed to convert option to string:', option);
+          return '';
+        }
+      }
+    }
+    
     // Match patterns like a), a., (a), a-, etc. at beginning of string
     const prefixRegex = /^([a-z][.)\-:]|\([a-z]\))\s*/i;
     return option.replace(prefixRegex, '').trim();
@@ -175,8 +192,26 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
       }}>
         {optionsToDisplay.map((option, index) => {
           if (!option) return null;
+          
+          // Validate option type before processing
+          let displayOption = option;
+          if (typeof displayOption !== 'string') {
+            // If option is an object with a text property, use that
+            if (displayOption && typeof displayOption === 'object' && typeof displayOption.text === 'string') {
+              displayOption = displayOption.text;
+            } else {
+              // Otherwise convert to string or use placeholder
+              try {
+                displayOption = String(displayOption);
+              } catch (e) {
+                console.warn('Failed to convert option to string:', displayOption);
+                displayOption = `Option ${String.fromCharCode(97 + index)}`;
+              }
+            }
+          }
+          
           const letter = String.fromCharCode(97 + index); // a, b, c, d, etc.
-          const cleanedText = cleanOptionText(option);
+          const cleanedText = cleanOptionText(displayOption);
           
           return (
             <li key={index} className="option-item" style={{

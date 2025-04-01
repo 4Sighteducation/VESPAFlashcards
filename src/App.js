@@ -43,7 +43,7 @@ const cleanHtmlTags = (str) => {
   return strValue.replace(/<\/?[^>]+(>|$)/g, "").trim();
 };
 
-// Enhanced contrast color function that ensures readability
+// Improved contrast color calculation function with better readability logic
 const getContrastColor = (hexColor) => {
   if (!hexColor) return "#000000";
   
@@ -61,15 +61,37 @@ const getContrastColor = (hexColor) => {
     const g = parseInt(hexColor.substring(2, 4), 16);
     const b = parseInt(hexColor.substring(4, 6), 16);
     
-    // Use WCAG luminance formula for better contrast calculation
-    // This gives more weight to colors that human eyes are more sensitive to (green)
+    // Use enhanced WCAG luminance formula for better contrast calculation
+    // This gives more weight to colors that human eyes are more sensitive to
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     
-    // Use a lower threshold to ensure more text is white on medium-darkness colors
-    // Standard threshold is 0.5, but 0.6 ensures better readability
-    return luminance > 0.6 ? "#000000" : "#ffffff";
-  } catch (error) {
-    console.error("Error in getContrastColor:", error);
+    // Use a more sophisticated threshold for better contrast with various colors
+    // Enhanced logic to handle particularly problematic colors
+    if (luminance > 0.6) {
+      // For light or bright colors, use black text
+      return "#000000";
+    } else if (luminance < 0.3) {
+      // For dark colors, use white text
+      return "#FFFFFF";
+    } else {
+      // For medium colors, check if it's a problematic hue (like bright green)
+      // Some colors need different thresholds
+      
+      // Check if this is a green-heavy color (which can be hard to read even at medium luminance)
+      if (g > Math.max(r, b) + 50) {
+        return "#000000"; // Use black for green-heavy colors
+      }
+      
+      // Check if this is a yellow-heavy color
+      if (r > 200 && g > 200 && b < 100) {
+        return "#000000"; // Use black for yellow-heavy colors
+      }
+      
+      // Default decision based on adjusted threshold
+      return luminance > 0.5 ? "#000000" : "#FFFFFF";
+    }
+  } catch (e) {
+    console.error("Error calculating contrast color:", e);
     return "#000000"; // Default to black on error
   }
 };
@@ -686,7 +708,7 @@ function App() {
     return brightColors[Math.floor(Math.random() * brightColors.length)];
   }, []);
 
-  // Update color mappings - independent of other functions
+  // Update color mappings - enhanced to ensure immediate color application
   const updateColorMapping = useCallback(
     (subject, topic, color, updateTopics = false) => {
       if (!subject) return;
@@ -695,12 +717,17 @@ function App() {
       const colorToUse = color || getRandomColor();
       console.log(`Updating color for subject: ${subject}, topic: ${topic || "none"}, color: ${colorToUse}, updateTopics: ${updateTopics}`);
       
+      // First update the color mapping
       setSubjectColorMapping((prevMapping) => {
         const newMapping = { ...prevMapping };
 
         // Create subject entry if it doesn't exist
         if (!newMapping[subject]) {
           newMapping[subject] = { base: colorToUse, topics: {} };
+        } else if (typeof newMapping[subject] === 'string') {
+          // Convert legacy string format to object format
+          const baseColor = newMapping[subject];
+          newMapping[subject] = { base: baseColor, topics: {} };
         }
 
         // If it's a subject-level color update
@@ -731,6 +758,11 @@ function App() {
             
             // Generate a color for each topic
             if (uniqueTopics.length > 0) {
+              // Ensure the topics object exists
+              if (!newMapping[subject].topics) {
+                newMapping[subject].topics = {};
+              }
+              
               uniqueTopics.forEach((topicName, index) => {
                 // Skip the "General" topic as it should use the base color
                 if (topicName === "General") return;
@@ -739,13 +771,18 @@ function App() {
                 const topicColor = generateShade(colorToUse, index, uniqueTopics.length);
                 console.log(`Generated color for ${topicName}: ${topicColor}`);
                 
-                // Ensure the topics object exists
-                if (!newMapping[subject].topics) {
-                  newMapping[subject].topics = {};
-                }
-                
                 // Update the topic color
                 newMapping[subject].topics[topicName] = topicColor;
+                
+                // Also update any cards that match this topic
+                setAllCards(prevCards => 
+                  prevCards.map(card => {
+                    if (card.subject === subject && card.topic === topicName) {
+                      return { ...card, topicColor: topicColor };
+                    }
+                    return card;
+                  })
+                );
               });
             }
           }
@@ -766,18 +803,28 @@ function App() {
           
           // Update the specified topic color
           newMapping[subject].topics[topic] = colorToUse;
+          
+          // Also update any cards that match this topic
+          setAllCards(prevCards => 
+            prevCards.map(card => {
+              if (card.subject === subject && card.topic === topic) {
+                return { ...card, topicColor: colorToUse };
+              }
+              return card;
+            })
+          );
         }
         
         return newMapping;
       });
       
-      // Save changes (only to localStorage for mapping, Knack save handled elsewhere)
-      // Note: The main saveData() call is needed after this to persist to Knack if necessary
-      setTimeout(() => saveData(), 100); // Save mapping update locally
-      // Consider triggering a full saveData() if Knack persistence is needed immediately
-      // setTimeout(() => saveData(), 200); // Example: Trigger full save shortly after
+      // Immediately save to localStorage to ensure color persistence
+      setTimeout(() => saveToLocalStorage(), 0);
+      
+      // Trigger a full save to Knack after a short delay to ensure state is updated
+      setTimeout(() => saveData(), 500);
     },
-    [generateShade, getRandomColor, saveData] // Removed allCards dependency
+    [generateShade, getRandomColor, saveData, saveToLocalStorage, allCards]
   );
 
   // Function to refresh subject and topic colors
