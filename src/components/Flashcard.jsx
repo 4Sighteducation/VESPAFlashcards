@@ -61,16 +61,37 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   const [isFullscreen, setIsFullscreen] = useState(false);
   const cardRef = useRef(null);
   
+  // Color priority:
+  // 1. card.cardColor (directly set on the card)
+  // 2. topic color from subjectColorMapping
+  // 3. subject base color
+  // 4. default color (#3cb44b)
+  
+  // Get the most appropriate card color
+  const getCardColor = () => {
+    // If card has its own color, use that
+    if (card.cardColor) return card.cardColor;
+    
+    // If card has topic and subject color data, use those
+    if (card.topicColor) return card.topicColor;
+    
+    // If card has subject color, use that
+    if (card.subjectColor) return card.subjectColor;
+    
+    // Default color
+    return '#3cb44b';
+  };
+  
   // Apply card styles based on card data
   const cardStyle = {
-    backgroundColor: card.cardColor || '#3cb44b',
+    backgroundColor: getCardColor(),
     borderColor: card.boxNum === 5 ? 'gold' : 'transparent', // Gold border for mastered cards
     boxShadow: card.boxNum === 5 ? '0 0 10px rgba(255, 215, 0, 0.5)' : undefined,
     ...style // Apply any additional styles passed in
   };
   
   // Get contrast color for text based on background
-  const textColor = card.textColor || getContrastColor(card.cardColor || '#3cb44b');
+  const textColor = card.textColor || getContrastColor(getCardColor());
   
   // Handle card click to flip
   const handleClick = (e) => {

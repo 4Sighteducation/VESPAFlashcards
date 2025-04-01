@@ -4,10 +4,10 @@
   position: relative;
   perspective: 1000px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   font-family: 'Lato', sans-serif;
   background-color: white;
   aspect-ratio: 3/2;
@@ -55,6 +55,7 @@
 
 .flashcard-front {
   z-index: 2;
+  border-radius: 10px;
 }
 
 .flashcard-back {
@@ -245,25 +246,24 @@
 .card-topic-indicator {
   position: absolute;
   top: 5px;
-  left: 5px;
-  font-size: 0.75rem;
-  opacity: 0.9;
-  padding: 2px 4px;
-  border-radius: 3px;
+  left: 10px;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.25);
   max-width: 80%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  z-index: 5;
-  background-color: rgba(0, 0, 0, 0.1);
+  z-index: 2;
+  line-height: 1.2;
+  font-weight: 500;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
-/* Style for option letters */
-.option-letter {
-  font-weight: bold;
-  margin-right: 4px;
-  display: inline-block;
-  min-width: 15px;
+.back-topic {
+  color: #333 !important;
+  background-color: rgba(0, 0, 0, 0.1) !important;
 }
 
 .options-container.small-font-options li {
@@ -1987,5 +1987,43 @@
   padding: 5px !important;
   max-height: 40% !important;
   overflow-y: auto !important;
+}
+
+/* Enhanced styling for front of card */
+.flashcard-front {
+  border-radius: 10px;
+}
+
+/* Enhanced styling for buttons */
+.flashcard-buttons {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 10;
+  display: flex;
+  gap: 5px;
+}
+
+.flashcard-buttons button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.25);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 16px;
+}
+
+.flashcard-buttons button:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.delete-btn:hover {
+  background-color: rgba(220, 53, 69, 0.8) !important;
+  color: white !important;
 }
 

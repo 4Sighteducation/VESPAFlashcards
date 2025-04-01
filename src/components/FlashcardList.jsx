@@ -471,7 +471,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     }
   };
 
-  const renderCards = (cards, subject, topic, subjectColor) => {
+  const renderCards = (cards, subject, topic, topicColor) => {
     const topicKey = `${subject}-${topic}`;
     const isVisible = expandedTopics[topicKey];
 
@@ -479,7 +479,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     const getCardColor = (baseColor) => {
       if (!baseColor) return '#3cb44b'; // Default card color
       
-      // Create a slightly lighter version (30% lighter)
+      // Create a slightly lighter version (20% lighter)
       const lightenColor = (color, percent) => {
         // Remove the # if present
         let hex = color.replace('#', '');
@@ -498,23 +498,30 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
         return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
       };
       
-      return lightenColor(baseColor, 0.3); // 30% lighter version
+      return lightenColor(baseColor, 0.2); // 20% lighter version
     };
 
     return (
       <div className="topic-cards" style={{ display: isVisible ? 'flex' : 'none' }}>
         {cards && cards.length > 0 ? (
           cards.map((card) => {
-            // Apply the topic's color to cards without a specific color
-            const cardWithColor = {
+            // Get the subject base color from mapping
+            const subjectBaseColor = subjectColorMapping[subject]?.base || '#e6194b';
+            
+            // Apply the topic's color to cards
+            const cardWithColors = {
               ...card,
-              cardColor: card.cardColor || card.baseColor || getCardColor(subjectColor)
+              // Use existing card color, or topic color, or subject color in that order
+              cardColor: card.cardColor || topicColor,
+              // Store the subject and topic colors for reference
+              subjectColor: subjectBaseColor,
+              topicColor: topicColor
             };
             
             return (
               <Flashcard
                 key={card.id}
-                card={cardWithColor}
+                card={cardWithColors}
                 onDelete={() => onDeleteCard(card.id)}
                 onFlip={(card, isFlipped) => console.log(`Card flipped: ${isFlipped}`)}
                 onUpdateCard={onUpdateCard}
@@ -909,28 +916,271 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     closeColorEditor(); // Close the editor modal
   };
 
-  // Function to initiate AI card generation for a specific topic
+  // Function to handle "Generate Cards" button click for a topic
   const handleGenerateCardsForTopic = (subject, topicName, topicId, e) => {
     if (e) e.stopPropagation(); // Prevent topic expansion toggle
-
-    console.log(`Initiating card generation for Subject: ${subject}, Topic: ${topicName}, Topic ID: ${topicId}`);
-
-    // Ensure we have the necessary info, especially topicId which comes from the topic shell
-    if (!topicId) {
-      console.warn("Cannot generate cards: Topic ID is missing. Was this topic created via AI Generator?");
-      // Optionally show a user-friendly message here
-      alert("Cannot generate cards for this topic as its unique ID is missing.");
-      return;
+    
+    console.log(`Generate cards clicked for ${subject}: ${topicName}, topicId: ${topicId}`);
+    
+    // If the onViewTopicList callback is provided, call it with additional parameters
+    if (onViewTopicList) {
+      // Set the selected subject for the topic list view
+      onViewTopicList(subject);
+      
+      // Navigate to AI generator view directly with selected subject and topic
+      // We do this by simulating a view change to "aiGenerator"
+      console.log("Redirecting to AI Generator with:", { subject, topic: topicName });
+      
+      // Use setTimeout to ensure state updates have propagated
+      setTimeout(() => {
+        // Use the "aiGenerator" view and pass required parameters
+        const event = new CustomEvent('navToAIGenerator', { 
+          detail: { 
+            subject, 
+            topic: topicName,
+            topicId 
+          } 
+        });
+        window.dispatchEvent(event);
+      }, 100);
+    } else {
+      console.warn("onViewTopicList callback not provided, cannot navigate to AI generator");
     }
-
-    setSelectedTopicForCards({ subject, topicName, topicId });
-    setShowTopicCardGenerator(true);
   };
 
   // Function to close the topic-specific AI card generator modal
   const handleCloseTopicCardGenerator = () => {
     setShowTopicCardGenerator(false);
     setShowAICardGenerator(false);
+  };
+
+  // Add the generateShade function for consistent color shading
+  const generateShade = (baseColor, shadeIndex, totalShades) => {
+    // Convert hex to RGB
+    const r = parseInt(baseColor.slice(1, 3), 16);
+    const g = parseInt(baseColor.slice(3, 5), 16);
+    const b = parseInt(baseColor.slice(5, 7), 16);
+    
+    // Calculate lightness adjustment based on shade index
+    const lightnessAdjustment = -20 + (50 * (shadeIndex / Math.max(totalShades - 1, 1)));
+    
+    // Also adjust saturation slightly
+    const saturationAdjustment = 10 - (20 * (shadeIndex / Math.max(totalShades - 1, 1)));
+    
+    // Convert RGB to HSL
+    const rgbToHsl = (r, g, b) => {
+      r /= 255;
+      g /= 255;
+      b /= 255;
+      
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      
+      if (max === min) {
+        h = s = 0; // achromatic
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+          default: h = 0;
+        }
+        
+        h /= 6;
+      }
+      
+      return [h, s, l];
+    };
+    
+    // Convert HSL back to RGB
+    const hslToRgb = (h, s, l) => {
+      let r, g, b;
+      
+      if (s === 0) {
+        r = g = b = l; // achromatic
+      } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      
+      return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    };
+    
+    // Convert to HSL, adjust, and convert back
+    const [h, s, l] = rgbToHsl(r, g, b);
+    
+    // Calculate new saturation and lightness with constraints
+    const newS = Math.min(Math.max(s * (1 + saturationAdjustment/100), 0.1), 1);
+    const newL = Math.min(Math.max(l * (1 + lightnessAdjustment/100), 0.2), 0.8);
+    
+    // Convert back to RGB
+    const [newR, newG, newB] = hslToRgb(h, newS, newL);
+    
+    // Convert back to hex
+    const toHex = c => {
+      const hex = c.toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    
+    return '#' + toHex(newR) + toHex(newG) + toHex(newB);
+  };
+
+  // Add CSS for improved topic shell styling to FlashcardList.css
+  const renderTopics = (subject, subjectColor) => {
+    const isSubjectExpanded = expandedSubjects[subject];
+    const topics = Object.keys(groupedCards[subject] || {});
+    
+    if (!isSubjectExpanded || topics.length === 0) return null;
+    
+    // Get the base subject color from mapping
+    const baseColor = subjectColorMapping[subject]?.base || subjectColor || '#e6194b';
+    
+    return (
+      <div className="topics-container">
+        {topics.map((topic, index) => {
+          const topicKey = `${subject}-${topic}`;
+          const isExpanded = expandedTopics[topicKey];
+          const cardsInTopic = groupedCards[subject][topic] || [];
+          
+          // Filter out actual cards (not topic shells)
+          const actualCards = cardsInTopic.filter(card => !(card.type === 'topic' && card.isShell));
+          
+          // Find if we have a topic shell in this group
+          const topicShell = cardsInTopic.find(card => card.type === 'topic' && card.isShell);
+          const topicId = topicShell?.id;
+          const topicDate = getTopicDate(cardsInTopic);
+          
+          // Calculate topic color - use a consistent shade generation based on index
+          const topicColor = topicShell?.color || 
+            subjectColorMapping[subject]?.topics?.[topic] || 
+            generateShade(baseColor, index, topics.length);
+          
+          // Calculate contrasting text color
+          const textColor = getContrastColor(topicColor);
+          
+          // Function to generate a deeper shade for buttons
+          const generateButtonShade = (color) => {
+            // Convert hex to RGB
+            const r = parseInt(color.slice(1, 3), 16);
+            const g = parseInt(color.slice(3, 5), 16);
+            const b = parseInt(color.slice(5, 7), 16);
+            
+            // Darken by 20%
+            const factor = 0.8;
+            const newR = Math.floor(r * factor);
+            const newG = Math.floor(g * factor);
+            const newB = Math.floor(b * factor);
+            
+            // Convert back to hex
+            return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+          };
+          
+          // Button background based on topic color
+          const buttonBackground = generateButtonShade(topicColor);
+          
+          return (
+            <div 
+              key={topicKey} 
+              className="topic-container"
+              ref={el => topicRefs.current[topicKey] = el}
+            >
+              <div 
+                className="topic-header"
+                style={{ 
+                  backgroundColor: topicColor,
+                  color: textColor
+                }}
+                onClick={() => toggleTopic(subject, topic)}
+              >
+                <div className="topic-info">
+                  <h3 className="topic-title">{topic}</h3>
+                  <span className="card-count">{actualCards.length} cards</span>
+                  {topicDate && <span className="topic-creation-date">{topicDate}</span>}
+                </div>
+                
+                <div className="topic-actions">
+                  <button
+                    className="action-button generate-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleGenerateCardsForTopic(subject, topic, topicId, e);
+                    }}
+                    title="Generate cards"
+                    style={{ 
+                      backgroundColor: buttonBackground,
+                      color: textColor
+                    }}
+                  >
+                    <FaBolt />
+                  </button>
+                  <button 
+                    className="action-button slideshow-button"
+                    onClick={(e) => startSlideshow(subject, topic, e)}
+                    title="Start slideshow"
+                    style={{ 
+                      backgroundColor: buttonBackground,
+                      color: textColor
+                    }}
+                  >
+                    <FaPlay />
+                  </button>
+                  <button 
+                    className="action-button print-button"
+                    onClick={(e) => handlePrintTopic(subject, topic, e)}
+                    title="Print cards"
+                    style={{ 
+                      backgroundColor: buttonBackground,
+                      color: textColor
+                    }}
+                  >
+                    <FaPrint />
+                  </button>
+                  <button 
+                    className="action-button delete-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteTopicCards(subject, topic);
+                    }}
+                    title="Delete topic"
+                    style={{ 
+                      backgroundColor: '#dc3545',  // Always red for delete
+                      color: '#ffffff'  // White text
+                    }}
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
+              </div>
+              
+              {isExpanded && renderCards(
+                // Filter out topic shells when showing cards
+                actualCards,
+                subject,
+                topic,
+                topicColor  // Pass the topic color for card styling
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   // Render a single subject section including its topics
@@ -969,106 +1219,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
 
         {/* Render Topics within the Subject - Conditionally based on subject expansion */}
         {isExpanded && (
-          <div className="topics-container">
-            {/* *** ADD LOGGING HERE *** */}
-            {console.log(`[Render Subject ${subject}] Topic Names:`, topicNames)}
-            {topicNames.length === 0 ? (
-              <div className="no-topics-message">No topics found for this subject.</div>
-            ) : (
-              topicNames.map((topicName) => {
-                // topicName is now the actual topic name (e.g., "Structure of the atom")
-                const itemsInTopic = topicsInSubject[topicName] || [];
-                const topicKey = `${subject}-${topicName}`;
-                const isTopicExpanded = expandedTopics[topicKey];
-                
-                // Check if the items are cards or a shell
-                const isShellOnly = itemsInTopic.length === 1 && itemsInTopic[0].type === 'topic' && itemsInTopic[0].isShell;
-                const actualCards = isShellOnly ? [] : itemsInTopic;
-                const topicShell = isShellOnly ? itemsInTopic[0] : null;
-                const topicId = topicShell?.id; // Get ID from shell if present
-                const topicDate = getTopicDate(actualCards); // Calculate date based on actual cards
-
-                // Log the findings for this topic
-                console.log(`[Render Topic ${subject}] Topic: ${topicName}, isShellOnly: ${isShellOnly}, Card Count: ${actualCards.length}, Shell Object:`, topicShell);
-
-                // Assign ref inside the loop using topicKey
-                const topicRef = el => topicRefs.current[topicKey] = el;
-
-                return (
-                  <div key={topicKey} className="topic-section">
-                    {/* Topic Header */}
-                    <div
-                      className={`topic-header ${isTopicExpanded ? 'expanded' : ''}`}
-                      onClick={() => toggleTopic(subject, topicName)} // Use actual topic name
-                      ref={topicRef}
-                    >
-                      <div className="topic-header-content">
-                        <span className="topic-title">{topicName}</span> {/* Render actual topic name */}
-                        <div className="topic-meta">
-                          {topicDate && <span className="topic-date">{topicDate}</span>}
-                          <span className="topic-card-count">
-                            {/* Display card count or "Topic Shell" */}
-                            {actualCards.length > 0
-                              ? `${actualCards.length} ${actualCards.length === 1 ? 'card' : 'cards'}`
-                              : (isShellOnly ? "(Topic Shell)" : "(Empty Topic)")
-                            }
-                          </span>
-                        </div>
-                      </div>
-                      <div className="topic-actions">
-                         {/* Generate Cards Button - Enabled only for shells */}
-                         <button
-                          className="action-button generate-topic-cards-button"
-                          onClick={(e) => handleGenerateCardsForTopic(subject, topicName, topicId, e)}
-                          title={`Generate AI cards for ${topicName}`}
-                          disabled={!isShellOnly || !topicId} // Only enable for shells with an ID
-                        >
-                          <FaBolt />
-                          <span className="tooltip">Generate Cards</span>
-                        </button>
-                        {/* Slideshow Button - Enabled only if cards exist */}
-                        <button
-                          className="action-button slideshow-button"
-                          onClick={(e) => startSlideshow(subject, topicName, e)} // Use actual topic name
-                          disabled={actualCards.length === 0}
-                          title={`Start slideshow for ${topicName}`}
-                        >
-                          <FaPlay />
-                           <span className="tooltip">Play Topic</span>
-                        </button>
-                         {/* Print Button - Enabled only if cards exist */}
-                         <button
-                          className="action-button print-button"
-                          onClick={(e) => handlePrintTopic(subject, topicName, e)} // Use actual topic name
-                          disabled={actualCards.length === 0}
-                          title={`Print cards for ${topicName}`}
-                         >
-                           <FaPrint />
-                           <span className="tooltip">Print Topic</span>
-                         </button>
-                        {/* Delete Topic Button - Handles cards or shell */}
-                        <button
-                          className="action-button delete-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (actualCards.length > 0) {
-                                deleteTopicCards(subject, topicName); // Use actual topic name
-                            } else if (isShellOnly) {
-                                alert("Deleting topic shells directly is not yet supported.");
-                            }
-                          }}
-                          disabled={actualCards.length === 0 && !isShellOnly}
-                          title={actualCards.length > 0 ? `Delete Topic` : `No cards to delete`}
-                        >
-                          <span role="img" aria-label="Delete">🗑️</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+          renderTopics(subject, currentSubjectColor)
         )}
       </div>
     );

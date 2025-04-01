@@ -1143,3 +1143,191 @@ html {
 .topic-container.empty-topic:hover::after {
   opacity: 1;
 }
+
+/* Add and improve styling for topic shells and containers */
+
+/* Topic container enhancements */
+.topic-container {
+  margin-bottom: 15px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
+}
+
+.topic-container:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Topic header styling */
+.topic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  position: relative;
+  border-radius: 8px 8px 0 0;
+}
+
+.topic-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.topic-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  line-height: 1.2;
+}
+
+.card-count {
+  font-size: 12px;
+  opacity: 0.85;
+  margin-right: 10px;
+}
+
+.topic-creation-date {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+/* Button styling */
+.topic-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-button {
+  border: none;
+  border-radius: 4px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  padding: 0;
+}
+
+.action-button:hover {
+  transform: scale(1.1);
+  opacity: 0.9;
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.generate-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.slideshow-button {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.print-button {
+  background-color: #6c757d;
+  color: white;
+}
+
+.delete-button {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Topic cards container */
+.topic-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 15px;
+  background-color: #f9f9f9;
+}
+
+/* Subject section styling */
+.subject-section {
+  margin-bottom: 30px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.subject-header {
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.subject-info {
+  flex: 1;
+}
+
+.subject-info h2 {
+  margin: 0 0 5px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.subject-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.meta-tag {
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.meta-tag.gcse {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.meta-tag.a-level {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Topics container */
+.topics-container {
+  padding: 15px;
+  background-color: #f5f5f5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .topic-actions {
+    gap: 4px;
+  }
+  
+  .action-button {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+  
+  .topic-header {
+    padding: 10px;
+  }
+  
+  .topic-title {
+    font-size: 14px;
+  }
+}

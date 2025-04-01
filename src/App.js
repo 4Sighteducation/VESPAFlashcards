@@ -60,7 +60,7 @@ function App() {
   const [currentSubjectColor, setCurrentSubjectColor] = useState("#e6194b");
 
   // Filters and selections
-  const [selectedSubject, /* Removed unused setSelectedSubject */] = useState(null);
+  const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
 
   // Topic List Modal state
@@ -171,23 +171,108 @@ function App() {
     const g = parseInt(baseColor.slice(3, 5), 16);
     const b = parseInt(baseColor.slice(5, 7), 16);
     
-    // Calculate lightness adjustment based on shade index
-    // Using a range from -20% (darker) to +30% (lighter)
-    const adjustment = -20 + (50 * (shadeIndex / (totalShades - 1)));
+    // Calculate lightness and saturation adjustments based on shade index
+    // Using a range from -20% (darker) to +30% (lighter) for lightness
+    const lightnessAdjustment = -20 + (50 * (shadeIndex / Math.max(totalShades - 1, 1)));
     
-    // Apply adjustment to RGB values
-    let adjustedR = Math.min(255, Math.max(0, r * (1 + adjustment/100)));
-    let adjustedG = Math.min(255, Math.max(0, g * (1 + adjustment/100)));
-    let adjustedB = Math.min(255, Math.max(0, b * (1 + adjustment/100)));
+    // Also adjust saturation slightly to create more distinct colors
+    const saturationAdjustment = 10 - (20 * (shadeIndex / Math.max(totalShades - 1, 1)));
+    
+    // Convert RGB to HSL
+    const rgbToHsl = (r, g, b) => {
+      r /= 255;
+      g /= 255;
+      b /= 255;
+      
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      
+      if (max === min) {
+        h = s = 0; // achromatic
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+          default: h = 0;
+        }
+        
+        h /= 6;
+      }
+      
+      return [h, s, l];
+    };
+    
+    // Convert HSL back to RGB
+    const hslToRgb = (h, s, l) => {
+      let r, g, b;
+      
+      if (s === 0) {
+        r = g = b = l; // achromatic
+      } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      
+      return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    };
+    
+    // Convert to HSL, adjust, and convert back
+    const [h, s, l] = rgbToHsl(r, g, b);
+    
+    // Calculate new saturation and lightness with constraints
+    const newS = Math.min(Math.max(s * (1 + saturationAdjustment/100), 0.1), 1);
+    const newL = Math.min(Math.max(l * (1 + lightnessAdjustment/100), 0.2), 0.8);
+    
+    // Convert back to RGB
+    const [newR, newG, newB] = hslToRgb(h, newS, newL);
     
     // Convert back to hex
-    const adjustedHex = '#' + 
-      Math.round(adjustedR).toString(16).padStart(2, '0') +
-      Math.round(adjustedG).toString(16).padStart(2, '0') +
-      Math.round(adjustedB).toString(16).padStart(2, '0');
+    const toHex = c => {
+      const hex = c.toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    
+    const adjustedHex = '#' + toHex(newR) + toHex(newG) + toHex(newB);
     
     return adjustedHex;
   }, []);
+
+  // Get a color for a card based on its subject and topic
+  const getCardColor = useCallback((subject, topic) => {
+    // If we don't have the subject or topic, return the default color
+    if (!subject) return currentSubjectColor;
+    
+    // First try to get the topic color if both subject and topic exist
+    if (topic && subject) {
+      return getColorForSubjectTopic(subject, topic);
+    }
+    
+    // If no topic, return the subject color
+    if (subjectColorMapping[subject] && subjectColorMapping[subject].base) {
+      return subjectColorMapping[subject].base;
+    }
+    
+    // Fallback to default color
+    return currentSubjectColor;
+  }, [currentSubjectColor, getColorForSubjectTopic, subjectColorMapping]);
 
   // Save data to localStorage fallback - using enhanced version with versioning and backups
   const saveToLocalStorage = useCallback(() => {
@@ -1987,6 +2072,54 @@ function App() {
     .then(() => console.log("Card updates notification queued successfully"))
     .catch(error => console.error("Error queuing card updates notification:", error));
   }, [isKnack, recordId]);
+
+  // Handle case when there's no user data in local storage
+  useEffect(() => {
+    // Get recordId from localStorage if not already available
+    if (!recordId) {
+      try {
+        const storedData = localStorage.getItem('flashcards_auth');
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          if (parsedData && parsedData.recordId) {
+            console.log("Recovered recordId from localStorage:", parsedData.recordId);
+            setRecordId(parsedData.recordId);
+          }
+        }
+      } catch (e) {
+        console.error("Error reading from localStorage:", e);
+      }
+    }
+  }, [recordId]);
+
+  // Effect to listen for navigation to AI Generator
+  useEffect(() => {
+    const handleNavToAIGenerator = (event) => {
+      console.log('Navigation to AI Generator requested with data:', event.detail);
+      
+      // Set the selected subject and topic
+      if (event.detail.subject) {
+        // Set the selected subject
+        setSelectedSubject(event.detail.subject);
+        
+        // If a topic is provided, set it
+        if (event.detail.topic) {
+          setSelectedTopic(event.detail.topic);
+        }
+      }
+      
+      // Switch to the AI Generator view
+      setView('aiGenerator');
+    };
+    
+    // Add event listener
+    window.addEventListener('navToAIGenerator', handleNavToAIGenerator);
+    
+    // Remove event listener on cleanup
+    return () => {
+      window.removeEventListener('navToAIGenerator', handleNavToAIGenerator);
+    };
+  }, [setSelectedSubject, setSelectedTopic, setView]);
 
   // Show loading state
   if (loading) {
