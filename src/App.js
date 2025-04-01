@@ -490,51 +490,55 @@ function App() {
       // Also update the cards that use this subject/topic to reflect the new color
       setAllCards(prevCards => {
         const updatedCards = prevCards.map(card => {
+          // Check if the card belongs to the subject being updated
           if ((card.subject || "General") === subject) {
-            // If this is a topic-specific update and this card doesn't match, skip it
-            if (topic && (card.topic || "General") !== topic && !updateTopics) {
-              return card;
-            }
             
-            // Get the appropriate color based on the card's topic
-            let newColor = colorToUse;
+            // Determine the new base color for the subject
+            const newBaseColor = colorToUse; // The color passed in for the subject update
+            
+            // Create a copy of the card to modify
+            let updatedCard = { ...card };
+            
+            // Always update the subjectColor field to the new base color
+            updatedCard.subjectColor = newBaseColor;
+            
+            // We only update cardColor IF this is a specific TOPIC update OR 
+            // if the card's topic is 'General' and we're updating the subject.
             if (topic && (card.topic || "General") === topic) {
-              newColor = colorToUse;
-            } else if (!topic && card.topic && card.topic !== "General" && updateTopics) {
-              // For topic cards, get a shade of the subject color
-              const topicsForSubject = [...new Set(
-                allCards
-                  .filter(c => (c.subject || "General") === subject)
-                  .map(c => c.topic || "General")
-              )].sort();
-              
-              const topicIndex = topicsForSubject.indexOf(card.topic);
-              if (topicIndex !== -1) {
-                newColor = generateShade(colorToUse, topicIndex, topicsForSubject.length);
-              }
-            }
-            
-            // Return updated card with new color
-            return {
-              ...card,
-              cardColor: newColor,
-              subjectColor: colorToUse,
-              baseColor: subject === (card.subject || "General") ? colorToUse : card.baseColor
-            };
+              // Specific topic update: Set cardColor directly
+              updatedCard.cardColor = colorToUse; 
+            } else if (!topic && (card.topic || "General") === "General") {
+              // Subject update, card is 'General': Use the new base color
+              updatedCard.cardColor = newBaseColor;
+            } 
+            // else: card belongs to a specific topic, but we're updating the subject's
+            // base color. Leave cardColor as is for now. getColorForSubjectTopic
+            // will handle providing the correct shade later based on the mapping.
+
+            // Ensure 'baseColor' field (if used) reflects the subject's base color
+            updatedCard.baseColor = newBaseColor; 
+
+            // Return the updated card object
+            return updatedCard;
           }
+          
+          // If the card doesn't belong to the subject, return it unchanged
           return card;
         });
         
         // Log the first few cards for debugging
         if (updatedCards.length > 0) {
-          console.log("Sample cards after color update:", updatedCards.slice(0, 3));
+          console.log("Sample cards after color update logic:", updatedCards.slice(0, 3).map(c => ({ id: c.id, subject: c.subject, topic: c.topic, type: c.type, subjectColor: c.subjectColor, cardColor: c.cardColor })));
         }
         
         return updatedCards;
       });
       
-      // Save changes
-      setTimeout(() => saveToLocalStorage(), 100);
+      // Save changes (only to localStorage for mapping, Knack save handled elsewhere)
+      // Note: The main saveData() call is needed after this to persist to Knack if necessary
+      setTimeout(() => saveToLocalStorage(), 100); // Save mapping update locally
+      // Consider triggering a full saveData() if Knack persistence is needed immediately
+      // setTimeout(() => saveData(), 200); // Example: Trigger full save shortly after
     },
     [allCards, generateShade, getRandomColor, saveToLocalStorage]
   );
