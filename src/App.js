@@ -255,6 +255,71 @@ function App() {
     return adjustedHex;
   }, []);
 
+  // Add the getColorForSubjectTopic function definition here, before it's used
+  const getColorForSubjectTopic = useCallback((subject, topic) => {
+    if (!subject || !topic) return currentSubjectColor;
+    
+    // Default color if nothing else works
+    const defaultColor = currentSubjectColor;
+
+    // Check if we have a color mapping for this subject
+    if (subjectColorMapping && subjectColorMapping[subject]) {
+      // Try to get a topic-specific color first
+      if (subjectColorMapping[subject].topics && 
+          subjectColorMapping[subject].topics[topic]) {
+        return subjectColorMapping[subject].topics[topic];
+      }
+      
+      // If topic is not in mapping but we have a base color, generate a color
+      else if (topic && topic !== "General" && subjectColorMapping[subject].base) {
+        // Get all topics for this subject
+        const topicsForSubject = allCards
+          .filter(card => (card.subject || "General") === subject)
+          .map(item => {
+            if (item.type === 'topic' && item.isShell && item.name) {
+              // Extract from shell name, handling potential 'Subject: Topic' format
+              const nameParts = item.name.split(': ');
+              return nameParts.length > 1 ? nameParts[1].trim() : item.name;
+            }
+            return item.topic || "General"; // Fallback for cards or improperly named shells
+          });
+        
+        // Remove duplicates and sort
+        const uniqueTopics = [...new Set(topicsForSubject)].filter(t => t !== "General").sort();
+        
+        // Find index of this topic
+        const topicIndex = uniqueTopics.indexOf(topic);
+        
+        if (topicIndex !== -1) {
+          // Generate a shade and store it for future use
+          const shade = generateShade(
+            subjectColorMapping[subject].base, 
+            topicIndex, 
+            Math.max(uniqueTopics.length, 5)
+          );
+          
+          // Store this for next time
+          setSubjectColorMapping(prev => {
+            const newMapping = { ...prev };
+            if (!newMapping[subject].topics) {
+              newMapping[subject].topics = {};
+            }
+            newMapping[subject].topics[topic] = shade;
+            return newMapping;
+          });
+          
+          return shade;
+        }
+      }
+      
+      // Fall back to the subject base color if no topic color
+      return subjectColorMapping[subject].base;
+    }
+    
+    // Default color if no mapping exists
+    return defaultColor;
+  }, [currentSubjectColor, subjectColorMapping, allCards, generateShade]);
+
   // Get a color for a card based on its subject and topic
   const getCardColor = useCallback((subject, topic) => {
     // If we don't have the subject or topic, return the default color
@@ -687,73 +752,9 @@ function App() {
   // Function to refresh subject and topic colors
   // Removed unused refreshSubjectAndTopicColors useCallback
 
-  // Generate a color for a subject or topic
-  const getColorForSubjectTopic = useCallback(
-    (subject, topic) => {
-      // Default color if nothing else works
-      const defaultColor = currentSubjectColor;
-
-      // Check if we have a color mapping for this subject
-      if (subjectColorMapping[subject]) {
-        // If there's a topic, try to get its specific color
-        if (
-          topic &&
-          subjectColorMapping[subject].topics &&
-          subjectColorMapping[subject].topics[topic]
-        ) {
-          return subjectColorMapping[subject].topics[topic];
-        } 
-        // If topic is not in mapping but we have a base color, generate a color
-        else if (topic && topic !== "General" && subjectColorMapping[subject].base) {
-          // Get all topics for this subject
-          const topicsForSubject = allCards
-            .filter(card => (card.subject || "General") === subject)
-            .map(item => {
-              if (item.type === 'topic' && item.isShell && item.name) {
-                // Extract from shell name, handling potential 'Subject: Topic' format
-                const nameParts = item.name.split(': ');
-                return nameParts.length > 1 ? nameParts[1].trim() : item.name;
-              }
-              return item.topic || "General"; // Fallback for cards or improperly named shells
-            });
-          
-          // Remove duplicates and sort
-          const uniqueTopics = [...new Set(topicsForSubject)].filter(t => t !== "General").sort();
-          
-          // Find index of this topic
-          const topicIndex = uniqueTopics.indexOf(topic);
-          
-          if (topicIndex !== -1) {
-            // Generate a shade and store it for future use
-            const shade = generateShade(
-              subjectColorMapping[subject].base, 
-              topicIndex, 
-              Math.max(uniqueTopics.length, 5)
-            );
-            
-            // Store this for next time
-            setSubjectColorMapping(prev => {
-              const newMapping = { ...prev };
-              if (!newMapping[subject].topics) {
-                newMapping[subject].topics = {};
-              }
-              newMapping[subject].topics[topic] = shade;
-              return newMapping;
-            });
-            
-            return shade;
-          }
-        }
-
-        // Otherwise return the base subject color
-        return subjectColorMapping[subject].base;
-      }
-
-      return defaultColor;
-    },
-    [subjectColorMapping, currentSubjectColor, generateShade, allCards]
-  );
-
+  // Generate a color for a subject or topic - MOVED EARLIER IN THE FILE
+  // This function has been moved to line ~250 to fix initialization order
+  
   // Cards and data operations - these depend on the above functions
   // Load data from localStorage with enhanced error recovery
   const loadFromLocalStorage = useCallback(() => {
