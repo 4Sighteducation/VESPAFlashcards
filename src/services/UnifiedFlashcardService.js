@@ -6,6 +6,8 @@
  * subjects, topics, cards, and spaced repetition data in a single field.
  */
 
+import saveQueueService from './SaveQueueService';
+
 // Color palette for subject/topic assignment
 const BRIGHT_COLORS = [
   "#e6194b", "#3cb44b", "#ffe119", "#0082c8", "#f58231",
@@ -205,40 +207,25 @@ class UnifiedFlashcardService {
         
         // Send save message to parent window if available
         if (window.parent && window.parent !== window) {
-          // Set up message listener for save result
-          const messageHandler = (event) => {
-            if (event.data && event.data.type === 'SAVE_RESULT') {
-              // Remove the listener once we get a response
-              window.removeEventListener('message', messageHandler);
-              
-              if (event.data.success) {
-                debugLog("Save successful", { timestamp: event.data.timestamp });
-                resolve(true);
-              } else {
-                debugLog("Save failed", { error: event.data.error });
-                reject(new Error("Failed to save unified data"));
-              }
-            }
+          debugLog("Using saveQueueService for unified data save");
+          
+          // Create the payload
+          const payload = {
+            recordId: recordId,
+            unifiedData: dataToSave,
+            useUnifiedData: true  // Signal to use the unified data approach
           };
           
-          // Add the listener
-          window.addEventListener('message', messageHandler);
-          
-          // Send the save message
-          window.parent.postMessage({
-            type: "SAVE_DATA",
-            data: {
-              recordId: recordId,
-              unifiedData: dataToSave,
-              useUnifiedData: true  // Signal to use the unified data approach
-            }
-          }, '*');
-          
-          // Set a timeout to reject the promise if no response after 10 seconds
-          setTimeout(() => {
-            window.removeEventListener('message', messageHandler);
-            reject(new Error("Save operation timed out after 10 seconds"));
-          }, 10000);
+          // Use SaveQueueService instead of direct postMessage
+          saveQueueService.addToQueue({ type: "SAVE_DATA", payload })
+            .then(() => {
+              debugLog("Save successfully queued and processed", { timestamp: new Date().toISOString() });
+              resolve(true);
+            })
+            .catch(error => {
+              debugLog("Error queuing/processing save operation", { error });
+              reject(new Error(`Failed to save unified data: ${error.message}`));
+            });
         } else {
           // Fallback to localStorage if no parent window
           try {

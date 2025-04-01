@@ -3,6 +3,7 @@ import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
 import TopicHub from '../components/TopicHub';
+import saveQueueService from '../services/SaveQueueService';
 
 // Constants for question types and exam boards
 const QUESTION_TYPES = [
@@ -1580,146 +1581,99 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
         
         console.log("Adding card via parent window messaging");
         
-        // Enhanced function to handle sending messages with retry for auth errors
-        const sendMessageWithRetry = async (type, data, maxRetries = 3) => {
-          for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            try {
-              // Create a stable message with timestamp
-              const message = { 
-                type,
-                data: { ...data, timestamp: new Date().toISOString() },
-                timestamp: new Date().toISOString(),
-                attempt: attempt + 1,
-                source: "AICardGenerator"
-              };
-              
-              // Log what we're sending (without full card data to keep log clean)
-              console.log(`Sending ${type} message (attempt ${attempt + 1})`, {
-                ...message,
-                data: data.cards ? 
-                  { ...data, cards: `[${data.cards.length} cards]` } : 
-                  data
-              });
-              
-              // Send the message
-              window.parent.postMessage(message, "*");
-              
-              // Wait for a brief period to allow message to be processed
-              await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
-              
-              return true;
-            } catch (error) {
-              if (attempt < maxRetries) {
-                console.warn(`Error sending ${type} message, attempt ${attempt + 1}/${maxRetries + 1}:`, error);
-                
-                // Longer delay between retries
-                await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-                
-                // Request token refresh if authentication might be the issue
-                if (error.message && (
-                    error.message.includes("auth") || 
-                    error.message.includes("token") || 
-                    error.message.includes("permission") ||
-                    error.message.includes("403")
-                  )) {
-                  await requestTokenRefresh();
-                  // Wait after token refresh
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-              } else {
-                console.error(`Failed to send ${type} message after ${maxRetries + 1} attempts:`, error);
-                return false;
-              }
-            }
-          }
-        };
-        
         // Sequence of operations with better error handling and longer delays
         const addCardSequence = async () => {
-          // Step 1: Add to bank - with improved data structure
-          const addSuccess = await sendMessageWithRetry("ADD_TO_BANK", {
-            cards: [enrichedCard],
-            recordId: recordIdToUse,
-            userId: userIdToUse,
-            topicId: topicId || "",
-            preserveExistingData: true,
-            metadata: {
-              examBoard: localExamBoard,
-              examType: localExamType,
-              subject: localSubject,
-              topic: localTopic
-            }
-          });
-          
-          if (!addSuccess && !localAddSuccess) {
-            // Try one more attempt with token refresh first
-            // Call without await to avoid redundant async operations
-            requestTokenRefresh();
-            // Wait a bit for the token to refresh
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            const retrySuccess = await sendMessageWithRetry("ADD_TO_BANK", {
-              cards: [enrichedCard],
-              recordId: recordIdToUse,
-              userId: userIdToUse,
-              topicId: topicId || "",
-              preserveExistingData: true,
-              metadata: {
-                examBoard: localExamBoard,
-                examType: localExamType,
-                subject: localSubject,
-                topic: localTopic
-              }
-            });
-            
-            if (!retrySuccess) {
-              setError("Failed to add card to bank after multiple attempts. Please try again.");
-              // Mark as no longer processing but not added
-              setGeneratedCards(prev => prev.map(c => 
-                c.id === card.id ? {...c, processing: false} : c
-              ));
+          try {
+            if (pendingOperations.addToBank) {
+              console.log("Add to bank operation already in progress, skipping");
               return;
             }
-          }
-          
-          // Wait longer before triggering save to avoid race conditions
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Step 2: Trigger save with explicit record ID
-          await sendMessageWithRetry("TRIGGER_SAVE", {
-            recordId: recordIdToUse,
-            userId: userIdToUse
-          });
-          
-          // Wait even longer before requesting refresh
-          await new Promise(resolve => setTimeout(resolve, 2500));
-          
-          // Step 3: Request refresh with explicit record ID
-          await sendMessageWithRetry("REQUEST_REFRESH", {
-            recordId: recordIdToUse,
-            userId: userIdToUse
-          });
-          
-          // Wait for the refresh to complete
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Step 4: Request updated data to ensure we have the latest state
-          await sendMessageWithRetry("REQUEST_UPDATED_DATA", {
-            recordId: recordIdToUse,
-            userId: userIdToUse  
-          });
-          
-          // Mark the card as added
-          setGeneratedCards(prev => prev.map(c => 
-            c.id === card.id ? {...c, added: true, processing: false} : c
-          ));
-          
-          console.log(`Card ${card.id} successfully added to bank`);
-          
-          // Run reset function after a delay to ensure everything is working properly
-          setTimeout(() => {
+            
+            setPendingOperations({ ...pendingOperations, addToBank: true });
+            
+            // Get selected topic
+            const selectedTopic = selectedTopicForConfirmation;
+            
+            // Guard checks
+            if (!selectedTopic) {
+              console.error("No topic selected for adding cards");
+              setError("No topic selected");
+              setPendingOperations({ ...pendingOperations, addToBank: false });
+              return;
+            }
+            
+            // Validate that recordId or userId is available
+            if (!recordId && !userId) {
+              console.error("No recordId or userId available for saving cards");
+              setError("User ID not available for save operation");
+              setPendingOperations({ ...pendingOperations, addToBank: false });
+              return;
+            }
+            
+            console.log(`Adding cards for topic: ${selectedTopic}`);
+            
+            // Define stable values for the operation
+            const stableSubject = formData.subject || formData.newSubject || "General";
+            const stableExamBoard = formData.examBoard || examBoard || "General";
+            const stableExamType = formData.examType || examType || "General";
+            
+            // Process the cards to ensure they have the required structure
+            const cardsToAdd = generatedCards.map((card, index) => ({
+              id: card.id || `temp_card_${Date.now()}_${index}`,
+              question: card.question,
+              answer: card.answer,
+              options: card.options || [],
+              topicId: null, // We'll let the server/Knack assign this
+              topic: selectedTopic, // Selected topic name
+              subject: stableSubject, // Subject from form
+              examBoard: stableExamBoard,
+              examType: stableExamType,
+              questionType: card.questionType || formData.questionType,
+              difficulty: card.difficulty || "medium",
+              created: new Date().toISOString(),
+              updated: new Date().toISOString(),
+              tags: [stableExamType, stableExamBoard, stableSubject],
+              confidenceLevel: 0,
+              reviewCount: 0,
+              lastReviewDate: null,
+              nextReviewDate: new Date().toISOString(), // Reviewable immediately
+              boxNumber: 1 // Start in box 1 for spaced repetition
+            }));
+            
+            // Add the cards to the bank using our sendMessage helper with retries
+            await sendMessageWithRetry("ADD_TO_BANK", {
+              recordId: recordId || userId,
+              subject: stableSubject,
+              examBoard: stableExamBoard,
+              examType: stableExamType,
+              topic: selectedTopic,
+              cards: cardsToAdd
+            });
+            
+            console.log(`${cardsToAdd.length} cards added successfully`);
+            
+            // Show success modal
+            setSuccessModal({
+              show: true,
+              addedCards: cardsToAdd
+            });
+            
+            // Reset states
             resetAfterCardOperation();
-          }, 3000);
+            
+            // Clear the pendingOperations flag
+            setPendingOperations({ ...pendingOperations, addToBank: false });
+            
+            // Reset currentStep to 1
+            setCurrentStep(1);
+            
+            return true;
+          } catch (error) {
+            console.error("Error adding cards to bank:", error);
+            setError(`Error adding cards: ${error.message}`);
+            setPendingOperations({ ...pendingOperations, addToBank: false });
+            return false;
+          }
         };
         
         // Start the sequence
@@ -2567,221 +2521,83 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
 
   // Completely enhanced addAllToBank function with comprehensive protection against race conditions
   const addAllToBank = async (stableExamType, stableExamBoard, stableSubject, stableTopic) => {
-    // Return early if already processing an add to bank operation
-    if (pendingOperations.addToBank) {
-      console.log("Add to bank operation already in progress, ignoring duplicate request");
-      return;
-    }
-    
-    // Mark add to bank as in progress
-    setPendingOperations(prev => ({ ...prev, addToBank: true }));
-    setIsGenerating(true);
-    
-    // CRITICAL: Ensure we have stable values - use parameters if provided, otherwise use fallbacks
-    // This is the key to fixing the metadata persistence issue
-    const localExamType = stableExamType || formData.examType || examType || "General";
-    const localExamBoard = stableExamBoard || formData.examBoard || examBoard || "General";
-    const localSubject = stableSubject || formData.subject || formData.newSubject || initialSubject || "General";
-    const localTopic = stableTopic || formData.topic || formData.newTopic || initialTopic || "General";
-    
-    // Additional values for communication
-    //const recordIdToUse = recordId || (typeof auth === 'object' && auth.recordId ? auth.recordId : null) || window.recordId || '';
-    ///onst userIdToUse = userId || window.VESPA_USER_ID || "current_user";
-    
-    // Log that we're using stable values
-    debugLog("Starting addAllToBank with stable metadata", {
-      localExamType,
-      localExamBoard,
-      localSubject,
-      localTopic
-    });
-    
     try {
-      // Get cards that haven't been added yet
-      const unadded = generatedCards.filter(card => !card.added);
-      
-      if (unadded.length === 0) {
-        setError("All cards have already been added to the bank");
-        setPendingOperations(prev => ({ ...prev, addToBank: false }));
-        setIsGenerating(false);
+      if (pendingOperations.addToBank) {
+        console.log("Add to bank operation already in progress, skipping");
         return;
       }
       
-      // Mark all cards as processing
-      setGeneratedCards(prev => 
-        prev.map(card => unadded.some(u => u.id === card.id) 
-          ? { ...card, processing: true } 
-          : card
-        )
-      );
+      setPendingOperations({ ...pendingOperations, addToBank: true });
       
-      // Show success modal with all cards being added
+      // Guard checks
+      if (!recordId && !userId) {
+        console.error("No recordId or userId available for saving cards");
+        setError("User ID not available for save operation");
+        setPendingOperations({ ...pendingOperations, addToBank: false });
+        return;
+      }
+      
+      console.log(`Adding ALL cards for subject: ${stableSubject}, topic: ${stableTopic}`);
+      console.log("Cards to add:", generatedCards);
+      
+      // Process the cards to ensure they have the required structure
+      const cardsToAdd = generatedCards.map((card, index) => ({
+        id: card.id || `temp_card_${Date.now()}_${index}`,
+        question: card.question,
+        answer: card.answer,
+        options: card.options || [],
+        topicId: null, // We'll let the server/Knack assign this
+        topic: stableTopic, // Selected topic name
+        subject: stableSubject, // Subject from form
+        examBoard: stableExamBoard,
+        examType: stableExamType,
+        questionType: card.questionType || formData.questionType,
+        difficulty: card.difficulty || "medium",
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        tags: [stableExamType, stableExamBoard, stableSubject],
+        confidenceLevel: 0,
+        reviewCount: 0,
+        lastReviewDate: null,
+        nextReviewDate: new Date().toISOString(), // Reviewable immediately
+        boxNumber: 1 // Start in box 1 for spaced repetition
+      }));
+      
+      console.log("Processed cards for adding:", cardsToAdd.length);
+      
+      // Use the sendMessageWithRetry helper function defined earlier in the component
+      await sendMessageWithRetry("ADD_TO_BANK", {
+        recordId: recordId || userId,
+        subject: stableSubject,
+        examBoard: stableExamBoard,
+        examType: stableExamType,
+        topic: stableTopic,
+        cards: cardsToAdd
+      });
+      
+      console.log(`${cardsToAdd.length} cards added successfully`);
+      
+      // Process response and UI updates
       setSuccessModal({
         show: true,
-        addedCards: unadded
+        addedCards: cardsToAdd
       });
       
-      // Auto-hide after 3 seconds
-      setTimeout(() => {
-        setSuccessModal(prev => ({...prev, show: false}));
-      }, 3000);
+      // Reset states
+      resetAfterCardOperation();
       
-      // Get the selected topic ID if available
-      const topicId = selectedTopic ? selectedTopic.id : null;
-      console.log("Adding all cards with topicId:", topicId);
-      console.log("Cards will have examType:", localExamType, "and examBoard:", localExamBoard);
+      // Clear the pendingOperations flag
+      setPendingOperations({ ...pendingOperations, addToBank: false });
       
-      // Ensure all cards have proper metadata
-      const enrichedCards = unadded.map(card => {
-        // Get the correct topic ID - either selected or from card
-        const finalTopicId = topicId || card.topicId || "";
-        
-        // Log explicit values for debugging
-        console.log(`Enriching card with stable values - examType: ${localExamType}, examBoard: ${localExamBoard}`);
-        
-        // Create enriched card with proper metadata - CRITICAL: use stable local variables ONLY
-        const enrichedCard = {
-          ...card,
-          examBoard: localExamBoard, // Simplified - always use our stable value
-          examType: localExamType,   // Simplified - always use our stable value
-          subject: card.subject || localSubject,
-          topic: card.topic || localTopic,
-          topicId: finalTopicId,
-          created: new Date().toISOString(),
-          updated: new Date().toISOString(),
-          lastReviewed: new Date().toISOString(),
-          nextReviewDate: new Date().toISOString(),
-          boxNum: 1
-        };
-        
-        // Double-check essential metadata is present
-        if (!enrichedCard.examType || enrichedCard.examType === "undefined") {
-          console.warn(`Fixed missing examType on card ${enrichedCard.id}`);
-          enrichedCard.examType = localExamType;
-        }
-        if (!enrichedCard.examBoard || enrichedCard.examBoard === "undefined") {
-          console.warn(`Fixed missing examBoard on card ${enrichedCard.id}`);
-          enrichedCard.examBoard = localExamBoard;
-        }
-        
-        // For multiple choice cards, ensure options are preserved
-        if (enrichedCard.questionType === 'multiple_choice') {
-          if (!enrichedCard.savedOptions && enrichedCard.options) {
-            enrichedCard.savedOptions = [...enrichedCard.options];
-            console.log(`Added savedOptions backup for multiple choice card ${enrichedCard.id}`);
-          }
-        }
-        
-        return enrichedCard;
-      });
+      // Reset currentStep to 1
+      setCurrentStep(1);
       
-      // Try local callback first
-      let localAddSuccess = false;
-      if (typeof onAddCard === 'function') {
-        try {
-          enrichedCards.forEach(card => onAddCard(card));
-          console.log("Added cards via onAddCard callback");
-          localAddSuccess = true;
-        } catch (callbackError) {
-          console.error("Error in onAddCard callback:", callbackError);
-        }
-      }
-      
-      // Send to parent window
-      if (window.parent && window.parent.postMessage) {
-        console.log(`Adding ${enrichedCards.length} cards to bank via parent window`);
-        
-        // Make sure we have valid auth data
-        const authData = typeof auth === 'boolean' ? {recordId: window.recordId} : auth;
-        const userIdToUse = userId || window.VESPA_USER_ID || "";
-        
-        // Helper function for sending messages with retry
-        const sendMessageWithRetry = async (type, data, maxRetries = 2) => {
-          for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            try {
-              // Send the message
-              window.parent.postMessage({ 
-                type,
-                data,
-                timestamp: new Date().toISOString() 
-              }, "*");
-              
-              return true;
-            } catch (error) {
-              if (attempt < maxRetries) {
-                console.warn(`Error sending ${type} message, attempt ${attempt + 1}/${maxRetries + 1}:`, error);
-                // Request token refresh but don't await it to avoid syntax errors
-                requestTokenRefresh();
-              } else {
-                console.error(`Failed to send ${type} message after ${maxRetries + 1} attempts:`, error);
-                return false;
-              }
-            }
-          }
-        };
-        
-        // Execute the sequence with better spacing
-        try {
-          // Step 1: Send the ADD_TO_BANK message
-          const addSuccess = await sendMessageWithRetry("ADD_TO_BANK", {
-            cards: enrichedCards,
-            recordId: authData?.recordId || window.recordId || "",
-            userId: userIdToUse,
-            topicId: topicId || ""
-          });
-          
-          if (!addSuccess && !localAddSuccess) {
-            throw new Error("Failed to add cards to bank");
-          }
-          
-          // Wait before sending the save message
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          
-          // Step 2: Send the TRIGGER_SAVE message
-          await sendMessageWithRetry("TRIGGER_SAVE", {
-            recordId: authData?.recordId || window.recordId || ""
-          });
-          
-          // Wait longer before requesting refresh
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Step 3: Send the REQUEST_REFRESH message
-          await sendMessageWithRetry("REQUEST_REFRESH", {
-            recordId: authData?.recordId || window.recordId || ""
-          });
-          
-          // Mark all cards as added
-          setGeneratedCards(prev => 
-            prev.map(card => unadded.some(u => u.id === card.id) 
-              ? { ...card, added: true, processing: false } 
-              : card
-          ));
-          
-          console.log("All cards successfully added to bank");
-        } catch (error) {
-          console.error("Error in add all sequence:", error);
-          setError(`Failed to add all cards: ${error.message}`);
-          
-          // Reset processing state
-          setGeneratedCards(prev => 
-            prev.map(card => ({ ...card, processing: false }))
-          );
-        }
-      } else {
-        console.error("Cannot access parent window for messaging");
-        setError("Failed to communicate with parent window");
-        
-        // Reset processing state
-        setGeneratedCards(prev => 
-          prev.map(card => ({ ...card, processing: false }))
-        );
-      }
+      return true;
     } catch (error) {
-      console.error("Error in addAllToBank:", error);
+      console.error("Error adding cards to bank:", error);
       setError(`Error adding cards: ${error.message}`);
-    } finally {
-      setPendingOperations(prev => ({ ...prev, addToBank: false }));
-      setIsGenerating(false);
+      setPendingOperations({ ...pendingOperations, addToBank: false });
+      return false;
     }
   };
 
@@ -2812,6 +2628,48 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
       // No topics saved, just close normally
       onClose();
     }
+  };
+
+  // Helper function to send messages with retry
+  const sendMessageWithRetry = async (type, data, maxRetries = 3) => {
+    // If we're in a standalone environment (not in an iframe), resolve immediately
+    if (window.parent === window) {
+      console.log(`[GenerateCards] Standalone mode detected, not sending ${type} message`);
+      return Promise.resolve({ success: true });
+    }
+    
+    // Otherwise send messages to Knack with a promise wrapper
+    return new Promise((resolve, reject) => {
+      console.log(`[GenerateCards] Sending ${type} message with retry logic, data:`, data);
+      
+      let receivedResponse = false;
+      let retryCount = 0;
+      
+      // Function to send the message
+      const sendMessage = () => {
+        console.log(`[GenerateCards] Sending ${type} message (attempt ${retryCount + 1}/${maxRetries + 1})`);
+        // Use SaveQueueService instead of direct postMessage
+        saveQueueService.addToQueue({ type, payload: data })
+          .then(() => {
+            console.log(`[GenerateCards] ${type} message successfully queued and processed`);
+            receivedResponse = true;
+            resolve({ success: true });
+          })
+          .catch(error => {
+            console.error(`[GenerateCards] Error sending ${type} message:`, error);
+            retryCount++;
+            if (retryCount <= maxRetries) {
+              console.log(`[GenerateCards] Retrying in ${retryCount * 1000}ms...`);
+              setTimeout(sendMessage, retryCount * 1000);
+            } else {
+              reject(new Error(`Failed to send ${type} message after ${maxRetries + 1} attempts`));
+            }
+          });
+      };
+      
+      // Start the process
+      sendMessage();
+    });
   };
 
   return (

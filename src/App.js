@@ -31,6 +31,9 @@ import saveQueueService from './services/SaveQueueService';
 // Removed unused KNACK_APP_ID
 // Removed unused KNACK_API_KEY
 
+// Define isKnack - true if running inside iframe
+const isKnack = window.parent !== window;
+
 // Helper function to clean HTML tags from strings
 const cleanHtmlTags = (str) => {
   if (!str) return "";
@@ -1871,6 +1874,79 @@ function App() {
     }, 200); // Increased delay slightly
 
   }, [saveData, showStatus]); // Removed setAllCards dependency as it's used via updater function
+
+  // Save the topic lists to Knack when they change
+  const saveTopicLists = useCallback(() => {
+    if (!isKnack || !recordId) return;
+    
+    console.log("Saving topic lists to Knack:", topicLists);
+    
+    // Use the saveQueueService
+    saveQueueService.addToQueue({
+      type: "TOPIC_LISTS_UPDATED",
+      payload: {
+        recordId,
+        topicLists
+      }
+    })
+    .then(() => console.log("Topic lists save queued successfully"))
+    .catch(error => console.error("Error queuing topic lists save:", error));
+  }, [topicLists, isKnack, recordId]);
+
+  // Save topic metadata to Knack when it changes
+  const saveTopicMetadata = useCallback(() => {
+    if (!isKnack || !recordId) return;
+    
+    console.log("Saving topic metadata to Knack:", topicMetadata);
+    
+    // Use the saveQueueService
+    saveQueueService.addToQueue({
+      type: "TOPIC_METADATA_UPDATED",
+      payload: {
+        recordId,
+        topicMetadata
+      }
+    })
+    .then(() => console.log("Topic metadata save queued successfully"))
+    .catch(error => console.error("Error queuing topic metadata save:", error));
+  }, [topicMetadata, isKnack, recordId]);
+
+  // Send a topic event to Knack
+  const sendTopicEvent = useCallback((eventType, data) => {
+    if (!isKnack || !recordId) return;
+    
+    console.log(`Sending topic event to Knack: ${eventType}`, data);
+    
+    // Use the saveQueueService
+    saveQueueService.addToQueue({
+      type: "TOPIC_EVENT",
+      payload: {
+        recordId,
+        eventType,
+        data
+      }
+    })
+    .then(() => console.log("Topic event queued successfully"))
+    .catch(error => console.error("Error queuing topic event:", error));
+  }, [isKnack, recordId]);
+
+  // Notify Knack of card updates
+  const notifyCardUpdates = useCallback((updatedCards) => {
+    if (!isKnack || !recordId) return;
+    
+    console.log("Notifying Knack of card updates:", updatedCards.length);
+    
+    // Use the saveQueueService
+    saveQueueService.addToQueue({
+      type: "CARDS_UPDATED",
+      payload: {
+        recordId,
+        cards: updatedCards
+      }
+    })
+    .then(() => console.log("Card updates notification queued successfully"))
+    .catch(error => console.error("Error queuing card updates notification:", error));
+  }, [isKnack, recordId]);
 
   // Show loading state
   if (loading) {
