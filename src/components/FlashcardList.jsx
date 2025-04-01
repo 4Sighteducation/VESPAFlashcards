@@ -145,44 +145,26 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     return Object.keys(groupedCards || {});
   }, [groupedCards]);
 
-  const sortedSubjects = useMemo(() => {
-    if (Object.keys(groupedCards).length === 0) return [];
-    const subjectsWithDates = Object.keys(groupedCards).map(subject => {
-        const { examType, examBoard } = getExamInfo(subject);
-        const color = subjectColorMapping[subject]?.base || '#f0f0f0';
-        return {
-            id: subject,
-            title: subject,
-            cards: groupedCards[subject],
-            exam_type: examType,
-            exam_board: examBoard,
-            color: color,
-            creationDate: getSubjectDate(subject)
-        };
-    });
-    return subjectsWithDates.sort((a, b) => a.creationDate - b.creationDate);
-  }, [groupedCards, getExamInfo, getSubjectDate, subjectColorMapping]);
-
   // 4. useCallback Hooks (Define functions needed by useMemo/useEffect first)
   const getExamInfo = useCallback((subject) => {
-          if (!groupedCards) return { examType: "Course", examBoard: "General" };
-          try {
-            let examBoard = null;
-            let examType = null;
-            const subjectTopics = groupedCards[subject];
-            if (subjectTopics) {
-              for (const topicName in subjectTopics) {
-                const cardsInTopic = subjectTopics[topicName];
-                if (cardsInTopic && cardsInTopic.length > 0) {
-                  const cardWithMetadata = cardsInTopic.find(card => card.examBoard && card.examType);
-                  if (cardWithMetadata) {
-                    examBoard = cardWithMetadata.examBoard;
-                    examType = cardWithMetadata.examType;
-                    break;
-                  }
-                }
-              }
+    if (!groupedCards) return { examType: "Course", examBoard: "General" };
+    try {
+      let examBoard = null;
+      let examType = null;
+      const subjectTopics = groupedCards[subject];
+      if (subjectTopics) {
+        for (const topicName in subjectTopics) {
+          const cardsInTopic = subjectTopics[topicName];
+          if (cardsInTopic && cardsInTopic.length > 0) {
+            const cardWithMetadata = cardsInTopic.find(card => card.examBoard && card.examType);
+            if (cardWithMetadata) {
+              examBoard = cardWithMetadata.examBoard;
+              examType = cardWithMetadata.examType;
+              break;
             }
+          }
+        }
+      }
       
       if (!examType) examType = "Course";
       if (!examBoard) examBoard = "General";
@@ -208,6 +190,24 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     const minDate = Math.min(...topicDates);
     return minDate === Number.MAX_SAFE_INTEGER ? 0 : minDate;
   }, [groupedCards]);
+
+  const sortedSubjects = useMemo(() => {
+    if (Object.keys(groupedCards).length === 0) return [];
+    const subjectsWithDates = Object.keys(groupedCards).map(subject => {
+        const { examType, examBoard } = getExamInfo(subject);
+        const color = subjectColorMapping[subject]?.base || '#f0f0f0';
+        return {
+            id: subject,
+            title: subject,
+            cards: groupedCards[subject],
+            exam_type: examType,
+            exam_board: examBoard,
+            color: color,
+            creationDate: getSubjectDate(subject)
+        };
+    });
+    return subjectsWithDates.sort((a, b) => a.creationDate - b.creationDate);
+  }, [groupedCards, getExamInfo, getSubjectDate, subjectColorMapping]);
 
   // 5. useEffect Hooks
   useEffect(() => {

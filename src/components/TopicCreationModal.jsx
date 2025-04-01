@@ -38,6 +38,9 @@ const TopicCreationModal = ({
     subject: initialSubject,
   });
 
+  // ** NEW State to track if user is adding a new subject **
+  const [isAddingNewSubject, setIsAddingNewSubject] = useState(false);
+
   // Workflow: 1: Type, 2: Board, 3: Subject, 4: TopicHub
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
@@ -128,15 +131,44 @@ const TopicCreationModal = ({
   // Function to handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    // Special handling for subject dropdown
+    if (name === 'subject-select') {
+        if (value === '--addNew--') {
+            setIsAddingNewSubject(true);
+            // Clear the actual subject value when switching to add new
+            setFormData((prev) => ({
+                ...prev,
+                subject: '',
+            }));
+        } else {
+            setIsAddingNewSubject(false);
+            // Set the subject from the dropdown
+            setFormData((prev) => ({
+                ...prev,
+                subject: value,
+            }));
+        }
+    } else if (name === 'subject-new') {
+        // Update subject only if adding new is active
+        if (isAddingNewSubject) {
+            setFormData((prev) => ({
+                ...prev,
+                subject: value,
+            }));
+        }
+    } else {
+      // Handle other form inputs normally
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
 
     // Reset generated topics if metadata changes before reaching TopicHub
-    if (currentStep < 4 && (name === 'examType' || name === 'examBoard' || name === 'subject')) {
-      setGeneratedTopics([]);
-      setTopicGenerationComplete(false);
+    if (currentStep < 4 && (name === 'examType' || name === 'examBoard' || name === 'subject' || name === 'subject-select' || name === 'subject-new')) {
+        setGeneratedTopics([]);
+        setTopicGenerationComplete(false);
     }
   };
 
@@ -157,8 +189,8 @@ const TopicCreationModal = ({
       return;
     }
     if (currentStep === 3 && !formData.subject) {
-      console.log(`[TopicCreationModal] Validation failed: Subject missing. Value: '${formData.subject}'`);
-      setError("Please enter a Subject.");
+      console.log(`[TopicCreationModal] Validation failed: Subject missing or empty. Value: '${formData.subject}'`);
+      setError("Please select or enter a Subject.");
       return;
     }
     console.log("[TopicCreationModal] Validation passed for step", currentStep);
@@ -341,18 +373,45 @@ const TopicCreationModal = ({
       case 3: // Subject
         return (
           <div className="step-content">
-            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Enter Subject Name</h2>
+            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select or Add Subject</h2>
             <div className="form-group">
-              <input
-                type="text"
-                name="subject"
-                value={formData.subject}
+              {/* Subject Dropdown */}
+              <label htmlFor="subject-select" className="form-label">Select Existing Subject:</label>
+              <select
+                id="subject-select"
+                name="subject-select" // Use a different name for the select element
+                value={isAddingNewSubject ? '--addNew--' : formData.subject} // Control selection based on state
                 onChange={handleChange}
-                placeholder="E.g., Biology, History, Music Technology"
-                required
+                required={!isAddingNewSubject} // Required only if not adding new
                 className="form-control" // Add a class for styling
-              />
+              >
+                <option value="">Select Subject...</option>
+                {/* Map existing subjects */}
+                {Array.isArray(existingSubjects) && existingSubjects.map((subj) => (
+                    <option key={subj} value={subj}>{subj}</option>
+                ))}
+                {/* Option to add new */}
+                <option value="--addNew--">--- Add New Subject ---</option>
+              </select>
             </div>
+
+            {/* Conditionally render input for new subject */}
+            {isAddingNewSubject && (
+              <div className="form-group" style={{ marginTop: '15px' }}>
+                <label htmlFor="subject-new" className="form-label">Enter New Subject Name:</label>
+                <input
+                  id="subject-new"
+                  type="text"
+                  name="subject-new" // Use a different name for the input
+                  value={formData.subject} // Bind to the actual subject state
+                  onChange={handleChange}
+                  placeholder="E.g., Biology, History, Music Technology"
+                  required={isAddingNewSubject} // Required only if adding new
+                  className="form-control" // Add a class for styling
+                  autoFocus // Focus when it appears
+                />
+              </div>
+            )}
           </div>
         );
       case 4: // Topic Hub
