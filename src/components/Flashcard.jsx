@@ -413,9 +413,17 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                     const cleanAnswer = card.correctAnswer ? card.correctAnswer.replace(/^[a-d]\)\s*/i, '') : "Not specified";
                     
                     // Find the index of this answer in the options array
-                    const answerIndex = card.options ? card.options.findIndex(option => 
-                      option.replace(/^[a-d]\)\s*/i, '').trim() === cleanAnswer.trim()
-                    ) : -1;
+                    const answerIndex = card.options ? card.options.findIndex(option => {
+                      // Make sure option is a string before calling replace
+                      if (!option || typeof option !== 'string') {
+                        // Handle case where option is an object with text property
+                        if (option && typeof option === 'object' && typeof option.text === 'string') {
+                          return option.text.replace(/^[a-d]\)\s*/i, '').trim() === cleanAnswer.trim();
+                        }
+                        return false; // Skip this option if it's not a string or object with text
+                      }
+                      return option.replace(/^[a-d]\)\s*/i, '').trim() === cleanAnswer.trim();
+                    }) : -1;
                     
                     // Get the letter for this index (a, b, c, d)
                     const letter = answerIndex >= 0 ? String.fromCharCode(97 + answerIndex) : '';

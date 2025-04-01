@@ -376,23 +376,34 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     }
   };
 
-  // Helper function to get contrast color
+  // Helper function to get contrast color - enhanced for better readability
   const getContrastColor = (hexColor) => {
     if (!hexColor) return "#000000";
     
-    // Remove # if present
-    hexColor = hexColor.replace('#', '');
-    
-    // Convert to RGB
-    const r = parseInt(hexColor.substring(0, 2), 16);
-    const g = parseInt(hexColor.substring(2, 4), 16);
-    const b = parseInt(hexColor.substring(4, 6), 16);
-    
-    // Calculate brightness using YIQ formula
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    
-    // Return white for dark backgrounds, black for light backgrounds
-    return brightness > 120 ? '#000000' : '#ffffff';
+    try {
+      // Remove # if present
+      hexColor = hexColor.replace("#", "");
+      
+      // Ensure we have a 6-digit hex
+      if (hexColor.length === 3) {
+        hexColor = hexColor[0] + hexColor[0] + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2];
+      }
+      
+      // Convert to RGB
+      const r = parseInt(hexColor.substring(0, 2), 16);
+      const g = parseInt(hexColor.substring(2, 4), 16);
+      const b = parseInt(hexColor.substring(4, 6), 16);
+      
+      // Use WCAG luminance formula for better contrast calculation
+      // This gives more weight to colors that human eyes are more sensitive to (green)
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      
+      // Use a lower threshold to ensure more text is white on medium-darkness colors
+      return luminance > 0.6 ? "#000000" : "#ffffff";
+    } catch (error) {
+      console.error("Error in getContrastColor:", error, "for color:", hexColor);
+      return "#000000"; // Default to black on error
+    }
   };
 
   // Function to format date as DD/MM/YYYY
@@ -920,32 +931,23 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   const handleGenerateCardsForTopic = (subject, topicName, topicId, e) => {
     if (e) e.stopPropagation(); // Prevent topic expansion toggle
     
-    console.log(`Generate cards clicked for ${subject}: ${topicName}, topicId: ${topicId}`);
+    console.log(`Generate cards request for ${subject}: ${topicName}, topicId: ${topicId}`);
     
-    // If the onViewTopicList callback is provided, call it with additional parameters
-    if (onViewTopicList) {
-      // Set the selected subject for the topic list view
-      onViewTopicList(subject);
-      
-      // Navigate to AI generator view directly with selected subject and topic
-      // We do this by simulating a view change to "aiGenerator"
-      console.log("Redirecting to AI Generator with:", { subject, topic: topicName });
-      
-      // Use setTimeout to ensure state updates have propagated
-      setTimeout(() => {
-        // Use the "aiGenerator" view and pass required parameters
-        const event = new CustomEvent('navToAIGenerator', { 
-          detail: { 
-            subject, 
-            topic: topicName,
-            topicId 
-          } 
-        });
-        window.dispatchEvent(event);
-      }, 100);
-    } else {
-      console.warn("onViewTopicList callback not provided, cannot navigate to AI generator");
-    }
+    // Create and dispatch a custom event to navigate directly to the AI generator
+    // with the correct subject and topic pre-selected
+    const event = new CustomEvent('navToAIGenerator', { 
+      detail: { 
+        subject, 
+        topic: topicName,
+        topicId 
+      } 
+    });
+    
+    // Dispatch the event to trigger navigation in App.js
+    window.dispatchEvent(event);
+    
+    // Log that we've dispatched the event
+    console.log(`Dispatched navToAIGenerator event for ${subject}: ${topicName}`);
   };
 
   // Function to close the topic-specific AI card generator modal
@@ -954,103 +956,136 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     setShowAICardGenerator(false);
   };
 
-  // Add the generateShade function for consistent color shading
-  const generateShade = (baseColor, shadeIndex, totalShades) => {
-    // Convert hex to RGB
-    const r = parseInt(baseColor.slice(1, 3), 16);
-    const g = parseInt(baseColor.slice(3, 5), 16);
-    const b = parseInt(baseColor.slice(5, 7), 16);
+  // Add a utility function to generate automatic topic colors
+  const generateTopicColors = (baseColor, topicCount) => {
+    // Create an array to hold all topic colors
+    const colors = [];
     
-    // Calculate lightness adjustment based on shade index
-    const lightnessAdjustment = -20 + (50 * (shadeIndex / Math.max(totalShades - 1, 1)));
-    
-    // Also adjust saturation slightly
-    const saturationAdjustment = 10 - (20 * (shadeIndex / Math.max(totalShades - 1, 1)));
-    
-    // Convert RGB to HSL
-    const rgbToHsl = (r, g, b) => {
-      r /= 255;
-      g /= 255;
-      b /= 255;
+    // For each topic, generate a unique color variation
+    for (let i = 0; i < topicCount; i++) {
+      // Calculate a hue offset to create visually distinct colors
+      // This maps the index to a position in the spectrum
+      let hueOffset = (i / Math.max(topicCount, 1)) * 30 - 15; // -15 to +15 degree hue shift
       
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      let h, s, l = (max + min) / 2;
+      // Calculate a lightness adjustment to create variety
+      // First topics are darker, later topics are lighter
+      let lightnessAdjustment = (i / Math.max(topicCount, 1)) * 30 - 15; // -15% to +15% lightness
       
-      if (max === min) {
-        h = s = 0; // achromatic
-      } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        
-        switch (max) {
-          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-          case g: h = (b - r) / d + 2; break;
-          case b: h = (r - g) / d + 4; break;
-          default: h = 0;
-        }
-        
-        h /= 6;
+      // Convert the base color to HSL
+      const rgb = hexToRgb(baseColor);
+      const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+      
+      // Apply the adjustments
+      hsl.h = (hsl.h + hueOffset / 360) % 1; // Hue is 0-1 in this implementation
+      hsl.l = Math.max(0.25, Math.min(0.75, hsl.l + lightnessAdjustment / 100)); // Keep lightness in reasonable range
+      
+      // Convert back to RGB and then to hex
+      const adjustedRgb = hslToRgb(hsl.h, hsl.s, hsl.l);
+      const hexColor = rgbToHex(adjustedRgb.r, adjustedRgb.g, adjustedRgb.b);
+      
+      colors.push(hexColor);
+    }
+    
+    return colors;
+  };
+  
+  // Helper function: Convert hex to RGB
+  const hexToRgb = (hex) => {
+    // Remove # if present
+    hex = hex.replace('#', '');
+    
+    // Handle 3-digit hex
+    if (hex.length === 3) {
+      hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    }
+    
+    // Convert to RGB
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    return { r, g, b };
+  };
+  
+  // Helper function: Convert RGB to HSL
+  const rgbToHsl = (r, g, b) => {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    
+    if (max === min) {
+      h = s = 0; // achromatic
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+        default: h = 0;
       }
       
-      return [h, s, l];
-    };
+      h /= 6;
+    }
     
-    // Convert HSL back to RGB
-    const hslToRgb = (h, s, l) => {
-      let r, g, b;
+    return { h, s, l };
+  };
+  
+  // Helper function: Convert HSL to RGB
+  const hslToRgb = (h, s, l) => {
+    let r, g, b;
+    
+    if (s === 0) {
+      r = g = b = l; // achromatic
+    } else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
       
-      if (s === 0) {
-        r = g = b = l; // achromatic
-      } else {
-        const hue2rgb = (p, q, t) => {
-          if (t < 0) t += 1;
-          if (t > 1) t -= 1;
-          if (t < 1/6) return p + (q - p) * 6 * t;
-          if (t < 1/2) return q;
-          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-          return p;
-        };
-        
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        
-        r = hue2rgb(p, q, h + 1/3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1/3);
-      }
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
       
-      return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-    };
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
     
-    // Convert to HSL, adjust, and convert back
-    const [h, s, l] = rgbToHsl(r, g, b);
-    
-    // Calculate new saturation and lightness with constraints
-    const newS = Math.min(Math.max(s * (1 + saturationAdjustment/100), 0.1), 1);
-    const newL = Math.min(Math.max(l * (1 + lightnessAdjustment/100), 0.2), 0.8);
-    
-    // Convert back to RGB
-    const [newR, newG, newB] = hslToRgb(h, newS, newL);
-    
-    // Convert back to hex
-    const toHex = c => {
+    return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+  };
+  
+  // Helper function: Convert RGB to hex
+  const rgbToHex = (r, g, b) => {
+    const toHex = (c) => {
       const hex = c.toString(16);
       return hex.length === 1 ? '0' + hex : hex;
     };
     
-    return '#' + toHex(newR) + toHex(newG) + toHex(newB);
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
-  // Add CSS for improved topic shell styling to FlashcardList.css
   const renderTopics = (subject, subjectColor) => {
     const isSubjectExpanded = expandedSubjects[subject];
     const topics = Object.keys(groupedCards[subject] || {});
     
     if (!isSubjectExpanded || topics.length === 0) return null;
     
-    // Get the base subject color from mapping
+    // Get the base subject color from mapping or use default
     const baseColor = subjectColorMapping[subject]?.base || subjectColor || '#e6194b';
+    
+    // Generate all topic colors at once for consistency
+    const topicColors = generateTopicColors(baseColor, topics.length);
+    
+    console.log(`Rendering ${topics.length} topics for subject ${subject} with base color ${baseColor}`);
     
     return (
       <div className="topics-container">
@@ -1067,10 +1102,27 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
           const topicId = topicShell?.id;
           const topicDate = getTopicDate(cardsInTopic);
           
-          // Calculate topic color - use a consistent shade generation based on index
-          const topicColor = topicShell?.color || 
-            subjectColorMapping[subject]?.topics?.[topic] || 
-            generateShade(baseColor, index, topics.length);
+          // Get topic color in this priority:
+          // 1. Use existing topic color from mapping if available
+          // 2. Use color from topic shell if available
+          // 3. Use pre-generated color from topicColors array
+          let topicColor = subjectColorMapping[subject]?.topics?.[topic] ||
+                          topicShell?.color || 
+                          topicColors[index];
+          
+          // Ensure we have a valid color
+          if (!topicColor || topicColor === '#cccccc') {
+            topicColor = topicColors[index];
+            
+            // Store this color in the mapping for future use
+            if (onUpdateSubjectColor && typeof onUpdateSubjectColor === 'function') {
+              console.log(`Setting topic color for ${subject}/${topic}: ${topicColor}`);
+              // We'll do this asynchronously to avoid re-renders during rendering
+              setTimeout(() => {
+                onUpdateSubjectColor(subject, topic, topicColor);
+              }, 100);
+            }
+          }
           
           // Calculate contrasting text color
           const textColor = getContrastColor(topicColor);
@@ -1078,18 +1130,16 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
           // Function to generate a deeper shade for buttons
           const generateButtonShade = (color) => {
             // Convert hex to RGB
-            const r = parseInt(color.slice(1, 3), 16);
-            const g = parseInt(color.slice(3, 5), 16);
-            const b = parseInt(color.slice(5, 7), 16);
+            const rgb = hexToRgb(color);
             
             // Darken by 20%
             const factor = 0.8;
-            const newR = Math.floor(r * factor);
-            const newG = Math.floor(g * factor);
-            const newB = Math.floor(b * factor);
+            const newR = Math.floor(rgb.r * factor);
+            const newG = Math.floor(rgb.g * factor);
+            const newB = Math.floor(rgb.b * factor);
             
             // Convert back to hex
-            return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+            return rgbToHex(newR, newG, newB);
           };
           
           // Button background based on topic color

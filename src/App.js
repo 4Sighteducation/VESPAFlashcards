@@ -43,6 +43,37 @@ const cleanHtmlTags = (str) => {
   return strValue.replace(/<\/?[^>]+(>|$)/g, "").trim();
 };
 
+// Enhanced contrast color function that ensures readability
+const getContrastColor = (hexColor) => {
+  if (!hexColor) return "#000000";
+  
+  try {
+    // Remove # if present
+    hexColor = hexColor.replace("#", "");
+    
+    // Ensure we have a 6-digit hex
+    if (hexColor.length === 3) {
+      hexColor = hexColor[0] + hexColor[0] + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2];
+    }
+    
+    // Convert to RGB
+    const r = parseInt(hexColor.substring(0, 2), 16);
+    const g = parseInt(hexColor.substring(2, 4), 16);
+    const b = parseInt(hexColor.substring(4, 6), 16);
+    
+    // Use WCAG luminance formula for better contrast calculation
+    // This gives more weight to colors that human eyes are more sensitive to (green)
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Use a lower threshold to ensure more text is white on medium-darkness colors
+    // Standard threshold is 0.5, but 0.6 ensures better readability
+    return luminance > 0.6 ? "#000000" : "#ffffff";
+  } catch (error) {
+    console.error("Error in getContrastColor:", error);
+    return "#000000"; // Default to black on error
+  }
+};
+
 function App() {
   // Authentication and user state
   const [auth, setAuth] = useState(null);

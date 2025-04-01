@@ -1,13 +1,13 @@
-main.js?1743497787437&_=1743497787437:106 VESPA Config initialized: {knackAppId: '5ee90912c38ae7001510c1a9', knackApiKey: '8f733aa5-dd35-4464-8348-64824d1f5f0d', appUrl: 'https://vespa-flashcards-e7f31e9ff3c9.herokuapp.com/'}
-main.js?1743497787437&_=1743497787437:129 Document ready - checking if flashcard app needs initialization
-main.js?1743497787437&_=1743497787437:119 VESPA Integration script loaded successfully
+main.js?1743512517216&_=1743512517217:106 VESPA Config initialized: {knackAppId: '5ee90912c38ae7001510c1a9', knackApiKey: '8f733aa5-dd35-4464-8348-64824d1f5f0d', appUrl: 'https://vespa-flashcards-e7f31e9ff3c9.herokuapp.com/'}
+main.js?1743512517216&_=1743512517217:129 Document ready - checking if flashcard app needs initialization
+main.js?1743512517216&_=1743512517217:119 VESPA Integration script loaded successfully
 index.js?v=1:76 Developed byKsense Technology Group LLCPRODUCTION MODE - Branch: mainKSENSE DEBUG: INJECTED URL: https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1
-index.js?v=1:90 (index)Value(index)ValueisDevUserfalsetunnelUrlundefineddevBranch'main'projectRoute'knack_projects/vespa'currentUser'604fba9e1bd69a001b48d1a8'injectURL'https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1'useLocalRoutesfalseuseStagingServerfalsecssFiles''isHostedOnNexustrueObject
+index.js?v=1:90 (index)Value(index)ValueisDevUserfalsetunnelUrlundefineddevBranch'main'projectRoute'knack_projects/vespa'currentUser'630510eb3c91500021a8fad2'injectURL'https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1'useLocalRoutesfalseuseStagingServerfalsecssFiles''isHostedOnNexustrueObject
 KnackJavascript6a.js:688 Flashcard app: Scene rendered: scene_1206
 KnackJavascript6a.js:694 Initializing Flashcard React app (Version 5x with SaveQueue)
 KnackJavascript6a.js:710 Flashcard app: User is authenticated
-KnackJavascript6a.js:715 Flashcard app: Basic user info: {id: '604fba9e1bd69a001b48d1a8', values: {…}, roles: Array(1), email: 'stu5@vespa.academy', name: 'Jane Dowe'}
-KnackJavascript6a.js:1264 [Knack Script] Getting complete user data for: 604fba9e1bd69a001b48d1a8
+KnackJavascript6a.js:715 Flashcard app: Basic user info: {id: '630510eb3c91500021a8fad2', values: {…}, roles: Array(1), email: 'aramsey@vespa.academy', name: 'Alena Ramsey'}
+KnackJavascript6a.js:1264 [Knack Script] Getting complete user data for: 630510eb3c91500021a8fad2
 
                 
           
@@ -22,574 +22,229 @@ KnackJavascript6a.js:1264 [Knack Script] Getting complete user data for: 604fba9
 vespa-academy#flashcards/:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
 KnackJavascript6a.js:1278 [Knack Script] Complete user data received.
 KnackJavascript6a.js:203 [Knack Script] [Knack Script] Raw Complete User Data:
-KnackJavascript6a.js:206 {id: '604fba9e1bd69a001b48d1a8', account_status: 'active', approval_status: 'approved', utility_key: '16158442727314i3crfl', profile_keys_raw: Array(1), …}
+KnackJavascript6a.js:206 {id: '630510eb3c91500021a8fad2', account_status: 'active', approval_status: 'approved', utility_key: '17255243733681lvgwmb', profile_keys_raw: Array(1), …}
 KnackJavascript6a.js:203 [Knack Script] Enhanced global user object
-KnackJavascript6a.js:206 {id: '604fba9e1bd69a001b48d1a8', values: {…}, roles: Array(1), email: 'stu5@vespa.academy', name: 'Jane Dowe', …}
+KnackJavascript6a.js:206 {id: '630510eb3c91500021a8fad2', values: {…}, roles: Array(1), email: 'aramsey@vespa.academy', name: 'Alena Ramsey', …}
 KnackJavascript6a.js:203 [Knack Script] FINAL CONNECTION FIELD IDs
-KnackJavascript6a.js:206 {emailId: '604fba9e1bd69a001b48d1a8', schoolId: '603e9f97cb8481001b31183d', tutorId: null, roleId: null}
+KnackJavascript6a.js:206 {emailId: '630510eb3c91500021a8fad2', schoolId: '603e9f97cb8481001b31183d', tutorId: null, roleId: null}
 KnackJavascript6a.js:762 Creating container inside view_3005
 KnackJavascript6a.js:887 Flashcard app initialization sequence complete. Waiting for APP_READY from iframe.
-App.js:1672 [Init] Sent ready message to parent
+App.js:1820 [Init] Sent ready message to parent
+App.js:2086 Recovered recordId from localStorage: 67ebce06d50cfd02bc828a4a
+App.js:1820 [Init] Sent ready message to parent
 KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
 KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
-KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 604fba9e1bd69a001b48d1a8
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630510eb3c91500021a8fad2
+KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
+KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630510eb3c91500021a8fad2
 KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
-KnackJavascript6a.js:206 {total_pages: 0, current_page: 1, total_records: 0, records: Array(0)}
-KnackJavascript6a.js:1372 [Knack Script] No existing flashcard record found for user 604fba9e1bd69a001b48d1a8, creating new one...
-KnackJavascript6a.js:1400 [Knack Script] Creating new flashcard user record for: 604fba9e1bd69a001b48d1a8
-KnackJavascript6a.js:203 [Knack Script] [Knack Script] CREATING NEW RECORD PAYLOAD
-KnackJavascript6a.js:206 {field_2954: '604fba9e1bd69a001b48d1a8', field_2958: 'stu5@vespa.academy', field_3010: 'Jane Dowe', field_2957: '2025-04-01T08:56:29.197Z', field_2979: '[]', …}
-KnackJavascript6a.js:1455 [Knack Script] Successfully created user record: {id: '67ebaa3dd50cfd02bc7b259e', field_3010: '', field_3010_raw: '', field_3029_raw: '', field_3029: '', …}
-KnackJavascript6a.js:1375 [Knack Script] New record created with ID: 67ebaa3dd50cfd02bc7b259e
+KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ebce06d50cfd02bc828a4a
+KnackJavascript6a.js:1339 [Knack Script] Loaded 21 cards/shells from bank.
+KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
+KnackJavascript6a.js:1349 [Knack Script] Loaded 0 topic lists.
+KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
+KnackJavascript6a.js:1355 [Knack Script] Loaded 0 topic metadata items.
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
+KnackJavascript6a.js:206 {recordId: '67ebce06d50cfd02bc828a4a', cards: Array(21), spacedRepetition: {…}, topicLists: Array(0), colorMapping: {…}, …}
 KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
-KnackJavascript6a.js:206 {id: '604fba9e1bd69a001b48d1a8', email: 'stu5@vespa.academy', name: 'Jane Dowe', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…xNDF9.rHN0_uXmW8ziRtd34ad_uD_ZjsTBS3Ht8ZufLQZB4Bw', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:206 {id: '630510eb3c91500021a8fad2', email: 'aramsey@vespa.academy', name: 'Alena Ramsey', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…xOTV9.Q-UZyqTqgeBW_2YE2htveAZMJ-sIoLTIG_Twy4uYf3Q', appId: '5ee90912c38ae7001510c1a9', …}
 KnackJavascript6a.js:873 Flashcard app initialized and visible.
-App.js:1190 [Message Handler 2025-04-01T08:56:29.526Z] From parent: KNACK_USER_INFO
-App.js:1204 [User Info] First-time processing of user data
+App.js:1338 [Message Handler 2025-04-01T13:01:58.869Z] From parent: KNACK_USER_INFO
+App.js:1352 [User Info] First-time processing of user data
 AuthAppIntegration.js:15 [AuthAppIntegration] Initializing AuthManager with user data
 AuthManager.js:46 [AuthManager] Initialized successfully
-App.js:1256 [User Info] Initialized AuthManager with user data
-App.js:1262 [User Info] Raw userData from Knack: {recordId: '67ebaa3dd50cfd02bc7b259e', cards: Array(0), spacedRepetition: {…}, topicLists: Array(0), topicMetadata: Array(0), …}
-App.js:1264 [User Info] Parsed userData object: {recordId: '67ebaa3dd50cfd02bc7b259e', cards: Array(0), spacedRepetition: {…}, topicLists: Array(0), topicMetadata: Array(0), …}
-App.js:1269 [User Info] Stored recordId: 67ebaa3dd50cfd02bc7b259e
-App.js:1274 [User Info] Stored record ID in localStorage for recovery
-App.js:1282 [User Info] Found userData.cards array: []
+App.js:1404 [User Info] Initialized AuthManager with user data
+App.js:1410 [User Info] Raw userData from Knack: {recordId: '67ebce06d50cfd02bc828a4a', cards: Array(21), spacedRepetition: {…}, topicLists: Array(0), colorMapping: {…}, …}
+App.js:1412 [User Info] Parsed userData object: {recordId: '67ebce06d50cfd02bc828a4a', cards: Array(21), spacedRepetition: {…}, topicLists: Array(0), colorMapping: {…}, …}
+App.js:1417 [User Info] Stored recordId: 67ebce06d50cfd02bc828a4a
+App.js:1422 [User Info] Stored record ID in localStorage for recovery
+App.js:1430 [User Info] Found userData.cards array: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
 DataUtils.js:501 Empty or invalid multiple choice options backup
-App.js:1284 [User Info] Calling setAllCards with: []
-App.js:1287 [User Info] Restored multiple choice options for cards
-App.js:1310 [User Info] Loaded topic lists from Knack: 0
-App.js:1316 [User Info] Loaded topic metadata from Knack: 0
-App.js:1320 [User Info] Successfully processed user data from Knack
-App.js:1336 [User Info] Sending AUTH_CONFIRMED message
+App.js:1432 [User Info] Calling setAllCards with: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+App.js:1435 [User Info] Restored multiple choice options for cards
+App.js:1458 [User Info] Loaded topic lists from Knack: 0
+App.js:1464 [User Info] Loaded topic metadata from Knack: 0
+App.js:1468 [User Info] Successfully processed user data from Knack
+App.js:1484 [User Info] Sending AUTH_CONFIRMED message
 KnackJavascript6a.js:832 [Knack Script] Received message type: AUTH_CONFIRMED
 KnackJavascript6a.js:905 [Knack Script] Routing message type: AUTH_CONFIRMED
 KnackJavascript6a.js:927 [Knack Script] React App confirmed auth.
+FlashcardList.jsx:81 [FlashcardList] Received cards prop: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:190 FlashcardList processed items (Revised Grouping): {groupedStructure: {…}}
+FlashcardList.jsx:219 Found metadata in card for Dance: {examBoard: 'AQA', examType: 'A-Level'}
+FlashcardList.jsx:219 Found metadata in card for Biology: {examBoard: 'AQA', examType: 'A-Level'}
 TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-App.js:1672 [Init] Sent ready message to parent
+App.js:1820 [Init] Sent ready message to parent
 KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
 KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
-KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 604fba9e1bd69a001b48d1a8
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630510eb3c91500021a8fad2
+FlashcardList.jsx:81 [FlashcardList] Received cards prop: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
 KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
 KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
-KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ebaa3dd50cfd02bc7b259e
-KnackJavascript6a.js:1339 [Knack Script] Loaded 0 cards/shells from bank.
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ebce06d50cfd02bc828a4a
+KnackJavascript6a.js:1339 [Knack Script] Loaded 21 cards/shells from bank.
 KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
 KnackJavascript6a.js:1349 [Knack Script] Loaded 0 topic lists.
 KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
 KnackJavascript6a.js:1355 [Knack Script] Loaded 0 topic metadata items.
 KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
-KnackJavascript6a.js:206 {recordId: '67ebaa3dd50cfd02bc7b259e', cards: Array(0), spacedRepetition: {…}, topicLists: Array(0), colorMapping: {…}, …}
+KnackJavascript6a.js:206 {recordId: '67ebce06d50cfd02bc828a4a', cards: Array(21), spacedRepetition: {…}, topicLists: Array(0), colorMapping: {…}, …}
 KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
-KnackJavascript6a.js:206 {id: '604fba9e1bd69a001b48d1a8', email: 'stu5@vespa.academy', name: 'Jane Dowe', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…xNDF9.rHN0_uXmW8ziRtd34ad_uD_ZjsTBS3Ht8ZufLQZB4Bw', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:206 {id: '630510eb3c91500021a8fad2', email: 'aramsey@vespa.academy', name: 'Alena Ramsey', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…xOTV9.Q-UZyqTqgeBW_2YE2htveAZMJ-sIoLTIG_Twy4uYf3Q', appId: '5ee90912c38ae7001510c1a9', …}
 KnackJavascript6a.js:873 Flashcard app initialized and visible.
-App.js:1190 [Message Handler 2025-04-01T08:56:29.795Z] From parent: KNACK_USER_INFO
-App.js:1198 [User Info] Already processed, ignoring duplicate message
-TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-AICardGenerator.jsx:337 Auto-generating topics for subject: Biology
-AICardGenerator.jsx:2040 AICardGenerator: Rendering TopicHub with onFinalizeTopics prop: true
-AICardGenerator.jsx:2040 AICardGenerator: Rendering TopicHub with onFinalizeTopics prop: true
-index.jsx:175 Starting topic generation for: AQA A-Level Biology
-index.jsx:142 ❌ No cached topics found for: aqa-a-level-biology
-index.jsx:233 ==== RAW API RESPONSE FROM OPENAI ====
-index.jsx:234 [
-    {
-        "id": "1.1",
-        "topic": "Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides",
-        "mainTopic": "Biological molecules",
-        "subtopic": "Carbohydrates - monosaccharides, disaccharides, and polysaccharides"
-    },
-    {
-        "id": "1.2",
-        "topic": "Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure",
-        "mainTopic": "Biological molecules",
-        "subtopic": "Proteins - primary, secondary, tertiary, and quaternary structure"
-    },
-    {
-        "id": "1.3",
-        "topic": "Cell structure: Eukaryotic cells - structure and organelles",
-        "mainTopic": "Cell structure",
-        "subtopic": "Eukaryotic cells - structure and organelles"
-    },
-    {
-        "id": "1.4",
-        "topic": "Cell structure: Prokaryotic cells - structure and function",
-        "mainTopic": "Cell structure",
-        "subtopic": "Prokaryotic cells - structure and function"
-    },
-    {
-        "id": "1.5",
-        "topic": "Cell structure: Sub-cellular structures - the roles of cell components",
-        "mainTopic": "Cell structure",
-        "subtopic": "Sub-cellular structures - the roles of cell components"
-    },
-    {
-        "id": "1.6",
-        "topic": "Biological membranes: Structure and function of membranes",
-        "mainTopic": "Biological membranes",
-        "subtopic": "Structure and function of membranes"
-    },
-    {
-        "id": "1.7",
-        "topic": "Biological membranes: Transport across membranes",
-        "mainTopic": "Biological membranes",
-        "subtopic": "Transport across membranes"
-    },
-    {
-        "id": "1.8",
-        "topic": "Cell division, cell diversity, and cellular organization: Cell division - mitosis, meiosis, and their significance",
-        "mainTopic": "Cell division, cell diversity, and cellular organization",
-        "subtopic": "Cell division - mitosis, meiosis, and their significance"
-    },
-    {
-        "id": "1.9",
-        "topic": "Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells",
-        "mainTopic": "Cell division, cell diversity, and cellular organization",
-        "subtopic": "Cell differentiation and stem cells"
-    },
-    {
-        "id": "1.10",
-        "topic": "Cell division, cell diversity, and cellular organization: Cellular organization - prokaryotic and eukaryotic cells",
-        "mainTopic": "Cell division, cell diversity, and cellular organization",
-        "subtopic": "Cellular organization - prokaryotic and eukaryotic cells"
-    },
-    {
-        "id": "1.11",
-        "topic": "Cell division, cell diversity, and cellular organization: Cell diversity and adaptations",
-        "mainTopic": "Cell division, cell diversity, and cellular organization",
-        "subtopic": "Cell diversity and adaptations"
-    },
-    {
-        "id": "1.12",
-        "topic": "Exchange surfaces: Surface area to volume ratio in multicellular organisms",
-        "mainTopic": "Exchange surfaces",
-        "subtopic": "Surface area to volume ratio in multicellular organisms"
-    },
-    {
-        "id": "1.13",
-        "topic": "Exchange surfaces: Structure and function of the gas exchange system in mammals",
-        "mainTopic": "Exchange surfaces",
-        "subtopic": "Structure and function of the gas exchange system in mammals"
-    },
-    {
-        "id": "1.14",
-        "topic": "Exchange surfaces: Structure and function of the gas exchange system in fish",
-        "mainTopic": "Exchange surfaces",
-        "subtopic": "Structure and function of the gas exchange system in fish"
-    },
-    {
-        "id": "1.15",
-        "topic": "Transport in animals: Structure and function of the heart",
-        "mainTopic": "Transport in animals",
-        "subtopic": "Structure and function of the heart"
-    }
-]
-index.jsx:235 ==== END RAW API RESPONSE ====
-index.jsx:246 Content after preprocessing: [
-    {
-        "id": "1.1",
-        "topic": "Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides",
-        "ma...
-index.jsx:253 Successfully parsed JSON response: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-index.jsx:463 ===== FINAL TOPIC LIST BEING USED =====
-index.jsx:464 [
-  {
-    "id": "1.1",
-    "topic": "Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides",
-    "mainTopic": "Biological molecules",
-    "subtopic": "Carbohydrates - monosaccharides, disaccharides, and polysaccharides"
-  },
-  {
-    "id": "1.2",
-    "topic": "Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure",
-    "mainTopic": "Biological molecules",
-    "subtopic": "Proteins - primary, secondary, tertiary, and quaternary structure"
-  },
-  {
-    "id": "1.3",
-    "topic": "Cell structure: Eukaryotic cells - structure and organelles",
-    "mainTopic": "Cell structure",
-    "subtopic": "Eukaryotic cells - structure and organelles"
-  },
-  {
-    "id": "1.4",
-    "topic": "Cell structure: Prokaryotic cells - structure and function",
-    "mainTopic": "Cell structure",
-    "subtopic": "Prokaryotic cells - structure and function"
-  },
-  {
-    "id": "1.5",
-    "topic": "Cell structure: Sub-cellular structures - the roles of cell components",
-    "mainTopic": "Cell structure",
-    "subtopic": "Sub-cellular structures - the roles of cell components"
-  },
-  {
-    "id": "1.6",
-    "topic": "Biological membranes: Structure and function of membranes",
-    "mainTopic": "Biological membranes",
-    "subtopic": "Structure and function of membranes"
-  },
-  {
-    "id": "1.7",
-    "topic": "Biological membranes: Transport across membranes",
-    "mainTopic": "Biological membranes",
-    "subtopic": "Transport across membranes"
-  },
-  {
-    "id": "1.8",
-    "topic": "Cell division, cell diversity, and cellular organization: Cell division - mitosis, meiosis, and their significance",
-    "mainTopic": "Cell division, cell diversity, and cellular organization",
-    "subtopic": "Cell division - mitosis, meiosis, and their significance"
-  },
-  {
-    "id": "1.9",
-    "topic": "Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells",
-    "mainTopic": "Cell division, cell diversity, and cellular organization",
-    "subtopic": "Cell differentiation and stem cells"
-  },
-  {
-    "id": "1.10",
-    "topic": "Cell division, cell diversity, and cellular organization: Cellular organization - prokaryotic and eukaryotic cells",
-    "mainTopic": "Cell division, cell diversity, and cellular organization",
-    "subtopic": "Cellular organization - prokaryotic and eukaryotic cells"
-  },
-  {
-    "id": "1.11",
-    "topic": "Cell division, cell diversity, and cellular organization: Cell diversity and adaptations",
-    "mainTopic": "Cell division, cell diversity, and cellular organization",
-    "subtopic": "Cell diversity and adaptations"
-  },
-  {
-    "id": "1.12",
-    "topic": "Exchange surfaces: Surface area to volume ratio in multicellular organisms",
-    "mainTopic": "Exchange surfaces",
-    "subtopic": "Surface area to volume ratio in multicellular organisms"
-  },
-  {
-    "id": "1.13",
-    "topic": "Exchange surfaces: Structure and function of the gas exchange system in mammals",
-    "mainTopic": "Exchange surfaces",
-    "subtopic": "Structure and function of the gas exchange system in mammals"
-  },
-  {
-    "id": "1.14",
-    "topic": "Exchange surfaces: Structure and function of the gas exchange system in fish",
-    "mainTopic": "Exchange surfaces",
-    "subtopic": "Structure and function of the gas exchange system in fish"
-  },
-  {
-    "id": "1.15",
-    "topic": "Transport in animals: Structure and function of the heart",
-    "mainTopic": "Transport in animals",
-    "subtopic": "Structure and function of the heart"
-  }
-]
-index.jsx:465 Topic count: 15
-index.jsx:466 Using fallback: false
-index.jsx:467 ===== END FINAL TOPIC LIST =====
-index.jsx:149 📦 Storing topics in cache: aqa-a-level-biology
-index.jsx:120 [TopicHub] Grouping topics into mainTopics: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
-index.jsx:1029 handleSaveTopicList triggered
-index.jsx:1044 TOPIC HUB: Creating topic shells from 15 topics
-index.jsx:1045 TOPIC HUB: First few topics: (3) [{…}, {…}, {…}]
-index.jsx:1046 TOPIC HUB: Subject: Biology examBoard: AQA examType: A-Level
-index.jsx:1064 TOPIC HUB: Created 15 topic shells
-index.jsx:1065 TOPIC HUB: First few shells: (3) [{…}, {…}, {…}]
-index.jsx:1070 TOPIC HUB: Calling onFinalizeTopics with 15 shells
-App.js:1802 [App.js] Received finalized topic shells: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-App.js:1823 [App.js] Merged items. Old count: 0, New count: 15
-App.js:1826 [CRITICAL DEBUG] Topic shells AFTER merge logic: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-index.jsx:1072 TOPIC HUB: onFinalizeTopics call completed successfully
-AICardGenerator.jsx:2040 AICardGenerator: Rendering TopicHub with onFinalizeTopics prop: true
-TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-App.js:1672 [Init] Sent ready message to parent
-KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
-KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
-KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 604fba9e1bd69a001b48d1a8
-AICardGenerator.jsx:2040 AICardGenerator: Rendering TopicHub with onFinalizeTopics prop: true
-App.js:1842 [App.js] Triggering save after adding topic shells
-App.js:322 [Save] Starting save operation...
-App.js:326 [Save] Saving to localStorage first
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-04-01T08:57:58.957Z
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-DataUtils.js:472 Backed up options for 0 multiple choice cards
-App.js:218 Saved data to localStorage with versioning and backup
-App.js:331 [Save] Preparing data for Knack integration
-AICardGenerator.jsx:2040 AICardGenerator: Rendering TopicHub with onFinalizeTopics prop: true
-TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-AICardGenerator.jsx:2040 AICardGenerator: Rendering TopicHub with onFinalizeTopics prop: true
-App.js:374  Uncaught (in promise) TypeError: Cannot read properties of null (reading 'length')
-    at App.js:374:69
-    at App.js:1844:7
-(anonymous) @ App.js:374
-(anonymous) @ App.js:1844
-setTimeout
-(anonymous) @ App.js:1841
-(anonymous) @ index.jsx:1071
-onClick @ index.jsx:1168
-Ie @ react-dom.production.min.js:54
-$e @ react-dom.production.min.js:54
-(anonymous) @ react-dom.production.min.js:55
-Lr @ react-dom.production.min.js:105
-Br @ react-dom.production.min.js:106
-(anonymous) @ react-dom.production.min.js:117
-cc @ react-dom.production.min.js:273
-Ae @ react-dom.production.min.js:52
-Kr @ react-dom.production.min.js:109
-qt @ react-dom.production.min.js:74
-Gt @ react-dom.production.min.js:73
+App.js:1338 [Message Handler 2025-04-01T13:01:59.079Z] From parent: KNACK_USER_INFO
+App.js:1346 [User Info] Already processed, ignoring duplicate message
 KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
 KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
-KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ebaa3dd50cfd02bc7b259e
-KnackJavascript6a.js:1339 [Knack Script] Loaded 0 cards/shells from bank.
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ebce06d50cfd02bc828a4a
+KnackJavascript6a.js:1339 [Knack Script] Loaded 21 cards/shells from bank.
 KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
 KnackJavascript6a.js:1349 [Knack Script] Loaded 0 topic lists.
 KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
 KnackJavascript6a.js:1355 [Knack Script] Loaded 0 topic metadata items.
 KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
-KnackJavascript6a.js:206 {recordId: '67ebaa3dd50cfd02bc7b259e', cards: Array(0), spacedRepetition: {…}, topicLists: Array(0), colorMapping: {…}, …}
+KnackJavascript6a.js:206 {recordId: '67ebce06d50cfd02bc828a4a', cards: Array(21), spacedRepetition: {…}, topicLists: Array(0), colorMapping: {…}, …}
 KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
-KnackJavascript6a.js:206 {id: '604fba9e1bd69a001b48d1a8', email: 'stu5@vespa.academy', name: 'Jane Dowe', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…xNDF9.rHN0_uXmW8ziRtd34ad_uD_ZjsTBS3Ht8ZufLQZB4Bw', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:206 {id: '630510eb3c91500021a8fad2', email: 'aramsey@vespa.academy', name: 'Alena Ramsey', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…xOTV9.Q-UZyqTqgeBW_2YE2htveAZMJ-sIoLTIG_Twy4uYf3Q', appId: '5ee90912c38ae7001510c1a9', …}
 KnackJavascript6a.js:873 Flashcard app initialized and visible.
-App.js:1190 [Message Handler 2025-04-01T08:57:58.983Z] From parent: KNACK_USER_INFO
-App.js:1198 [User Info] Already processed, ignoring duplicate message
-AICardGenerator.jsx:2051 TopicHub closed - returning to card bank
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:190 FlashcardList processed items (Revised Grouping): {groupedStructure: {…}}
-FlashcardList.jsx:219 Found metadata in card for Biology: {examBoard: 'AQA', examType: 'A-Level'}
-TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-App.js:1849 [App.js] Trigger backup save
-App.js:322 [Save] Starting save operation...
-App.js:326 [Save] Saving to localStorage first
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-04-01T08:58:00.961Z
-DataUtils.js:373 Data Stats: {cards: 0, subjects: 0, version: '1.0'}
-DataUtils.js:472 Backed up options for 0 multiple choice cards
-App.js:218 Saved data to localStorage with versioning and backup
-App.js:331 [Save] Preparing data for Knack integration
-App.js:352  [Save] Serialization error: SyntaxError: "undefined" is not valid JSON
-    at JSON.parse (<anonymous>)
-    at l (App.js:350:23)
-    at App.js:364:16
-    at App.js:1850:9
-l @ App.js:352
-(anonymous) @ App.js:364
-(anonymous) @ App.js:1850
-setTimeout
-(anonymous) @ App.js:1848
-setTimeout
-(anonymous) @ App.js:1841
-(anonymous) @ index.jsx:1071
-onClick @ index.jsx:1168
-Ie @ react-dom.production.min.js:54
-$e @ react-dom.production.min.js:54
-(anonymous) @ react-dom.production.min.js:55
-Lr @ react-dom.production.min.js:105
-Br @ react-dom.production.min.js:106
-(anonymous) @ react-dom.production.min.js:117
-cc @ react-dom.production.min.js:273
-Ae @ react-dom.production.min.js:52
-Kr @ react-dom.production.min.js:109
-qt @ react-dom.production.min.js:74
-Gt @ react-dom.production.min.js:73
-App.js:374 [Save] Sending data to Knack (undefined items, record ID: 67ebaa3dd50cfd02bc7b259e)
-App.js:375 [Save] Payload structure: {recordId: '67ebaa3dd50cfd02bc7b259e', cards_count: undefined, colorMapping_keys: Array(0), spacedRepetition_box1_count: 0, userTopics_keys: Array(0), …}
-App.js:386  Uncaught (in promise) TypeError: c.cards.slice is not a function
-    at App.js:386:44
-    at App.js:1850:9
-(anonymous) @ App.js:386
-(anonymous) @ App.js:1850
-setTimeout
-(anonymous) @ App.js:1848
-setTimeout
-(anonymous) @ App.js:1841
-(anonymous) @ index.jsx:1071
-onClick @ index.jsx:1168
-Ie @ react-dom.production.min.js:54
-$e @ react-dom.production.min.js:54
-(anonymous) @ react-dom.production.min.js:55
-Lr @ react-dom.production.min.js:105
-Br @ react-dom.production.min.js:106
-(anonymous) @ react-dom.production.min.js:117
-cc @ react-dom.production.min.js:273
-Ae @ react-dom.production.min.js:52
-Kr @ react-dom.production.min.js:109
-qt @ react-dom.production.min.js:74
-Gt @ react-dom.production.min.js:73
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:974 [Render Subject Biology] Topic Names: (15) ['Biological membranes: Structure and function of membranes', 'Biological membranes: Transport across membranes', 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', 'Cell structure: Eukaryotic cells - structure and organelles', 'Cell structure: Prokaryotic cells - structure and function', 'Cell structure: Sub-cellular structures - the roles of cell components', 'Exchange surfaces: Structure and function of the gas exchange system in fish', 'Exchange surfaces: Structure and function of the gas exchange system in mammals', 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', 'Transport in animals: Structure and function of the heart']
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Structure and function of membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.6', type: 'topic', name: 'Biological membranes: Structure and function of membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Transport across membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.7', type: 'topic', name: 'Biological membranes: Transport across membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.1', type: 'topic', name: 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.2', type: 'topic', name: 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.9', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell diversity and adaptations, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.11', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell division - mitosis, meiosis, and their significance, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.8', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cellular organization - prokaryotic and eukaryotic cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.10', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Eukaryotic cells - structure and organelles, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.3', type: 'topic', name: 'Cell structure: Eukaryotic cells - structure and organelles', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Prokaryotic cells - structure and function, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.4', type: 'topic', name: 'Cell structure: Prokaryotic cells - structure and function', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Sub-cellular structures - the roles of cell components, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.5', type: 'topic', name: 'Cell structure: Sub-cellular structures - the roles of cell components', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in fish, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.14', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in fish', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in mammals, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.13', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in mammals', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Surface area to volume ratio in multicellular organisms, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.12', type: 'topic', name: 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Transport in animals: Structure and function of the heart, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.15', type: 'topic', name: 'Transport in animals: Structure and function of the heart', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:190 FlashcardList processed items (Revised Grouping): {groupedStructure: {…}}
-FlashcardList.jsx:219 Found metadata in card for Biology: {examBoard: 'AQA', examType: 'A-Level'}
-FlashcardList.jsx:974 [Render Subject Biology] Topic Names: (15) ['Biological membranes: Structure and function of membranes', 'Biological membranes: Transport across membranes', 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', 'Cell structure: Eukaryotic cells - structure and organelles', 'Cell structure: Prokaryotic cells - structure and function', 'Cell structure: Sub-cellular structures - the roles of cell components', 'Exchange surfaces: Structure and function of the gas exchange system in fish', 'Exchange surfaces: Structure and function of the gas exchange system in mammals', 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', 'Transport in animals: Structure and function of the heart']
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Structure and function of membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.6', type: 'topic', name: 'Biological membranes: Structure and function of membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Transport across membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.7', type: 'topic', name: 'Biological membranes: Transport across membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.1', type: 'topic', name: 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.2', type: 'topic', name: 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.9', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell diversity and adaptations, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.11', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell division - mitosis, meiosis, and their significance, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.8', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cellular organization - prokaryotic and eukaryotic cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.10', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Eukaryotic cells - structure and organelles, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.3', type: 'topic', name: 'Cell structure: Eukaryotic cells - structure and organelles', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Prokaryotic cells - structure and function, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.4', type: 'topic', name: 'Cell structure: Prokaryotic cells - structure and function', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Sub-cellular structures - the roles of cell components, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.5', type: 'topic', name: 'Cell structure: Sub-cellular structures - the roles of cell components', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in fish, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.14', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in fish', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in mammals, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.13', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in mammals', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Surface area to volume ratio in multicellular organisms, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.12', type: 'topic', name: 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Transport in animals: Structure and function of the heart, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.15', type: 'topic', name: 'Transport in animals: Structure and function of the heart', subject: 'Biology', examBoard: 'AQA', …}
-TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:974 [Render Subject Biology] Topic Names: (15) ['Biological membranes: Structure and function of membranes', 'Biological membranes: Transport across membranes', 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', 'Cell structure: Eukaryotic cells - structure and organelles', 'Cell structure: Prokaryotic cells - structure and function', 'Cell structure: Sub-cellular structures - the roles of cell components', 'Exchange surfaces: Structure and function of the gas exchange system in fish', 'Exchange surfaces: Structure and function of the gas exchange system in mammals', 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', 'Transport in animals: Structure and function of the heart']
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Structure and function of membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.6', type: 'topic', name: 'Biological membranes: Structure and function of membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Transport across membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.7', type: 'topic', name: 'Biological membranes: Transport across membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.1', type: 'topic', name: 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.2', type: 'topic', name: 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.9', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell diversity and adaptations, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.11', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell division - mitosis, meiosis, and their significance, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.8', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cellular organization - prokaryotic and eukaryotic cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.10', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Eukaryotic cells - structure and organelles, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.3', type: 'topic', name: 'Cell structure: Eukaryotic cells - structure and organelles', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Prokaryotic cells - structure and function, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.4', type: 'topic', name: 'Cell structure: Prokaryotic cells - structure and function', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Sub-cellular structures - the roles of cell components, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.5', type: 'topic', name: 'Cell structure: Sub-cellular structures - the roles of cell components', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in fish, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.14', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in fish', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in mammals, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.13', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in mammals', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Surface area to volume ratio in multicellular organisms, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.12', type: 'topic', name: 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Transport in animals: Structure and function of the heart, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.15', type: 'topic', name: 'Transport in animals: Structure and function of the heart', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:904 [FlashcardList] Calling onUpdateSubjectColor for Biology with color #c00000, applyToAll: true
-App.js:453 Updating color for subject: Biology, topic: none, color: #c00000, updateTopics: true
-App.js:470 Updating all topic colors for subject Biology based on #c00000
-App.js:487 Found topics for subject Biology: (15) ['Carbohydrates - monosaccharides, disaccharides, and polysaccharides', 'Cell differentiation and stem cells', 'Cell diversity and adaptations', 'Cell division - mitosis, meiosis, and their significance', 'Cellular organization - prokaryotic and eukaryotic cells', 'Eukaryotic cells - structure and organelles', 'Prokaryotic cells - structure and function', 'Proteins - primary, secondary, tertiary, and quaternary structure', 'Structure and function of membranes', 'Structure and function of the gas exchange system in fish', 'Structure and function of the gas exchange system in mammals', 'Structure and function of the heart', 'Sub-cellular structures - the roles of cell components', 'Surface area to volume ratio in multicellular organisms', 'Transport across membranes']
-App.js:497 Generated color for Carbohydrates - monosaccharides, disaccharides, and polysaccharides: #9a0000
-App.js:497 Generated color for Cell differentiation and stem cells: #a00000
-App.js:497 Generated color for Cell diversity and adaptations: #a70000
-App.js:497 Generated color for Cell division - mitosis, meiosis, and their significance: #ae0000
-App.js:497 Generated color for Cellular organization - prokaryotic and eukaryotic cells: #b50000
-App.js:497 Generated color for Eukaryotic cells - structure and organelles: #bc0000
-App.js:497 Generated color for Prokaryotic cells - structure and function: #c30000
-App.js:497 Generated color for Proteins - primary, secondary, tertiary, and quaternary structure: #ca0000
-App.js:497 Generated color for Structure and function of membranes: #d00000
-App.js:497 Generated color for Structure and function of the gas exchange system in fish: #d70000
-App.js:497 Generated color for Structure and function of the gas exchange system in mammals: #de0000
-App.js:497 Generated color for Structure and function of the heart: #e50000
-App.js:497 Generated color for Sub-cellular structures - the roles of cell components: #ec0000
-App.js:497 Generated color for Surface area to volume ratio in multicellular organisms: #f30000
-App.js:497 Generated color for Transport across membranes: #fa0000
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:190 FlashcardList processed items (Revised Grouping): {groupedStructure: {…}}
-FlashcardList.jsx:219 Found metadata in card for Biology: {examBoard: 'AQA', examType: 'A-Level'}
-TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-App.js:1672 [Init] Sent ready message to parent
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
-KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
-KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 604fba9e1bd69a001b48d1a8
-DataUtils.js:369 📥 Save Operation: localStorage
-DataUtils.js:370 Timestamp: 2025-04-01T08:58:08.603Z
-DataUtils.js:373 Data Stats: {cards: 15, subjects: 0, version: '1.0'}
-DataUtils.js:472 Backed up options for 0 multiple choice cards
-App.js:218 Saved data to localStorage with versioning and backup
-KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
-KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
-KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ebaa3dd50cfd02bc7b259e
-KnackJavascript6a.js:1339 [Knack Script] Loaded 0 cards/shells from bank.
-KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
-KnackJavascript6a.js:1349 [Knack Script] Loaded 0 topic lists.
-KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
-KnackJavascript6a.js:1355 [Knack Script] Loaded 0 topic metadata items.
-KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
-KnackJavascript6a.js:206 {recordId: '67ebaa3dd50cfd02bc7b259e', cards: Array(0), spacedRepetition: {…}, topicLists: Array(0), colorMapping: {…}, …}
-KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
-KnackJavascript6a.js:206 {id: '604fba9e1bd69a001b48d1a8', email: 'stu5@vespa.academy', name: 'Jane Dowe', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…xNDF9.rHN0_uXmW8ziRtd34ad_uD_ZjsTBS3Ht8ZufLQZB4Bw', appId: '5ee90912c38ae7001510c1a9', …}
-KnackJavascript6a.js:873 Flashcard app initialized and visible.
-App.js:1190 [Message Handler 2025-04-01T08:58:08.776Z] From parent: KNACK_USER_INFO
-App.js:1198 [User Info] Already processed, ignoring duplicate message
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:974 [Render Subject Biology] Topic Names: (15) ['Biological membranes: Structure and function of membranes', 'Biological membranes: Transport across membranes', 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', 'Cell structure: Eukaryotic cells - structure and organelles', 'Cell structure: Prokaryotic cells - structure and function', 'Cell structure: Sub-cellular structures - the roles of cell components', 'Exchange surfaces: Structure and function of the gas exchange system in fish', 'Exchange surfaces: Structure and function of the gas exchange system in mammals', 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', 'Transport in animals: Structure and function of the heart']
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Structure and function of membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.6', type: 'topic', name: 'Biological membranes: Structure and function of membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Transport across membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.7', type: 'topic', name: 'Biological membranes: Transport across membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.1', type: 'topic', name: 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.2', type: 'topic', name: 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.9', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell diversity and adaptations, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.11', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell division - mitosis, meiosis, and their significance, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.8', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cellular organization - prokaryotic and eukaryotic cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.10', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Eukaryotic cells - structure and organelles, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.3', type: 'topic', name: 'Cell structure: Eukaryotic cells - structure and organelles', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Prokaryotic cells - structure and function, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.4', type: 'topic', name: 'Cell structure: Prokaryotic cells - structure and function', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Sub-cellular structures - the roles of cell components, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.5', type: 'topic', name: 'Cell structure: Sub-cellular structures - the roles of cell components', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in fish, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.14', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in fish', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in mammals, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.13', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in mammals', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Surface area to volume ratio in multicellular organisms, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.12', type: 'topic', name: 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Transport in animals: Structure and function of the heart, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.15', type: 'topic', name: 'Transport in animals: Structure and function of the heart', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:974 [Render Subject Biology] Topic Names: (15) ['Biological membranes: Structure and function of membranes', 'Biological membranes: Transport across membranes', 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', 'Cell structure: Eukaryotic cells - structure and organelles', 'Cell structure: Prokaryotic cells - structure and function', 'Cell structure: Sub-cellular structures - the roles of cell components', 'Exchange surfaces: Structure and function of the gas exchange system in fish', 'Exchange surfaces: Structure and function of the gas exchange system in mammals', 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', 'Transport in animals: Structure and function of the heart']
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Structure and function of membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.6', type: 'topic', name: 'Biological membranes: Structure and function of membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Transport across membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.7', type: 'topic', name: 'Biological membranes: Transport across membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.1', type: 'topic', name: 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.2', type: 'topic', name: 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.9', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell diversity and adaptations, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.11', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell division - mitosis, meiosis, and their significance, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.8', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cellular organization - prokaryotic and eukaryotic cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.10', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Eukaryotic cells - structure and organelles, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.3', type: 'topic', name: 'Cell structure: Eukaryotic cells - structure and organelles', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Prokaryotic cells - structure and function, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.4', type: 'topic', name: 'Cell structure: Prokaryotic cells - structure and function', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Sub-cellular structures - the roles of cell components, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.5', type: 'topic', name: 'Cell structure: Sub-cellular structures - the roles of cell components', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in fish, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.14', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in fish', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in mammals, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.13', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in mammals', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Surface area to volume ratio in multicellular organisms, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.12', type: 'topic', name: 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Transport in animals: Structure and function of the heart, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.15', type: 'topic', name: 'Transport in animals: Structure and function of the heart', subject: 'Biology', examBoard: 'AQA', …}
-App.js:1133 Auto-saving data...
-App.js:317 [Save] Save already in progress, skipping this request
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:190 FlashcardList processed items (Revised Grouping): {groupedStructure: {…}}
-FlashcardList.jsx:219 Found metadata in card for Biology: {examBoard: 'AQA', examType: 'A-Level'}
-FlashcardList.jsx:974 [Render Subject Biology] Topic Names: (15) ['Biological membranes: Structure and function of membranes', 'Biological membranes: Transport across membranes', 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', 'Cell structure: Eukaryotic cells - structure and organelles', 'Cell structure: Prokaryotic cells - structure and function', 'Cell structure: Sub-cellular structures - the roles of cell components', 'Exchange surfaces: Structure and function of the gas exchange system in fish', 'Exchange surfaces: Structure and function of the gas exchange system in mammals', 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', 'Transport in animals: Structure and function of the heart']
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Structure and function of membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.6', type: 'topic', name: 'Biological membranes: Structure and function of membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological membranes: Transport across membranes, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.7', type: 'topic', name: 'Biological membranes: Transport across membranes', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.1', type: 'topic', name: 'Biological molecules: Carbohydrates - monosaccharides, disaccharides, and polysaccharides', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.2', type: 'topic', name: 'Biological molecules: Proteins - primary, secondary, tertiary, and quaternary structure', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.9', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell differentiation and stem cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell diversity and adaptations, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.11', type: 'topic', name: 'Cell division, cell diversity, and cellular organization: Cell diversity and adaptations', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cell division - mitosis, meiosis, and their significance, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.8', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…vision - mitosis, meiosis, and their significance', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell division, cell diversity, and cellular organization: Cellular organization - prokaryotic and eukaryotic cells, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.10', type: 'topic', name: 'Cell division, cell diversity, and cellular organi…r organization - prokaryotic and eukaryotic cells', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Eukaryotic cells - structure and organelles, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.3', type: 'topic', name: 'Cell structure: Eukaryotic cells - structure and organelles', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Prokaryotic cells - structure and function, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.4', type: 'topic', name: 'Cell structure: Prokaryotic cells - structure and function', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Cell structure: Sub-cellular structures - the roles of cell components, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.5', type: 'topic', name: 'Cell structure: Sub-cellular structures - the roles of cell components', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in fish, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.14', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in fish', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Structure and function of the gas exchange system in mammals, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.13', type: 'topic', name: 'Exchange surfaces: Structure and function of the gas exchange system in mammals', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Exchange surfaces: Surface area to volume ratio in multicellular organisms, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.12', type: 'topic', name: 'Exchange surfaces: Surface area to volume ratio in multicellular organisms', subject: 'Biology', examBoard: 'AQA', …}
-FlashcardList.jsx:992 [Render Topic Biology] Topic: Transport in animals: Structure and function of the heart, isShellOnly: true, Card Count: 0, Shell Object: {id: '1.15', type: 'topic', name: 'Transport in animals: Structure and function of the heart', subject: 'Biology', examBoard: 'AQA', …}
-TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:190 FlashcardList processed items (Revised Grouping): {groupedStructure: {…}}
-FlashcardList.jsx:219 Found metadata in card for Biology: {examBoard: 'AQA', examType: 'A-Level'}
-TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-App.js:1133 Auto-saving data...
-App.js:317 [Save] Save already in progress, skipping this request
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-FlashcardList.jsx:190 FlashcardList processed items (Revised Grouping): {groupedStructure: {…}}
-FlashcardList.jsx:219 Found metadata in card for Biology: {examBoard: 'AQA', examType: 'A-Level'}
-TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-FlashcardList.jsx:81 [FlashcardList] Received cards prop: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+App.js:1338 [Message Handler 2025-04-01T13:01:59.291Z] From parent: KNACK_USER_INFO
+App.js:1346 [User Info] Already processed, ignoring duplicate message
+FlashcardList.jsx:81 [FlashcardList] Received cards prop: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:81 [FlashcardList] Received cards prop: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:81 [FlashcardList] Received cards prop: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:81 [FlashcardList] Received cards prop: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+react-dom.production.min.js:188  TypeError: t.replace is not a function
+    at Flashcard.jsx:417:30
+    at Array.findIndex (<anonymous>)
+    at Flashcard.jsx:416:69
+    at Flashcard_Flashcard (Flashcard.jsx:411:36)
+    at _i (react-dom.production.min.js:160:137)
+    at wl (react-dom.production.min.js:289:337)
+    at vc (react-dom.production.min.js:279:389)
+    at gc (react-dom.production.min.js:279:320)
+    at _c (react-dom.production.min.js:279:180)
+    at oc (react-dom.production.min.js:270:88)
+ds @ react-dom.production.min.js:188
+n.callback @ react-dom.production.min.js:188
+Wo @ react-dom.production.min.js:156
+bl @ react-dom.production.min.js:261
+vl @ react-dom.production.min.js:259
+xl @ react-dom.production.min.js:258
+(anonymous) @ react-dom.production.min.js:282
+yc @ react-dom.production.min.js:280
+lc @ react-dom.production.min.js:272
+za @ react-dom.production.min.js:127
+(anonymous) @ react-dom.production.min.js:266
+react-dom.production.min.js:188  TypeError: t.replace is not a function
+    at Flashcard.jsx:417:30
+    at Array.findIndex (<anonymous>)
+    at Flashcard.jsx:416:69
+    at Flashcard_Flashcard (Flashcard.jsx:411:36)
+    at _i (react-dom.production.min.js:160:137)
+    at wl (react-dom.production.min.js:289:337)
+    at vc (react-dom.production.min.js:279:389)
+    at gc (react-dom.production.min.js:279:320)
+    at _c (react-dom.production.min.js:279:180)
+    at oc (react-dom.production.min.js:270:88)
+ds @ react-dom.production.min.js:188
+n.callback @ react-dom.production.min.js:188
+Wo @ react-dom.production.min.js:156
+bl @ react-dom.production.min.js:261
+vl @ react-dom.production.min.js:259
+xl @ react-dom.production.min.js:258
+(anonymous) @ react-dom.production.min.js:282
+yc @ react-dom.production.min.js:280
+lc @ react-dom.production.min.js:272
+za @ react-dom.production.min.js:127
+(anonymous) @ react-dom.production.min.js:266
+react-dom.production.min.js:188  TypeError: t.replace is not a function
+    at Flashcard.jsx:417:30
+    at Array.findIndex (<anonymous>)
+    at Flashcard.jsx:416:69
+    at Flashcard_Flashcard (Flashcard.jsx:411:36)
+    at _i (react-dom.production.min.js:160:137)
+    at wl (react-dom.production.min.js:289:337)
+    at vc (react-dom.production.min.js:279:389)
+    at gc (react-dom.production.min.js:279:320)
+    at _c (react-dom.production.min.js:279:180)
+    at oc (react-dom.production.min.js:270:88)
+ds @ react-dom.production.min.js:188
+n.callback @ react-dom.production.min.js:188
+Wo @ react-dom.production.min.js:156
+bl @ react-dom.production.min.js:261
+vl @ react-dom.production.min.js:259
+xl @ react-dom.production.min.js:258
+(anonymous) @ react-dom.production.min.js:282
+yc @ react-dom.production.min.js:280
+lc @ react-dom.production.min.js:272
+za @ react-dom.production.min.js:127
+(anonymous) @ react-dom.production.min.js:266
+react-dom.production.min.js:188  TypeError: t.replace is not a function
+    at Flashcard.jsx:417:30
+    at Array.findIndex (<anonymous>)
+    at Flashcard.jsx:416:69
+    at Flashcard_Flashcard (Flashcard.jsx:411:36)
+    at _i (react-dom.production.min.js:160:137)
+    at wl (react-dom.production.min.js:289:337)
+    at vc (react-dom.production.min.js:279:389)
+    at gc (react-dom.production.min.js:279:320)
+    at _c (react-dom.production.min.js:279:180)
+    at oc (react-dom.production.min.js:270:88)
+ds @ react-dom.production.min.js:188
+n.callback @ react-dom.production.min.js:188
+Wo @ react-dom.production.min.js:156
+bl @ react-dom.production.min.js:261
+vl @ react-dom.production.min.js:259
+xl @ react-dom.production.min.js:258
+(anonymous) @ react-dom.production.min.js:282
+yc @ react-dom.production.min.js:280
+lc @ react-dom.production.min.js:272
+za @ react-dom.production.min.js:127
+(anonymous) @ react-dom.production.min.js:266
+react-dom.production.min.js:188  TypeError: t.replace is not a function
+    at Flashcard.jsx:417:30
+    at Array.findIndex (<anonymous>)
+    at Flashcard.jsx:416:69
+    at Flashcard_Flashcard (Flashcard.jsx:411:36)
+    at _i (react-dom.production.min.js:160:137)
+    at wl (react-dom.production.min.js:289:337)
+    at vc (react-dom.production.min.js:279:389)
+    at gc (react-dom.production.min.js:279:320)
+    at _c (react-dom.production.min.js:279:180)
+    at oc (react-dom.production.min.js:270:88)
+ds @ react-dom.production.min.js:188
+n.callback @ react-dom.production.min.js:188
+Wo @ react-dom.production.min.js:156
+bl @ react-dom.production.min.js:261
+vl @ react-dom.production.min.js:259
+xl @ react-dom.production.min.js:258
+(anonymous) @ react-dom.production.min.js:282
+yc @ react-dom.production.min.js:280
+lc @ react-dom.production.min.js:272
+za @ react-dom.production.min.js:127
+(anonymous) @ react-dom.production.min.js:266
+Flashcard.jsx:417  Uncaught TypeError: t.replace is not a function
+    at Flashcard.jsx:417:30
+    at Array.findIndex (<anonymous>)
+    at Flashcard.jsx:416:69
+    at Flashcard_Flashcard (Flashcard.jsx:411:36)
+    at _i (react-dom.production.min.js:160:137)
+    at wl (react-dom.production.min.js:289:337)
+    at vc (react-dom.production.min.js:279:389)
+    at gc (react-dom.production.min.js:279:320)
+    at _c (react-dom.production.min.js:279:180)
+    at oc (react-dom.production.min.js:270:88)
+(anonymous) @ Flashcard.jsx:417
+(anonymous) @ Flashcard.jsx:416
+Flashcard_Flashcard @ Flashcard.jsx:411
+_i @ react-dom.production.min.js:160
+wl @ react-dom.production.min.js:289
+vc @ react-dom.production.min.js:279
+gc @ react-dom.production.min.js:279
+_c @ react-dom.production.min.js:279
+oc @ react-dom.production.min.js:270
+lc @ react-dom.production.min.js:272
+za @ react-dom.production.min.js:127
+(anonymous) @ react-dom.production.min.js:266

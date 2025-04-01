@@ -141,6 +141,11 @@ const AICardGenerator = ({
     addToBank: false
   });
 
+  // Add these missing state variables
+  const [operationSuccess, setOperationSuccess] = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
 // Initialize availableTopics state when initialTopicsProp changes
 useEffect(() => {
   // Check if the prop has valid topic data
@@ -2538,67 +2543,166 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
       }
       
       console.log(`Adding ALL cards for subject: ${stableSubject}, topic: ${stableTopic}`);
-      console.log("Cards to add:", generatedCards);
       
-      // Process the cards to ensure they have the required structure
-      const cardsToAdd = generatedCards.map((card, index) => ({
-        id: card.id || `temp_card_${Date.now()}_${index}`,
-        question: card.question,
-        answer: card.answer,
-        options: card.options || [],
-        topicId: null, // We'll let the server/Knack assign this
-        topic: stableTopic, // Selected topic name
-        subject: stableSubject, // Subject from form
-        examBoard: stableExamBoard,
-        examType: stableExamType,
-        questionType: card.questionType || formData.questionType,
-        difficulty: card.difficulty || "medium",
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
-        tags: [stableExamType, stableExamBoard, stableSubject],
-        confidenceLevel: 0,
-        reviewCount: 0,
-        lastReviewDate: null,
-        nextReviewDate: new Date().toISOString(), // Reviewable immediately
-        boxNumber: 1 // Start in box 1 for spaced repetition
-      }));
-      
-      console.log("Processed cards for adding:", cardsToAdd.length);
-      
-      // Use the sendMessageWithRetry helper function defined earlier in the component
-      await sendMessageWithRetry("ADD_TO_BANK", {
-        recordId: recordId || userId,
-        subject: stableSubject,
-        examBoard: stableExamBoard,
-        examType: stableExamType,
-        topic: stableTopic,
-        cards: cardsToAdd
+      // Normalize generated cards - ensure all cards have proper structure
+      const normalizedCards = generatedCards.map(card => {
+        // Ensure card has a proper ID
+        const cardId = card.id || `card_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+        
+        // Ensure proper question type
+        let questionType = card.questionType || 'short_answer';
+        
+        // Normalize options for multiple choice cards
+        let options = [];
+        if (questionType === 'multiple_choice' && Array.isArray(card.options)) {
+          // Ensure options have the right structure
+          options = card.options.map(opt => {
+            // If option is already an object, return it with validation
+            if (typeof opt === 'object' && opt !== null) {
+              return {
+                text: typeof opt.text === 'string' ? opt.text : String(opt.text || ''),
+                isCorrect: Boolean(opt.isCorrect)
+              };
+            }
+            // If option is a string, convert to object
+            return {
+              text: typeof opt === 'string' ? opt : String(opt || ''),
+              isCorrect: false // Default to false
+            };
+          });
+          
+          // Make sure we have a valid correct answer somewhere
+          const hasCorrectOption = options.some(opt => opt.isCorrect);
+          if (!hasCorrectOption && options.length > 0) {
+            // Default to first option being correct if none marked
+            options[0].isCorrect = true;
+          }
+        }
+        
+        // Return normalized card
+        return {
+          id: cardId,
+          subject: stableSubject,
+          topic: stableTopic,
+          examBoard: stableExamBoard,
+          examType: stableExamType,
+          question: card.question || '',
+          answer: card.answer || card.back || '',
+          questionType: questionType,
+          options: options,
+          savedOptions: [...options], // Keep a copy of options for recovery
+          cardColor: card.cardColor || formData.cardColor || '#3cb44b', // Use form data color or default
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
       });
       
-      console.log(`${cardsToAdd.length} cards added successfully`);
+      // First save locally if we have a local handler
+      if (onAddCard && typeof onAddCard === 'function') {
+        try {
+          // Add each card to the local state
+          normalizedCards.forEach(card => {
+            console.log(`Adding card locally: ${card.id}`);
+            onAddCard(card);
+          });
+          console.log(`${normalizedCards.length} cards added locally successfully`);
+        } catch (error) {
+          console.error("Error adding cards locally:", error);
+        }
+      }
       
-      // Process response and UI updates
-      setSuccessModal({
-        show: true,
-        addedCards: cardsToAdd
-      });
-      
-      // Reset states
-      resetAfterCardOperation();
-      
-      // Clear the pendingOperations flag
-      setPendingOperations({ ...pendingOperations, addToBank: false });
-      
-      // Reset currentStep to 1
-      setCurrentStep(1);
-      
-      return true;
+      // Then save to Knack if we're in iframe
+      if (window.parent !== window) {
+        try {
+          console.log(`Sending ${normalizedCards.length} cards to Knack via ADD_TO_BANK`);
+          
+          // Use the sendMessageWithRetry function for more reliable delivery
+          await sendMessageWithRetry('ADD_TO_BANK', {
+            recordId: recordId || userId,
+            cards: normalizedCards
+          });
+          
+          console.log("ADD_TO_BANK message successfully sent and processed");
+          setOperationSuccess(true);
+          setSavedCount(normalizedCards.length);
+          
+          // Open success modal
+          setShowSuccessModal(true);
+          
+          // Make sure success modal shows
+          setSuccessModal({
+            show: true,
+            addedCards: normalizedCards
+          });
+        } catch (error) {
+          console.error("Error adding cards to bank:", error);
+          setError(`Error saving cards: ${error.message}`);
+        }
+      } else {
+        // In standalone mode, just show success
+        console.log("Standalone mode: ADD_TO_BANK operation simulated successfully");
+        setOperationSuccess(true);
+        setSavedCount(normalizedCards.length);
+        setShowSuccessModal(true);
+        
+        // Make sure success modal shows
+        setSuccessModal({
+            show: true,
+            addedCards: normalizedCards
+        });
+      }
     } catch (error) {
-      console.error("Error adding cards to bank:", error);
-      setError(`Error adding cards: ${error.message}`);
+      console.error("Error in addAllToBank:", error);
+      setError(`Error: ${error.message}`);
+    } finally {
+      // Ensure we reset the pending operation flag
       setPendingOperations({ ...pendingOperations, addToBank: false });
-      return false;
     }
+  };
+
+  // Helper function to send messages with retry
+  const sendMessageWithRetry = async (type, data, maxRetries = 3) => {
+    // If we're in a standalone environment (not in an iframe), resolve immediately
+    if (window.parent === window) {
+      console.log(`[GenerateCards] Standalone mode detected, not sending ${type} message`);
+      return Promise.resolve({ success: true });
+    }
+    
+    // Otherwise send messages to Knack with a promise wrapper
+    return new Promise((resolve, reject) => {
+      console.log(`[GenerateCards] Sending ${type} message with retry logic, data:`, {
+        type,
+        recordId: data.recordId,
+        cardsCount: data.cards ? data.cards.length : 0
+      });
+      
+      let retryCount = 0;
+      
+      // Function to send the message
+      const sendMessage = () => {
+        console.log(`[GenerateCards] Sending ${type} message (attempt ${retryCount + 1}/${maxRetries + 1})`);
+        
+        // Use SaveQueueService instead of direct postMessage
+        saveQueueService.addToQueue({ type, payload: data })
+          .then(() => {
+            console.log(`[GenerateCards] ${type} message successfully queued and processed`);
+            resolve({ success: true });
+          })
+          .catch(error => {
+            console.error(`[GenerateCards] Error sending ${type} message:`, error);
+            retryCount++;
+            if (retryCount <= maxRetries) {
+              console.log(`[GenerateCards] Retrying in ${retryCount * 1000}ms...`);
+              setTimeout(sendMessage, retryCount * 1000);
+            } else {
+              reject(new Error(`Failed to send ${type} message after ${maxRetries + 1} attempts: ${error.message || 'Unknown error'}`));
+            }
+          });
+      };
+      
+      // Start the process
+      sendMessage();
+    });
   };
 
   // Add the handleClose function to replace the one that was removed during our previous edits
@@ -2628,48 +2732,6 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
       // No topics saved, just close normally
       onClose();
     }
-  };
-
-  // Helper function to send messages with retry
-  const sendMessageWithRetry = async (type, data, maxRetries = 3) => {
-    // If we're in a standalone environment (not in an iframe), resolve immediately
-    if (window.parent === window) {
-      console.log(`[GenerateCards] Standalone mode detected, not sending ${type} message`);
-      return Promise.resolve({ success: true });
-    }
-    
-    // Otherwise send messages to Knack with a promise wrapper
-    return new Promise((resolve, reject) => {
-      console.log(`[GenerateCards] Sending ${type} message with retry logic, data:`, data);
-      
-      let receivedResponse = false;
-      let retryCount = 0;
-      
-      // Function to send the message
-      const sendMessage = () => {
-        console.log(`[GenerateCards] Sending ${type} message (attempt ${retryCount + 1}/${maxRetries + 1})`);
-        // Use SaveQueueService instead of direct postMessage
-        saveQueueService.addToQueue({ type, payload: data })
-          .then(() => {
-            console.log(`[GenerateCards] ${type} message successfully queued and processed`);
-            receivedResponse = true;
-            resolve({ success: true });
-          })
-          .catch(error => {
-            console.error(`[GenerateCards] Error sending ${type} message:`, error);
-            retryCount++;
-            if (retryCount <= maxRetries) {
-              console.log(`[GenerateCards] Retrying in ${retryCount * 1000}ms...`);
-              setTimeout(sendMessage, retryCount * 1000);
-            } else {
-              reject(new Error(`Failed to send ${type} message after ${maxRetries + 1} attempts`));
-            }
-          });
-      };
-      
-      // Start the process
-      sendMessage();
-    });
   };
 
   return (
