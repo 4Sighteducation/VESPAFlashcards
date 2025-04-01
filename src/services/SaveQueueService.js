@@ -188,6 +188,6 @@ class SaveQueueService {
   }
 }
 
-// Create singleton instance
-const saveQueue = new SaveQueueService();
-export default saveQueue; 
+// Create and export a singleton instance
+const saveQueueService = new SaveQueueService();
+export default saveQueueService; 

@@ -63,6 +63,22 @@ This is a React application that integrates with Knack to provide a flashcard st
 6. Add a Rich Text field to the View where the app will be embedded
 7. Update the configuration in the JavaScript to match your Scene and View IDs
 
+## Knack Integration
+
+The Knack integration JavaScript file is maintained in a separate GitHub repository:
+https://github.com/4Sighteducation/KnackIntegration3
+
+### File Versioning
+The integration file is named with a version suffix (e.g., KnackJavascript5w.js) to avoid jsdelivr caching issues. When making changes:
+
+1. Create a new version by incrementing the suffix (e.g., 5w -> 5x)
+2. Update the file in the KnackIntegration3 repository
+3. The changes will not affect the NPM build as this is called separately
+
+### Current Version
+Current file: `KnackJavascript5w.js`
+Previous versions: 4a -> 5w (showing evolution of the integration)
+
 ## Data Structure
 
 The app uses the following Knack object fields:

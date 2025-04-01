@@ -25,6 +25,8 @@ import {
   validateCards,
 } from './utils/CardDataProcessor';
 
+import saveQueueService from './services/SaveQueueService';
+
 // API Keys and constants
 // Removed unused KNACK_APP_ID
 // Removed unused KNACK_API_KEY
@@ -304,15 +306,14 @@ function App() {
 
   // Modify the saveData function to use the ensureRecordId function
   const saveData = useCallback(async (data, preserveFields = false) => {
-    // Check if we're authenticated
+    console.log("[App] saveData triggered.isAuthenticated:", auth !== null, "isKnack:", window.parent !== window);
     if (!auth) {
-      console.log("[Save] No authentication available, saving locally only");
+      console.warn("[App] No authentication available, saving locally only");
       saveToLocalStorage();
       setIsSaving(false);
       return;
     }
 
-    // Prevent multiple save operations
     if (isSaving) {
       console.log("[Save] Save already in progress, skipping this request");
       showStatus("Save in progress...");
@@ -326,7 +327,7 @@ function App() {
     console.log("[Save] Saving to localStorage first");
     saveToLocalStorage();
     
-    // If we're in an iframe, send data to parent window
+    // If we're in an iframe, send data to parent
     if (window.parent !== window) {
       console.log("[Save] Preparing data for Knack integration");
       
@@ -409,18 +410,36 @@ function App() {
       // Store the timeout ID so we can clear it if we get a response
       window.currentSaveTimeout = saveTimeout;
       
-      // Send save message to parent window
-      window.parent.postMessage(
-        {
-          type: "SAVE_DATA",
-          data: safeData
-        },
-        "*"
-      );
+      // *** Add to SaveQueue instead ***
+      // Ensure dataToSave contains all necessary fields expected by KnackJavascript6a.js
+      // Knack script expects: { recordId, cards, colorMapping, spacedRepetition, userTopics, topicLists, topicMetadata, preserveFields }
+      const payloadForKnack = {
+          recordId: safeRecordId,
+          cards: safeData.cards,
+          colorMapping: safeData.colorMapping,
+          spacedRepetition: safeData.spacedRepetition,
+          userTopics: safeData.userTopics,
+          topicLists: safeData.topicLists,
+          topicMetadata: safeData.topicMetadata,
+          preserveFields: safeData.preserveFields
+      };
+      console.log("[App] Adding SAVE_DATA to queue with payload:", payloadForKnack);
 
-      console.log("[Save] Message sent to parent window");
-      showStatus("Saving your flashcards...");
-      } else {
+      saveQueueService.addToQueue({ type: 'SAVE_DATA', payload: payloadForKnack })
+        .then(() => {
+            console.log("[App] SAVE_DATA request successfully processed by SaveQueueService.");
+            // showStatus("Flashcards saved!"); // Optionally update status on success
+            // setIsSaving(false);
+        })
+        .catch(error => {
+            console.error("[App] Error queuing/processing SAVE_DATA request:", error);
+            // showStatus("Error saving flashcards."); // Optionally update status on error
+            // setIsSaving(false);
+            // Potentially clear the timeout if it was set before queueing
+            // if (window.currentSaveTimeout) clearTimeout(window.currentSaveTimeout);
+        });
+
+    } else {
       // If we're in standalone mode, mark as saved immediately
       console.log("[Save] Running in standalone mode");
         setIsSaving(false);
@@ -530,11 +549,11 @@ function App() {
       
       // Save changes (only to localStorage for mapping, Knack save handled elsewhere)
       // Note: The main saveData() call is needed after this to persist to Knack if necessary
-      setTimeout(() => saveToLocalStorage(), 100); // Save mapping update locally
+      setTimeout(() => saveData(), 100); // Save mapping update locally
       // Consider triggering a full saveData() if Knack persistence is needed immediately
       // setTimeout(() => saveData(), 200); // Example: Trigger full save shortly after
     },
-    [generateShade, getRandomColor, saveToLocalStorage] // Removed allCards dependency
+    [generateShade, getRandomColor, saveData] // Removed allCards dependency
   );
 
   // Function to refresh subject and topic colors
@@ -700,14 +719,14 @@ function App() {
         console.log("Loaded data from legacy localStorage format");
         
         // Create a backup in the new format for future use
-        setTimeout(() => saveToLocalStorage(), 1000);
+        setTimeout(() => saveData(), 1000);
       }
     } catch (error) {
       console.error("Error loading from localStorage:", error);
       dataLogger.logError('localStorage_load', error);
       showStatus("Error loading data from local storage");
     }
-  }, [updateSpacedRepetitionData, showStatus, saveToLocalStorage]);
+  }, [updateSpacedRepetitionData, showStatus, saveData]);
 
   // Load data from Knack
   // Removed unused loadData useCallback
