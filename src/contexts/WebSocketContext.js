@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 // Define the WebSocket URL based on the Heroku app
-const WEBSOCKET_URL = 'wss://studyplanner2-fc98f9e231f4.herokuapp.com/';
+const WEBSOCKET_URL = 'wss://vespa-flashcards-e7f31e9ff3c9.herokuapp.com/';
 
 // Create the context
 const WebSocketContext = createContext(null);

@@ -8,6 +8,7 @@ import Header from "./components/Header";
 import AICardGenerator from './components/AICardGenerator';
 import PrintModal from './components/PrintModal';
 import TopicListSyncManager from './components/TopicListSyncManager';
+import TopicCreationModal from './components/TopicCreationModal';
 import { WebSocketProvider } from './contexts/WebSocketContext'; // Corrected import path
 import { 
   initializeAuthManager, 
@@ -122,6 +123,9 @@ function App() {
   const [topicListSubject, setTopicListSubject] = useState(null);
   const [topicListExamBoard, /* Removed unused setTopicListExamBoard */] = useState("AQA");
   const [topicListExamType, /* Removed unused setTopicListExamType */] = useState("A-Level");
+
+  // ** NEW STATE for Topic Creation Modal **
+  const [isTopicCreationModalOpen, setIsTopicCreationModalOpen] = useState(false);
 
   // Spaced repetition state
   const [currentBox, setCurrentBox] = useState(1);
@@ -2371,6 +2375,22 @@ const filteredCards = useMemo(() => {
               userId={auth?.id}
             />
 
+            {/* ** NEW: Conditionally render TopicCreationModal ** */}
+            {isTopicCreationModalOpen && (
+              <TopicCreationModal
+                onClose={() => setIsTopicCreationModalOpen(false)}
+                onSaveTopicShells={handleSaveTopicShells} // Pass the save function
+                userId={auth?.id}
+                recordId={recordId}
+                updateColorMapping={updateColorMapping} // Pass color mapping if needed
+                existingSubjects={getSubjects().map(s => s.name)} // Pass existing subject names
+                // Pass initial values if needed, e.g., from last session or defaults
+                // initialExamType="GCSE"
+                // initialExamBoard="AQA"
+                // initialSubject=""
+              />
+            )}
+
             {view === "cardBank" && (
               <div className="card-bank-view">
                 {printModalOpen && (
@@ -2430,10 +2450,15 @@ const filteredCards = useMemo(() => {
                     {/* Show empty state or card list based on whether there are cards */}
                     {allCards.length === 0 ? (
                       <div className="empty-card-bank">
-                        <h3>No flashcards yet</h3>
-                        <p>Create your first flashcard to get started!</p>
-                        <button className="primary-button" onClick={() => setCardCreationModalOpen(true)}>
-                          Create Flashcard
+                        <h3>No Flashcards Yet</h3>
+                        {/* ** MODIFIED TEXT ** */}
+                        <p>Start by adding your subjects and topic lists.</p>
+                        {/* ** MODIFIED BUTTON ** */}
+                        <button 
+                          className="primary-button" 
+                          onClick={() => setIsTopicCreationModalOpen(true)} // Open the new modal
+                        >
+                          Create Topic Lists
                         </button>
                       </div>
                     ) : (

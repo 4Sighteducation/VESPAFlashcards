@@ -1,6 +1,6 @@
-main.js?1743543345922&_=1743543345923:126 StudyPlanner Config initialized: {knackAppId: '5ee90912c38ae7001510c1a9', knackApiKey: '8f733aa5-dd35-4464-8348-64824d1f5f0d', appUrl: 'https://studyplanner2-fc98f9e231f4.herokuapp.com/', appConfig: {…}}
-main.js?1743543345922&_=1743543345923:140 VESPA Integration script loaded successfully
-main.js?1743543345922&_=1743543345923:154 StudyPlanner Integration script loaded successfully
+main.js?1743543709016&_=1743543709016:126 StudyPlanner Config initialized: {knackAppId: '5ee90912c38ae7001510c1a9', knackApiKey: '8f733aa5-dd35-4464-8348-64824d1f5f0d', appUrl: 'https://studyplanner2-fc98f9e231f4.herokuapp.com/', appConfig: {…}}
+main.js?1743543709016&_=1743543709016:140 VESPA Integration script loaded successfully
+main.js?1743543709016&_=1743543709016:154 StudyPlanner Integration script loaded successfully
 index.js?v=1:76 Developed byKsense Technology Group LLCPRODUCTION MODE - Branch: mainKSENSE DEBUG: INJECTED URL: https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1
 index.js?v=1:90 (index)Value(index)ValueisDevUserfalsetunnelUrlundefineddevBranch'main'projectRoute'knack_projects/vespa'currentUser'630510eb3c91500021a8fad2'injectURL'https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1'useLocalRoutesfalseuseStagingServerfalsecssFiles''isHostedOnNexustrueObject
 KnackJavascript6a.js:688 Flashcard app: Scene rendered: scene_1206
@@ -31,9 +31,9 @@ KnackJavascript6a.js:762 Creating container inside view_3005
 KnackJavascript6a.js:887 Flashcard app initialization sequence complete. Waiting for APP_READY from iframe.
 App.js:1899 [Init] Sent ready message to parent
 App.js:2273 Recovered recordId from localStorage: 67ec09c573e85902c47964ee
-App.js:1899 [Init] Sent ready message to parent
 KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
 KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
+App.js:1899 [Init] Sent ready message to parent
 KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630510eb3c91500021a8fad2
 KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
 KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
@@ -51,7 +51,7 @@ KnackJavascript6a.js:206 {recordId: '67ec09c573e85902c47964ee', cards: Array(0),
 KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
 KnackJavascript6a.js:206 {id: '630510eb3c91500021a8fad2', email: 'aramsey@vespa.academy', name: 'Alena Ramsey', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…xNDR9.rdZXmDuhS1luSz_RkZUI4n4U2v6CI3GBuvx_179XlfA', appId: '5ee90912c38ae7001510c1a9', …}
 KnackJavascript6a.js:873 Flashcard app initialized and visible.
-App.js:1417 [Message Handler 2025-04-01T21:35:48.153Z] From parent: KNACK_USER_INFO
+App.js:1417 [Message Handler 2025-04-01T21:41:50.832Z] From parent: KNACK_USER_INFO
 App.js:1431 [User Info] First-time processing of user data
 AuthAppIntegration.js:15 [AuthAppIntegration] Initializing AuthManager with user data
 AuthManager.js:46 [AuthManager] Initialized successfully
@@ -90,7 +90,7 @@ KnackJavascript6a.js:206 {recordId: '67ec09c573e85902c47964ee', cards: Array(0),
 KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
 KnackJavascript6a.js:206 {id: '630510eb3c91500021a8fad2', email: 'aramsey@vespa.academy', name: 'Alena Ramsey', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…xNDR9.rdZXmDuhS1luSz_RkZUI4n4U2v6CI3GBuvx_179XlfA', appId: '5ee90912c38ae7001510c1a9', …}
 KnackJavascript6a.js:873 Flashcard app initialized and visible.
-App.js:1417 [Message Handler 2025-04-01T21:35:48.403Z] From parent: KNACK_USER_INFO
+App.js:1417 [Message Handler 2025-04-01T21:41:51.106Z] From parent: KNACK_USER_INFO
 App.js:1425 [User Info] Already processed, ignoring duplicate message
 KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
 KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
@@ -105,26 +105,8 @@ KnackJavascript6a.js:206 {recordId: '67ec09c573e85902c47964ee', cards: Array(0),
 KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
 KnackJavascript6a.js:206 {id: '630510eb3c91500021a8fad2', email: 'aramsey@vespa.academy', name: 'Alena Ramsey', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…xNDR9.rdZXmDuhS1luSz_RkZUI4n4U2v6CI3GBuvx_179XlfA', appId: '5ee90912c38ae7001510c1a9', …}
 KnackJavascript6a.js:873 Flashcard app initialized and visible.
-App.js:1417 [Message Handler 2025-04-01T21:35:48.743Z] From parent: KNACK_USER_INFO
+App.js:1417 [Message Handler 2025-04-01T21:41:51.333Z] From parent: KNACK_USER_INFO
 App.js:1425 [User Info] Already processed, ignoring duplicate message
 TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
-WebSocketContext.js:34  WebSocket connection to 'wss://studyplanner2-fc98f9e231f4.herokuapp.com/' failed: 
-u @ WebSocketContext.js:34
-(anonymous) @ WebSocketContext.js:91
-rl @ react-dom.production.min.js:243
-jc @ react-dom.production.min.js:285
-(anonymous) @ react-dom.production.min.js:281
-j @ scheduler.production.min.js:13
-P @ scheduler.production.min.js:14
-WebSocketContext.js:68  [WebSocketProvider] WebSocket Error Event. See console/onclose for details.
-e.onerror @ WebSocketContext.js:68
-WebSocketContext.js:49 [WebSocketProvider] WebSocket Disconnected: 1006 
-WebSocketContext.js:57 [WebSocketProvider] Attempting reconnect 1/5 in 2s...
-WebSocketContext.js:24 [WebSocketProvider] Attempting to connect to wss://studyplanner2-fc98f9e231f4.herokuapp.com/...
-WebSocketContext.js:34  WebSocket connection to 'wss://studyplanner2-fc98f9e231f4.herokuapp.com/' failed: 
-u @ WebSocketContext.js:34
-WebSocketContext.js:68  [WebSocketProvider] WebSocket Error Event. See console/onclose for details.
-e.onerror @ WebSocketContext.js:68
-WebSocketContext.js:49 [WebSocketProvider] WebSocket Disconnected: 1006 
-WebSocketContext.js:57 [WebSocketProvider] Attempting reconnect 2/5 in 4s...
-WebSocketContext.js:24 [WebSocketProvider] Attempting to connect to wss://studyplanner2-fc98f9e231f4.herokuapp.com/...
+TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
+AICardGenerator.jsx:343 Auto-generating topics for subject: Classics
