@@ -1840,20 +1840,18 @@ function App() {
     // but pass the data directly to avoid relying on its completion.
     setTimeout(() => {
       console.log("[App.js] Triggering save after adding topic shells");
-      // CRITICAL CHANGE: Pass the finalMergedItems directly to saveData
-      saveData(finalMergedItems, true); // Pass the merged items and preserveFields = true
+      // CRITICAL CHANGE: Let saveData use the current state, don't pass potentially stale data
+      saveData(null, true); // Pass null for data, preserveFields = true
       showStatus("Topic shells added and save triggered.");
       
-      // Keep backup save, but it should also use the correct data if needed
-      // Note: The backup save might still face issues if state hasn't fully updated,
-      // but the primary save call should now work correctly.
+      // Keep backup save
       setTimeout(() => {
         console.log("[App.js] Trigger backup save");
-        saveData(); // Backup uses current state, might be slightly delayed
+        saveData(); // Backup uses current state
       }, 2000);
-    }, 50); // Reduced delay as we pass data directly
+    }, 200); // Increased delay slightly
 
-  }, [setAllCards, saveData, showStatus]); // Removed allCards from deps as we use prevAllCards
+  }, [saveData, showStatus]); // Removed setAllCards dependency as it's used via updater function
 
   // Show loading state
   if (loading) {
