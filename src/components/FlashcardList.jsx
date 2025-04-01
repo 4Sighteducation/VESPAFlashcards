@@ -4,7 +4,7 @@ import PrintModal from "./PrintModal";
 import "./FlashcardList.css";
 import { FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes, FaBolt } from 'react-icons/fa';
 import ColorEditor from "./ColorEditor";
-import AICardGenerator from "./AICardGenerator";
+import TopicCreationModal from "./TopicCreationModal";
 
 // ScrollManager component to handle scrolling to elements
 const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRefs }) => {
@@ -76,11 +76,10 @@ const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRef
   return null; // This is a utility component with no UI
 };
 
-const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, recordId, onUpdateSubjectColor, subjectColorMapping }) => {
-  // *** ADDED LOGGING HERE ***
-  console.log("[FlashcardList] Received cards prop:", cards);
+const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, recordId, onUpdateSubjectColor, subjectColorMapping, handleSaveTopicShells }) => {
+  // --- START: HOOK DEFINITIONS ---
 
-  // State for expanded subjects and topics
+  // 1. useState Hooks
   const [expandedSubjects, setExpandedSubjects] = useState({});
   const [expandedTopics, setExpandedTopics] = useState({});
   const [printModalOpen, setPrintModalOpen] = useState(false);
@@ -89,187 +88,102 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   const [showModalAndSelectedCard, setShowModalAndSelectedCard] = useState(null);
   const [selectedCard, setSelectedCard] = useState(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(null);
-  
-  // Add refs for scrolling to subjects and topics
+  const [colorEditorOpen, setColorEditorOpen] = useState(false);
+  const [colorEditorState, setColorEditorState] = useState({ subject: null, topic: null, color: '#e6194b' });
+  const [showTopicCreationModal, setShowTopicCreationModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState({});
+  const [, setLastExpandedSubject] = useState(null);
+  const [, setLastExpandedTopic] = useState(null);
+  const [slideshowCards, setSlideshowCards] = useState([]);
+  const [slideshowTitle, setSlideshowTitle] = useState("");
+  const [showSlideshow, setShowSlideshow] = useState(false);
+
+  // 2. useRef Hooks
   const subjectRefs = useRef({});
   const topicRefs = useRef({});
-   
-  // *** REINSTATE COLOR EDITOR STATE (CORRECTLY) ***
-  const [colorEditorOpen, setColorEditorOpen] = useState(false); 
-  const [selectedSubjectForColor, setSelectedSubjectForColor] = useState(null);
-  const [colorEditorState, setColorEditorState] = useState({ color: '#e6194b', subject: null }); // Keep for initial color
-  
-  // State for AI Card Generator
-  const [showAICardGenerator, setShowAICardGenerator] = useState(false);
-  // const [cardGeneratorState, setCardGeneratorState] = useState({ ... }); // Removed for brevity
-  
-  // Add new state for mobile menu
-  const [mobileMenuOpen, setMobileMenuOpen] = useState({});
   const menuRef = useRef({});
-  
-  // Add back state setters for tracking last expanded items for scrolling
-  const [, setLastExpandedSubject] = useState(null); 
-  const [, setLastExpandedTopic] = useState(null);
-  
-  // New state for topic-specific card generation
-  const [showTopicCardGenerator, setShowTopicCardGenerator] = useState(false);
-  const [selectedTopicForCards, setSelectedTopicForCards] = useState(null);
-  
-  // Close mobile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      Object.keys(menuRef.current).forEach(subject => {
-        if (menuRef.current[subject] && !menuRef.current[subject].contains(event.target)) {
-          setMobileMenuOpen(prev => ({...prev, [subject]: false}));
-        }
-      });
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-  
-  // Check if we're on a mobile device
-  const isMobile = window.innerWidth <= 768;
-  
-  // Toggle mobile menu for a subject
-  const toggleMobileMenu = (subject, e) => {
-    e.stopPropagation();
-    setMobileMenuOpen(prev => ({
-      ...prev, 
-      [subject]: !prev[subject]
-    }));
-  };
-  
-  // Revised: Group cards by subject and actual topic name, storing shell/cards together
+
+  // 3. useMemo Hooks
   const { groupedCards } = useMemo(() => {
-      const bySubjectAndTopic = {};
-  
-      if (!Array.isArray(cards)) {
-          console.error("FlashcardList received non-array cards prop:", cards);
+    const bySubjectAndTopic = {};
+    if (!Array.isArray(cards)) {
+      console.error("FlashcardList received non-array cards prop:", cards);
           return { groupedCards: {} };
       }
-  
-      // Helper to extract actual topic name from shell name (or use item.topic for cards)
       const extractActualTopicName = (item) => {
         if (item.type === 'topic' && item.isShell && item.name) {
           const name = item.name;
           const subject = item.subject || "General";
           if (name.startsWith(subject + ': ')) {
-            return name.substring(subject.length + 2).trim() || "General"; // Extract part after colon
+            return name.substring(subject.length + 2).trim() || "General";
           }
-          return name; // Use full name if pattern doesn't match
+          return name;
         }
-        // For actual cards or shells without a proper name field, use the topic field
-        return item.topic || "General"; 
+        return item.topic || "General";
       };
-  
       cards.forEach(item => {
-          // *** ADD VALIDATION CHECK ***
           if (!item || typeof item !== 'object' || !item.id || !item.subject) {
             console.warn("[FlashcardList Grouping] Skipping invalid item:", item);
-            return; // Skip this item if it's invalid
+            return;
           }
-
           const subject = item.subject || "General";
-          const actualTopicName = extractActualTopicName(item); 
-  
+          const actualTopicName = extractActualTopicName(item);
           if (!bySubjectAndTopic[subject]) {
-              bySubjectAndTopic[subject] = {};
+            bySubjectAndTopic[subject] = {};
           }
           if (!bySubjectAndTopic[subject][actualTopicName]) {
-              bySubjectAndTopic[subject][actualTopicName] = []; // Array to hold cards OR the shell
+              bySubjectAndTopic[subject][actualTopicName] = [];
           }
-  
-          // Add the item (shell or card) to the array for this topic
           bySubjectAndTopic[subject][actualTopicName].push(item);
       });
-  
-      console.log("FlashcardList processed items (Revised Grouping):", {
-          groupedStructure: bySubjectAndTopic
-      });
-  
-      // No separate topicShells object needed now
+      console.log("FlashcardList processed items (Revised Grouping):", { groupedStructure: bySubjectAndTopic });
       return { groupedCards: bySubjectAndTopic };
   }, [cards]);
-  
-  // Function to get exam type and board directly from the first card in a subject
-   const getExamInfo = useCallback((subject) => { 
+
+  const getExistingSubjectNames = useMemo(() => {
+    // Now depends on groupedCards which is defined above
+    return Object.keys(groupedCards || {});
+  }, [groupedCards]);
+
+  const sortedSubjects = useMemo(() => {
+    if (Object.keys(groupedCards).length === 0) return [];
+    const subjectsWithDates = Object.keys(groupedCards).map(subject => {
+        const { examType, examBoard } = getExamInfo(subject);
+        const color = subjectColorMapping[subject]?.base || '#f0f0f0';
+        return {
+            id: subject,
+            title: subject,
+            cards: groupedCards[subject],
+            exam_type: examType,
+            exam_board: examBoard,
+            color: color,
+            creationDate: getSubjectDate(subject)
+        };
+    });
+    return subjectsWithDates.sort((a, b) => a.creationDate - b.creationDate);
+  }, [groupedCards, getExamInfo, getSubjectDate, subjectColorMapping]);
+
+  // 4. useCallback Hooks (Define functions needed by useMemo/useEffect first)
+  const getExamInfo = useCallback((subject) => {
+          if (!groupedCards) return { examType: "Course", examBoard: "General" };
           try {
             let examBoard = null;
             let examType = null;
-            
-            // First, try to find a topic shell with this subject that has metadata
-            const subjectTopics = groupedCards[subject]; // <-- Uses groupedCards
+            const subjectTopics = groupedCards[subject];
             if (subjectTopics) {
-              // Look through all topics in this subject
               for (const topicName in subjectTopics) {
-                const cards = subjectTopics[topicName];
-                if (cards && cards.length > 0) {
-                  // Find any topic shell or card with metadata
-                  const cardWithMetadata = cards.find(
-                    card => card.examBoard && card.examType
-                  );
-                  
+                const cardsInTopic = subjectTopics[topicName];
+                if (cardsInTopic && cardsInTopic.length > 0) {
+                  const cardWithMetadata = cardsInTopic.find(card => card.examBoard && card.examType);
                   if (cardWithMetadata) {
                     examBoard = cardWithMetadata.examBoard;
                     examType = cardWithMetadata.examType;
-                    console.log(`Found metadata in card for ${subject}:`, { examBoard, examType });
                     break;
                   }
                 }
               }
             }
       
-      // If metadata not found, try other methods
-      if (!examBoard || !examType) {
-        // Try to extract exam board and type from the subject name itself
-        // Common patterns are: "[Board] [Type] [Subject]" like "Edexcel A-Level Dance"
-        
-        // List of known exam boards to look for in the subject name
-        const knownBoards = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA', 'Cambridge', 'IB', 'Pearson'];
-        // List of known exam types to look for in the subject name
-        const knownTypes = ['GCSE', 'A-Level', 'AS-Level', 'BTEC', 'Diploma', 'Certificate', 'Foundation', 'Higher'];
-        
-        // Pattern 1: Check if any known board is in the subject name
-        for (const board of knownBoards) {
-          if (subject.includes(board)) {
-            examBoard = board;
-            break;
-          }
-        }
-        
-        // Pattern 2: Check if any known type is in the subject name
-        for (const type of knownTypes) {
-          if (subject.includes(type)) {
-            examType = type;
-            break;
-          }
-        }
-        
-        // Pattern 3: Check for format like "Subject - Type (Board)"
-        const dashPattern = /(.+)\\s*-\\s*(.+)\\s*\\((.+)\\)/;
-        const dashMatch = subject.match(dashPattern);
-        if (dashMatch && dashMatch.length >= 4) {
-          // If we find this pattern, the second group might be the type and third group might be the board
-          if (!examType) examType = dashMatch[2].trim();
-          if (!examBoard) examBoard = dashMatch[3].trim();
-        }
-        
-        // Manual fallbacks for specific subjects from the logs
-        if (subject === 'Dance' || subject === 'dance') {
-          examBoard = 'Edexcel';
-          examType = 'A-Level';
-        }
-        if (subject === 'Environmental Science') {
-          examBoard = 'AQA';
-          examType = 'A-Level';
-        }
-      }
-      
-      // Set fallback values to ensure metadata displays something
       if (!examType) examType = "Course";
       if (!examBoard) examBoard = "General";
       
@@ -278,279 +192,207 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
       console.error("Error in getExamInfo:", error);
       return { examType: "Course", examBoard: "General" };
     }
-  }, [groupedCards]); 
-  
-  // Function to get the earliest creation date for a subject (based on its first topic)
-  const getSubjectDate = useCallback((subject) => { // Add useCallback here
-    const topics = Object.keys(groupedCards[subject]); // <-- Uses groupedCards
+  }, [groupedCards]);
+
+  const getSubjectDate = useCallback((subject) => {
+    if (!groupedCards || !groupedCards[subject]) return 0;
+    const topics = Object.keys(groupedCards[subject]);
     if (topics.length === 0) return 0;
-    
     const topicDates = topics.map(topic => {
-      const cardsInTopic = groupedCards[subject][topic]; // <-- Uses groupedCards
+      const cardsInTopic = groupedCards[subject][topic];
       const dates = cardsInTopic
         .filter(card => card.timestamp)
         .map(card => new Date(card.timestamp).getTime());
-      
       return dates.length > 0 ? Math.min(...dates) : Number.MAX_SAFE_INTEGER;
     });
-    
-    return Math.min(...topicDates);
+    const minDate = Math.min(...topicDates);
+    return minDate === Number.MAX_SAFE_INTEGER ? 0 : minDate;
   }, [groupedCards]);
-  
-  // Sort subjects based on creation date (earliest first)
-  const sortedSubjects = useMemo(() => {
-    // Ensure groupedCards is populated before proceeding
-    if (Object.keys(groupedCards).length === 0) return [];
 
-    const subjectsWithDates = Object.keys(groupedCards).map(subject => {
-        // Use the subject object structure if available, otherwise derive from groupedCards
-        const subjectData = cards.find(c => c.subject === subject && c.type === 'subject'); // Example: if subjects are also items
-
-        // Get exam info robustly
-        const { examType, examBoard } = getExamInfo(subject);
-        
-        // *** GET COLOR FROM MAPPING, NOT FROM CARD ***
-        const color = subjectColorMapping[subject]?.base || '#f0f0f0'; 
-
-        return {
-            id: subject, // The subject name acts as ID here
-            title: subjectData?.name || subject, // Use specific title if available
-            cards: groupedCards[subject], // Pass the topics map
-            exam_type: examType,
-            exam_board: examBoard,
-            color: color, // Use the color derived from the mapping
-            creationDate: getSubjectDate(subject) // Get the earliest date for sorting
-        };
-    });
-
-    // Sort by creation date
-    return subjectsWithDates.sort((a, b) => a.creationDate - b.creationDate);
-  }, [groupedCards, cards, getExamInfo, getSubjectDate, subjectColorMapping]);
-
-  // Effect to reset expanded sections when cards change
+  // 5. useEffect Hooks
   useEffect(() => {
-    // Initialize all subjects as collapsed by default (changed from auto-expanding the first one)
+    const handleClickOutside = (event) => {
+      Object.keys(menuRef.current).forEach(subject => {
+        if (menuRef.current[subject] && !menuRef.current[subject].contains(event.target)) {
+          setMobileMenuOpen(prev => ({...prev, [subject]: false}));
+        }
+      });
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
     setExpandedSubjects({});
     setExpandedTopics({});
   }, [cards]);
 
-  // Handle case where there are no cards (or processing resulted in no groups)
+  // --- END: HOOK DEFINITIONS ---
+
+  // --- START: REGULAR LOGIC & HELPER FUNCTIONS ---
+
+  // Log initial props
+  console.log("[FlashcardList] Received cards prop:", cards);
+
+  // Early return check (NOW AFTER ALL HOOKS)
   if (!cards || cards.length === 0 || Object.keys(groupedCards).length === 0) {
     return (
       <div className="no-cards-message">
         <h3>No Cards Found</h3>
         <p>Select a different subject or create new cards.</p>
+         {/* Optionally add button to trigger Topic Creation Modal */}
+         <button
+            onClick={() => setShowTopicCreationModal(true)}
+            className="create-topic-list-button button-primary"
+            style={{ marginTop: '20px' }}
+          >
+            <FaBolt style={{ marginRight: '8px' }} /> Create New Topic List
+          </button>
       </div>
     );
   }
 
-  // Function to toggle subject expansion with automatic scrolling
-  const toggleSubject = (subject) => {
-    // Check if subject is already expanded
-    const wasExpanded = expandedSubjects[subject];
-    
-    setExpandedSubjects(prev => ({
+  // Helper functions (defined after hooks)
+  const isMobile = window.innerWidth <= 768;
+
+  const toggleMobileMenu = (subject, e) => {
+    e.stopPropagation();
+    setMobileMenuOpen(prev => ({
       ...prev,
       [subject]: !prev[subject]
     }));
-    
-    // If we're expanding (not collapsing), track it for scrolling
-    if (!wasExpanded) {
-      setLastExpandedSubject(subject);
-    }
   };
-  
-  // Function to toggle topic expansion with automatic scrolling
+
+  const toggleSubject = (subject) => {
+    const wasExpanded = expandedSubjects[subject];
+    setExpandedSubjects(prev => ({ ...prev, [subject]: !prev[subject] }));
+    if (!wasExpanded) setLastExpandedSubject(subject);
+  };
+
   const toggleTopic = (subject, topic) => {
     const topicKey = `${subject}-${topic}`;
     const wasExpanded = expandedTopics[topicKey];
-    
-    setExpandedTopics(prev => ({
-      ...prev,
-      [topicKey]: !prev[topicKey]
-    }));
-    
-    // If we're expanding (not collapsing), track it for scrolling
-    if (!wasExpanded) {
-      setLastExpandedTopic(topicKey);
-    }
+    setExpandedTopics(prev => ({ ...prev, [topicKey]: !prev[topicKey] }));
+    if (!wasExpanded) setLastExpandedTopic(topicKey);
   };
 
-  // Helper function to get contrast color - enhanced for better readability
   const getContrastColor = (hexColor) => {
     if (!hexColor) return "#000000";
-    
     try {
-      // Remove # if present
       hexColor = hexColor.replace("#", "");
-      
-      // Ensure we have a 6-digit hex
-      if (hexColor.length === 3) {
-        hexColor = hexColor[0] + hexColor[0] + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2];
-      }
-      
-      // Convert to RGB
+      if (hexColor.length === 3) { hexColor = hexColor[0] + hexColor[0] + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2]; }
       const r = parseInt(hexColor.substring(0, 2), 16);
       const g = parseInt(hexColor.substring(2, 4), 16);
       const b = parseInt(hexColor.substring(4, 6), 16);
-      
-      // Use WCAG luminance formula for better contrast calculation
-      // This gives more weight to colors that human eyes are more sensitive to (green)
       const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      
-      // Use a lower threshold to ensure more text is white on medium-darkness colors
       return luminance > 0.6 ? "#000000" : "#ffffff";
-    } catch (error) {
-      console.error("Error in getContrastColor:", error, "for color:", hexColor);
-      return "#000000"; // Default to black on error
-    }
+    } catch (error) { return "#000000"; }
   };
 
-  // Function to format date as DD/MM/YYYY
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
-  
-  // Function to get the earliest creation date for a topic
+
   const getTopicDate = (cardsInTopic) => {
-    const dates = cardsInTopic
-      .filter(card => card.timestamp)
-      .map(card => new Date(card.timestamp).getTime());
-      
+    const dates = cardsInTopic.filter(card => card.timestamp).map(card => new Date(card.timestamp).getTime());
     if (dates.length === 0) return '';
-    
-    // Get earliest date
     const earliestDate = new Date(Math.min(...dates));
     return formatDate(earliestDate);
   };
 
-  // Open print modal for a specific set of cards
   const openPrintModal = (cardsForPrinting, title) => {
     setCardsToPrint(cardsForPrinting);
     setPrintTitle(title);
     setPrintModalOpen(true);
   };
 
-  // Print subject cards
   const handlePrintSubject = (subject, e) => {
-    e.stopPropagation(); // Prevent toggling the subject expansion
+    e.stopPropagation();
     const subjectCards = [];
     Object.values(groupedCards[subject] || {}).forEach(topicCards => {
-      subjectCards.push(...topicCards);
+      subjectCards.push(...topicCards.filter(item => item.type !== 'topic'));
     });
     openPrintModal(subjectCards, subject);
   };
 
-  // Print topic cards
   const handlePrintTopic = (subject, topic, e) => {
-    e.stopPropagation(); // Prevent toggling the topic expansion
-    openPrintModal(groupedCards[subject][topic], `${subject} - ${topic}`);
+    e.stopPropagation();
+    const topicCards = (groupedCards[subject]?.[topic] || []).filter(item => item.type !== 'topic');
+    openPrintModal(topicCards, `${subject} - ${topic}`);
   };
 
-  // Add the missing function to handle showing modal and setting selected card
   const handleSetShowModalAndSelectedCard = (card) => {
     setSelectedCard(card);
     setShowModalAndSelectedCard(true);
   };
 
-  // Updated function to start slideshow - now handles topic-specific slideshows correctly
   const startSlideshow = (subject, topic, e) => {
-    if (e) e.stopPropagation(); // Prevent toggling expansion
-
-    let slideshowCards = [];
-    let slideshowTitle = "Slideshow";
-
+    if (e) e.stopPropagation();
+    let slideshowCardsToUse = [];
+    let slideshowTitleToUse = "Slideshow";
     if (topic) {
-      // Topic-level slideshow
-      // Ensure we only get actual cards, not topic shells
-      slideshowCards = (groupedCards[subject]?.[topic] || []).filter(item => item.type !== 'topic');
-      slideshowTitle = `${subject} - ${topic}`;
-      console.log(`Starting slideshow for topic: ${topic} in subject: ${subject} with ${slideshowCards.length} cards.`);
+      slideshowCardsToUse = (groupedCards[subject]?.[topic] || []).filter(item => item.type !== 'topic');
+      slideshowTitleToUse = `${subject} - ${topic}`;
     } else {
-      // Subject-level slideshow (remains the same)
       const allTopics = Object.keys(groupedCards[subject] || {});
-      slideshowCards = allTopics.reduce((allCards, currentTopic) => {
-        // Filter out topic shells here as well
-        const topicCards = (groupedCards[subject][currentTopic] || []).filter(item => item.type !== 'topic');
-        return allCards.concat(topicCards || []);
+      slideshowCardsToUse = allTopics.reduce((all, currentTopic) => {
+        const topicCardsOnly = (groupedCards[subject][currentTopic] || []).filter(item => item.type !== 'topic');
+        return all.concat(topicCardsOnly || []);
       }, []);
-      slideshowTitle = subject;
-      console.log(`Starting slideshow for subject: ${subject} with ${slideshowCards.length} cards.`);
+      slideshowTitleToUse = subject;
     }
-
-    // Start slideshow if we have cards
-    if (slideshowCards && slideshowCards.length > 0) {
-      // Use the first card to initiate the modal
-      handleSetShowModalAndSelectedCard(slideshowCards[0]);
+    if (slideshowCardsToUse.length > 0) {
+      setSlideshowCards(slideshowCardsToUse);
+      setSlideshowTitle(slideshowTitleToUse);
+      setShowSlideshow(true);
     } else {
-      console.warn(`No cards found for slideshow: ${slideshowTitle}`);
-      // Optionally show a message to the user here
+      console.warn(`No cards found for slideshow: ${slideshowTitleToUse}`);
     }
   };
 
-  const renderCards = (cards, subject, topic, topicColor) => {
+  const openColorEditor = (subject, topic = null, currentColor, e) => {
+    e.stopPropagation();
+    setColorEditorState({ subject, topic, color: currentColor || '#e6194b' });
+    setColorEditorOpen(true);
+  };
+
+  const closeColorEditor = () => {
+    setColorEditorOpen(false);
+    setColorEditorState({ subject: null, topic: null, color: '#e6194b' });
+  };
+
+  const handleColorChange = (newColor) => {
+    if (colorEditorState.subject) {
+      if (colorEditorState.topic) {
+        onUpdateSubjectColor(colorEditorState.subject, colorEditorState.topic, newColor, false);
+      } else {
+        onUpdateSubjectColor(colorEditorState.subject, null, newColor, true);
+      }
+    }
+    closeColorEditor();
+  };
+
+  // Render functions (can remain here or be moved outside if preferred)
+  const renderCards = (cardsInTopic, subject, topic, topicColor) => {
     const topicKey = `${subject}-${topic}`;
     const isVisible = expandedTopics[topicKey];
-
-    // Function to create a slightly lighter version of the subject color for cards
-    const getCardColor = (baseColor) => {
-      if (!baseColor) return '#3cb44b'; // Default card color
-      
-      // Create a slightly lighter version (20% lighter)
-      const lightenColor = (color, percent) => {
-        // Remove the # if present
-        let hex = color.replace('#', '');
-        
-        // Convert to RGB
-        let r = parseInt(hex.substring(0, 2), 16);
-        let g = parseInt(hex.substring(2, 4), 16);
-        let b = parseInt(hex.substring(4, 6), 16);
-        
-        // Lighten
-        r = Math.min(255, Math.floor(r + (255 - r) * percent));
-        g = Math.min(255, Math.floor(g + (255 - g) * percent));
-        b = Math.min(255, Math.floor(b + (255 - b) * percent));
-        
-        // Convert back to hex
-        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-      };
-      
-      return lightenColor(baseColor, 0.2); // 20% lighter version
-    };
-
     return (
-      <div className="topic-cards" style={{ display: isVisible ? 'flex' : 'none' }}>
-        {cards && cards.length > 0 ? (
-          cards.map((card) => {
-            // Get the subject base color from mapping
-            const subjectBaseColor = subjectColorMapping[subject]?.base || '#e6194b';
-            
-            // Apply the topic's color to cards
-            const cardWithColors = {
-              ...card,
-              // Use existing card color, or topic color, or subject color in that order
-              cardColor: card.cardColor || topicColor,
-              // Store the subject and topic colors for reference
-              subjectColor: subjectBaseColor,
-              topicColor: topicColor
-            };
-            
-            return (
-              <Flashcard
-                key={card.id}
-                card={cardWithColors}
-                onDelete={() => onDeleteCard(card.id)}
-                onFlip={(card, isFlipped) => console.log(`Card flipped: ${isFlipped}`)}
-                onUpdateCard={onUpdateCard}
-              />
-            );
-          })
+      <div className={`topic-cards ${isVisible ? 'visible' : ''}`}>
+        {cardsInTopic && cardsInTopic.length > 0 ? (
+          cardsInTopic.map((card) => (
+            <Flashcard
+              key={card.id}
+              card={{ ...card, cardColor: topicColor }}
+              onDelete={() => onDeleteCard(card.id)}
+              onFlip={() => {}}
+              onUpdateCard={onUpdateCard}
+              onSelectCard={() => handleSetShowModalAndSelectedCard(card)}
+            />
+          ))
         ) : (
           <div className="no-cards-message">No cards in this topic</div>
         )}
@@ -558,665 +400,59 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     );
   };
 
-  // CardModal component: Update for better responsiveness
-  const CardModal = () => {
-    // Determine the current subject from selectedCard
-    const currentSubject = selectedCard ? selectedCard.metadata?.subject || selectedCard.subject || "Unknown Subject" : "";
-    
-    // Find the current topic for this card
-    const currentTopic = selectedCard && currentSubject && groupedCards[currentSubject] 
-      ? Object.keys(groupedCards[currentSubject] || {}).find(
-          topic => groupedCards[currentSubject][topic].some(c => c.id === selectedCard.id)
-        )
-      : selectedCard?.topic || selectedCard?.metadata?.topic || "Unknown Topic";
-
-    // Get all cards from the current subject or topic
-    let modalCards = [];
-    
-    if (currentSubject && groupedCards[currentSubject]) {
-      // Subject-level slideshow
-      if (Object.keys(groupedCards[currentSubject]).length > 0) {
-        // Get all cards from all topics in this subject
-        modalCards = Object.keys(groupedCards[currentSubject]).flatMap(
-          topic => groupedCards[currentSubject][topic]
-        );
-      }
-    }
-
-    // CRITICAL: Make sure modalCards is never empty if we have a selectedCard
-    if (modalCards.length === 0 && selectedCard) {
-      console.log("Using fallback single card mode");
-      modalCards = [selectedCard];
-    }
-
-    // Ensure selectedCard is included in modalCards
-    if (selectedCard && !modalCards.some(c => c.id === selectedCard.id)) {
-      modalCards.push(selectedCard);
-    }
-
-    // Find the index of the current card in the array
-    const currentIndex = modalCards.findIndex(c => c.id === selectedCard.id);
-    const totalCards = modalCards.length;
-    
-    console.log(`CardModal debug - cards: ${totalCards}, currentIndex: ${currentIndex}, subject: ${currentSubject}, topic: ${currentTopic}`);
-
-    // Handler functions for navigation
-    const handlePrevCard = (e) => {
-      e.stopPropagation(); // Stop the event from propagating
-      console.log("Navigating to previous card");
-      if (currentIndex > 0) {
-        setSelectedCard(modalCards[currentIndex - 1]);
-      }
-    };
-    
-    const handleNextCard = (e) => {
-      e.stopPropagation(); // Stop the event from propagating
-      console.log("Navigating to next card");
-      if (currentIndex < totalCards - 1) {
-        setSelectedCard(modalCards[currentIndex + 1]);
-      }
-    };
-
-    // Get topic information for display - ensure we never display "null"
-    const topicInfo = currentTopic && currentTopic !== "Unknown Topic"
-      ? `${currentSubject} | ${currentTopic}`
-      : currentSubject;
-
-    // Responsive layout variables
-    const isMobile = window.innerWidth <= 768;
-
-    // Safely determine card color accounting for missing properties
-    const cardBgColor = selectedCard?.cardColor || '#3cb44b';
-    const cardTextColor = getContrastColor(cardBgColor);
-
+  const renderTopicControls = (subject, topic, topicColor, topicCards) => {
+    const hasCards = topicCards && topicCards.length > 0;
     return (
-      <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
-        <div 
-          className="card-modal-content" 
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button 
-            className="close-modal-button" 
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowModalAndSelectedCard(false);
-            }}
-          >✕</button>
-          
-          <div 
-            className="card-modal-card-container" 
-            style={{ 
-              '--card-bg-color': cardBgColor, 
-              '--card-text-color': cardTextColor
-            }}
-          >
-            <Flashcard 
-              card={selectedCard} 
-              onDelete={() => onDeleteCard(selectedCard.id)}
-              onFlip={(card, isFlipped) => console.log(`Card flipped: ${isFlipped}`)}
-              onUpdateCard={onUpdateCard}
-              isInModal={true}
-              showButtons={true}
-            />
-          </div>
-          
-          <div className="card-modal-actions">
-            <div className="card-info">
-              <div className="card-counter">
-                {currentIndex + 1} of {totalCards}
-              </div>
-              <div className="topic-info">{topicInfo}</div>
-            </div>
-            
-            <div className="nav-buttons">
-              <button 
-                onClick={handlePrevCard} 
-                disabled={currentIndex <= 0}
-                className="nav-button prev"
-              >
-                {isMobile ? "← Previous" : "Previous Card"}
-              </button>
-              
-              <button 
-                onClick={handleNextCard} 
-                disabled={currentIndex >= totalCards - 1}
-                className="nav-button next"
-              >
-                {isMobile ? "Next →" : "Next Card"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Function to delete all cards in a topic
-  const deleteTopicCards = (subject, topic) => {
-    const topicCards = groupedCards[subject][topic] || [];
-    // Confirm before deleting
-    setShowDeleteConfirmation({
-      type: 'topic',
-      subject,
-      topic,
-      count: topicCards.length,
-      onConfirm: () => {
-        // Delete all cards in this topic
-        topicCards.forEach(card => {
-          onDeleteCard(card.id);
-        });
-        setShowDeleteConfirmation(null);
-      }
-    });
-  };
-
-  // Function to delete all cards in a subject
-  const deleteSubjectCards = (subject) => {
-    let totalCards = 0;
-    const topics = Object.keys(groupedCards[subject] || {});
-    topics.forEach(topic => {
-      totalCards += groupedCards[subject][topic].length;
-    });
-
-    // Confirm before deleting
-    setShowDeleteConfirmation({
-      type: 'subject',
-      subject,
-      count: totalCards,
-      onConfirm: () => {
-        // Delete all cards in this subject
-        topics.forEach(topic => {
-          groupedCards[subject][topic].forEach(card => {
-            onDeleteCard(card.id);
-          });
-        });
-        setShowDeleteConfirmation(null);
-      }
-    });
-  };
-
-  // Render subject header with delete button
-  const renderSubjectHeader = ({ id: subject, title, displayCount, exam_board, exam_type, color }) => {
-    // Calculate appropriate text color based on background
-    const textColor = getContrastColor(color);
-
-    return (
-      <div 
-        className="subject-header" 
-        style={{ 
-          backgroundColor: color,
-          color: textColor
-        }}
-        ref={el => subjectRefs.current[subject] = el}
-      >
-        <div className="subject-info" onClick={() => toggleSubject(subject)}>
-          <h2>{title || subject}</h2>
-          <div className="subject-meta">
-            {exam_type && <span className={`meta-tag ${exam_type === 'GCSE' ? 'gcse' : 'a-level'}`}>{exam_type}</span>}
-            {exam_board && <span className="meta-tag">{exam_board}</span>}
-            <span className="card-count">{displayCount}</span>
-          </div>
-        </div>
-        
-        {isMobile ? (
-          <div 
-            className={`subject-actions ${mobileMenuOpen[subject] ? 'mobile-menu-active' : 'grid-layout'}`}
-            ref={el => menuRef.current[subject] = el}
-          >
-            {mobileMenuOpen[subject] ? (
-              <>
-                <button
-                  className="subject-actions-toggle"
-                  onClick={(e) => toggleMobileMenu(subject, e)}
-                  title="Close menu"
-                >
-                  <FaTimes />
-                </button>
-                <div className={`subject-actions-menu ${mobileMenuOpen[subject] ? 'active' : ''}`}>
-                  <button
-                    className="slideshow-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Start slideshow with first card in subject
-                      const firstCard = cards.flat()[0];
-                      if (firstCard) {
-                        handleSetShowModalAndSelectedCard(firstCard);
-                      }
-                    }}
-                    title="Start slideshow"
-                  >
-                    <span role="img" aria-label="Slideshow">▶️</span>
-                  </button>
-                  
-                  <button
-                    className="topic-list-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onViewTopicList && onViewTopicList(subject);
-                    }}
-                    title="View Topic List"
-                  >
-                    <span role="img" aria-label="View Topics">📋</span>
-                  </button>
-                  
-                  <button
-                    className="print-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePrintSubject(subject);
-                    }}
-                    title="Print all cards in this subject"
-                  >
-                    <span role="img" aria-label="Print">🖨️</span>
-                  </button>
-                  <button
-                    className="delete-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteSubjectCards(subject);
-                    }}
-                    title="Delete all cards in this subject"
-                    style={{ 
-                      backgroundColor: `rgba(255, 0, 0, 0.2)`,
-                      color: textColor
-                    }}
-                  >
-                    <span role="img" aria-label="Delete">🗑️</span>
-                  </button>
-                  <button
-                    className="color-edit-button"
-                    onClick={(e) => openColorEditor(subject, e)}
-                    title="Edit subject color"
-                  >
-                    <FaPalette />
-                  </button>
-                </div>
-              </>
-            ) : (
-              <button
-                className="subject-actions-toggle"
-                onClick={(e) => toggleMobileMenu(subject, e)}
-                title="Show actions"
-              >
-                <FaBars />
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="subject-actions">
-            <button
-              className="slideshow-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Start slideshow with first card in subject
-                const firstCard = cards.flat()[0];
-                if (firstCard) {
-                  handleSetShowModalAndSelectedCard(firstCard);
-                }
-              }}
-              title="Start slideshow"
-            >
-              <span role="img" aria-label="Slideshow">▶️</span>
-            </button>
-            
-            <button
-              className="topic-list-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewTopicList && onViewTopicList(subject);
-              }}
-              title="View Topic List"
-            >
-              <span role="img" aria-label="View Topics">📋</span>
-            </button>
-            
-            <button
-              className="print-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePrintSubject(subject);
-              }}
-              title="Print all cards in this subject"
-            >
-              <span role="img" aria-label="Print">🖨️</span>
-            </button>
-            <button
-              className="delete-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                deleteSubjectCards(subject);
-              }}
-              title="Delete all cards in this subject"
-              style={{ 
-                backgroundColor: `rgba(255, 0, 0, 0.2)`,
-                color: textColor
-              }}
-            >
-              <span role="img" aria-label="Delete">🗑️</span>
-            </button>
-            <button
-              className="color-edit-button"
-              onClick={(e) => openColorEditor(subject, e)}
-              title="Edit subject color"
-            >
-              <FaPalette />
-            </button>
-          </div>
+      <div className="topic-controls">
+        <button className="generate-cards-btn" title="Generate cards for topic" onClick={(e) => { e.stopPropagation(); /* Add AI generation trigger here */ }}>⚡</button>
+        {hasCards && (
+          <>
+            <button className="print-btn" title="Print topic cards" onClick={(e) => handlePrintTopic(subject, topic, e)}><FaPrint /></button>
+            <button className="slideshow-btn" title="Start slideshow for topic" onClick={(e) => startSlideshow(subject, topic, e)}><FaPlay /></button>
+          </>
         )}
+        <button className="color-picker-btn" title="Change topic color" onClick={(e) => openColorEditor(subject, topic, topicColor, e)}><FaPalette /></button>
       </div>
     );
-  };
-
-  // Add function to open color editor
-  const openColorEditor = (subject, e) => {
-    if (e) e.stopPropagation(); // Prevent toggling subject expansion
-    
-    // Find the color for this subject using the mapping
-    const currentColor = subjectColorMapping[subject]?.base || '#e6194b';
-    
-    // Use new state setters
-    setColorEditorState({ color: currentColor, subject: subject }); // Set initial color
-    setSelectedSubjectForColor(subject); // Set the subject being edited
-    setColorEditorOpen(true); // Open the editor
-  };
-  
-  // Add function to close color editor
-  const closeColorEditor = () => {
-    setColorEditorOpen(false); // Close the editor
-    setSelectedSubjectForColor(null); // Clear the selected subject
-  };
-  
-  // Add function to handle color change - Modified to call prop
-  const handleColorChange = (color, applyToAllTopics = false) => {
-    const subject = selectedSubjectForColor; // Get subject from state
-    if (subject && onUpdateSubjectColor) {
-      // Call the prop function passed from App.js
-      console.log(`[FlashcardList] Calling onUpdateSubjectColor for ${subject} with color ${color}, applyToAll: ${applyToAllTopics}`);
-      onUpdateSubjectColor(subject, null, color, applyToAllTopics); // Pass subject, null topic, new color
-    } else {
-      console.error("[FlashcardList] Cannot handle color change: Missing subject or onUpdateSubjectColor prop.");
-    }
-    closeColorEditor(); // Close the editor modal
-  };
-
-  // Function to handle "Generate Cards" button click for a topic
-  const handleGenerateCardsForTopic = (subject, topicName, topicId, e) => {
-    if (e) e.stopPropagation(); // Prevent topic expansion toggle
-    
-    console.log(`Generate cards request for ${subject}: ${topicName}, topicId: ${topicId}`);
-    
-    // Create and dispatch a custom event to navigate directly to the AI generator
-    // with the correct subject and topic pre-selected
-    const event = new CustomEvent('navToAIGenerator', { 
-      detail: { 
-        subject, 
-        topic: topicName,
-        topicId 
-      } 
-    });
-    
-    // Dispatch the event to trigger navigation in App.js
-    window.dispatchEvent(event);
-    
-    // Log that we've dispatched the event
-    console.log(`Dispatched navToAIGenerator event for ${subject}: ${topicName}`);
-  };
-
-  // Function to close the topic-specific AI card generator modal
-  const handleCloseTopicCardGenerator = () => {
-    setShowTopicCardGenerator(false);
-    setShowAICardGenerator(false);
-  };
-
-  // Add a utility function to generate automatic topic colors
-  const generateTopicColors = (baseColor, topicCount) => {
-    // Create an array to hold all topic colors
-    const colors = [];
-    
-    // For each topic, generate a unique color variation
-    for (let i = 0; i < topicCount; i++) {
-      // Calculate a hue offset to create visually distinct colors
-      // This maps the index to a position in the spectrum
-      let hueOffset = (i / Math.max(topicCount, 1)) * 30 - 15; // -15 to +15 degree hue shift
-      
-      // Calculate a lightness adjustment to create variety
-      // First topics are darker, later topics are lighter
-      let lightnessAdjustment = (i / Math.max(topicCount, 1)) * 30 - 15; // -15% to +15% lightness
-      
-      // Convert the base color to HSL
-      const rgb = hexToRgb(baseColor);
-      const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-      
-      // Apply the adjustments
-      hsl.h = (hsl.h + hueOffset / 360) % 1; // Hue is 0-1 in this implementation
-      hsl.l = Math.max(0.25, Math.min(0.75, hsl.l + lightnessAdjustment / 100)); // Keep lightness in reasonable range
-      
-      // Convert back to RGB and then to hex
-      const adjustedRgb = hslToRgb(hsl.h, hsl.s, hsl.l);
-      const hexColor = rgbToHex(adjustedRgb.r, adjustedRgb.g, adjustedRgb.b);
-      
-      colors.push(hexColor);
-    }
-    
-    return colors;
-  };
-  
-  // Helper function: Convert hex to RGB
-  const hexToRgb = (hex) => {
-    // Remove # if present
-    hex = hex.replace('#', '');
-    
-    // Handle 3-digit hex
-    if (hex.length === 3) {
-      hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
-    }
-    
-    // Convert to RGB
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    
-    return { r, g, b };
-  };
-  
-  // Helper function: Convert RGB to HSL
-  const rgbToHsl = (r, g, b) => {
-    r /= 255;
-    g /= 255;
-    b /= 255;
-    
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-    
-    if (max === min) {
-      h = s = 0; // achromatic
-    } else {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-        default: h = 0;
-      }
-      
-      h /= 6;
-    }
-    
-    return { h, s, l };
-  };
-  
-  // Helper function: Convert HSL to RGB
-  const hslToRgb = (h, s, l) => {
-    let r, g, b;
-    
-    if (s === 0) {
-      r = g = b = l; // achromatic
-    } else {
-      const hue2rgb = (p, q, t) => {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1/6) return p + (q - p) * 6 * t;
-        if (t < 1/2) return q;
-        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-        return p;
-      };
-      
-      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      const p = 2 * l - q;
-      
-      r = hue2rgb(p, q, h + 1/3);
-      g = hue2rgb(p, q, h);
-      b = hue2rgb(p, q, h - 1/3);
-    }
-    
-    return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
-  };
-  
-  // Helper function: Convert RGB to hex
-  const rgbToHex = (r, g, b) => {
-    const toHex = (c) => {
-      const hex = c.toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    };
-    
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
   const renderTopics = (subject, subjectColor) => {
-    const isSubjectExpanded = expandedSubjects[subject];
-    const topics = Object.keys(groupedCards[subject] || {});
-    
-    if (!isSubjectExpanded || topics.length === 0) return null;
-    
-    // Get the base subject color from mapping or use default
-    const baseColor = subjectColorMapping[subject]?.base || subjectColor || '#e6194b';
-    
-    // Generate all topic colors at once for consistency
-    const topicColors = generateTopicColors(baseColor, topics.length);
-    
-    console.log(`Rendering ${topics.length} topics for subject ${subject} with base color ${baseColor}`);
-    
+    const topicsData = groupedCards[subject] || {};
+    const topicNames = Object.keys(topicsData).sort((a, b) => {
+        const dateA = getTopicDate(topicsData[a]);
+        const dateB = getTopicDate(topicsData[b]);
+        if (!dateA && !dateB) return a.localeCompare(b);
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return new Date(dateA) - new Date(dateB);
+    });
+
     return (
       <div className="topics-container">
-        {topics.map((topic, index) => {
+        {topicNames.map((topic, index) => {
           const topicKey = `${subject}-${topic}`;
           const isExpanded = expandedTopics[topicKey];
-          const cardsInTopic = groupedCards[subject][topic] || [];
-          
-          // Filter out actual cards (not topic shells)
-          const actualCards = cardsInTopic.filter(card => !(card.type === 'topic' && card.isShell));
-          
-          // Find if we have a topic shell in this group
-          const topicShell = cardsInTopic.find(card => card.type === 'topic' && card.isShell);
-          const topicId = topicShell?.id;
-          const topicDate = getTopicDate(cardsInTopic);
-          
-          // Get topic color in this priority:
-          // 1. Use existing topic color from mapping if available
-          // 2. Use color from topic shell if available
-          // 3. Use pre-generated color from topicColors array
-          let topicColor = subjectColorMapping[subject]?.topics?.[topic] ||
-                          topicShell?.color || 
-                          topicColors[index];
-          
-          // Ensure we have a valid color
-          if (!topicColor || topicColor === '#cccccc') {
-            topicColor = topicColors[index];
-            
-            // Store this color in the mapping for future use
-            if (onUpdateSubjectColor && typeof onUpdateSubjectColor === 'function') {
-              console.log(`Setting topic color for ${subject}/${topic}: ${topicColor}`);
-              // We'll do this asynchronously to avoid re-renders during rendering
-              setTimeout(() => {
-                onUpdateSubjectColor(subject, topic, topicColor);
-              }, 100);
-            }
-          }
-          
-          // Calculate contrasting text color
+          const itemsInTopic = topicsData[topic] || [];
+          const topicShell = itemsInTopic.find(item => item.type === 'topic' && item.isShell);
+          const actualCards = itemsInTopic.filter(item => item.type !== 'topic');
+          const displayCount = actualCards.length;
+          const topicColor = subjectColorMapping[subject]?.topics?.[topic] || subjectColor;
           const textColor = getContrastColor(topicColor);
-          
-          // Function to generate a deeper shade for buttons
-          const generateButtonShade = (color) => {
-            // Convert hex to RGB
-            const rgb = hexToRgb(color);
-            
-            // Darken by 20%
-            const factor = 0.8;
-            const newR = Math.floor(rgb.r * factor);
-            const newG = Math.floor(rgb.g * factor);
-            const newB = Math.floor(rgb.b * factor);
-            
-            // Convert back to hex
-            return rgbToHex(newR, newG, newB);
-          };
-          
-          // Button background based on topic color
-          const buttonBackground = generateButtonShade(topicColor);
-          
+
           return (
-            <div 
-              key={topicKey} 
-              className="topic-container"
-              ref={el => topicRefs.current[topicKey] = el}
-            >
-              <div 
-                className="topic-header"
-                style={{ 
-                  backgroundColor: topicColor,
-                  color: textColor
-                }}
+            <div key={topicKey} className="topic-item" ref={el => topicRefs.current[topicKey] = el}>
+              <div
+                className={`topic-header ${isExpanded ? 'expanded' : ''} ${displayCount === 0 ? 'empty-shell' : ''}`}
+                style={{ backgroundColor: topicColor, color: textColor }}
                 onClick={() => toggleTopic(subject, topic)}
               >
-                <div className="topic-info">
-                  <h3 className="topic-title">{topic}</h3>
-                  <span className="card-count">{actualCards.length} cards</span>
-                  {topicDate && <span className="topic-creation-date">{topicDate}</span>}
-                </div>
-                
-                <div className="topic-actions">
-                  <button
-                    className="action-button generate-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleGenerateCardsForTopic(subject, topic, topicId, e);
-                    }}
-                    title="Generate cards"
-                    style={{ 
-                      backgroundColor: buttonBackground,
-                      color: textColor
-                    }}
-                  >
-                    <FaBolt />
-                  </button>
-                  {renderTopicControls(subject, topic, actualCards.length > 0, topicColor)}
-                  <button 
-                    className="action-button delete-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteTopicCards(subject, topic);
-                    }}
-                    title="Delete topic"
-                    style={{ 
-                      backgroundColor: '#dc3545',  // Always red for delete
-                      color: '#ffffff'  // White text
-                    }}
-                  >
-                    <FaTimes />
-                  </button>
+                <span className="topic-name">{topic} ({displayCount})</span>
+                <div className="topic-header-controls">
+                    {renderTopicControls(subject, topic, topicColor, actualCards)}
+                    <span className="expand-icon">{isExpanded ? <FaAngleUp /> : <FaAngleDown />}</span>
                 </div>
               </div>
-              
-              {isExpanded && renderCards(
-                // Filter out topic shells when showing cards
-                actualCards,
-                subject,
-                topic,
-                topicColor  // Pass the topic color for card styling
-              )}
+              {isExpanded && renderCards(actualCards, subject, topic, topicColor)}
             </div>
           );
         })}
@@ -1224,116 +460,96 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     );
   };
 
-  // Add icons to topic controls
-  const renderTopicControls = (subject, topic, hasCards, topicColor) => {
-    const controlStyle = {
-      color: getContrastColor(topicColor) // Use contrast color for icons
-    };
-
-    // Function to generate a slightly darker shade for hover effect
-    const generateButtonShade = (color) => {
-      if (!color) return 'rgba(0,0,0,0.2)';
-      let hex = color.replace('#', '');
-      let r = parseInt(hex.substring(0, 2), 16);
-      let g = parseInt(hex.substring(2, 4), 16);
-      let b = parseInt(hex.substring(4, 6), 16);
-      r = Math.max(0, r - 30);
-      g = Math.max(0, g - 30);
-      b = Math.max(0, b - 30);
-      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-    };
-    const hoverBg = generateButtonShade(topicColor);
+ const renderSubjectHeader = ({ id: subject, title, exam_board, exam_type, color }) => {
+    const textColor = getContrastColor(color);
+    const subjectCards = [];
+     Object.values(groupedCards[subject] || {}).forEach(topicCards => {
+        subjectCards.push(...topicCards.filter(item => item.type !== 'topic'));
+     });
+     const displayCount = subjectCards.length;
 
     return (
-      <div className="topic-controls">
-        {hasCards && (
-          <>
-            {/* Slideshow Button */}
-            <button 
-              className="topic-action-button slideshow-button" 
-              onClick={(e) => startSlideshow(subject, topic, e)} 
-              title="Start slideshow for this topic"
-              style={controlStyle}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = hoverBg}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <FaPlay />
-            </button>
-            
-            {/* Print Button */}
-            <button 
-              className="topic-action-button print-button" 
-              onClick={(e) => handlePrintTopic(subject, topic, e)} 
-              title="Print cards for this topic"
-              style={controlStyle}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = hoverBg}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <FaPrint />
-            </button>
-          </>
-        )}
+      <div
+        className="subject-header"
+        style={{ backgroundColor: color, color: textColor }}
+      >
+        <span className="subject-title">{title} ({displayCount})</span>
+        <div className="subject-header-controls">
+           <button className="subject-action-button" onClick={(e) => handlePrintSubject(subject, e)} title="Print all cards in subject"> <FaPrint /> </button>
+           <button className="subject-action-button" onClick={(e) => startSlideshow(subject, null, e)} title="Start slideshow for subject"> <FaPlay /> </button>
+           <button className="subject-action-button" onClick={(e) => openColorEditor(subject, null, color, e)} title="Change subject color"> <FaPalette /> </button>
+           <span className="expand-icon" onClick={(e) => { e.stopPropagation(); toggleSubject(subject); }}> {expandedSubjects[subject] ? <FaAngleUp /> : <FaAngleDown />} </span>
+        </div>
       </div>
     );
   };
 
-  // Render a single subject section including its topics
   const renderSubject = (subjectData) => {
-    const { id: subject, title, exam_board, exam_type } = subjectData;
+    const { id: subject, title, color } = subjectData;
     const isExpanded = expandedSubjects[subject];
-
-    // Use the pre-processed groupedCards for topic structure
-    const topicsInSubject = groupedCards[subject] || {};
-    const topicNames = Object.keys(topicsInSubject).sort((a, b) => a.localeCompare(b));
-
-    // Retrieve subject color from the pre-calculated sortedSubjects data
-    const currentSubjectColor = subjectData.color || '#f0f0f0';
-
-    // Count total cards for the subject header
-    const totalCardCount = topicNames.reduce((count, topicName) => {
-      return count + (topicsInSubject[topicName] || []).length;
-    }, 0);
-    
-    // Display logic for card count: show card count if > 0, else show shell count if > 0
-    const displayCount = totalCardCount > 0 ? 
-      `${totalCardCount} ${totalCardCount === 1 ? 'card' : 'cards'}` :
-      '0 cards';
+    let displayCount = 0;
+    const topicsMap = groupedCards[subject] || {};
+    Object.values(topicsMap).forEach(items => {
+        displayCount += items.filter(item => item.type !== 'topic').length;
+    });
 
     return (
-      <div key={subject} className="subject-section">
-        {/* Render Subject Header */}
-        {renderSubjectHeader({
-          id: subject,
-          title: title || subject, // Use title if available, else subject name
-          displayCount: displayCount, // Pass the calculated display count
-          exam_board: exam_board || getExamInfo(subject).examBoard,
-          exam_type: exam_type || getExamInfo(subject).examType,
-          color: currentSubjectColor // Pass determined color
-        })}
-
-        {/* Render Topics within the Subject - Conditionally based on subject expansion */}
+      <div key={subject} className="subject-group" ref={el => subjectRefs.current[subject] = el}>
+        {renderSubjectHeader({ ...subjectData, displayCount })}
         {isExpanded && (
-          renderTopics(subject, currentSubjectColor)
+          <div className="subject-content">
+            {renderTopics(subject, color)}
+          </div>
         )}
       </div>
     );
   };
 
+  // CardModal component needs to be defined or imported if used
+   const CardModal = () => {
+       if (!selectedCard) return null;
+       const currentSubject = selectedCard.subject || "Unknown";
+       const currentTopic = selectedCard.topic || "Unknown";
+       const modalCards = (groupedCards[currentSubject]?.[currentTopic] || []).filter(c => c.type !== 'topic');
+       const currentIndex = modalCards.findIndex(c => c.id === selectedCard.id);
+       const totalCards = modalCards.length;
+
+       const handlePrevCard = (e) => { e.stopPropagation(); if (currentIndex > 0) setSelectedCard(modalCards[currentIndex - 1]); };
+       const handleNextCard = (e) => { e.stopPropagation(); if (currentIndex < totalCards - 1) setSelectedCard(modalCards[currentIndex + 1]); };
+
+       return (
+         <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
+           <div className="card-modal-content" onClick={(e) => e.stopPropagation()}>
+              <button className="close-modal-button" onClick={() => setShowModalAndSelectedCard(false)}>✕</button>
+              <Flashcard card={selectedCard} onUpdateCard={onUpdateCard} isInModal={true} showButtons={true} />
+              <div className="card-modal-actions">
+                 <div className="card-info">({currentIndex + 1} of {totalCards}) {currentSubject} | {currentTopic}</div>
+                 <div className="nav-buttons">
+                    <button onClick={handlePrevCard} disabled={currentIndex <= 0}>← Prev</button>
+                    <button onClick={handleNextCard} disabled={currentIndex >= totalCards - 1}>Next →</button>
+                 </div>
+              </div>
+           </div>
+         </div>
+       );
+   };
+
+  // --- END: REGULAR LOGIC & HELPER FUNCTIONS ---
+
+  // --- START: JSX RETURN ---
   return (
     <div className="flashcard-list-container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Use new state for visibility */}
+      {/* Color Editor Modal */}
       {colorEditorOpen && (
         <ColorEditor
-          subjectColor={colorEditorState.color} // Pass initial color from state
+          subjectColor={colorEditorState.color}
           onClose={closeColorEditor}
           onSelectColor={handleColorChange}
-          subject={selectedSubjectForColor} // Pass subject from state
+          subject={colorEditorState.subject}
         />
       )}
-      
-      {/* Removed AICardGenerator rendering for brevity */}
-      
-      {/* Print modal */}
+
+      {/* Print Modal */}
       {printModalOpen && (
         <PrintModal
           cards={cardsToPrint}
@@ -1341,32 +557,61 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
           onClose={() => setPrintModalOpen(false)}
         />
       )}
-      
-      {/* Card modal */}
-      {showModalAndSelectedCard && selectedCard && (
-        <CardModal />
-      )}
-      
-      {/* Main accordion container */}
-      <div className="accordion-container" style={{ 
-        flex: 1, 
-        overflowY: 'auto',
-        maxHeight: 'calc(100vh - 120px)',
-        padding: '0 10px' 
-      }}>
-        {/* Map over sortedSubjects which contains pre-calculated data */}
+
+      {/* Card Modal */}
+      {showModalAndSelectedCard && selectedCard && <CardModal />}
+
+      {/* Main Accordion */}
+      <div className="accordion-container" style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 120px)', padding: '0 10px' }}>
         {sortedSubjects.map(subjectData => renderSubject(subjectData))}
       </div>
-      
-      {/* Scroll manager component */}
+
+      {/* Scroll Manager */}
       <ScrollManager
         expandedSubjects={expandedSubjects}
         expandedTopics={expandedTopics}
         subjectRefs={subjectRefs}
         topicRefs={topicRefs}
       />
+
+      {/* Action Buttons */}
+      <div className="list-actions">
+        <button
+          onClick={() => setShowTopicCreationModal(true)}
+          className="create-topic-list-button button-primary"
+        >
+          <FaBolt style={{ marginRight: '8px' }} /> Create New Topic List
+        </button>
+      </div>
+
+      {/* Topic Creation Modal */}
+      {showTopicCreationModal && (
+        <TopicCreationModal
+          onClose={() => setShowTopicCreationModal(false)}
+          onSaveTopicShells={handleSaveTopicShells}
+          userId={"user123"}
+          recordId={recordId}
+          existingSubjects={getExistingSubjectNames}
+        />
+      )}
+
+       {/* Delete Confirmation Modal Placeholder */}
+       {showDeleteConfirmation && (
+           <div className="confirmation-modal-overlay">
+             <div className="confirmation-modal-content">
+               <h4>Confirm Deletion</h4>
+               <p>Are you sure you want to delete all {showDeleteConfirmation.count} cards for {showDeleteConfirmation.type === 'topic' ? `topic "${showDeleteConfirmation.topic}"` : `subject "${showDeleteConfirmation.subject}"`}?</p>
+               <div className="confirmation-buttons">
+                   <button className="button-danger" onClick={() => { showDeleteConfirmation.onConfirm(); }}>Yes, Delete</button>
+                   <button className="button-secondary" onClick={() => setShowDeleteConfirmation(null)}>Cancel</button>
+               </div>
+             </div>
+           </div>
+       )}
+
     </div>
   );
+  // --- END: JSX RETURN ---
 };
 
 export default FlashcardList;

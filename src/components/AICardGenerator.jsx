@@ -1965,7 +1965,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
             </div>
             {formData.subject === "__add_new__" && (
               <div className="form-group" style={{ marginTop: '10px' }}>
-                <input 
+                <input
                   type="text"
                   name="newSubject"
                   value={formData.newSubject}
@@ -1987,7 +1987,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
                 type="number" 
                 name="numCards" 
                 value={formData.numCards} 
-                onChange={handleChange} 
+                onChange={handleChange}
                 min="1" 
                 max="20" 
                 required 
@@ -2066,11 +2066,11 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
   // Completely enhanced addAllToBank function with comprehensive protection against race conditions
   const addAllToBank = async (stableExamType, stableExamBoard, stableSubject, stableTopic) => {
     try {
-      if (pendingOperations.addToBank) {
+    if (pendingOperations.addToBank) {
         console.log("Add to bank operation already in progress, skipping");
-        return;
-      }
-      
+      return;
+    }
+    
       setPendingOperations({ ...pendingOperations, addToBank: true });
       
       // Guard checks
@@ -2144,7 +2144,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
             // if (updateColorMapping && card.subject && card.topic) {
             //   updateColorMapping(card.subject, card.topic, card.color || currentGeneratedColor, false);
             // }
-          } else {
+              } else {
             console.error("onAddCard function not available");
             setError("Cannot add cards - missing handler function");
           }
@@ -2223,7 +2223,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
             if (retryCount <= maxRetries) {
               console.log(`[GenerateCards] Retrying in ${retryCount * 1000}ms...`);
               setTimeout(sendMessage, retryCount * 1000);
-            } else {
+      } else {
               reject(new Error(`Failed to send ${type} message after ${maxRetries + 1} attempts: ${error.message || 'Unknown error'}`));
             }
           });
@@ -2283,7 +2283,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
           </div>
         ))}
       </div>
-
+      
       <div className="step-content-container">
         {renderStepContent()}
       </div>
@@ -2292,7 +2292,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
         {currentStep > 1 && (
           <button 
             className="prev-button" 
-            onClick={handlePrevStep}
+            onClick={handlePrevStep} 
           >
             ← Previous
           </button>
@@ -2302,7 +2302,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
         {currentStep < totalSteps && (
           <button 
             className={`next-button ${!canProceed() ? 'disabled' : ''}`} 
-            onClick={handleNextStep}
+            onClick={handleNextStep} 
             disabled={!canProceed()}
           >
             Next →
