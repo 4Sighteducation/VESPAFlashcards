@@ -247,6 +247,104 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
     setIsFullscreen(!isFullscreen);
   };
   
+  // Back side rendering logic
+  const renderBack = () => {
+    let answerContent;
+
+    // Determine the content based on question type
+    switch (card.questionType) {
+      case 'multiple_choice':
+        // Clean the correct answer of any existing prefix
+        const cleanAnswer = card.correctAnswer ? String(card.correctAnswer).replace(/^[a-d]\)\s*/i, '') : "Not specified";
+        
+        // Find the index of this answer in the options array
+        const answerIndex = card.options ? card.options.findIndex(option => {
+          let optionText = '';
+          if (!option) return false;
+          
+          // Handle both string options and object options
+          if (typeof option === 'string') {
+            optionText = option.replace(/^[a-d]\)\s*/i, '').trim();
+          } else if (option && typeof option === 'object' && typeof option.text === 'string') {
+            optionText = option.text.replace(/^[a-d]\)\s*/i, '').trim();
+          } else {
+            return false; // Skip if invalid format
+          }
+          
+          return optionText === cleanAnswer.trim();
+        }) : -1;
+        
+        // Get the letter for this index (a, b, c, d)
+        const letter = answerIndex >= 0 ? String.fromCharCode(97 + answerIndex) : '';
+        const formattedAnswer = answerIndex >= 0 ? `${letter}) ${cleanAnswer}` : cleanAnswer;
+        
+        answerContent = (
+          <div>
+            <strong>Correct Answer:</strong><br />
+            {formattedAnswer}
+          </div>
+        );
+        break;
+      case 'short_answer':
+      case 'essay':
+      case 'acronym':
+        answerContent = (
+          typeof card.back === 'string' ? (
+            <div dangerouslySetInnerHTML={{ __html: card.back || "No answer available" }} />
+          ) : (
+            <div>No answer available</div>
+          )
+        );
+        break;
+      default:
+        // Fallback for unknown or unspecified types
+        answerContent = (
+          typeof card.back === 'string' ? (
+            <div dangerouslySetInnerHTML={{ __html: card.back || "No answer available" }} />
+          ) : (
+            <div>No answer available</div>
+          )
+        );
+    }
+
+    return (
+      <div className="flashcard-back flashcard-flip-area" style={{ 
+        color: '#000000', 
+        backgroundColor: '#ffffff',
+        padding: '15px',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        height: '100%',
+        width: '100%',
+        position: 'absolute',
+        boxSizing: 'border-box',
+        cursor: preview ? 'default' : 'pointer'
+      }}>
+        {card.topic && !preview && (
+          <div className="card-topic-indicator back-topic">
+            {card.topic}
+          </div>
+        )}
+        <div className="card-content-area">
+          <ScaledText 
+            maxFontSize={isInModal ? 24 : 16} 
+            minFontSize={isInModal ? 8 : 6}
+            isInModal={isInModal}
+          >
+            {answerContent}
+          </ScaledText>
+        </div>
+        {card.boxNum !== undefined && !preview && (
+          <div className="box-indicator">
+            Box {card.boxNum}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Update the main return to use renderFront and renderBack
   return (
     <>
       <div 
@@ -255,67 +353,65 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
         onClick={handleClick}
         style={cardStyle}
       >
-        {/* Buttons that should appear on both front and back */}
+        {/* Buttons container */}
         {showButtons && !preview && (
           <div className="flashcard-buttons">
-            <div className="card-buttons">
-              {confirmDelete ? (
-                <div className="delete-confirm">
-                  <span style={{ color: textColor }}>Delete?</span>
-                  <button onClick={confirmDeleteCard} className="confirm-btn">Yes</button>
-                  <button onClick={cancelDelete} className="cancel-btn">No</button>
-                </div>
-              ) : (
-                <>
+            {confirmDelete ? (
+              <div className="delete-confirm">
+                <span style={{ color: textColor }}>Delete?</span>
+                <button onClick={confirmDeleteCard} className="confirm-btn">Yes</button>
+                <button onClick={cancelDelete} className="cancel-btn">No</button>
+              </div>
+            ) : (
+              <>
+                <button 
+                  className="delete-btn" 
+                  onClick={handleDeleteClick}
+                  title="Delete card"
+                  style={{ color: textColor }}
+                >
+                  ✕
+                </button>
+                
+                <button 
+                  className="color-btn" 
+                  onClick={toggleColorPicker}
+                  title="Change color"
+                  style={{ color: textColor }}
+                >
+                  🎨
+                </button>
+                
+                {hasAdditionalInfo && (
                   <button 
-                    className="delete-btn" 
-                    onClick={handleDeleteClick}
-                    title="Delete card"
+                    className="info-btn" 
+                    onClick={toggleInfoModal}
+                    title="View additional information"
                     style={{ color: textColor }}
                   >
-                    ✕
+                    ℹ️
                   </button>
-                  
-                  <button 
-                    className="color-btn" 
-                    onClick={toggleColorPicker}
-                    title="Change color"
-                    style={{ color: textColor }}
-                  >
-                    🎨
-                  </button>
-                  
-                  {hasAdditionalInfo && (
-                    <button 
-                      className="info-btn" 
-                      onClick={toggleInfoModal}
-                      title="View additional information"
-                      style={{ color: textColor }}
-                    >
-                      ℹ️
-                    </button>
-                  )}
-                </>
-              )}
-              
-              {showColorPicker && (
-                <div className="color-picker-container" onClick={(e) => e.stopPropagation()}>
-                  <div className="color-options">
-                    {colorOptions.map((color) => (
-                      <div 
-                        key={color}
-                        className="color-option"
-                        style={{ 
-                          backgroundColor: color,
-                          border: color === card.cardColor ? '2px solid white' : '2px solid transparent'
-                        }}
-                        onClick={() => handleColorChange(color)}
-                      />
-                    ))}
-                  </div>
+                )}
+              </>
+            )}
+            
+            {showColorPicker && (
+              <div className="color-picker-container" onClick={(e) => e.stopPropagation()}>
+                <div className="color-options">
+                  {colorOptions.map((color) => (
+                    <div 
+                      key={color}
+                      className="color-option"
+                      style={{ 
+                        backgroundColor: color,
+                        border: color === getCardColor() ? '2px solid white' : '2px solid transparent'
+                      }}
+                      onClick={() => handleColorChange(color)}
+                    />
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
         
@@ -383,77 +479,14 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             )}
           </div>
           
-          <div className="flashcard-back flashcard-flip-area" style={{ 
-            color: '#000000', 
-            backgroundColor: '#ffffff',
-            padding: '15px',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            height: '100%',
-            width: '100%',
-            position: 'absolute',
-            boxSizing: 'border-box',
-            cursor: preview ? 'default' : 'pointer'
-          }}>
-            {card.topic && !preview && (
-              <div className="card-topic-indicator back-topic">
-                {card.topic}
-              </div>
-            )}
-            <ScaledText 
-              maxFontSize={isInModal ? 24 : 16} 
-              minFontSize={isInModal ? 8 : 6}
-              isInModal={isInModal}
-            >
-              {card.questionType === 'multiple_choice' ? (
-                <div>
-                  Correct Answer: {(() => {
-                    // Clean the correct answer of any existing prefix
-                    const cleanAnswer = card.correctAnswer ? card.correctAnswer.replace(/^[a-d]\)\s*/i, '') : "Not specified";
-                    
-                    // Find the index of this answer in the options array
-                    const answerIndex = card.options ? card.options.findIndex(option => {
-                      // Make sure option is a string before calling replace
-                      if (!option || typeof option !== 'string') {
-                        // Handle case where option is an object with text property
-                        if (option && typeof option === 'object' && typeof option.text === 'string') {
-                          return option.text.replace(/^[a-d]\)\s*/i, '').trim() === cleanAnswer.trim();
-                        }
-                        return false; // Skip this option if it's not a string or object with text
-                      }
-                      return option.replace(/^[a-d]\)\s*/i, '').trim() === cleanAnswer.trim();
-                    }) : -1;
-                    
-                    // Get the letter for this index (a, b, c, d)
-                    const letter = answerIndex >= 0 ? String.fromCharCode(97 + answerIndex) : '';
-                    
-                    // Return formatted answer with letter prefix
-                    return answerIndex >= 0 ? `${letter}) ${cleanAnswer}` : cleanAnswer;
-                  })()}
-                </div>
-              ) : (
-                typeof card.back === 'string' ? (
-                  <div dangerouslySetInnerHTML={{ __html: card.back || "No answer available" }} />
-                ) : (
-                  <div>No answer available</div>
-                )
-              )}
-            </ScaledText>
-            
-            {card.boxNum !== undefined && (
-              <div className="box-indicator">
-                Box {card.boxNum}
-              </div>
-            )}
-          </div>
+          {renderBack()}
         </div>
       </div>
       
-      {/* Information Modal - Moved outside of flashcard div for better positioning */}
+      {/* Information Modal */}
       {showInfoModal && ReactDOM.createPortal(
         <div className="info-modal-overlay" onClick={closeInfoModal}>
-          <div className="info-modal" onClick={(e) => e.stopPropagation()} style={{ '--card-bg-color': card.cardColor, '--card-text-color': getContrastColor(card.cardColor) }}>
+          <div className="info-modal" onClick={(e) => e.stopPropagation()} style={{ '--card-bg-color': getCardColor(), '--card-text-color': textColor }}>
             <div className="info-modal-header">
               <h3>Additional Information</h3>
               <button className="close-modal-btn" onClick={closeInfoModal}>✕</button>
@@ -466,8 +499,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
         document.body
       )}
       
-      {/* Add fullscreen toggle button for mobile */}
-      {!isInModal && (
+      {/* Fullscreen toggle button */}
+      {!isInModal && !preview && (
         <button 
           className="fullscreen-toggle" 
           onClick={toggleFullscreen}

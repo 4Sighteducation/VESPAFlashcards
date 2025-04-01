@@ -1150,34 +1150,6 @@ const TopicHub = ({
     );
   };
   
-  // Render save dialog
-  const renderSaveDialog = () => {
-    if (!showSaveDialog) return null;
-    
-    return (
-      <div className="modal-overlay">
-        <div className="save-topic-dialog">
-          <h3>Save Topic List</h3>
-          <p>Confirm saving these topics as shells in your main card bank.</p>
-          <div className="save-topic-actions">
-            <button onClick={() => setShowSaveDialog(false)} className="cancel-button">
-              Cancel
-            </button>
-            <button 
-              onClick={() => {
-                handleSaveTopicList();
-                setShowSaveDialog(false);
-              }}
-              className="save-button"
-            >
-              <FaSave /> Confirm and Save Shells
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-  
   // Render select topic dialog
   const renderSelectDialog = () => {
     if (!showSelectDialog) return null;
@@ -1252,7 +1224,7 @@ const TopicHub = ({
   // Render the main topics and subtopics
   const renderTopics = () => {
     if (!mainTopics || mainTopics.length === 0) {
-      return null;
+      return renderGenerator();
     }
     
     return (
@@ -1270,25 +1242,18 @@ const TopicHub = ({
               </button>
             )}
             <button 
-              className="add-topic-button" 
-              onClick={() => setShowSaveDialog(true)}
-              disabled={topics.length === 0}
+              className="finalize-button primary-button" 
+              onClick={handleFinalizeTopics}
+              disabled={topics.length === 0 || isGenerating}
             >
-              <FaSave /> Save Topic List
-            </button>
-            <button 
-              className="continue-button" 
-              onClick={() => setShowSelectDialog(true)}
-              disabled={topics.length === 0}
-            >
-              Select Topic to Continue
+              <FaCheckCircle /> Confirm and Save Shells
             </button>
           </div>
         </div>
         
         <div className="main-topics-list">
           {mainTopics.map((mainTopic, index) => (
-            <div key={mainTopic.name} className="main-topic-container">
+            <div key={mainTopic.name || index} className="main-topic-container">
               <div className="main-topic-header-container">
                 {editMainTopicMode === mainTopic.name ? (
                   <div className="main-topic-edit-form">
@@ -1409,16 +1374,6 @@ const TopicHub = ({
                               </button>
                             )}
                             <button
-                              className="generate-button"
-                              onClick={() => {
-                                setSelectedTopic(topic);
-                                setShowSelectDialog(true);
-                              }}
-                              title="Generate Cards from this Topic"
-                            >
-                              <FaBolt />
-                            </button>
-                            <button
                               className="edit-button"
                               onClick={() => startEdit(topic)}
                               title="Edit Topic"
@@ -1467,7 +1422,6 @@ const TopicHub = ({
                     value={newTopicInput.mainTopic}
                     onChange={(e) => {
                       if (e.target.value === "__add_new__") {
-                        // Switch to text input mode if user selects "Add New Main Topic"
                         setUseExistingMainTopic(false);
                         setNewTopicInput({...newTopicInput, mainTopic: ''});
                       } else {
@@ -1623,12 +1577,62 @@ const TopicHub = ({
     );
   };
   
+  // Update the finalize topics function in TopicHub
+  const handleFinalizeTopics = () => {
+    console.log(`[TopicHub] Finalizing ${topics.length} topics for subject: ${subject}`);
+
+    // Generate topic shells based on the current state of topics
+    const topicShells = topics.map((topic, index) => {
+      // Ensure we have a valid topic object
+      if (!topic || typeof topic !== 'object') {
+        console.warn(`[TopicHub] Skipping invalid topic at index ${index}:`, topic);
+        return null;
+      }
+      
+      // Use the subtopic name if available, otherwise use main topic or a placeholder
+      const actualTopicName = topic.subtopic || topic.mainTopic || `Topic ${index + 1}`;
+      const topicColor = topic.color || `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
+
+      return {
+        id: topic.id || generateId('topic'), // Use existing ID or generate new one
+        type: 'topic', // Indicate this is a topic shell
+        isShell: true,
+        subject: subject, // Subject from props
+        name: `${subject}: ${actualTopicName}`, // Standard naming convention
+        topic: actualTopicName, // The actual topic name
+        examBoard: examBoard || "General", // Metadata from props
+        examType: examType || "Course",
+        color: topicColor, // Use assigned or random color
+        timestamp: new Date().toISOString(),
+        hasIcons: true, // Flag to show icons in FlashcardList
+        // Include any other relevant metadata if available
+        // metadata: { ... }
+      };
+    }).filter(shell => shell !== null); // Remove any null entries from invalid topics
+
+    console.log(`[TopicHub] Generated ${topicShells.length} topic shells:`, topicShells);
+
+    // Call the onFinalizeTopics prop passed from AICardGenerator
+    if (onFinalizeTopics && typeof onFinalizeTopics === 'function') {
+      // This function should handle saving the shells and closing the AICardGenerator
+      onFinalizeTopics(topicShells);
+      
+      // Show a success message within TopicHub (optional, as AICardGenerator will close)
+      setShowSuccessModal(true); // You might want to customize this modal
+
+      // Note: We are NOT calling onClose() here directly anymore.
+      // The AICardGenerator's onFinalizeTopics wrapper will handle closing.
+
+    } else {
+      console.error("[TopicHub] onFinalizeTopics function not provided or is not a function!");
+      // Show an error to the user if the callback is missing
+      setError("Error: Could not finalize topics. Missing callback function.");
+    }
+  };
+  
   // Main render method
   return (
     <div className={`topic-hub`}>
-      {renderGenerator()}
-      {renderSaveDialog()}
-      {renderSelectDialog()}
       {renderTopics()}
       {renderFallbackNotice()}
       {renderErrorModal()}

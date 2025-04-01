@@ -78,7 +78,7 @@ const AICardGenerator = ({
 }) => {
   // Step management state
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 7; // Re-add the totalSteps constant
+  const totalSteps = 5; // Update total steps
   
   // Form data state
   const [formData, setFormData] = useState({
@@ -1906,7 +1906,7 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
   // Render step content based on current step
   const renderStepContent = () => {
     switch (currentStep) {
-      case 1: // Exam Type
+      case 1: // Exam Type Selection
         return (
           <div className="step-content">
             <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select Exam Type</h2>
@@ -1916,20 +1916,16 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
                 value={formData.examType} 
                 onChange={handleChange}
                 required
-                style={examSelectorStyle}
               >
-                <option value="">Select Exam Type</option>
+                <option value="">-- Select Exam Type --</option>
                 {EXAM_TYPES.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
+                  <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
               </select>
             </div>
           </div>
         );
-        
-      case 2: // Exam Board
+      case 2: // Exam Board Selection
         return (
           <div className="step-content">
             <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select Exam Board</h2>
@@ -1939,154 +1935,104 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
                 value={formData.examBoard} 
                 onChange={handleChange}
                 required
-                style={examSelectorStyle}
               >
-                <option value="">Select Exam Board</option>
-                {EXAM_BOARDS.filter(board => boardsForType(formData.examType).includes(board.value)).map(board => (
-                  <option key={board.value} value={board.value}>
-                    {board.label}
-                  </option>
-                ))}
+                <option value="">-- Select Exam Board --</option>
+                {boardsForType(formData.examType).map(boardValue => {
+                  const boardLabel = EXAM_BOARDS.find(b => b.value === boardValue)?.label || boardValue;
+                  return <option key={boardValue} value={boardValue}>{boardLabel}</option>;
+                })}
               </select>
             </div>
           </div>
         );
-        
-      case 3: // Subject
+      case 3: // Subject Selection
         return (
           <div className="step-content">
-            <h2>Select Subject</h2>
+            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select Subject</h2>
             <div className="form-group">
               <select 
                 name="subject" 
                 value={formData.subject} 
                 onChange={handleChange}
+                required
               >
                 <option value="">-- Select Subject --</option>
-                {availableSubjects.map((subject, index) => {
-                  // Ensure we're working with subject names, not objects
-                  const subjectName = typeof subject === 'object' && subject.name ? subject.name : subject;
-                  return (
-                    <option key={index} value={subjectName}>
-                      {subjectName}
-                    </option>
-                  );
-                })}
+                {availableSubjects.map(subjectName => (
+                  <option key={subjectName} value={subjectName}>{subjectName}</option>
+                ))}
+                <option value="__add_new__">+ Add New Subject</option>
               </select>
-            
-              <div className="form-group mt-3">
-                <p className="divider">Or</p>
-                <label htmlFor="newSubject">Enter a new subject:</label>
-                <input
+            </div>
+            {formData.subject === "__add_new__" && (
+              <div className="form-group" style={{ marginTop: '10px' }}>
+                <input 
                   type="text"
-                  id="newSubject"
                   name="newSubject"
                   value={formData.newSubject}
                   onChange={handleChange}
-                  placeholder="Type a new subject name"
+                  placeholder="Enter new subject name"
+                  required 
                 />
               </div>
-            </div>
+            )}
           </div>
         );
-        
-      case 4: // Topic Hub
+      case 4: // Card Settings (Number of Cards, Question Type)
         return (
           <div className="step-content">
-            <h2>Topic Hub</h2>
-            
-            {/* Log the onFinalizeTopics prop to verify it's being passed correctly */}
-            {console.log("AICardGenerator: Rendering TopicHub with onFinalizeTopics prop:", !!onFinalizeTopics)}
-            
-            <TopicHub
-              subject={formData.subject || formData.newSubject}
-              examBoard={formData.examBoard}
-              examType={formData.examType}
-              initialTopics={hierarchicalTopics} // Keep passing internal state
-              recordId={recordId} 
-              onSaveTopicList={null} // This prop is no longer used by TopicHub directly
-              onFinalizeTopics={onFinalizeTopics} // Pass the handler down
-              onClose={() => {
-                console.log("TopicHub closed - returning to card bank");
-                onClose && onClose();
-              }}
-              onSelectTopic={(topic) => {
-                // Set the selected topic and move to the next step
-                setSelectedTopic(topic); // Add this line to set the selected topic
-                setFormData(prev => ({
-                  ...prev,
-                  topic: topic.topic,
-                  newTopic: ''
-                }));
-                
-                console.log("Selected topic:", topic.topic);
-                setCurrentStep(5); // Move to number of cards step
-              }}
-            />
-          </div>
-        );
-        
-      case 5: // Number of Cards
-        return (
-          <div className="step-content">
-            <h2>Number of Cards</h2>
+            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Card Settings</h2>
             <div className="form-group">
+              <label>Number of Cards per Topic:</label>
               <input 
                 type="number" 
                 name="numCards" 
                 value={formData.numCards} 
-                onChange={handleChange}
+                onChange={handleChange} 
                 min="1" 
                 max="20" 
                 required 
               />
-              <p className="helper-text">Select between 1 and 20 cards</p>
+            </div>
+            <div className="form-group">
+              <label>Question Type:</label>
+              <select 
+                name="questionType" 
+                value={formData.questionType} 
+                onChange={handleChange}
+                required
+              >
+                {QUESTION_TYPES.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
             </div>
           </div>
         );
-        
-      case 6: // Question Type
+      case 5: // Topic Hub - Now the final step
         return (
           <div className="step-content">
-            <h2>Select Question Type</h2>
-            <div className="question-type-selector">
-              {QUESTION_TYPES.map(type => (
-                <div key={type.value} className="question-type-option">
-                  <input
-                    type="radio"
-                    id={`question-type-${type.value}`}
-                    name="questionType"
-                    value={type.value}
-                    checked={formData.questionType === type.value}
-                    onChange={handleChange}
-                  />
-                  <label htmlFor={`question-type-${type.value}`}>
-                    {type.label}
-                  </label>
-                </div>
-              ))}
-            </div>
-            
-            <div className="question-type-description">
-              {formData.questionType === "short_answer" && (
-                <p>Short answer questions test recall of key facts and concepts.</p>
-              )}
-              {formData.questionType === "multiple_choice" && (
-                <p>Multiple choice questions provide options to choose from, testing recognition.</p>
-              )}
-              {formData.questionType === "essay" && (
-                <p>Essay style questions test deeper understanding and application of knowledge.</p>
-              )}
-              {formData.questionType === "acronym" && (
-                <p>Acronym questions help memorize lists or sequences using memorable letter patterns.</p>
-              )}
-            </div>
+            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Topic Hub</h2>
+            <TopicHub
+              subject={formData.subject === "__add_new__" ? formData.newSubject : formData.subject}
+              examBoard={formData.examBoard}
+              examType={formData.examType}
+              recordId={recordId}
+              // This is the crucial part: pass a function that handles finalization
+              // AND closes the generator modal
+              onFinalizeTopics={(topicShells) => {
+                console.log(`[AICardGenerator] Received ${topicShells.length} finalized topic shells from TopicHub.`);
+                // Call the original handler passed from the parent (e.g., App.js)
+                if (onFinalizeTopics && typeof onFinalizeTopics === 'function') {
+                  onFinalizeTopics(topicShells);
+                }
+                // Close the AICardGenerator modal after finalization
+                onClose(); 
+              }}
+              // Pass the onClose function directly to TopicHub so it can close itself if needed
+              onClose={onClose} 
+            />
           </div>
         );
-        
-      case 7: // Confirmation and Generated Cards
-        return renderConfirmation();
-        
       default:
         return <div>Unknown step</div>;
     }
@@ -2115,413 +2061,6 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
     } finally {
       setIsGenerating(false);
     }
-  };
-
-  // Step 7: Confirmation Step and Generated Cards
-  const renderConfirmation = () => {
-    // Ensure subject is displayed as a string
-    const subjectValue = formData.newSubject || formData.subject;
-    const subjectDisplay = typeof subjectValue === 'object' && subjectValue.name 
-      ? subjectValue.name 
-      : subjectValue;
-    
-    return (
-      <div className="generator-step review-step">
-        <h2>Review and Generate Cards</h2>
-        
-        <div className="confirmation-details">
-          <div className="confirmation-item">
-            <span className="label">Exam Type:</span>
-            <span className="value">{formData.examType}</span>
-          </div>
-          
-          <div className="confirmation-item">
-            <span className="label">Exam Board:</span>
-            <span className="value">{formData.examBoard}</span>
-          </div>
-          
-          <div className="confirmation-item">
-            <span className="label">Subject:</span>
-            <span className="value">{subjectDisplay}</span>
-          </div>
-          
-          <div className="confirmation-item">
-            <span className="label">Topic:</span>
-            <span className="value">{formData.newTopic || formData.topic}</span>
-          </div>
-          
-          <div className="confirmation-item">
-            <span className="label">Number of Cards:</span>
-            <span className="value">{formData.numCards}</span>
-          </div>
-          
-          <div className="confirmation-item">
-            <span className="label">Question Type:</span>
-            <span className="value">
-              {QUESTION_TYPES.find(t => t.value === formData.questionType)?.label || formData.questionType}
-            </span>
-          </div>
-        </div>
-        
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-        
-        {isGenerating ? (
-          <div className="loading-indicator">
-            <div className="spinner"></div>
-            <p>Creating {formData.numCards} flashcards for {formData.examBoard} {formData.examType} {subjectDisplay}...</p>
-            <p className="loading-subtext">Our AI is analyzing the curriculum and crafting high-quality questions tailored to your specifications.</p>
-          </div>
-        ) : generatedCards.length > 0 ? (
-          <>
-            <div className="generated-cards-actions top-actions">
-              <button className="secondary-button" onClick={handleRegenerateCards}>
-                <span className="button-icon">🔄</span> Regenerate Cards
-              </button>
-            </div>
-            
-            <div className="generated-cards-container">
-              {generatedCards.map(card => (
-                <div 
-                  key={card.id} 
-                  className="generated-card" 
-                  style={{ 
-                    backgroundColor: card.cardColor,
-                    color: getContrastColor(card.cardColor)
-                  }}
-                >
-                  <div className="card-header">
-                    {card.questionType === "multiple_choice" ? "Multiple Choice" : 
-                     card.questionType === "short_answer" ? "Short Answer" : 
-                     card.questionType === "essay" ? "Essay" : "Acronym"}
-                    
-                    <button 
-                      className="add-card-btn" 
-                      onClick={() => handleAddCard(card)}
-                      disabled={card.added}
-                    >
-                      {card.added ? "Added ✓" : "Add to Bank"}
-                    </button>
-                  </div>
-                  
-                  <Flashcard 
-                    card={card}
-                    preview={true}
-                    style={{
-                      height: '200px',
-                      width: '100%',
-                      margin: '0',
-                      boxShadow: 'none'
-                    }}
-                    showButtons={false}
-                  />
-                </div>
-              ))}
-            </div>
-            
-            <div className="generated-cards-actions bottom-actions">
-              <button 
-                className="primary-button add-all-button" 
-                onClick={handleAddAllCards}
-                disabled={generatedCards.every(card => card.added)}
-              >
-                <span className="button-icon">💾</span> Add All Cards to Bank
-              </button>
-              <p className="status-text">
-                {generatedCards.filter(card => card.added).length} of {generatedCards.length} cards added
-              </p>
-            </div>
-          </>
-        ) : (
-          <div className="confirmation-actions">
-            <button 
-              className="generate-button"
-              onClick={generateCards}
-              disabled={isGenerating}
-            >
-              {isGenerating ? "Generating..." : "Generate Cards"}
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Function to handle topic click in the modal
-  const handleTopicClick = (topic) => {
-    console.log("Selected topic:", topic);
-    
-    // If the options explanation modal is showing, let's keep it visible
-    // until the user explicitly dismisses it by clicking the "Let's Go!" button
-    if (!showOptionsExplanationModal) {
-      setSelectedTopicForConfirmation(topic);
-      setShowTopicConfirmation(true);
-    } else {
-      // If options modal is showing, just set the selected topic
-      // but don't show confirmation yet until user dismisses the explanation
-      setSelectedTopicForConfirmation(topic);
-    }
-  };
-  
-  // Function to confirm topic selection
-  const confirmTopicSelection = () => {
-    const selectedTopic = selectedTopicForConfirmation;
-    setFormData(prev => ({ ...prev, topic: selectedTopic, newTopic: '' }));
-    setShowTopicConfirmation(false);
-    setShowTopicModal(false);
-    
-    // Automatically move to the next step (stage 5 - number of cards)
-    console.log(`Selected topic: ${selectedTopic}`);
-    setCurrentStep(5);  // Move directly to the number of cards step
-  };
-
-  // Render topic confirmation dialog
-  const renderTopicConfirmation = () => {
-    if (!showTopicConfirmation) return null;
-    
-    return (
-      <div className="topic-confirmation-overlay">
-        <div className="topic-options-modal">
-          <h4>Topic Selected: {selectedTopicForConfirmation}</h4>
-          <p>What would you like to do with this topic?</p>
-          
-          <div className="topic-options-buttons">
-            <button 
-              className="generate-cards"
-              onClick={confirmTopicSelection}
-            >
-              Select & Generate Cards
-            </button>
-            <button 
-              className="cancel"
-              onClick={() => setShowTopicConfirmation(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render save confirmation dialog
-  const renderSaveConfirmation = () => {
-    if (!showSaveConfirmation) return null;
-    
-    return (
-      <div className="save-confirmation-overlay">
-        <div className="save-confirmation-dialog">
-          <h4>Save Topic List?</h4>
-          <p>Would you like to save this topic list for future use?</p>
-          
-          <div className="confirmation-actions">
-            <button 
-              className="secondary-button" 
-              onClick={() => {
-                setShowSaveConfirmation(false);
-                setShowTopicModal(false);
-                handleNextStep();
-              }}
-            >
-              No, Skip
-            </button>
-            <button 
-              className="primary-button" 
-              onClick={() => {
-                setShowSaveConfirmation(false);
-                setShowSaveTopicDialog(true);
-              }}
-            >
-              Yes, Save It
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Add consistent sizing to the exam selection part of the modal
-  const examSelectorStyle = {
-    fontSize: '14px',
-    padding: '8px 12px',
-    width: '100%',
-    maxWidth: '300px',
-    margin: '0 auto 20px',
-    display: 'block'
-  };
-
-  // If we have initial values, skip to the appropriate step
-  useEffect(() => {
-    if (initialSubject && initialTopic && examBoard && examType) {
-      // We have all metadata, skip to number of cards selection (step 5)
-      setCurrentStep(5);
-      
-      // Ensure form data is properly set
-      setFormData(prev => ({
-        ...prev,
-        subject: initialSubject,
-        topic: initialTopic,
-        examBoard: examBoard,
-        examType: examType
-      }));
-      
-      console.log(`Skipping to step 5 with metadata: ${initialSubject}, ${initialTopic}, ${examBoard}, ${examType}`);
-    } else if (initialSubject && initialTopic) {
-      // Skip to question type selection (step 5)
-      setCurrentStep(5);
-    } else if (initialSubject) {
-      // Skip to topic selection (step 4)
-      setCurrentStep(4);
-    }
-  }, [initialSubject, initialTopic, examBoard, examType]);
-
-  // New function to render topic selection modal
-  const renderTopicModal = () => {
-    if (!showTopicModal) return null;
-    
-    return (
-      <div className="topic-modal-overlay" onClick={() => setShowTopicModal(false)}>
-        <div className="topic-modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="topic-modal-header">
-            <h3>Topics for {formData.subject || formData.newSubject}</h3>
-            <button className="close-modal-button" onClick={() => setShowTopicModal(false)}>×</button>
-          </div>
-          
-          <div className="topic-modal-body">
-            {isGenerating ? (
-              <div className="loading-indicator">
-                <div className="spinner"></div>
-                <p>Generating topics for {formData.subject || formData.newSubject}...</p>
-                <p className="loading-subtext">This may take a moment as we analyze the curriculum and create relevant topics.</p>
-              </div>
-            ) : (
-              <>
-                {availableTopics.length > 0 ? (
-                  <>
-                    <div className="topics-header-actions">
-                      <h4>Available Topics for {formData.examBoard} {formData.examType}</h4>
-                      <button 
-                        className="regenerate-topics-button"
-                        onClick={handleRegenerateTopics}
-                        disabled={isGenerating}
-                      >
-                        Regenerate Topics
-                      </button>
-                    </div>
-                    <div className="topic-list-container">
-                      {availableTopics.map((topic) => (
-                        <div 
-                          key={topic} 
-                          className={`topic-item ${selectedTopicForConfirmation === topic ? 'selected' : ''}`}
-                          onClick={() => handleTopicClick(topic)}
-                        >
-                          {topic}
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {!topicListSaved && (
-                      <div className="save-notice">
-                        <span role="img" aria-label="Info">ℹ️</span> These topics haven't been saved yet. Click "Save Topic List" to save them for future use.
-                      </div>
-                    )}
-                    
-                    {topicListSaved && (
-                      <div className="save-notice success">
-                        <span role="img" aria-label="Success">✅</span> Topic list saved successfully! You can now select a topic to generate cards.
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="no-topics-message">
-                    <p>No topics available for {formData.subject || formData.newSubject} ({formData.examBoard} {formData.examType}) yet.</p>
-                    <p>Click the "Regenerate Topics" button to create topics for this subject.</p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-          
-          <div className="topic-modal-actions">
-            {availableTopics.length > 0 && (
-              <button 
-                className="save-button"
-                onClick={() => setShowSaveTopicDialog(true)}
-                disabled={isGenerating || topicListSaved}
-              >
-                {topicListSaved ? "Topic List Saved ✓" : "Save Topic List"}
-              </button>
-            )}
-            
-            <button 
-              className="close-button"
-              onClick={() => setShowTopicModal(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Update the renderOptionsExplanationModal function to ensure it appears
-  // on top of other modals with a higher z-index
-  const renderOptionsExplanationModal = () => {
-    if (!showOptionsExplanationModal) return null;
-    
-    return (
-      <div 
-        className="options-modal-overlay" 
-        onClick={() => setShowOptionsExplanationModal(false)}
-        style={{ zIndex: 2000 }} // Higher z-index to ensure it appears on top
-      >
-        <div className="options-modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="options-modal-header">
-            <h3>Your Topic Adventure Awaits!</h3>
-          </div>
-          
-          <p>Behold the magical topics! What would you like to do next?</p>
-          
-          <ul className="options-list">
-            <li>
-              <strong>🔄 Regenerate Topics</strong>
-              <p>Our AI missed some topics? No worries! It probably got distracted by cat videos. Click "Regenerate" for a fresh batch of brain food!</p>
-            </li>
-            
-            <li>
-              <strong>💾 Save Topic List</strong>
-              <p>Love these topics? Save them for later! It's like meal prepping, but for your brain. Future you will thank present you!</p>
-            </li>
-            
-            <li>
-              <strong>🚀 Generate Cards Now</strong>
-              <p>Can't wait to start learning? Click any topic to dive right in. Warning: may cause sudden outbursts of intelligence!</p>
-            </li>
-          </ul>
-          
-          <button 
-            className="primary-button"
-            onClick={() => {
-              setShowOptionsExplanationModal(false);
-              
-              // If a topic was selected while the explanation modal was visible,
-              // show the confirmation dialog for that topic now
-              if (selectedTopicForConfirmation) {
-                setTimeout(() => {
-                  setShowTopicConfirmation(true);
-                }, 100);
-              }
-            }}
-          >
-            Let's Go!
-          </button>
-        </div>
-      </div>
-    );
   };
 
   // Completely enhanced addAllToBank function with comprehensive protection against race conditions
@@ -2726,72 +2265,52 @@ Use this format for ${questionTypeValue === 'multiple_choice' ? 'multiple choice
 
   return (
     <div className="ai-card-generator">
-      <div className="generator-header">
-        <h1>AI Flashcard Generator</h1>
-        <button className="close-button" onClick={handleClose}>&times;</button>
+      <div className="card-generator-header">
+        <h2>AI Flashcard Generator</h2>
+        <button className="close-button" onClick={onClose}>✖</button>
       </div>
       
-      {/* Render the topic modal */}
-      {renderTopicModal()}
-      
-      {/* Render topic confirmation dialog */}
-      {renderTopicConfirmation()}
-      
-      {/* Render save confirmation dialog */}
-      {renderSaveConfirmation()}
-      
-      {/* Render the save topic dialog */}
-      {renderSaveTopicDialog()}
-      
+      {/* Render the step indicator (ensure this exists or add it) */}
+      {/* Example: {stepIndicator} */}
       <div className="progress-bar">
         {Array.from({ length: totalSteps }).map((_, idx) => (
           <div 
             key={idx} 
             className={`progress-step ${idx + 1 === currentStep ? 'active' : ''} ${idx + 1 < currentStep ? 'completed' : ''}`}
+            onClick={() => { if (idx + 1 < currentStep) setCurrentStep(idx + 1); }}
           >
-            {idx + 1}
+            {idx + 1 < currentStep ? '✓' : idx + 1}
           </div>
         ))}
       </div>
-      
-      <div className="generator-content">
-        {/* Render saved topic lists before the step content if on step 1 */}
-        {currentStep === 1 && renderSavedTopicLists()}
-        
+
+      <div className="step-content-container">
         {renderStepContent()}
       </div>
       
-      <div className="generator-controls">
+      <div className="navigation-controls">
         {currentStep > 1 && (
           <button 
-            onClick={handlePrevStep} 
-            className="back-button"
-            disabled={isGenerating}
+            className="prev-button" 
+            onClick={handlePrevStep}
           >
-            Back
+            ← Previous
           </button>
         )}
         
-        {currentStep < totalSteps ? (
+        {/* Only show Next button if not on the last step (Topic Hub) */}
+        {currentStep < totalSteps && (
           <button 
-            onClick={handleNextStep} 
-            className="next-button"
-            disabled={!canProceed() || isGenerating}
+            className={`next-button ${!canProceed() ? 'disabled' : ''}`} 
+            onClick={handleNextStep}
+            disabled={!canProceed()}
           >
-            Next
-          </button>
-        ) : (
-          <button 
-            onClick={handleClose} 
-            className="finish-button"
-          >
-            Finish
+            Next →
           </button>
         )}
       </div>
       
-      {renderSuccessModal()}
-      {renderOptionsExplanationModal()}
+      {/* Removed references to old modals like renderSuccessModal, renderOptionsExplanationModal */}
     </div>
   );
 };

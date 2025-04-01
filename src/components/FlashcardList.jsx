@@ -459,26 +459,38 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     setShowModalAndSelectedCard(true);
   };
 
-  // Modified function to start slideshow for a subject or topic
+  // Updated function to start slideshow - now handles topic-specific slideshows correctly
   const startSlideshow = (subject, topic, e) => {
-    if (e) e.stopPropagation(); // Prevent toggling the expansion
+    if (e) e.stopPropagation(); // Prevent toggling expansion
 
     let slideshowCards = [];
-    
+    let slideshowTitle = "Slideshow";
+
     if (topic) {
-      // Topic-level slideshow: Use cards from this specific topic
-      slideshowCards = groupedCards[subject][topic];
+      // Topic-level slideshow
+      // Ensure we only get actual cards, not topic shells
+      slideshowCards = (groupedCards[subject]?.[topic] || []).filter(item => item.type !== 'topic');
+      slideshowTitle = `${subject} - ${topic}`;
+      console.log(`Starting slideshow for topic: ${topic} in subject: ${subject} with ${slideshowCards.length} cards.`);
     } else {
-      // Subject-level slideshow: Flatten all cards from all topics in this subject
+      // Subject-level slideshow (remains the same)
       const allTopics = Object.keys(groupedCards[subject] || {});
       slideshowCards = allTopics.reduce((allCards, currentTopic) => {
-        return allCards.concat(groupedCards[subject][currentTopic] || []);
+        // Filter out topic shells here as well
+        const topicCards = (groupedCards[subject][currentTopic] || []).filter(item => item.type !== 'topic');
+        return allCards.concat(topicCards || []);
       }, []);
+      slideshowTitle = subject;
+      console.log(`Starting slideshow for subject: ${subject} with ${slideshowCards.length} cards.`);
     }
-    
+
     // Start slideshow if we have cards
     if (slideshowCards && slideshowCards.length > 0) {
+      // Use the first card to initiate the modal
       handleSetShowModalAndSelectedCard(slideshowCards[0]);
+    } else {
+      console.warn(`No cards found for slideshow: ${slideshowTitle}`);
+      // Optionally show a message to the user here
     }
   };
 
@@ -1180,28 +1192,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
                   >
                     <FaBolt />
                   </button>
-                  <button 
-                    className="action-button slideshow-button"
-                    onClick={(e) => startSlideshow(subject, topic, e)}
-                    title="Start slideshow"
-                    style={{ 
-                      backgroundColor: buttonBackground,
-                      color: textColor
-                    }}
-                  >
-                    <FaPlay />
-                  </button>
-                  <button 
-                    className="action-button print-button"
-                    onClick={(e) => handlePrintTopic(subject, topic, e)}
-                    title="Print cards"
-                    style={{ 
-                      backgroundColor: buttonBackground,
-                      color: textColor
-                    }}
-                  >
-                    <FaPrint />
-                  </button>
+                  {renderTopicControls(subject, topic, actualCards.length > 0, topicColor)}
                   <button 
                     className="action-button delete-button"
                     onClick={(e) => {
@@ -1229,6 +1220,59 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
             </div>
           );
         })}
+      </div>
+    );
+  };
+
+  // Add icons to topic controls
+  const renderTopicControls = (subject, topic, hasCards, topicColor) => {
+    const controlStyle = {
+      color: getContrastColor(topicColor) // Use contrast color for icons
+    };
+
+    // Function to generate a slightly darker shade for hover effect
+    const generateButtonShade = (color) => {
+      if (!color) return 'rgba(0,0,0,0.2)';
+      let hex = color.replace('#', '');
+      let r = parseInt(hex.substring(0, 2), 16);
+      let g = parseInt(hex.substring(2, 4), 16);
+      let b = parseInt(hex.substring(4, 6), 16);
+      r = Math.max(0, r - 30);
+      g = Math.max(0, g - 30);
+      b = Math.max(0, b - 30);
+      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    };
+    const hoverBg = generateButtonShade(topicColor);
+
+    return (
+      <div className="topic-controls">
+        {hasCards && (
+          <>
+            {/* Slideshow Button */}
+            <button 
+              className="topic-action-button slideshow-button" 
+              onClick={(e) => startSlideshow(subject, topic, e)} 
+              title="Start slideshow for this topic"
+              style={controlStyle}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <FaPlay />
+            </button>
+            
+            {/* Print Button */}
+            <button 
+              className="topic-action-button print-button" 
+              onClick={(e) => handlePrintTopic(subject, topic, e)} 
+              title="Print cards for this topic"
+              style={controlStyle}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <FaPrint />
+            </button>
+          </>
+        )}
       </div>
     );
   };
