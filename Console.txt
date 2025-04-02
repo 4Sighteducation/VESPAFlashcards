@@ -1,0 +1,412 @@
+main.js?1743588015307&_=1743588015307:126 StudyPlanner Config initialized: {knackAppId: '5ee90912c38ae7001510c1a9', knackApiKey: '8f733aa5-dd35-4464-8348-64824d1f5f0d', appUrl: 'https://studyplanner2-fc98f9e231f4.herokuapp.com/', appConfig: {…}}
+main.js?1743588015307&_=1743588015307:140 VESPA Integration script loaded successfully
+main.js?1743588015307&_=1743588015307:154 StudyPlanner Integration script loaded successfully
+index.js?v=1:76 Developed byKsense Technology Group LLCPRODUCTION MODE - Branch: mainKSENSE DEBUG: INJECTED URL: https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1
+index.js?v=1:90 (index)Value(index)ValueisDevUserfalsetunnelUrlundefineddevBranch'main'projectRoute'knack_projects/vespa'currentUser'630500bdc5659f0021657b2f'injectURL'https://repo.ksensetech.com/repository/vespa/files/main/main.js?v=1'useLocalRoutesfalseuseStagingServerfalsecssFiles''isHostedOnNexustrueObject
+KnackJavascript6a.js:688 Flashcard app: Scene rendered: scene_1206
+KnackJavascript6a.js:694 Initializing Flashcard React app (Version 5x with SaveQueue)
+KnackJavascript6a.js:710 Flashcard app: User is authenticated
+KnackJavascript6a.js:715 Flashcard app: Basic user info: {id: '630500bdc5659f0021657b2f', values: {…}, roles: Array(2), email: 'tut7@vespa.academy', name: 'Lesly Christianson'}
+KnackJavascript6a.js:1264 [Knack Script] Getting complete user data for: 630500bdc5659f0021657b2f
+
+                
+          
+          
+          
+         Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+vespa-academy#flashcards/:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+KnackJavascript6a.js:1278 [Knack Script] Complete user data received.
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Raw Complete User Data:
+KnackJavascript6a.js:206 {id: '630500bdc5659f0021657b2f', account_status: 'active', approval_status: 'approved', utility_key: '1673384410768rdy8k1a', profile_keys_raw: Array(2), …}
+KnackJavascript6a.js:203 [Knack Script] Enhanced global user object
+KnackJavascript6a.js:206 {id: '630500bdc5659f0021657b2f', values: {…}, roles: Array(2), email: 'tut7@vespa.academy', name: 'Lesly Christianson', …}
+KnackJavascript6a.js:203 [Knack Script] FINAL CONNECTION FIELD IDs
+KnackJavascript6a.js:206 {emailId: '630500bdc5659f0021657b2f', schoolId: null, tutorId: null, roleId: null}
+KnackJavascript6a.js:762 Creating container inside view_3005
+KnackJavascript6a.js:887 Flashcard app initialization sequence complete. Waiting for APP_READY from iframe.
+useWebSocket.js:6 WebSocket Hook connecting to: wss://vespa-flashcards-e7f31e9ff3c9.herokuapp.com
+App.js:1903 [Init] Sent ready message to parent
+App.js:2277 Recovered recordId from localStorage: 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
+KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630500bdc5659f0021657b2f
+App.js:1903 [Init] Sent ready message to parent
+KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
+KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630500bdc5659f0021657b2f
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
+KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:1339 [Knack Script] Loaded 6 cards/shells from bank.
+KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
+KnackJavascript6a.js:1349 [Knack Script] Loaded 1 topic lists.
+KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
+KnackJavascript6a.js:1355 [Knack Script] Loaded 6 topic metadata items.
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), spacedRepetition: {…}, topicLists: Array(1), colorMapping: {…}, …}
+KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
+KnackJavascript6a.js:206 {id: '630500bdc5659f0021657b2f', email: 'tut7@vespa.academy', name: 'Lesly Christianson', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…zMTJ9.nmkjrcrpXo6s7Ci1GkIr9H355yk8WlVU35_3_pLdSf0', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:873 Flashcard app initialized and visible.
+App.js:1421 [Message Handler 2025-04-02T10:00:17.597Z] From parent: KNACK_USER_INFO
+App.js:1435 [User Info] First-time processing of user data
+AuthAppIntegration.js:15 [AuthAppIntegration] Initializing AuthManager with user data
+AuthManager.js:46 [AuthManager] Initialized successfully
+App.js:1487 [User Info] Initialized AuthManager with user data
+App.js:1493 [User Info] Raw userData from Knack: {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), spacedRepetition: {…}, topicLists: Array(1), colorMapping: {…}, …}
+App.js:1495 [User Info] Parsed userData object: {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), spacedRepetition: {…}, topicLists: Array(1), colorMapping: {…}, …}
+App.js:1500 [User Info] Stored recordId: 67ed0a65f1ae5c02cbdece17
+App.js:1505 [User Info] Stored record ID in localStorage for recovery
+App.js:1513 [User Info] Found userData.cards array: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+DataUtils.js:501 Empty or invalid multiple choice options backup
+App.js:1515 [User Info] Calling setAllCards with: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+App.js:1518 [User Info] Restored multiple choice options for cards
+App.js:1541 [User Info] Loaded topic lists from Knack: 1
+App.js:1547 [User Info] Loaded topic metadata from Knack: 6
+App.js:1551 [User Info] Successfully processed user data from Knack
+App.js:1567 [User Info] Sending AUTH_CONFIRMED message
+KnackJavascript6a.js:832 [Knack Script] Received message type: AUTH_CONFIRMED
+KnackJavascript6a.js:905 [Knack Script] Routing message type: AUTH_CONFIRMED
+KnackJavascript6a.js:927 [Knack Script] React App confirmed auth.
+FlashcardList.jsx:157 FlashcardList processed items (Revised Grouping): {groupedStructure: {…}}
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
+WebSocketContext.js:24 [WebSocketProvider] Attempting to connect to wss://vespa-flashcards-e7f31e9ff3c9.herokuapp.com/...
+App.js:1903 [Init] Sent ready message to parent
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
+KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630500bdc5659f0021657b2f
+WebSocketContext.js:37 [WebSocketProvider] WebSocket Connected
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
+KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:1339 [Knack Script] Loaded 6 cards/shells from bank.
+KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
+KnackJavascript6a.js:1349 [Knack Script] Loaded 1 topic lists.
+KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
+KnackJavascript6a.js:1355 [Knack Script] Loaded 6 topic metadata items.
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), spacedRepetition: {…}, topicLists: Array(1), colorMapping: {…}, …}
+KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
+KnackJavascript6a.js:206 {id: '630500bdc5659f0021657b2f', email: 'tut7@vespa.academy', name: 'Lesly Christianson', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…zMTJ9.nmkjrcrpXo6s7Ci1GkIr9H355yk8WlVU35_3_pLdSf0', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:873 Flashcard app initialized and visible.
+App.js:1421 [Message Handler 2025-04-02T10:00:17.970Z] From parent: KNACK_USER_INFO
+App.js:1429 [User Info] Already processed, ignoring duplicate message
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
+KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:1339 [Knack Script] Loaded 6 cards/shells from bank.
+KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
+KnackJavascript6a.js:1349 [Knack Script] Loaded 1 topic lists.
+KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
+KnackJavascript6a.js:1355 [Knack Script] Loaded 6 topic metadata items.
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), spacedRepetition: {…}, topicLists: Array(1), colorMapping: {…}, …}
+KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
+KnackJavascript6a.js:206 {id: '630500bdc5659f0021657b2f', email: 'tut7@vespa.academy', name: 'Lesly Christianson', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…zMTJ9.nmkjrcrpXo6s7Ci1GkIr9H355yk8WlVU35_3_pLdSf0', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:873 Flashcard app initialized and visible.
+App.js:1421 [Message Handler 2025-04-02T10:00:18.312Z] From parent: KNACK_USER_INFO
+App.js:1429 [User Info] Already processed, ignoring duplicate message
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+WebSocketContext.js:49 [WebSocketProvider] WebSocket Disconnected: 1006 
+WebSocketContext.js:57 [WebSocketProvider] Attempting reconnect 1/5 in 2s...
+WebSocketContext.js:24 [WebSocketProvider] Attempting to connect to wss://vespa-flashcards-e7f31e9ff3c9.herokuapp.com/...
+WebSocketContext.js:37 [WebSocketProvider] WebSocket Connected
+App.js:1364 Auto-saving data...
+App.js:520 [App] saveData triggered.isAuthenticated: true isKnack: true
+App.js:534 [Save] Starting save operation...
+App.js:538 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-04-02T10:01:18.061Z
+DataUtils.js:373 Data Stats: {cards: 6, subjects: 0, version: '1.0'}
+DataUtils.js:472 Backed up options for 0 multiple choice cards
+App.js:431 Saved data to localStorage with versioning and backup
+App.js:543 [Save] Preparing data for Knack integration
+App.js:609 [Save] Sending data to Knack (6 items, record ID: 67ed0a65f1ae5c02cbdece17)
+App.js:610 [Save] Payload structure: {recordId: '67ed0a65f1ae5c02cbdece17', cards_count: 6, colorMapping_keys: Array(0), spacedRepetition_box1_count: 0, userTopics_keys: Array(0), …}
+App.js:635 [Save] Sample items being sent: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+App.js:639 [Save] ALL 6 Topic Shells being sent: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+App.js:659 [App] Adding SAVE_DATA to queue with payload structure: {recordId: '67ed0a65f1ae5c02cbdece17', cards_count: 6, has_data: true}
+SaveQueueService.js:31 [SaveQueue] Added operation to queue: SAVE_DATA
+SaveQueueService.js:46 [SaveQueue] Processing operation: SAVE_DATA
+SaveQueueService.js:141 [SaveQueue] Preparing data for SAVE_DATA operation
+SaveQueueService.js:155 [SaveQueue] Processing SAVE_DATA with payload structure: {recordId: '67ed0a65f1ae5c02cbdece17', has_cards: true, cards_length: 6, has_colorMapping: true, has_spacedRepetition: true, …}
+SaveQueueService.js:70 [SaveQueue] Sending message to parent: SAVE_DATA
+KnackJavascript6a.js:832 [Knack Script] Received message type: SAVE_DATA
+KnackJavascript6a.js:905 [Knack Script] Routing message type: SAVE_DATA
+KnackJavascript6a.js:948 [Knack Script] Handling SAVE_DATA request
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Data received for SAVE_DATA:
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
+KnackJavascript6a.js:306 [SaveQueue] Added operation to queue: full for record 67ed0a65f1ae5c02cbdece17. Queue length: 1
+KnackJavascript6a.js:320 [SaveQueue] Processing operation: full for record 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:344 [SaveQueue] Preparing save data for type: full, record: 67ed0a65f1ae5c02cbdece17, preserveFields: false
+KnackJavascript6a.js:394 [SaveQueue] Preparing 'full' save data.
+KnackJavascript6a.js:479 [SaveQueue] Preparing full save data from data object: (8) ['recordId', 'cards', 'colorMapping', 'spacedRepetition', 'userTopics', 'topicLists', 'topicMetadata', 'preserveFields']
+KnackJavascript6a.js:483 [SaveQueue] Processing 'cards' for full save
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+KnackJavascript6a.js:490 [SaveQueue] Included 6 cards in full save payload.
+KnackJavascript6a.js:496 [SaveQueue] Processing 'colorMapping' for full save
+KnackJavascript6a.js:503 [SaveQueue] Processing 'topicLists' for full save
+KnackJavascript6a.js:511 [SaveQueue] Processing 'spacedRepetition' for full save
+KnackJavascript6a.js:523 [SaveQueue] Processing 'topicMetadata' for full save
+KnackJavascript6a.js:203 [Knack Script] [SaveQueue] Prepared update data
+KnackJavascript6a.js:206 {field_2957: '2025-04-02T10:01:18.069Z', field_2979: '[{"id":"1.1","subject":"Dance","topic":"Dance: Ele…hristopher Bruce","isShell":true,"isEmpty":true}]', field_3000: '{}', field_3011: '[{"subject":"Dance","topics":[{"name":"Dance: Elem…:"3.2","examBoard":"OCR","examType":"A-Level"}]}]', field_2986: '[]', …}
+KnackJavascript6a.js:536 [SaveQueue] Performing API save for record 67ed0a65f1ae5c02cbdece17
+TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
+App.js:1903 [Init] Sent ready message to parent
+KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
+KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630500bdc5659f0021657b2f
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
+KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:1339 [Knack Script] Loaded 6 cards/shells from bank.
+KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
+KnackJavascript6a.js:1349 [Knack Script] Loaded 1 topic lists.
+KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
+KnackJavascript6a.js:1355 [Knack Script] Loaded 6 topic metadata items.
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), spacedRepetition: {…}, topicLists: Array(1), colorMapping: {…}, …}
+KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
+KnackJavascript6a.js:206 {id: '630500bdc5659f0021657b2f', email: 'tut7@vespa.academy', name: 'Lesly Christianson', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…zMTJ9.nmkjrcrpXo6s7Ci1GkIr9H355yk8WlVU35_3_pLdSf0', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:873 Flashcard app initialized and visible.
+App.js:1421 [Message Handler 2025-04-02T10:01:18.642Z] From parent: KNACK_USER_INFO
+App.js:1429 [User Info] Already processed, ignoring duplicate message
+KnackJavascript6a.js:554 [SaveQueue] API PUT successful for record 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:203 [Knack Script] [SaveQueue] API Save successful
+KnackJavascript6a.js:206 {id: '67ed0a65f1ae5c02cbdece17', field_3010: '', field_3010_raw: '', field_3029_raw: '', field_3029: '', …}
+KnackJavascript6a.js:584 [SaveQueue] Operation full succeeded for record 67ed0a65f1ae5c02cbdece17. Queue length: 0
+KnackJavascript6a.js:966 [Knack Script] SAVE_DATA for record 67ed0a65f1ae5c02cbdece17 completed successfully.
+SaveQueueService.js:82 [SaveQueue] Received success response for: SAVE_DATA
+App.js:670 [App] SAVE_DATA request successfully processed by SaveQueueService
+App.js:1421 [Message Handler 2025-04-02T10:01:19.189Z] From parent: SAVE_RESULT
+App.js:1573 [Save Result] Received: true
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
+App.js:1903 [Init] Sent ready message to parent
+KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
+KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630500bdc5659f0021657b2f
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
+KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:1339 [Knack Script] Loaded 6 cards/shells from bank.
+KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
+KnackJavascript6a.js:1349 [Knack Script] Loaded 1 topic lists.
+KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
+KnackJavascript6a.js:1355 [Knack Script] Loaded 6 topic metadata items.
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), spacedRepetition: {…}, topicLists: Array(1), colorMapping: {…}, …}
+KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
+KnackJavascript6a.js:206 {id: '630500bdc5659f0021657b2f', email: 'tut7@vespa.academy', name: 'Lesly Christianson', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…zMTJ9.nmkjrcrpXo6s7Ci1GkIr9H355yk8WlVU35_3_pLdSf0', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:873 Flashcard app initialized and visible.
+App.js:1421 [Message Handler 2025-04-02T10:01:19.583Z] From parent: KNACK_USER_INFO
+App.js:1429 [User Info] Already processed, ignoring duplicate message
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
+WebSocketContext.js:49 [WebSocketProvider] WebSocket Disconnected: 1006 
+WebSocketContext.js:57 [WebSocketProvider] Attempting reconnect 1/5 in 2s...
+WebSocketContext.js:24 [WebSocketProvider] Attempting to connect to wss://vespa-flashcards-e7f31e9ff3c9.herokuapp.com/...
+WebSocketContext.js:37 [WebSocketProvider] WebSocket Connected
+App.js:1364 Auto-saving data...
+App.js:520 [App] saveData triggered.isAuthenticated: true isKnack: true
+App.js:534 [Save] Starting save operation...
+App.js:538 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-04-02T10:02:20.054Z
+DataUtils.js:373 Data Stats: {cards: 6, subjects: 0, version: '1.0'}
+DataUtils.js:472 Backed up options for 0 multiple choice cards
+App.js:431 Saved data to localStorage with versioning and backup
+App.js:543 [Save] Preparing data for Knack integration
+App.js:609 [Save] Sending data to Knack (6 items, record ID: 67ed0a65f1ae5c02cbdece17)
+App.js:610 [Save] Payload structure: {recordId: '67ed0a65f1ae5c02cbdece17', cards_count: 6, colorMapping_keys: Array(0), spacedRepetition_box1_count: 0, userTopics_keys: Array(0), …}
+App.js:635 [Save] Sample items being sent: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+App.js:639 [Save] ALL 6 Topic Shells being sent: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+App.js:659 [App] Adding SAVE_DATA to queue with payload structure: {recordId: '67ed0a65f1ae5c02cbdece17', cards_count: 6, has_data: true}
+SaveQueueService.js:31 [SaveQueue] Added operation to queue: SAVE_DATA
+SaveQueueService.js:46 [SaveQueue] Processing operation: SAVE_DATA
+SaveQueueService.js:141 [SaveQueue] Preparing data for SAVE_DATA operation
+SaveQueueService.js:155 [SaveQueue] Processing SAVE_DATA with payload structure: {recordId: '67ed0a65f1ae5c02cbdece17', has_cards: true, cards_length: 6, has_colorMapping: true, has_spacedRepetition: true, …}
+SaveQueueService.js:70 [SaveQueue] Sending message to parent: SAVE_DATA
+KnackJavascript6a.js:832 [Knack Script] Received message type: SAVE_DATA
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+KnackJavascript6a.js:905 [Knack Script] Routing message type: SAVE_DATA
+KnackJavascript6a.js:948 [Knack Script] Handling SAVE_DATA request
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Data received for SAVE_DATA:
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
+KnackJavascript6a.js:306 [SaveQueue] Added operation to queue: full for record 67ed0a65f1ae5c02cbdece17. Queue length: 1
+KnackJavascript6a.js:320 [SaveQueue] Processing operation: full for record 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:344 [SaveQueue] Preparing save data for type: full, record: 67ed0a65f1ae5c02cbdece17, preserveFields: false
+KnackJavascript6a.js:394 [SaveQueue] Preparing 'full' save data.
+KnackJavascript6a.js:479 [SaveQueue] Preparing full save data from data object: (8) ['recordId', 'cards', 'colorMapping', 'spacedRepetition', 'userTopics', 'topicLists', 'topicMetadata', 'preserveFields']
+KnackJavascript6a.js:483 [SaveQueue] Processing 'cards' for full save
+TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
+KnackJavascript6a.js:490 [SaveQueue] Included 6 cards in full save payload.
+App.js:1903 [Init] Sent ready message to parent
+KnackJavascript6a.js:496 [SaveQueue] Processing 'colorMapping' for full save
+KnackJavascript6a.js:503 [SaveQueue] Processing 'topicLists' for full save
+KnackJavascript6a.js:511 [SaveQueue] Processing 'spacedRepetition' for full save
+KnackJavascript6a.js:523 [SaveQueue] Processing 'topicMetadata' for full save
+KnackJavascript6a.js:203 [Knack Script] [SaveQueue] Prepared update data
+KnackJavascript6a.js:206 {field_2957: '2025-04-02T10:02:20.062Z', field_2979: '[{"id":"1.1","subject":"Dance","topic":"Dance: Ele…hristopher Bruce","isShell":true,"isEmpty":true}]', field_3000: '{}', field_3011: '[{"subject":"Dance","topics":[{"name":"Dance: Elem…:"3.2","examBoard":"OCR","examType":"A-Level"}]}]', field_2986: '[]', …}
+KnackJavascript6a.js:536 [SaveQueue] Performing API save for record 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
+KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630500bdc5659f0021657b2f
+KnackJavascript6a.js:554 [SaveQueue] API PUT successful for record 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:203 [Knack Script] [SaveQueue] API Save successful
+KnackJavascript6a.js:206 {id: '67ed0a65f1ae5c02cbdece17', field_3010: '', field_3010_raw: '', field_3029_raw: '', field_3029: '', …}
+KnackJavascript6a.js:584 [SaveQueue] Operation full succeeded for record 67ed0a65f1ae5c02cbdece17. Queue length: 0
+KnackJavascript6a.js:966 [Knack Script] SAVE_DATA for record 67ed0a65f1ae5c02cbdece17 completed successfully.
+SaveQueueService.js:82 [SaveQueue] Received success response for: SAVE_DATA
+App.js:670 [App] SAVE_DATA request successfully processed by SaveQueueService
+App.js:1421 [Message Handler 2025-04-02T10:02:20.610Z] From parent: SAVE_RESULT
+App.js:1573 [Save Result] Received: true
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
+App.js:1903 [Init] Sent ready message to parent
+KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
+KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630500bdc5659f0021657b2f
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
+KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:1339 [Knack Script] Loaded 6 cards/shells from bank.
+KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
+KnackJavascript6a.js:1349 [Knack Script] Loaded 1 topic lists.
+KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
+KnackJavascript6a.js:1355 [Knack Script] Loaded 6 topic metadata items.
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), spacedRepetition: {…}, topicLists: Array(1), colorMapping: {…}, …}
+KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
+KnackJavascript6a.js:206 {id: '630500bdc5659f0021657b2f', email: 'tut7@vespa.academy', name: 'Lesly Christianson', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…zMTJ9.nmkjrcrpXo6s7Ci1GkIr9H355yk8WlVU35_3_pLdSf0', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:873 Flashcard app initialized and visible.
+App.js:1421 [Message Handler 2025-04-02T10:02:20.699Z] From parent: KNACK_USER_INFO
+App.js:1429 [User Info] Already processed, ignoring duplicate message
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
+KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:1339 [Knack Script] Loaded 6 cards/shells from bank.
+KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
+KnackJavascript6a.js:1349 [Knack Script] Loaded 1 topic lists.
+KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
+KnackJavascript6a.js:1355 [Knack Script] Loaded 6 topic metadata items.
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), spacedRepetition: {…}, topicLists: Array(1), colorMapping: {…}, …}
+KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
+KnackJavascript6a.js:206 {id: '630500bdc5659f0021657b2f', email: 'tut7@vespa.academy', name: 'Lesly Christianson', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…zMTJ9.nmkjrcrpXo6s7Ci1GkIr9H355yk8WlVU35_3_pLdSf0', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:873 Flashcard app initialized and visible.
+App.js:1421 [Message Handler 2025-04-02T10:02:21.033Z] From parent: KNACK_USER_INFO
+App.js:1429 [User Info] Already processed, ignoring duplicate message
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
+WebSocketContext.js:49 [WebSocketProvider] WebSocket Disconnected: 1006 
+WebSocketContext.js:57 [WebSocketProvider] Attempting reconnect 1/5 in 2s...
+WebSocketContext.js:24 [WebSocketProvider] Attempting to connect to wss://vespa-flashcards-e7f31e9ff3c9.herokuapp.com/...
+WebSocketContext.js:37 [WebSocketProvider] WebSocket Connected
+App.js:1364 Auto-saving data...
+App.js:520 [App] saveData triggered.isAuthenticated: true isKnack: true
+App.js:534 [Save] Starting save operation...
+App.js:538 [Save] Saving to localStorage first
+DataUtils.js:369 📥 Save Operation: localStorage
+DataUtils.js:370 Timestamp: 2025-04-02T10:03:21.057Z
+DataUtils.js:373 Data Stats: {cards: 6, subjects: 0, version: '1.0'}
+DataUtils.js:472 Backed up options for 0 multiple choice cards
+App.js:431 Saved data to localStorage with versioning and backup
+App.js:543 [Save] Preparing data for Knack integration
+App.js:609 [Save] Sending data to Knack (6 items, record ID: 67ed0a65f1ae5c02cbdece17)
+App.js:610 [Save] Payload structure: {recordId: '67ed0a65f1ae5c02cbdece17', cards_count: 6, colorMapping_keys: Array(0), spacedRepetition_box1_count: 0, userTopics_keys: Array(0), …}
+App.js:635 [Save] Sample items being sent: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+App.js:639 [Save] ALL 6 Topic Shells being sent: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+App.js:659 [App] Adding SAVE_DATA to queue with payload structure: {recordId: '67ed0a65f1ae5c02cbdece17', cards_count: 6, has_data: true}
+SaveQueueService.js:31 [SaveQueue] Added operation to queue: SAVE_DATA
+SaveQueueService.js:46 [SaveQueue] Processing operation: SAVE_DATA
+SaveQueueService.js:141 [SaveQueue] Preparing data for SAVE_DATA operation
+SaveQueueService.js:155 [SaveQueue] Processing SAVE_DATA with payload structure: {recordId: '67ed0a65f1ae5c02cbdece17', has_cards: true, cards_length: 6, has_colorMapping: true, has_spacedRepetition: true, …}
+SaveQueueService.js:70 [SaveQueue] Sending message to parent: SAVE_DATA
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+KnackJavascript6a.js:832 [Knack Script] Received message type: SAVE_DATA
+KnackJavascript6a.js:905 [Knack Script] Routing message type: SAVE_DATA
+KnackJavascript6a.js:948 [Knack Script] Handling SAVE_DATA request
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Data received for SAVE_DATA:
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), colorMapping: {…}, spacedRepetition: {…}, userTopics: {…}, …}
+KnackJavascript6a.js:306 [SaveQueue] Added operation to queue: full for record 67ed0a65f1ae5c02cbdece17. Queue length: 1
+KnackJavascript6a.js:320 [SaveQueue] Processing operation: full for record 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:344 [SaveQueue] Preparing save data for type: full, record: 67ed0a65f1ae5c02cbdece17, preserveFields: false
+KnackJavascript6a.js:394 [SaveQueue] Preparing 'full' save data.
+KnackJavascript6a.js:479 [SaveQueue] Preparing full save data from data object: (8) ['recordId', 'cards', 'colorMapping', 'spacedRepetition', 'userTopics', 'topicLists', 'topicMetadata', 'preserveFields']
+KnackJavascript6a.js:483 [SaveQueue] Processing 'cards' for full save
+KnackJavascript6a.js:490 [SaveQueue] Included 6 cards in full save payload.
+KnackJavascript6a.js:496 [SaveQueue] Processing 'colorMapping' for full save
+KnackJavascript6a.js:503 [SaveQueue] Processing 'topicLists' for full save
+KnackJavascript6a.js:511 [SaveQueue] Processing 'spacedRepetition' for full save
+TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
+KnackJavascript6a.js:523 [SaveQueue] Processing 'topicMetadata' for full save
+KnackJavascript6a.js:203 [Knack Script] [SaveQueue] Prepared update data
+App.js:1903 [Init] Sent ready message to parent
+KnackJavascript6a.js:206 {field_2957: '2025-04-02T10:03:21.063Z', field_2979: '[{"id":"1.1","subject":"Dance","topic":"Dance: Ele…hristopher Bruce","isShell":true,"isEmpty":true}]', field_3000: '{}', field_3011: '[{"subject":"Dance","topics":[{"name":"Dance: Elem…:"3.2","examBoard":"OCR","examType":"A-Level"}]}]', field_2986: '[]', …}
+KnackJavascript6a.js:536 [SaveQueue] Performing API save for record 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
+KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630500bdc5659f0021657b2f
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
+KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:1339 [Knack Script] Loaded 6 cards/shells from bank.
+KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
+KnackJavascript6a.js:1349 [Knack Script] Loaded 1 topic lists.
+KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
+KnackJavascript6a.js:1355 [Knack Script] Loaded 6 topic metadata items.
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), spacedRepetition: {…}, topicLists: Array(1), colorMapping: {…}, …}
+KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
+KnackJavascript6a.js:206 {id: '630500bdc5659f0021657b2f', email: 'tut7@vespa.academy', name: 'Lesly Christianson', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…zMTJ9.nmkjrcrpXo6s7Ci1GkIr9H355yk8WlVU35_3_pLdSf0', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:873 Flashcard app initialized and visible.
+App.js:1421 [Message Handler 2025-04-02T10:03:21.539Z] From parent: KNACK_USER_INFO
+App.js:1429 [User Info] Already processed, ignoring duplicate message
+KnackJavascript6a.js:554 [SaveQueue] API PUT successful for record 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:203 [Knack Script] [SaveQueue] API Save successful
+KnackJavascript6a.js:206 {id: '67ed0a65f1ae5c02cbdece17', field_3010: '', field_3010_raw: '', field_3029_raw: '', field_3029: '', …}
+KnackJavascript6a.js:584 [SaveQueue] Operation full succeeded for record 67ed0a65f1ae5c02cbdece17. Queue length: 0
+KnackJavascript6a.js:966 [Knack Script] SAVE_DATA for record 67ed0a65f1ae5c02cbdece17 completed successfully.
+SaveQueueService.js:82 [SaveQueue] Received success response for: SAVE_DATA
+App.js:670 [App] SAVE_DATA request successfully processed by SaveQueueService
+App.js:1421 [Message Handler 2025-04-02T10:03:21.769Z] From parent: SAVE_RESULT
+App.js:1573 [Save Result] Received: true
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.
+App.js:1903 [Init] Sent ready message to parent
+KnackJavascript6a.js:832 [Knack Script] Received message type: APP_READY
+KnackJavascript6a.js:838 Flashcard app: React app reported APP_READY.
+KnackJavascript6a.js:1290 [Knack Script] Loading flashcard user data for user ID: 630500bdc5659f0021657b2f
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] Flashcard User data search response:
+KnackJavascript6a.js:206 {total_pages: 1, current_page: 1, total_records: 1, records: Array(1)}
+KnackJavascript6a.js:1313 [Knack Script] Found existing flashcard record: 67ed0a65f1ae5c02cbdece17
+KnackJavascript6a.js:1339 [Knack Script] Loaded 6 cards/shells from bank.
+KnackJavascript6a.js:1346 [Knack Script] Loaded spaced repetition data.
+KnackJavascript6a.js:1349 [Knack Script] Loaded 1 topic lists.
+KnackJavascript6a.js:1352 [Knack Script] Loaded color mapping.
+KnackJavascript6a.js:1355 [Knack Script] Loaded 6 topic metadata items.
+KnackJavascript6a.js:203 [Knack Script] [Knack Script] ASSEMBLED USER DATA from loaded record
+KnackJavascript6a.js:206 {recordId: '67ed0a65f1ae5c02cbdece17', cards: Array(6), spacedRepetition: {…}, topicLists: Array(1), colorMapping: {…}, …}
+KnackJavascript6a.js:203 [Knack Script] --> Sending KNACK_USER_INFO to React App
+KnackJavascript6a.js:206 {id: '630500bdc5659f0021657b2f', email: 'tut7@vespa.academy', name: 'Lesly Christianson', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkI…zMTJ9.nmkjrcrpXo6s7Ci1GkIr9H355yk8WlVU35_3_pLdSf0', appId: '5ee90912c38ae7001510c1a9', …}
+KnackJavascript6a.js:873 Flashcard app initialized and visible.
+App.js:1421 [Message Handler 2025-04-02T10:03:22.198Z] From parent: KNACK_USER_INFO
+App.js:1429 [User Info] Already processed, ignoring duplicate message
+FlashcardList.jsx:255 [FlashcardList] Received cards prop: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+TopicListSyncManager.jsx:34 [TopicListSyncManager] Initialized with 0 topics from prop.

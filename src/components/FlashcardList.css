@@ -72,30 +72,22 @@
 }
 
 .subject-info {
-  display: flex;
-  flex-direction: column;
   flex: 1;
-  min-width: 0;
 }
 
 .subject-meta {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   margin-top: 5px;
-  visibility: visible !important;
+  font-size: 0.85rem;
 }
 
 .subject-meta span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
   background: rgba(255, 255, 255, 0.2);
   padding: 4px 8px;
   border-radius: 4px;
-  color: inherit;
   font-weight: 500;
-  visibility: visible !important;
+  color: var(--subject-text-color, #000);
 }
 
 .subject-actions {
@@ -107,25 +99,22 @@
 }
 
 .subject-actions button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.2) !important;
-  border: none;
-  font-size: 1.1rem;
   cursor: pointer;
-  padding: 5px;
-  border-radius: 4px;
   color: var(--subject-text-color, #000);
-  transition: background-color 0.2s;
-  width: 32px;
-  height: 32px;
-  visibility: visible !important;
-  opacity: 1 !important;
+  transition: all 0.2s ease;
+  margin-left: 4px;
 }
 
 .subject-actions button:hover {
-  background-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.3);
   transform: scale(1.05);
 }
 
@@ -204,11 +193,11 @@
 .topic-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 10px 16px;
+  align-items: center;
+  padding: 12px 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
-  width: 100%;
+  background-color: var(--topic-color, var(--subject-color, #f0f0f0));
+  color: var(--topic-text-color, var(--subject-text-color, #000));
 }
 
 .topic-header:hover {
@@ -1169,7 +1158,7 @@ html {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 15px;
+  padding: 12px 16px;
   cursor: pointer;
   transition: background-color 0.3s ease;
   position: relative;

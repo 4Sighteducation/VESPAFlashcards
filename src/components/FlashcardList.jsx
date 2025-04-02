@@ -97,6 +97,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   const [slideshowCards, setSlideshowCards] = useState([]);
   const [slideshowTitle, setSlideshowTitle] = useState("");
   const [showSlideshow, setShowSlideshow] = useState(false);
+  const [groupedCards, setGroupedCards] = useState({});
 
   // 2. useRef Hooks
   const subjectRefs = useRef({});
@@ -122,7 +123,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   }, []);
 
   // 3. useMemo Hooks
-  const { groupedCards } = useMemo(() => {
+  const { groupedCards: memoizedGroupedCards } = useMemo(() => {
     const bySubjectAndTopic = {};
     if (!Array.isArray(cards)) {
       console.error("FlashcardList received non-array cards prop:", cards);
@@ -162,6 +163,29 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     // Now depends on groupedCards which is defined above
     return Object.keys(groupedCards || {});
   }, [groupedCards]);
+
+  // Add regroupCards callback here, before the early return
+  const regroupCards = useCallback((cards) => {
+    const bySubjectAndTopic = {};
+    if (!Array.isArray(cards)) return {};
+
+    cards.forEach(item => {
+      if (!item || typeof item !== 'object' || !item.id || !item.subject) return;
+      
+      const subject = item.subject || "General";
+      const topic = item.topic || "General";
+      
+      if (!bySubjectAndTopic[subject]) {
+        bySubjectAndTopic[subject] = {};
+      }
+      if (!bySubjectAndTopic[subject][topic]) {
+        bySubjectAndTopic[subject][topic] = [];
+      }
+      bySubjectAndTopic[subject][topic].push(item);
+    });
+
+    return bySubjectAndTopic;
+  }, []);
 
   // 4. useCallback Hooks (Define functions needed by useMemo/useEffect first)
   const getExamInfo = useCallback((subject) => {
@@ -243,8 +267,29 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   }, []);
 
   useEffect(() => {
-    setExpandedSubjects({});
-    setExpandedTopics({});
+    if (cards && cards.length > 0) {
+      // Group cards by subject
+      const subjects = [...new Set(cards.map(card => card.subject))];
+      
+      // Expand the first subject by default
+      if (subjects.length > 0) {
+        setExpandedSubjects(prev => ({
+          ...prev,
+          [subjects[0]]: true
+        }));
+      }
+
+      // Force a re-render of the grouped cards
+      setGroupedCards(regroupCards(cards));
+    }
+  }, [cards]);
+
+  useEffect(() => {
+    // Don't reset expanded states on every card update
+    if (!cards || cards.length === 0) {
+      setExpandedSubjects({});
+      setExpandedTopics({});
+    }
   }, [cards]);
 
   // --- END: HOOK DEFINITIONS ---
@@ -431,6 +476,35 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     const topicColor = subjectColorMapping[subject]?.topics?.[topic] || subjectColorMapping[subject]?.base || '#f0f0f0';
     const textColor = getContrastColor(topicColor);
 
+    // Add regeneration handler
+    const handleRegenerateTopic = async (e) => {
+      e.stopPropagation();
+      const topicData = cards.find(card => card.type === 'topic' && card.isShell);
+      if (!topicData) {
+        console.error('No topic shell found for regeneration');
+        return;
+      }
+
+      if (window.confirm('This will regenerate all cards for this topic. Existing cards will be preserved. Continue?')) {
+        // Get metadata from the topic shell
+        const { examBoard, examType } = topicData;
+        
+        // Call the WebSocket-based generation
+        if (typeof handleSaveTopicShells === 'function') {
+          const shell = {
+            id: topicData.id,
+            subject: subject,
+            topic: topic,
+            examBoard: examBoard,
+            examType: examType,
+            isShell: true,
+            type: 'topic'
+          };
+          await handleSaveTopicShells([shell], true); // true indicates regeneration
+        }
+      }
+    };
+
     return (
       <div key={topicKey} className="topic-container" ref={el => topicRefs.current[topicKey] = el}>
         <div
@@ -440,9 +514,24 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
         >
           <div className="topic-info">
             <h3>{topic}</h3>
-            <span className="card-count">({displayCount} cards)</span>
+            <div className="topic-meta">
+              <span className="card-count">({displayCount} cards)</span>
+              {cards.find(card => card.examType && card.examBoard) && (
+                <>
+                  <span className="exam-type">{cards[0].examType}</span>
+                  <span className="exam-board">{cards[0].examBoard}</span>
+                </>
+              )}
+            </div>
           </div>
           <div className="topic-actions">
+            <button
+              onClick={handleRegenerateTopic}
+              className="regenerate-button"
+              title="Regenerate topic cards"
+            >
+              <FaBolt />
+            </button>
             {displayCount > 0 && (
               <>
                 <button

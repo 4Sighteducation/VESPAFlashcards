@@ -23,10 +23,10 @@ const TopicCreationModal = ({
   userId,
   recordId,
   updateColorMapping, // Keep if TopicHub or saving needs to update colors
+  existingSubjects = [], // Make sure this has a default value
   initialExamType = "",
   initialExamBoard = "",
   initialSubject = "",
-  existingSubjects = [], // Pass existing subjects to potentially prevent duplicates
 }) => {
   console.log(`[TopicCreationModal] Initializing`);
 
@@ -114,6 +114,11 @@ const TopicCreationModal = ({
       console.error("[TopicCreationModal] Error parsing WebSocket message:", error);
     }
   }, [lastMessage]);
+
+  // Add this useEffect to log and verify existingSubjects
+  useEffect(() => {
+    console.log("Existing subjects in modal:", existingSubjects);
+  }, [existingSubjects]);
 
   // Function to handle input changes
   const handleChange = (e) => {
@@ -376,7 +381,10 @@ const TopicCreationModal = ({
                     />
                     <button
                       type="button"
-                      onClick={() => setIsAddingNewSubject(false)}
+                      onClick={() => {
+                        setIsAddingNewSubject(false);
+                        setFormData(prev => ({ ...prev, subject: '' }));
+                      }}
                       className="cancel-new-subject"
                     >
                       Cancel
