@@ -103,41 +103,59 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   const topicRefs = useRef({});
   const menuRef = useRef({});
 
+  // Define callbacks before any conditional returns
+  const toggleSubject = useCallback((subject) => {
+    setExpandedSubjects(prev => {
+      const newState = { ...prev, [subject]: !prev[subject] };
+      setLastExpandedSubject(subject);
+      return newState;
+    });
+  }, []);
+
+  const toggleTopic = useCallback((subject, topic) => {
+    const topicKey = `${subject}-${topic}`;
+    setExpandedTopics(prev => {
+      const newState = { ...prev, [topicKey]: !prev[topicKey] };
+      setLastExpandedTopic(topicKey);
+      return newState;
+    });
+  }, []);
+
   // 3. useMemo Hooks
   const { groupedCards } = useMemo(() => {
     const bySubjectAndTopic = {};
     if (!Array.isArray(cards)) {
       console.error("FlashcardList received non-array cards prop:", cards);
-          return { groupedCards: {} };
-      }
-      const extractActualTopicName = (item) => {
-        if (item.type === 'topic' && item.isShell && item.name) {
-          const name = item.name;
-          const subject = item.subject || "General";
-          if (name.startsWith(subject + ': ')) {
-            return name.substring(subject.length + 2).trim() || "General";
-          }
-          return name;
+      return { groupedCards: {} };
+    }
+    const extractActualTopicName = (item) => {
+      if (item.type === 'topic' && item.isShell && item.name) {
+        const name = item.name;
+        const subject = item.subject || "General";
+        if (name.startsWith(subject + ': ')) {
+          return name.substring(subject.length + 2).trim() || "General";
         }
-        return item.topic || "General";
-      };
-      cards.forEach(item => {
-          if (!item || typeof item !== 'object' || !item.id || !item.subject) {
-            console.warn("[FlashcardList Grouping] Skipping invalid item:", item);
-            return;
-          }
-          const subject = item.subject || "General";
-          const actualTopicName = extractActualTopicName(item);
-          if (!bySubjectAndTopic[subject]) {
-            bySubjectAndTopic[subject] = {};
-          }
-          if (!bySubjectAndTopic[subject][actualTopicName]) {
-              bySubjectAndTopic[subject][actualTopicName] = [];
-          }
-          bySubjectAndTopic[subject][actualTopicName].push(item);
-      });
-      console.log("FlashcardList processed items (Revised Grouping):", { groupedStructure: bySubjectAndTopic });
-      return { groupedCards: bySubjectAndTopic };
+        return name;
+      }
+      return item.topic || "General";
+    };
+    cards.forEach(item => {
+        if (!item || typeof item !== 'object' || !item.id || !item.subject) {
+          console.warn("[FlashcardList Grouping] Skipping invalid item:", item);
+          return;
+        }
+        const subject = item.subject || "General";
+        const actualTopicName = extractActualTopicName(item);
+        if (!bySubjectAndTopic[subject]) {
+          bySubjectAndTopic[subject] = {};
+        }
+        if (!bySubjectAndTopic[subject][actualTopicName]) {
+            bySubjectAndTopic[subject][actualTopicName] = [];
+        }
+        bySubjectAndTopic[subject][actualTopicName].push(item);
+    });
+    console.log("FlashcardList processed items (Revised Grouping):", { groupedStructure: bySubjectAndTopic });
+    return { groupedCards: bySubjectAndTopic };
   }, [cards]);
 
   const getExistingSubjectNames = useMemo(() => {
@@ -242,14 +260,13 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
       <div className="no-cards-message">
         <h3>No Cards Found</h3>
         <p>Select a different subject or create new cards.</p>
-         {/* Optionally add button to trigger Topic Creation Modal */}
-         <button
-            onClick={() => setShowTopicCreationModal(true)}
-            className="create-topic-list-button button-primary"
-            style={{ marginTop: '20px' }}
-          >
-            <FaBolt style={{ marginRight: '8px' }} /> Create New Topic List
-          </button>
+        <button
+          onClick={() => setShowTopicCreationModal(true)}
+          className="create-topic-list-button button-primary"
+          style={{ marginTop: '20px' }}
+        >
+          <FaBolt style={{ marginRight: '8px' }} /> Create New Topic List
+        </button>
       </div>
     );
   }
@@ -264,23 +281,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
       [subject]: !prev[subject]
     }));
   };
-
-  const toggleSubject = useCallback((subject) => {
-    setExpandedSubjects(prev => {
-      const newState = { ...prev, [subject]: !prev[subject] };
-      setLastExpandedSubject(subject);
-      return newState;
-    });
-  }, []);
-
-  const toggleTopic = useCallback((subject, topic) => {
-    const topicKey = `${subject}-${topic}`;
-    setExpandedTopics(prev => {
-      const newState = { ...prev, [topicKey]: !prev[topicKey] };
-      setLastExpandedTopic(topicKey);
-      return newState;
-    });
-  }, []);
 
   const getContrastColor = (hexcolor) => {
     // Remove the # if present
@@ -419,6 +419,78 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
           </>
         )}
         <button className="color-picker-btn" title="Change topic color" onClick={(e) => openColorEditor(subject, topic, topicColor, e)}><FaPalette /></button>
+      </div>
+    );
+  };
+
+  const renderTopic = (subject, topic, cards) => {
+    const topicKey = `${subject}-${topic}`;
+    const isExpanded = expandedTopics[topicKey];
+    const actualCards = cards.filter(item => item.type !== 'topic');
+    const displayCount = actualCards.length;
+    const topicColor = subjectColorMapping[subject]?.topics?.[topic] || subjectColorMapping[subject]?.base || '#f0f0f0';
+    const textColor = getContrastColor(topicColor);
+
+    return (
+      <div key={topicKey} className="topic-container" ref={el => topicRefs.current[topicKey] = el}>
+        <div
+          className={`topic-header ${isExpanded ? 'expanded' : ''} ${displayCount === 0 ? 'empty-shell' : ''}`}
+          style={{ backgroundColor: topicColor, color: textColor }}
+          onClick={() => toggleTopic(subject, topic)}
+        >
+          <div className="topic-info">
+            <h3>{topic}</h3>
+            <span className="card-count">({displayCount} cards)</span>
+          </div>
+          <div className="topic-actions">
+            {displayCount > 0 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startSlideshow(subject, topic, e);
+                  }}
+                  className="slideshow-button"
+                  title="Start slideshow"
+                >
+                  <FaPlay />
+                </button>
+                <button
+                  onClick={(e) => handlePrintTopic(subject, topic, e)}
+                  className="print-topic-button"
+                  title="Print topic cards"
+                >
+                  <FaPrint />
+                </button>
+              </>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                openColorEditor(subject, topic, topicColor, e);
+              }}
+              className="color-edit-button"
+              title="Edit topic color"
+            >
+              <FaPalette />
+            </button>
+            {isExpanded ? <FaAngleUp /> : <FaAngleDown />}
+          </div>
+        </div>
+        {isExpanded && (
+          <div className="topic-cards">
+            {actualCards.map(card => (
+              <Flashcard
+                key={card.id}
+                card={{ ...card, cardColor: topicColor }}
+                onDelete={() => onDeleteCard(card.id)}
+                onFlip={() => {}}
+                onUpdateCard={onUpdateCard}
+                onSelectCard={() => handleSetShowModalAndSelectedCard(card)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     );
   };
