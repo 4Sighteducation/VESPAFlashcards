@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./TopicCreationModal.css"; // Import the new CSS file
 import LoadingSpinner from "./LoadingSpinner";
 import TopicHub from "./TopicHub"; // Still needed for the final step
-import { useWebSocket } from "../contexts/WebSocketContext";
+import { useWebSocket } from "../hooks/useWebSocket";
 
 // Constants related to Topic Hub functionality
 const MAX_TOPICS_GENERATED = 25; // Increased limit as discussed
@@ -57,7 +57,8 @@ const TopicCreationModal = ({
   const isMounted = useRef(true);
 
   // WebSocket context for topic generation
-  const { socket, isConnected } = useWebSocket();
+  const { sendMessage, lastMessage, readyState } = useWebSocket();
+  const isConnected = readyState === 1; // WebSocket.OPEN
 
   // Pending operations state
   const [pendingOperations, setPendingOperations] = useState({
@@ -69,64 +70,50 @@ const TopicCreationModal = ({
     setError(null);
   }, [currentStep]);
 
-  // WebSocket listeners for Topic Generation
+  // WebSocket message handler
   useEffect(() => {
-    isMounted.current = true;
+    if (!lastMessage) return;
 
-    if (socket && isConnected) {
-      console.log("[TopicCreationModal] WebSocket connected, setting up topic listeners.");
+    try {
+      const data = JSON.parse(lastMessage.data);
+      
+      switch (data.type) {
+        case 'status':
+          if (data.action === 'generateTopics') {
+            console.log("[TopicCreationModal] Progress update:", data);
+            setProgress(data.progress || 0);
+            setProgressMessage(data.message || "");
+          }
+          break;
 
-      const handleProgress = (data) => {
-        if (!isMounted.current) return;
-        console.log("[TopicCreationModal] Progress update:", data);
-        if (data && typeof data.progress === 'number' && typeof data.message === 'string') {
-          setProgress(data.progress);
-          setProgressMessage(data.message);
-        }
-      };
+        case 'topicResults':
+          if (data.action === 'generateTopics' && Array.isArray(data.topics)) {
+            console.log("[TopicCreationModal] Topic results received:", data);
+            setGeneratedTopics(data.topics);
+            setProgress(100);
+            setProgressMessage("Topic generation complete!");
+            setIsLoading(false);
+            setTopicGenerationComplete(true);
+            setPendingOperations(prev => ({ ...prev, generateTopics: false }));
+          }
+          break;
 
-      const handleTopicResults = (data) => {
-        if (!isMounted.current) return;
-        console.log("[TopicCreationModal] Topic results received:", data);
-        if (data && Array.isArray(data.topics)) {
-          setGeneratedTopics(data.topics);
-          setProgress(100);
-          setProgressMessage("Topic generation complete!");
+        case 'error':
+          console.error("[TopicCreationModal] Error from WebSocket:", data);
+          setError(data.message || "An unknown error occurred during topic generation.");
           setIsLoading(false);
-          setTopicGenerationComplete(true);
+          setProgress(0);
+          setProgressMessage("");
           setPendingOperations(prev => ({ ...prev, generateTopics: false }));
-        } else {
-          setError("Received invalid topic data format from server.");
-          setIsLoading(false);
-          setPendingOperations(prev => ({ ...prev, generateTopics: false }));
-        }
-      };
+          break;
 
-      const handleError = (errorData) => {
-        if (!isMounted.current) return;
-        console.error("[TopicCreationModal] Error from WebSocket:", errorData);
-        setError(errorData.message || "An unknown error occurred during topic generation.");
-        setIsLoading(false);
-        setProgress(0);
-        setProgressMessage("");
-        setPendingOperations(prev => ({ ...prev, generateTopics: false }));
-      };
-
-      socket.on("generation_progress", handleProgress);
-      socket.on("topic_results", handleTopicResults);
-      socket.on("generation_error", handleError);
-
-      return () => {
-        console.log("[TopicCreationModal] Cleaning up WebSocket listeners.");
-        isMounted.current = false;
-        socket.off("generation_progress", handleProgress);
-        socket.off("topic_results", handleTopicResults);
-        socket.off("generation_error", handleError);
-      };
-    } else {
-      console.log("[TopicCreationModal] WebSocket not connected.");
+        default:
+          console.log("[TopicCreationModal] Unhandled message type:", data.type);
+      }
+    } catch (error) {
+      console.error("[TopicCreationModal] Error parsing WebSocket message:", error);
     }
-  }, [socket, isConnected]);
+  }, [lastMessage]);
 
   // Function to handle input changes
   const handleChange = (e) => {
@@ -220,15 +207,15 @@ const TopicCreationModal = ({
     }
   };
 
-  // Trigger topic generation (called from TopicHub component)
-  const triggerTopicGeneration = useCallback(async (generationParams) => {
+  // Update the triggerTopicGeneration function
+  const triggerTopicGeneration = useCallback(async () => {
     const { examType, examBoard, subject } = formData;
 
     if (!examType || !examBoard || !subject) {
       setError("Missing required fields: Exam Type, Exam Board, or Subject.");
       return;
     }
-    if (!socket || !isConnected) {
+    if (!isConnected) {
       setError("WebSocket connection is not available. Cannot generate topics.");
       return;
     }
@@ -247,34 +234,21 @@ const TopicCreationModal = ({
     setPendingOperations(prev => ({ ...prev, generateTopics: true }));
 
     try {
-      socket.emit("generate_topics", {
-        userId: userId || recordId || 'unknown_user',
-        sessionId: socket.id,
-        examType,
-        examBoard,
-        subject,
-        numTopics: generationParams?.numTopics || 10, // Use param from TopicHub
-        detailLevel: generationParams?.detailLevel || 'Standard' // Use param from TopicHub
-      });
-      console.log("[TopicCreationModal] Topic generation request sent via WebSocket.");
+      sendMessage(JSON.stringify({
+        action: 'generateTopics',
+        data: {
+          examType,
+          examBoard,
+          subject
+        }
+      }));
     } catch (error) {
-      console.error("[TopicCreationModal] Error triggering topic generation:", error);
-      setError(`Failed to start topic generation: ${error.message}`);
+      console.error("[TopicCreationModal] Error sending WebSocket message:", error);
+      setError("Failed to start topic generation. Please try again.");
       setIsLoading(false);
       setPendingOperations(prev => ({ ...prev, generateTopics: false }));
     }
-
-    // Timeout for WebSocket response
-    setTimeout(() => {
-      if (isMounted.current && pendingOperations.generateTopics) {
-         console.warn("[TopicCreationModal] Topic generation timeout - resetting state.");
-         setIsLoading(false);
-         setPendingOperations(prev => ({ ...prev, generateTopics: false }));
-         setError("Topic generation timed out. Please try again.");
-      }
-    }, 30000); // 30 second timeout
-
-  }, [socket, isConnected, userId, recordId, formData, isLoading, pendingOperations.generateTopics]);
+  }, [formData, isConnected, isLoading, pendingOperations.generateTopics, sendMessage]);
 
   // Function to handle the finalization and saving of topics from TopicHub
   const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
