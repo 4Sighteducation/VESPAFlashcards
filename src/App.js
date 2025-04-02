@@ -2383,7 +2383,7 @@ const filteredCards = useMemo(() => {
                 userId={auth?.id}
                 recordId={recordId}
                 updateColorMapping={updateColorMapping}
-                existingSubjects={Object.keys(groupedCards || {})} // Pass actual subjects from groupedCards
+                existingSubjects={getSubjects().map(subject => subject.name)}
               />
             )}
 
