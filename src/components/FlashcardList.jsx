@@ -265,30 +265,37 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     }));
   };
 
-  const toggleSubject = (subject) => {
-    const wasExpanded = expandedSubjects[subject];
-    setExpandedSubjects(prev => ({ ...prev, [subject]: !prev[subject] }));
-    if (!wasExpanded) setLastExpandedSubject(subject);
-  };
+  const toggleSubject = useCallback((subject) => {
+    setExpandedSubjects(prev => {
+      const newState = { ...prev, [subject]: !prev[subject] };
+      setLastExpandedSubject(subject);
+      return newState;
+    });
+  }, []);
 
-  const toggleTopic = (subject, topic) => {
+  const toggleTopic = useCallback((subject, topic) => {
     const topicKey = `${subject}-${topic}`;
-    const wasExpanded = expandedTopics[topicKey];
-    setExpandedTopics(prev => ({ ...prev, [topicKey]: !prev[topicKey] }));
-    if (!wasExpanded) setLastExpandedTopic(topicKey);
-  };
+    setExpandedTopics(prev => {
+      const newState = { ...prev, [topicKey]: !prev[topicKey] };
+      setLastExpandedTopic(topicKey);
+      return newState;
+    });
+  }, []);
 
-  const getContrastColor = (hexColor) => {
-    if (!hexColor) return "#000000";
-    try {
-      hexColor = hexColor.replace("#", "");
-      if (hexColor.length === 3) { hexColor = hexColor[0] + hexColor[0] + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2]; }
-      const r = parseInt(hexColor.substring(0, 2), 16);
-      const g = parseInt(hexColor.substring(2, 4), 16);
-      const b = parseInt(hexColor.substring(4, 6), 16);
-      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      return luminance > 0.6 ? "#000000" : "#ffffff";
-    } catch (error) { return "#000000"; }
+  const getContrastColor = (hexcolor) => {
+    // Remove the # if present
+    const hex = hexcolor.replace('#', '');
+    
+    // Convert to RGB
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return black or white based on luminance
+    return luminance > 0.5 ? '#000000' : '#ffffff';
   };
 
   const formatDate = (dateString) => {
@@ -485,20 +492,51 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   };
 
   const renderSubject = (subjectData) => {
-    const { id: subject, title, color } = subjectData;
-    const isExpanded = expandedSubjects[subject];
-    let displayCount = 0;
-    const topicsMap = groupedCards[subject] || {};
-    Object.values(topicsMap).forEach(items => {
-        displayCount += items.filter(item => item.type !== 'topic').length;
-    });
+    const { id: subject, title, exam_type, exam_board, color } = subjectData;
+    const style = {
+      '--subject-color': color || '#f0f0f0',
+      '--subject-text-color': color ? getContrastColor(color) : '#000'
+    };
 
     return (
-      <div key={subject} className="subject-group" ref={el => subjectRefs.current[subject] = el}>
-        {renderSubjectHeader({ ...subjectData, displayCount })}
-        {isExpanded && (
-          <div className="subject-content">
-            {renderTopics(subject, color)}
+      <div 
+        key={subject}
+        className="subject-container"
+        style={style}
+        ref={el => subjectRefs.current[subject] = el}
+      >
+        <div 
+          className="subject-header"
+          onClick={() => toggleSubject(subject)}
+        >
+          <div className="subject-info">
+            <h2>{title}</h2>
+            <div className="subject-meta">
+              <span>{exam_type}</span>
+              <span>{exam_board}</span>
+            </div>
+          </div>
+          <div className="subject-actions">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setColorEditorState({ subject, color: color || '#f0f0f0' });
+                setColorEditorOpen(true);
+              }}
+              className="color-edit-button"
+              title="Edit subject color"
+            >
+              <FaPalette />
+            </button>
+            {expandedSubjects[subject] ? <FaAngleUp /> : <FaAngleDown />}
+          </div>
+        </div>
+        
+        {expandedSubjects[subject] && (
+          <div className="topics-container">
+            {Object.entries(groupedCards[subject] || {}).map(([topic, cards]) => (
+              renderTopic(subject, topic, cards)
+            ))}
           </div>
         )}
       </div>

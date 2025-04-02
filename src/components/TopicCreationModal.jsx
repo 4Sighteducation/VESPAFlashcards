@@ -119,36 +119,29 @@ const TopicCreationModal = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Special handling for subject dropdown
     if (name === 'subject-select') {
-        if (value === '--addNew--') {
-            setIsAddingNewSubject(true);
-            // Clear the actual subject value when switching to add new
-            setFormData((prev) => ({
-                ...prev,
-                subject: '',
-            }));
-        } else {
-            setIsAddingNewSubject(false);
-            // Set the subject from the dropdown
-            setFormData((prev) => ({
-                ...prev,
-                subject: value,
-            }));
-        }
+      if (value === '--addNew--') {
+        setIsAddingNewSubject(true);
+        setFormData(prev => ({
+          ...prev,
+          subject: ''
+        }));
+      } else {
+        setIsAddingNewSubject(false);
+        setFormData(prev => ({
+          ...prev,
+          subject: value
+        }));
+      }
     } else if (name === 'subject-new') {
-        // Update subject only if adding new is active
-        if (isAddingNewSubject) {
-            setFormData((prev) => ({
-                ...prev,
-                subject: value,
-            }));
-        }
-    } else {
-      // Handle other form inputs normally
-      setFormData((prev) => ({
+      setFormData(prev => ({
         ...prev,
-        [name]: value,
+        subject: value
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
       }));
     }
 
@@ -349,45 +342,49 @@ const TopicCreationModal = ({
       case 3: // Subject
         return (
           <div className="step-content">
-            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select or Add Subject</h2>
+            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select or Create Subject</h2>
             <div className="form-group">
-              {/* Subject Dropdown */}
-              <label htmlFor="subject-select" className="form-label">Select Existing Subject:</label>
-              <select
-                id="subject-select"
-                name="subject-select" // Use a different name for the select element
-                value={isAddingNewSubject ? '--addNew--' : formData.subject} // Control selection based on state
-                onChange={handleChange}
-                required={!isAddingNewSubject} // Required only if not adding new
-                className="form-control" // Add a class for styling
-              >
-                <option value="">Select Subject...</option>
-                {/* Map existing subjects */}
-                {Array.isArray(existingSubjects) && existingSubjects.map((subj) => (
-                    <option key={subj} value={subj}>{subj}</option>
-                ))}
-                {/* Option to add new */}
-                <option value="--addNew--">--- Add New Subject ---</option>
-              </select>
+              {!isAddingNewSubject ? (
+                <>
+                  <label htmlFor="subject-select">Choose a Subject:</label>
+                  <select
+                    id="subject-select"
+                    name="subject-select"
+                    value={formData.subject || ''}
+                    onChange={handleChange}
+                    className="form-control"
+                  >
+                    <option value="">Select a Subject</option>
+                    {Array.isArray(existingSubjects) && existingSubjects.map((subject) => (
+                      <option key={subject} value={subject}>{subject}</option>
+                    ))}
+                    <option value="--addNew--">+ Add New Subject</option>
+                  </select>
+                </>
+              ) : (
+                <>
+                  <label htmlFor="subject-new">Enter New Subject:</label>
+                  <div className="new-subject-input">
+                    <input
+                      type="text"
+                      id="subject-new"
+                      name="subject-new"
+                      value={formData.subject || ''}
+                      onChange={handleChange}
+                      placeholder="Enter subject name"
+                      className="form-control"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingNewSubject(false)}
+                      className="cancel-new-subject"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
-
-            {/* Conditionally render input for new subject */}
-            {isAddingNewSubject && (
-              <div className="form-group" style={{ marginTop: '15px' }}>
-                <label htmlFor="subject-new" className="form-label">Enter New Subject Name:</label>
-                <input
-                  id="subject-new"
-                  type="text"
-                  name="subject-new" // Use a different name for the input
-                  value={formData.subject} // Bind to the actual subject state
-                  onChange={handleChange}
-                  placeholder="E.g., Biology, History, Music Technology"
-                  required={isAddingNewSubject} // Required only if adding new
-                  className="form-control" // Add a class for styling
-                  autoFocus // Focus when it appears
-                />
-              </div>
-            )}
           </div>
         );
       case 4: // Topic Hub
