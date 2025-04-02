@@ -279,6 +279,7 @@ const TopicCreationModal = ({
   // Function to handle the finalization and saving of topics from TopicHub
   const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
     console.log(`[TopicCreationModal] Received ${topicShells.length} finalized topic shells from TopicHub.`);
+    console.log(`[TopicCreationModal] Current formData state: ExamType='${formData.examType}', ExamBoard='${formData.examBoard}', Subject='${formData.subject}'`);
 
     if (!Array.isArray(topicShells) || topicShells.length === 0) {
       console.warn("[TopicCreationModal] No topic shells provided for finalization. Closing modal.");
@@ -297,6 +298,7 @@ const TopicCreationModal = ({
         timestamp: new Date().toISOString(), // Add creation timestamp
     }));
 
+    console.log("[TopicCreationModal] Prepared shellsToSave:", shellsToSave);
 
     try {
       // Call the onSaveTopicShells prop (from App.js or parent) to handle persistence
