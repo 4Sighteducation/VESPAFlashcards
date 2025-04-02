@@ -83,28 +83,23 @@ const generateCardPrompt = (data) => {
 
 
 const app = express();
-const port = process.env.PORT || 3001;
+// Use the port Heroku assigns, or 8080 for local development
+const port = process.env.PORT || 8080; 
 
 // --- Express Setup ---
 
 // Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, 'build')));
 
-// Handles any requests that don't match the ones above by serving index.html
-// This is important for Single Page Applications like React Router
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
-
 // --- HTTP Server Setup ---
 // Create an HTTP server using the Express app
 const server = http.createServer(app);
 
 // --- WebSocket Server Setup ---
-// Create a WebSocket server attached to the HTTP server
+// Create a WebSocket server attached to the *HTTP server*
 const wss = new WebSocket.Server({ server });
 
-console.log('WebSocket server setup complete.');
+console.log('WebSocket server setup complete, attached to HTTP server.');
 
 wss.on('connection', (ws) => {
   console.log('Client connected');
@@ -155,7 +150,6 @@ wss.on('connection', (ws) => {
   } catch (error) {
        console.error('Failed to send welcome message:', error);
   }
-
 });
 
 // --- AI Generation Handlers ---
@@ -355,7 +349,20 @@ async function handleGenerateCards(ws, data) {
   }
 }
 
+// --- Fallback Route for React Router ---
+// Handles any requests that don't match the static files or API routes (if any)
+// by serving the main index.html file. CRITICAL for Single Page Apps.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'), (err) => {
+    if (err) {
+      console.error("Error sending index.html:", err);
+      res.status(500).send(err);
+    }
+  });
+});
+
 // --- Start Server ---
+// Start the *HTTP server* (which includes WebSocket server)
 server.listen(port, () => {
-  console.log(`HTTP server listening on port ${port}`);
+  console.log(`HTTP server (with WebSocket) listening on port ${port}`);
 }); 
