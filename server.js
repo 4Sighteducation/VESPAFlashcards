@@ -62,7 +62,7 @@ const generateCardPrompt = (data) => {
   }
 
   // Construct the core prompt
-  let prompt = `Return only a valid JSON array of objects with no other text before or after - this is critical. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting).\nGenerate ${numCards} high-quality ${examBoard} ${examType} ${subject} flashcards for the specific topic \"${topic}\".\n${complexityInstruction}\n\nBefore generating questions, mentally reference the latest ${examBoard} ${examType} ${subject} specification to ensure the content aligns with typical curriculum expectations.\n\nUse this exact JSON structure:\n[\n  {\n    \"question\": \"Clear, focused question based on the curriculum for ${topic}\"`,
+  let prompt = `Return only a valid JSON array of objects with no other text before or after - this is critical. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting).\nGenerate ${numCards} high-quality ${examBoard} ${examType} ${subject} flashcards for the specific topic \"${topic}\".\n${complexityInstruction}\n\nBefore generating questions, mentally reference the latest ${examBoard} ${examType} ${subject} specification to ensure the content aligns with typical curriculum expectations.\n\nUse this exact JSON structure:\n[\n  {\n    \"question\": \"Clear, focused question based on the curriculum for ${topic}\"`;
 
   // Add specific fields based on question type
   if (questionType === 'multiple_choice') {
