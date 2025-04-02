@@ -2379,15 +2379,11 @@ const filteredCards = useMemo(() => {
             {isTopicCreationModalOpen && (
               <TopicCreationModal
                 onClose={() => setIsTopicCreationModalOpen(false)}
-                onSaveTopicShells={handleSaveTopicShells} // Pass the save function
+                onSaveTopicShells={handleSaveTopicShells}
                 userId={auth?.id}
                 recordId={recordId}
-                updateColorMapping={updateColorMapping} // Pass color mapping if needed
-                existingSubjects={getSubjects().map(s => s.name)} // Pass existing subject names
-                // Pass initial values if needed, e.g., from last session or defaults
-                // initialExamType="GCSE"
-                // initialExamBoard="AQA"
-                // initialSubject=""
+                updateColorMapping={updateColorMapping}
+                existingSubjects={Object.keys(groupedCards || {})} // Pass actual subjects from groupedCards
               />
             )}
 

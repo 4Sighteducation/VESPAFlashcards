@@ -198,6 +198,14 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
         for (const topicName in subjectTopics) {
           const cardsInTopic = subjectTopics[topicName];
           if (cardsInTopic && cardsInTopic.length > 0) {
+            // First try to find a topic shell with metadata
+            const topicShell = cardsInTopic.find(card => card.type === 'topic' && card.isShell);
+            if (topicShell) {
+              examBoard = topicShell.examBoard;
+              examType = topicShell.examType;
+              break;
+            }
+            // If no shell, try to find a card with metadata
             const cardWithMetadata = cardsInTopic.find(card => card.examBoard && card.examType);
             if (cardWithMetadata) {
               examBoard = cardWithMetadata.examBoard;
@@ -236,17 +244,17 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   const sortedSubjects = useMemo(() => {
     if (Object.keys(groupedCards).length === 0) return [];
     const subjectsWithDates = Object.keys(groupedCards).map(subject => {
-        const { examType, examBoard } = getExamInfo(subject);
-        const color = subjectColorMapping[subject]?.base || '#f0f0f0';
-        return {
-            id: subject,
-            title: subject,
-            cards: groupedCards[subject],
-            exam_type: examType,
-            exam_board: examBoard,
-            color: color,
-            creationDate: getSubjectDate(subject)
-        };
+      const { examType, examBoard } = getExamInfo(subject);
+      const color = subjectColorMapping[subject]?.base || '#f0f0f0';
+      return {
+        id: subject,
+        title: subject,
+        cards: groupedCards[subject],
+        exam_type: examType,
+        exam_board: examBoard,
+        color: color,
+        creationDate: getSubjectDate(subject)
+      };
     });
     return subjectsWithDates.sort((a, b) => a.creationDate - b.creationDate);
   }, [groupedCards, getExamInfo, getSubjectDate, subjectColorMapping]);
@@ -280,17 +288,25 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
       }
 
       // Force a re-render of the grouped cards
-      setGroupedCards(regroupCards(cards));
-    }
-  }, [cards]);
+      const newGroupedCards = regroupCards(cards);
+      setGroupedCards(newGroupedCards);
 
-  useEffect(() => {
-    // Don't reset expanded states on every card update
-    if (!cards || cards.length === 0) {
-      setExpandedSubjects({});
-      setExpandedTopics({});
+      // Log the state for debugging
+      console.log("[FlashcardList] Initial load:", {
+        cardsCount: cards.length,
+        subjects: subjects,
+        groupedCards: newGroupedCards
+      });
     }
-  }, [cards]);
+  }, [cards, regroupCards]);
+
+  // Add a new useEffect for handling card updates
+  useEffect(() => {
+    if (cards && cards.length > 0) {
+      const newGroupedCards = regroupCards(cards);
+      setGroupedCards(newGroupedCards);
+    }
+  }, [cards, regroupCards]);
 
   // --- END: HOOK DEFINITIONS ---
 
@@ -468,12 +484,11 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     );
   };
 
-  const renderTopic = (subject, topic, cards) => {
+  const renderTopic = (subject, topic, cards, topicColor) => {
     const topicKey = `${subject}-${topic}`;
     const isExpanded = expandedTopics[topicKey];
     const actualCards = cards.filter(item => item.type !== 'topic');
     const displayCount = actualCards.length;
-    const topicColor = subjectColorMapping[subject]?.topics?.[topic] || subjectColorMapping[subject]?.base || '#f0f0f0';
     const textColor = getContrastColor(topicColor);
 
     // Add regeneration handler
@@ -498,7 +513,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
             examBoard: examBoard,
             examType: examType,
             isShell: true,
-            type: 'topic'
+            type: 'topic',
+            regenerate: true // Add this flag to indicate regeneration
           };
           await handleSaveTopicShells([shell], true); // true indicates regeneration
         }
@@ -654,9 +670,11 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
 
   const renderSubject = (subjectData) => {
     const { id: subject, title, exam_type, exam_board, color } = subjectData;
+    const subjectColor = subjectColorMapping[subject]?.base || color || '#f0f0f0';
+    const textColor = getContrastColor(subjectColor);
     const style = {
-      '--subject-color': color || '#f0f0f0',
-      '--subject-text-color': color ? getContrastColor(color) : '#000'
+      '--subject-color': subjectColor,
+      '--subject-text-color': textColor
     };
 
     return (
@@ -669,6 +687,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
         <div 
           className="subject-header"
           onClick={() => toggleSubject(subject)}
+          style={{ backgroundColor: subjectColor, color: textColor }}
         >
           <div className="subject-info">
             <h2>{title}</h2>
@@ -681,7 +700,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setColorEditorState({ subject, color: color || '#f0f0f0' });
+                setColorEditorState({ subject, color: subjectColor });
                 setColorEditorOpen(true);
               }}
               className="color-edit-button"
@@ -695,9 +714,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
         
         {expandedSubjects[subject] && (
           <div className="topics-container">
-            {Object.entries(groupedCards[subject] || {}).map(([topic, cards]) => (
-              renderTopic(subject, topic, cards)
-            ))}
+            {Object.entries(groupedCards[subject] || {}).map(([topic, cards]) => {
+              const topicColor = subjectColorMapping[subject]?.topics?.[topic] || subjectColor;
+              return renderTopic(subject, topic, cards, topicColor);
+            })}
           </div>
         )}
       </div>
