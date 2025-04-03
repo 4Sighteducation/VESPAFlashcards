@@ -2208,23 +2208,7 @@ const filteredCards = useMemo(() => {
     };
   }, [setSelectedSubject, setSelectedTopic, setView]);
 
-  // Show loading state
-  if (loading) {
-    return <LoadingSpinner message={loadingMessage} />;
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <div className="app error">
-        <h2>Error</h2>
-        <p>{error}</p>
-        <button onClick={() => window.location.reload()}>Refresh</button>
-      </div>
-    );
-  }
-
-  // --- INSERT loadCombinedData HERE ---
+  // --- MOVE HOOK DEFINITIONS HERE ---
   const loadCombinedData = useCallback(async (source = 'auto') => {
       setLoading(true);
       setLoadingMessage(`Loading data from ${source}...`);
@@ -2258,13 +2242,7 @@ const filteredCards = useMemo(() => {
        // Dependencies need to include all 'set' functions used inside
   }, [setAllCards, setSubjectColorMapping, setSpacedRepetitionData, setUserTopics, setTopicLists, setTopicMetadata, setLoading, setLoadingMessage]);
 
-  // --- Initial Load useEffect ---
-  useEffect(() => {
-      // ... (implementation as before, ensuring it calls loadCombinedData) ...
-  }, [loadCombinedData, showStatus]); // Ensure dependencies are correct
-
-  // --- INSERT handleSaveTopicShellsAndRefresh HERE (before handleUpdateSubjectColor) ---
-   const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegeneration = false) => {
+  const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegeneration = false) => {
        if (!topicShells || topicShells.length === 0) return;
        console.log(`[App handleSaveTopicShells] Received ${topicShells.length} shells. Regen: ${isRegeneration}`);
 
@@ -2320,10 +2298,70 @@ const filteredCards = useMemo(() => {
        // Dependencies need to include all states used and saveData
    }, [allCards, saveData, showStatus, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata]);
 
-  // --- Handler for Color Updates ---
   const handleUpdateSubjectColor = useCallback(async (subject, topic, newColor) => {
       // ... (implementation as before) ...
-  }, [saveData, allCards, spacedRepetitionData, showStatus]); // Adjusted dependencies
+      // ** Make sure the full implementation of this function is moved **
+      // Example:
+      console.log(`[App] Updating color for ${subject} - ${topic} to ${newColor}`);
+      const updatedMapping = { ...subjectColorMapping, [`${subject}-${topic}`]: newColor };
+      setSubjectColorMapping(updatedMapping);
+
+      // Also update any cards associated with this subject/topic if needed
+      const updatedCards = allCards.map(card => {
+        if (card.subject === subject && card.topic === topic) {
+          return { ...card, color: newColor };
+        }
+        return card;
+      });
+      // setAllCards(updatedCards); // Consider if this immediate update is needed or rely on saveData refresh
+
+      try {
+        await saveData({
+          cards: updatedCards, // Pass the potentially updated cards
+          colorMapping: updatedMapping,
+          spacedRepetition: spacedRepetitionData,
+          userTopics: userTopics,
+          topicLists: topicLists,
+          topicMetadata: topicMetadata
+        });
+        showStatus(`Color updated for ${subject} - ${topic}.`);
+      } catch (error) {
+        console.error("Error saving updated color mapping:", error);
+        showStatus("Error saving color update.");
+        // Revert optimistic update on error?
+        setSubjectColorMapping(subjectColorMapping); // Revert color map
+        // setAllCards(allCards); // Revert card colors if they were updated optimistically
+      }
+  }, [saveData, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, showStatus]); // Adjusted dependencies
+
+  // --- Initial Load useEffect ---
+  useEffect(() => {
+      // ... (implementation as before, ensuring it calls loadCombinedData) ...
+      console.log("[App useEffect Initial Load] Triggering initial data load.");
+      loadCombinedData('initial mount');
+      // Example: Placeholder if not already implemented
+      // if (!hasLoadedInitialData.current) {
+      //  console.log("[App useEffect Initial Load] Calling loadCombinedData.");
+      //  loadCombinedData('initial mount');
+      //  hasLoadedInitialData.current = true;
+      // }
+  }, [loadCombinedData]); // Ensure dependencies are correct, only run once ideally
+
+  // Show loading state
+  if (loading) {
+    return <LoadingSpinner message={loadingMessage} />;
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="app error">
+        <h2>Error</h2>
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()}>Refresh</button>
+      </div>
+    );
+  }
 
   return (
     <WebSocketProvider> {/* Wrap the entire app content */}
