@@ -43,27 +43,54 @@ const generateShade = (color, percent) => {
   }
 };
 
-// Helper function for contrast color
-const getContrastColor = (hexcolor) => {
-  if (!hexcolor || typeof hexcolor !== 'string' || !hexcolor.startsWith('#')) {
-    console.warn("[getContrastColor] Invalid hexcolor:", hexcolor, "Using fallback #000000");
-    return '#000000'; // Default to black
-  }
-  try {
-    const hex = hexcolor.replace('#', '');
-    if (hex.length !== 6) {
-      console.warn("[getContrastColor] Invalid hex length:", hex, "Using fallback #000000");
-      return '#000000';
+// Helper function for contrast color - IMPROVED VERSION
+const getContrastColor = (hexColor) => {
+    if (!hexColor || typeof hexColor !== 'string') {
+       console.warn("[getContrastColor] Invalid hexcolor input (not a string or null):", hexColor);
+       return '#000000'; // Default to black
     }
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.5 ? '#000000' : '#ffffff'; // Black text on light, White text on dark
-  } catch (error) {
-    console.error("[getContrastColor] Error processing color:", hexcolor, error);
-    return '#000000'; // Fallback on error
-  }
+    hexColor = hexColor.startsWith('#') ? hexColor : `#${hexColor}`; // Ensure # prefix
+    if (!/^#[0-9A-F]{6}$/i.test(hexColor) && !/^#[0-9A-F]{3}$/i.test(hexColor)) {
+        console.warn("[getContrastColor] Invalid hex format:", hexColor, "Using fallback #000000");
+        return '#000000';
+    }
+
+    try {
+        let hex = hexColor.substring(1); // Remove #
+        // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+        if (hex.length === 3) {
+            hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+        }
+
+        if (hex.length !== 6) {
+            throw new Error("Invalid hex color code length after expansion.");
+        }
+
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+
+        // Calculate luminance using the WCAG standard formula
+        // https://www.w3.org/TR/WCAG20/#relativeluminancedef
+        const lum = (c) => {
+            const channel = c / 255;
+            return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+        };
+        const luminance = 0.2126 * lum(r) + 0.7152 * lum(g) + 0.0722 * lum(b);
+
+        // Determine contrast ratio against white and black
+        // Luminance of white = 1, black = 0
+        const contrastWithWhite = (1 + 0.05) / (luminance + 0.05);
+        const contrastWithBlack = (luminance + 0.05) / (0 + 0.05);
+
+        // WCAG AA requires 4.5:1 for normal text, 3:1 for large text
+        // We'll aim for 4.5:1, choosing the color with better contrast
+        return contrastWithBlack >= contrastWithWhite ? '#000000' : '#ffffff';
+
+    } catch (error) {
+        console.error("[getContrastColor] Error processing color:", hexColor, error);
+        return '#000000'; // Fallback on error
+    }
 };
 
 // ScrollManager component to handle scrolling to elements

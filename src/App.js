@@ -45,59 +45,6 @@ const cleanHtmlTags = (str) => {
   return strValue.replace(/<\/?[^>]+(>|$)/g, "").trim();
 };
 
-// Improved contrast color calculation function with better readability logic
-const getContrastColor = (hexColor) => {
-  if (!hexColor) return "#000000";
-  
-  try {
-    // Remove # if present
-    hexColor = hexColor.replace("#", "");
-    
-    // Ensure we have a 6-digit hex
-    if (hexColor.length === 3) {
-      hexColor = hexColor[0] + hexColor[0] + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2];
-    }
-    
-    // Convert to RGB
-    const r = parseInt(hexColor.substring(0, 2), 16);
-    const g = parseInt(hexColor.substring(2, 4), 16);
-    const b = parseInt(hexColor.substring(4, 6), 16);
-    
-    // Use enhanced WCAG luminance formula for better contrast calculation
-    // This gives more weight to colors that human eyes are more sensitive to
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    
-    // Use a more sophisticated threshold for better contrast with various colors
-    // Enhanced logic to handle particularly problematic colors
-    if (luminance > 0.6) {
-      // For light or bright colors, use black text
-      return "#000000";
-    } else if (luminance < 0.3) {
-      // For dark colors, use white text
-      return "#FFFFFF";
-    } else {
-      // For medium colors, check if it's a problematic hue (like bright green)
-      // Some colors need different thresholds
-      
-      // Check if this is a green-heavy color (which can be hard to read even at medium luminance)
-      if (g > Math.max(r, b) + 50) {
-        return "#000000"; // Use black for green-heavy colors
-      }
-      
-      // Check if this is a yellow-heavy color
-      if (r > 200 && g > 200 && b < 100) {
-        return "#000000"; // Use black for yellow-heavy colors
-      }
-      
-      // Default decision based on adjusted threshold
-      return luminance > 0.5 ? "#000000" : "#FFFFFF";
-    }
-  } catch (e) {
-    console.error("Error calculating contrast color:", e);
-    return "#000000"; // Default to black on error
-  }
-};
-
 function App() {
   // Authentication and user state
   const [auth, setAuth] = useState(null);
@@ -433,7 +380,7 @@ function App() {
       console.error("Error saving to localStorage:", error);
       dataLogger.logError('localStorage_save', error);
     }
-  }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics]);
+  }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata]);
 
   // Add this function to recover the record ID if it gets lost
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -517,186 +464,107 @@ function App() {
 
   // Modify the saveData function to use the ensureRecordId function
   const saveData = useCallback(async (data, preserveFields = false) => {
-    console.log("[App] saveData triggered.isAuthenticated:", auth !== null, "isKnack:", window.parent !== window);
+    console.log("[App] saveData triggered. IsKnack:", isKnack);
     if (!auth) {
-      console.warn("[App] No authentication available, saving locally only");
+      console.warn("[App] No auth, saving locally only");
       saveToLocalStorage();
       setIsSaving(false);
       return;
     }
-
     if (isSaving) {
-      console.log("[Save] Save already in progress, skipping this request");
+      console.log("[Save] Already saving, skipping.");
       showStatus("Save in progress...");
       return;
     }
 
-    console.log("[Save] Starting save operation...");
     setIsSaving(true);
-    
-    // Always save to localStorage first as a backup
-    console.log("[Save] Saving to localStorage first");
-    saveToLocalStorage();
-    
-    // If we're in an iframe, send data to parent
-    if (window.parent !== window) {
-      console.log("[Save] Preparing data for Knack integration");
-      
-      // Get recordId safely - use the new ensureRecordId function
-      let safeRecordId = recordId;
+    saveToLocalStorage(); // Save locally first
+
+    if (isKnack) {
+      let safeRecordId = recordId || await ensureRecordId();
       if (!safeRecordId) {
-        safeRecordId = await ensureRecordId();
-      }
-      
-      if (!safeRecordId) {
-        console.error("[Save] No record ID available, cannot save to Knack");
+        console.error("[Save] No record ID, cannot save to Knack");
         setIsSaving(false);
-        showStatus("Error: Missing record ID for save");
+        showStatus("Error: Missing record ID");
         return;
       }
-      
-      // If no specific data was passed, use current state
-      const dataToSave = data || { 
+
+      const dataToSave = data || {
         cards: allCards,
-        subjectColorMapping,
-        spacedRepetitionData,
+        colorMapping: subjectColorMapping, // Corrected name
+        spacedRepetition: spacedRepetitionData, // Corrected name
         userTopics,
         topicLists,
         topicMetadata
       };
-      
-      // Ensure data is serializable by running it through JSON.stringify + JSON.parse
-      // This prevents circular references and other serialization issues
-      const safeSerializeData = (sourceData) => {
-        if (!sourceData) return [];
-        try {
-          if (Array.isArray(sourceData)) {
-            return JSON.parse(JSON.stringify(sourceData));
-          } else if (typeof sourceData === 'object') {
-            return JSON.parse(JSON.stringify(sourceData));
-          } else {
-            console.warn("[Save] Unexpected data type:", typeof sourceData);
-            return [];
-          }
-        } catch (e) {
-          console.error("[Save] Serialization error:", e);
-          // Return empty array/object based on expected type
-          return Array.isArray(sourceData) ? [] : {};
-        }
-      };
-      
-      // Validate that we have cards data
-      const cardsData = Array.isArray(dataToSave.cards) ? dataToSave.cards : allCards;
-      
-      // Prepare the data payload for Knack with proper validation
-        const safeData = {
-          recordId: safeRecordId,
-        cards: safeSerializeData(cardsData || []),
-        colorMapping: safeSerializeData(dataToSave.subjectColorMapping || subjectColorMapping || {}),
-        spacedRepetition: safeSerializeData(dataToSave.spacedRepetitionData || spacedRepetitionData || { box1: [], box2: [], box3: [], box4: [], box5: [] }),
-        userTopics: safeSerializeData(dataToSave.userTopics || userTopics || {}),
-        topicLists: safeSerializeData(dataToSave.topicLists || topicLists || []),
-        topicMetadata: safeSerializeData(dataToSave.topicMetadata || topicMetadata || []),
-        preserveFields: preserveFields
-      };
-      
-      // Additional validation to prevent null/undefined arrays
-      if (!Array.isArray(safeData.cards)) safeData.cards = [];
-      if (!Array.isArray(safeData.topicLists)) safeData.topicLists = [];
-      if (!Array.isArray(safeData.topicMetadata)) safeData.topicMetadata = [];
-      
-      // *** DETAILED LOGGING BEFORE SENDING ***
-      console.log(`[Save] Sending data to Knack (${safeData.cards.length} items, record ID: ${safeRecordId})`);
-      console.log("[Save] Payload structure:", {
-        recordId: safeData.recordId,
-        cards_count: safeData.cards.length,
-        colorMapping_keys: Object.keys(safeData.colorMapping || {}),
-        spacedRepetition_box1_count: safeData.spacedRepetition?.box1?.length || 0,
-        userTopics_keys: Object.keys(safeData.userTopics || {}),
-        topicLists_count: safeData.topicLists.length,
-        topicMetadata_count: safeData.topicMetadata.length,
-        preserveFields: safeData.preserveFields
-      });
-      
-      // Only try to log sample items if we have cards
-      if (Array.isArray(safeData.cards) && safeData.cards.length > 0) {
-        try {
-          // Log a sample of the cards/shells being sent, focusing on type and name
-          const sampleItems = safeData.cards.slice(0, 15).map(item => ({
-            id: item.id, 
-            type: item.type, 
-            name: item.name, 
-            subject: item.subject, 
-            topic: item.topic, 
-            isShell: item.isShell,
-            color: item.cardColor,
-            subjectColor: item.subjectColor
-          }));
-          console.log("[Save] Sample items being sent:", sampleItems);
-          
-          // Log topic shells being sent
-          const topicShells = safeData.cards.filter(item => item && item.type === 'topic');
-          console.log(`[Save] ALL ${topicShells.length} Topic Shells being sent:`, topicShells);
-        } catch (logError) {
-          console.warn("[Save] Error logging sample items:", logError);
-        }
-      } else {
-        console.log("[Save] No cards to log in sample");
-      }
-      // *** END DETAILED LOGGING ***
-        
-      // Add a timeout to clear the saving state if no response is received
-      const saveTimeout = setTimeout(() => {
-        console.log("[Save] No save response received within timeout, resetting save state");
-            setIsSaving(false);
-        showStatus("Save status unknown - check your data");
-      }, 15000); // 15 second timeout
-      
-      // Store the timeout ID so we can clear it if we get a response
-      window.currentSaveTimeout = saveTimeout;
-      
-      // Use SaveQueueService to send the data
-      console.log("[App] Adding SAVE_DATA to queue with payload structure:", {
-        recordId: safeData.recordId,
-        cards_count: safeData.cards.length,
-        has_data: !!safeData
-      });
 
-      saveQueueService.addToQueue({ 
-        type: 'SAVE_DATA', 
-        payload: safeData
-      })
-      .then(() => {
-        console.log("[App] SAVE_DATA request successfully processed by SaveQueueService");
-        
-        // Clear the timeout as we've received a response
-        if (window.currentSaveTimeout) {
-          clearTimeout(window.currentSaveTimeout);
-          window.currentSaveTimeout = null;
-        }
-        
-        setIsSaving(false);
-        showStatus("Saved successfully!");
-      })
-      .catch(error => {
-        console.error("[App] Error in SAVE_DATA operation:", error);
-        
-        // Clear the timeout as we've received a response
-        if (window.currentSaveTimeout) {
-          clearTimeout(window.currentSaveTimeout);
-          window.currentSaveTimeout = null;
-        }
-        
-        setIsSaving(false);
-        showStatus("Error saving data: " + error.message);
-      });
-      } else {
-      // If we're in standalone mode, mark as saved immediately
-      console.log("[Save] Running in standalone mode");
-        setIsSaving(false);
+      const safeSerializeData = (sourceData) => {
+          // ... (safe serialization logic) ...
+           try {
+             if (!sourceData) return Array.isArray(sourceData) ? [] : {}; // Handle null/undefined
+             // Basic check for circular refs - not foolproof
+             JSON.stringify(sourceData);
+             return JSON.parse(JSON.stringify(sourceData)); // Deep clone
+           } catch (e) {
+              console.error("[Save] Serialization error:", e, "Data:", sourceData);
+              return Array.isArray(sourceData) ? [] : {};
+           }
+      };
+
+       // Prepare payload carefully
+       const cardsPayload = safeSerializeData(dataToSave.cards || allCards || []);
+       const colorMapPayload = safeSerializeData(dataToSave.colorMapping || subjectColorMapping || {});
+       const spacedRepPayload = safeSerializeData(dataToSave.spacedRepetition || spacedRepetitionData || { box1:[], box2:[], box3:[], box4:[], box5:[] });
+       const userTopicsPayload = safeSerializeData(dataToSave.userTopics || userTopics || {});
+       const topicListsPayload = safeSerializeData(dataToSave.topicLists || topicLists || []);
+       const topicMetaPayload = safeSerializeData(dataToSave.topicMetadata || topicMetadata || []);
+
+       const safeData = {
+           recordId: safeRecordId,
+           cards: cardsPayload,
+           colorMapping: colorMapPayload,
+           spacedRepetition: spacedRepPayload,
+           userTopics: userTopicsPayload,
+           topicLists: topicListsPayload,
+           topicMetadata: topicMetaPayload,
+           preserveFields: preserveFields
+       };
+
+
+      console.log(`[Save] Sending data to Knack. Payload size: ${safeData.cards?.length} items.`);
+
+      const saveTimeout = setTimeout(() => {
+          console.log("[Save] Timeout waiting for SAVE_RESULT");
+          if (window.currentSaveTimeout === saveTimeout) { // Check if it's still the current timeout
+              setIsSaving(false);
+              showStatus("Save status unknown");
+          }
+      }, 15000);
+      window.currentSaveTimeout = saveTimeout;
+
+      saveQueueService.addToQueue({ type: 'SAVE_DATA', payload: safeData })
+        .then(() => {
+          console.log("[App] SAVE_DATA processed successfully.");
+          if (window.currentSaveTimeout === saveTimeout) clearTimeout(saveTimeout);
+          setIsSaving(false);
+          showStatus("Saved successfully!");
+          // --- TRIGGER DATA REFRESH ---
+          console.log("[App] Triggering data refresh after successful save...");
+          loadCombinedData(isKnack ? 'knack' : 'localStorage'); // Reload data
+        })
+        .catch(error => {
+          console.error("[App] Error in SAVE_DATA:", error);
+          if (window.currentSaveTimeout === saveTimeout) clearTimeout(saveTimeout);
+          setIsSaving(false);
+          showStatus("Error saving data: " + error.message);
+        });
+    } else {
+      // Standalone mode
+      setIsSaving(false);
       showStatus("Saved to browser storage");
+       // No refresh needed usually, state updates suffice. If needed: loadCombinedData('localStorage');
     }
-  }, [auth, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus, ensureRecordId, recordId, allCards]);
+  }, [auth, recordId, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus, ensureRecordId, loadCombinedData]);
 
   // Generate a random vibrant color
   const getRandomColor = useCallback(() => {
@@ -2356,7 +2224,106 @@ const filteredCards = useMemo(() => {
     );
   }
 
- 
+  // --- INSERT loadCombinedData HERE ---
+  const loadCombinedData = useCallback(async (source = 'auto') => {
+      setLoading(true);
+      setLoadingMessage(`Loading data from ${source}...`);
+      console.log(`[App Load] Starting data load from ${source}`);
+      // --- Placeholder Implementation ---
+       console.warn("[App Load] loadCombinedData is a placeholder.");
+       await new Promise(resolve => setTimeout(resolve, 100));
+       try {
+            const loadedData = localStorageHelpers.loadData('flashcards_app');
+            if (loadedData) {
+                console.log("[App Load Placeholder] Processing loaded data:", { cardCount: loadedData.cards?.length });
+                setAllCards(loadedData.cards || []);
+                setSubjectColorMapping(loadedData.colorMapping || {});
+                setSpacedRepetitionData(loadedData.spacedRepetition || { box1: [], box2: [], box3: [], box4: [], box5: [] });
+                setUserTopics(loadedData.userTopics || {});
+                setTopicLists(loadedData.topicLists || []);
+                setTopicMetadata(loadedData.topicMetadata || []);
+                restoreMultipleChoiceOptions(loadedData.cards || []);
+            } else {
+                 console.log("[App Load Placeholder] No data in localStorage.");
+                 setAllCards([]);
+                 setSubjectColorMapping({});
+            }
+       } catch (error) {
+            console.error("[App Load Placeholder] Error loading from localStorage:", error);
+       } finally {
+           setLoading(false);
+           setLoadingMessage("");
+       }
+       // --- End Placeholder ---
+       // Dependencies need to include all 'set' functions used inside
+  }, [setAllCards, setSubjectColorMapping, setSpacedRepetitionData, setUserTopics, setTopicLists, setTopicMetadata, setLoading, setLoadingMessage]);
+
+  // --- Initial Load useEffect ---
+  useEffect(() => {
+      // ... (implementation as before, ensuring it calls loadCombinedData) ...
+  }, [loadCombinedData, showStatus]); // Ensure dependencies are correct
+
+  // --- INSERT handleSaveTopicShellsAndRefresh HERE (before handleUpdateSubjectColor) ---
+   const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegeneration = false) => {
+       if (!topicShells || topicShells.length === 0) return;
+       console.log(`[App handleSaveTopicShells] Received ${topicShells.length} shells. Regen: ${isRegeneration}`);
+
+        const timestamp = new Date().toISOString();
+        const itemsToSave = topicShells.map(shell => ({
+            ...shell,
+            id: shell.id || `shell_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+            timestamp: timestamp,
+            type: 'topic',
+            isShell: true,
+            regenerate: isRegeneration
+        }));
+
+         const existingShellMap = new Map();
+         // Use functional update form of setAllCards if relying on previous state
+         const currentCards = allCards; // Or use a ref if needed for consistency
+         currentCards.filter(item => item.type === 'topic' && item.isShell).forEach(shell => {
+             const key = `${shell.subject}-${shell.topic}`;
+             existingShellMap.set(key, shell.id);
+         });
+
+         const updatedCardsPayload = [...currentCards]; // Use captured current cards
+         itemsToSave.forEach(newShell => {
+             const key = `${newShell.subject}-${newShell.topic}`;
+             const existingId = existingShellMap.get(key);
+             if (existingId) {
+                 const index = updatedCardsPayload.findIndex(item => item.id === existingId);
+                 if (index !== -1) {
+                     updatedCardsPayload[index] = { ...updatedCardsPayload[index], ...newShell, id: existingId };
+                 } else { updatedCardsPayload.push(newShell); } // Add if somehow missing
+             } else {
+                 updatedCardsPayload.push(newShell); // Add new shell
+             }
+         });
+
+       try {
+           console.log(`[App handleSaveTopicShells] Calling saveData with ${updatedCardsPayload.length} total items.`);
+           await saveData({
+               cards: updatedCardsPayload,
+               // Pass other necessary states from App's state
+               colorMapping: subjectColorMapping,
+               spacedRepetition: spacedRepetitionData,
+               userTopics: userTopics,
+               topicLists: topicLists,
+               topicMetadata: topicMetadata
+           }, true);
+           console.log("[App handleSaveTopicShells] saveData call completed.");
+           // Refresh is handled within saveData now
+       } catch (error) {
+           console.error("[App handleSaveTopicShells] Error calling saveData:", error);
+           showStatus("Error saving topics.");
+       }
+       // Dependencies need to include all states used and saveData
+   }, [allCards, saveData, showStatus, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata]);
+
+  // --- Handler for Color Updates ---
+  const handleUpdateSubjectColor = useCallback(async (subject, topic, newColor) => {
+      // ... (implementation as before) ...
+  }, [saveData, allCards, spacedRepetitionData, showStatus]); // Adjusted dependencies
 
   return (
     <WebSocketProvider> {/* Wrap the entire app content */}
@@ -2406,7 +2373,7 @@ const filteredCards = useMemo(() => {
             {isTopicCreationModalOpen && (
               <TopicCreationModal
                 onClose={() => setIsTopicCreationModalOpen(false)}
-                onSaveTopicShells={handleSaveTopicShells}
+                onSaveTopicShells={handleSaveTopicShellsAndRefresh}
                 userId={auth?.id}
                 recordId={recordId}
                 updateColorMapping={updateColorMapping}
@@ -2493,7 +2460,7 @@ const filteredCards = useMemo(() => {
                         recordId={recordId}
                         onUpdateSubjectColor={updateColorMapping}
                         subjectColorMapping={subjectColorMapping}
-                        handleSaveTopicShells={handleSaveTopicShells} // Pass the new function
+                        handleSaveTopicShells={handleSaveTopicShellsAndRefresh} // Pass the new function
                     />
                   )}
                 </div>
