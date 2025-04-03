@@ -2,7 +2,7 @@ import React, {useState, useEffect, useMemo, useRef, useCallback} from "react";
 import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
 import "./FlashcardList.css";
-import { FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes, FaBolt } from 'react-icons/fa';
+import { FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBars, FaTimes, FaBolt, FaTrash } from 'react-icons/fa';
 import ColorEditor from "./ColorEditor";
 import TopicCreationModal from "./TopicCreationModal";
 
@@ -76,12 +76,12 @@ const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRef
   return null; // This is a utility component with no UI
 };
 
-const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, recordId, onUpdateSubjectColor, subjectColorMapping, handleSaveTopicShells }) => {
+const FlashcardList = ({ cards, onCardClick, onTopicClick, onSubjectClick, onDeleteCard, onDeleteTopic, onDeleteSubject, onRegenerateTopic }) => {
   // --- START: HOOK DEFINITIONS ---
 
   // 1. useState Hooks
-  const [expandedSubjects, setExpandedSubjects] = useState({});
-  const [expandedTopics, setExpandedTopics] = useState({});
+  const [expandedSubjects, setExpandedSubjects] = useState(new Set());
+  const [expandedTopics, setExpandedTopics] = useState(new Set());
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [cardsToPrint, setCardsToPrint] = useState([]);
   const [printTitle, setPrintTitle] = useState("");
@@ -92,8 +92,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   const [colorEditorState, setColorEditorState] = useState({ subject: null, topic: null, color: '#e6194b' });
   const [showTopicCreationModal, setShowTopicCreationModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState({});
-  const [, setLastExpandedSubject] = useState(null);
-  const [, setLastExpandedTopic] = useState(null);
   const [slideshowCards, setSlideshowCards] = useState([]);
   const [slideshowTitle, setSlideshowTitle] = useState("");
   const [showSlideshow, setShowSlideshow] = useState(false);
@@ -103,12 +101,16 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   const subjectRefs = useRef({});
   const topicRefs = useRef({});
   const menuRef = useRef({});
-
+  
   // Define callbacks before any conditional returns
   const toggleSubject = useCallback((subject) => {
     setExpandedSubjects(prev => {
-      const newState = { ...prev, [subject]: !prev[subject] };
-      setLastExpandedSubject(subject);
+      const newState = new Set(prev);
+      if (newState.has(subject)) {
+        newState.delete(subject);
+      } else {
+        newState.add(subject);
+      }
       return newState;
     });
   }, []);
@@ -116,12 +118,16 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   const toggleTopic = useCallback((subject, topic) => {
     const topicKey = `${subject}-${topic}`;
     setExpandedTopics(prev => {
-      const newState = { ...prev, [topicKey]: !prev[topicKey] };
-      setLastExpandedTopic(topicKey);
+      const newState = new Set(prev);
+      if (newState.has(topicKey)) {
+        newState.delete(topicKey);
+      } else {
+        newState.add(topicKey);
+      }
       return newState;
     });
   }, []);
-
+  
   // 3. useMemo Hooks
   const { groupedCards: memoizedGroupedCards } = useMemo(() => {
     const bySubjectAndTopic = {};
@@ -172,30 +178,30 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     cards.forEach(item => {
       if (!item || typeof item !== 'object' || !item.id || !item.subject) return;
       
-      const subject = item.subject || "General";
-      const topic = item.topic || "General";
-      
-      if (!bySubjectAndTopic[subject]) {
-        bySubjectAndTopic[subject] = {};
-      }
-      if (!bySubjectAndTopic[subject][topic]) {
-        bySubjectAndTopic[subject][topic] = [];
-      }
-      bySubjectAndTopic[subject][topic].push(item);
+        const subject = item.subject || "General";
+        const topic = item.topic || "General";
+        
+        if (!bySubjectAndTopic[subject]) {
+          bySubjectAndTopic[subject] = {};
+        }
+        if (!bySubjectAndTopic[subject][topic]) {
+          bySubjectAndTopic[subject][topic] = [];
+        }
+        bySubjectAndTopic[subject][topic].push(item);
     });
 
     return bySubjectAndTopic;
   }, []);
 
   // 4. useCallback Hooks (Define functions needed by useMemo/useEffect first)
-  const getExamInfo = useCallback((subject) => {
+   const getExamInfo = useCallback((subject) => { 
     if (!groupedCards) return { examType: "Course", examBoard: "General" };
-    try {
-      let examBoard = null;
-      let examType = null;
+          try {
+            let examBoard = null;
+            let examType = null;
       const subjectTopics = groupedCards[subject];
-      if (subjectTopics) {
-        for (const topicName in subjectTopics) {
+            if (subjectTopics) {
+              for (const topicName in subjectTopics) {
           const cardsInTopic = subjectTopics[topicName];
           if (cardsInTopic && cardsInTopic.length > 0) {
             // First try to find a topic shell with metadata
@@ -207,14 +213,14 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
             }
             // If no shell, try to find a card with metadata
             const cardWithMetadata = cardsInTopic.find(card => card.examBoard && card.examType);
-            if (cardWithMetadata) {
-              examBoard = cardWithMetadata.examBoard;
-              examType = cardWithMetadata.examType;
-              break;
+                  if (cardWithMetadata) {
+                    examBoard = cardWithMetadata.examBoard;
+                    examType = cardWithMetadata.examType;
+                    break;
+                  }
+                }
+              }
             }
-          }
-        }
-      }
       
       if (!examType) examType = "Course";
       if (!examBoard) examBoard = "General";
@@ -224,8 +230,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
       console.error("Error in getExamInfo:", error);
       return { examType: "Course", examBoard: "General" };
     }
-  }, [groupedCards]);
-
+  }, [groupedCards]); 
+  
   const getSubjectDate = useCallback((subject) => {
     if (!groupedCards || !groupedCards[subject]) return 0;
     const topics = Object.keys(groupedCards[subject]);
@@ -240,21 +246,21 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     const minDate = Math.min(...topicDates);
     return minDate === Number.MAX_SAFE_INTEGER ? 0 : minDate;
   }, [groupedCards]);
-
+  
   const sortedSubjects = useMemo(() => {
     if (Object.keys(groupedCards).length === 0) return [];
     const subjectsWithDates = Object.keys(groupedCards).map(subject => {
-      const { examType, examBoard } = getExamInfo(subject);
+        const { examType, examBoard } = getExamInfo(subject);
       const color = subjectColorMapping[subject]?.base || '#f0f0f0';
-      return {
+        return {
         id: subject,
         title: subject,
         cards: groupedCards[subject],
-        exam_type: examType,
-        exam_board: examBoard,
-        color: color,
+            exam_type: examType,
+            exam_board: examBoard,
+            color: color,
         creationDate: getSubjectDate(subject)
-      };
+        };
     });
     return subjectsWithDates.sort((a, b) => a.creationDate - b.creationDate);
   }, [groupedCards, getExamInfo, getSubjectDate, subjectColorMapping]);
@@ -276,37 +282,57 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
 
   useEffect(() => {
     if (cards && cards.length > 0) {
+      console.log("[FlashcardList] Initial load with cards:", cards);
+      
       // Group cards by subject
       const subjects = [...new Set(cards.map(card => card.subject))];
+      console.log("[FlashcardList] Found subjects:", subjects);
       
       // Expand the first subject by default
       if (subjects.length > 0) {
-        setExpandedSubjects(prev => ({
-          ...prev,
-          [subjects[0]]: true
-        }));
+        setExpandedSubjects(new Set(subjects.map(subject => `${subject}-General`)));
       }
 
       // Force a re-render of the grouped cards
       const newGroupedCards = regroupCards(cards);
+      console.log("[FlashcardList] Grouped cards:", newGroupedCards);
       setGroupedCards(newGroupedCards);
 
-      // Log the state for debugging
-      console.log("[FlashcardList] Initial load:", {
-        cardsCount: cards.length,
-        subjects: subjects,
-        groupedCards: newGroupedCards
-      });
+      // Initialize color mapping if not exists
+      if (!subjectColorMapping || Object.keys(subjectColorMapping).length === 0) {
+        const newColorMapping = {};
+        subjects.forEach(subject => {
+          if (!subjectColorMapping[subject]) {
+            newColorMapping[subject] = {
+              base: BRIGHT_COLORS[Math.floor(Math.random() * BRIGHT_COLORS.length)],
+              topics: {}
+            };
+          }
+        });
+        if (Object.keys(newColorMapping).length > 0) {
+          updateColorMapping(newColorMapping);
+        }
+      }
     }
-  }, [cards, regroupCards]);
+  }, [cards, regroupCards, subjectColorMapping, updateColorMapping]);
 
   // Add a new useEffect for handling card updates
   useEffect(() => {
     if (cards && cards.length > 0) {
+      console.log("[FlashcardList] Cards updated, regrouping...");
       const newGroupedCards = regroupCards(cards);
       setGroupedCards(newGroupedCards);
     }
   }, [cards, regroupCards]);
+
+  // Add a new useEffect for handling color mapping updates
+  useEffect(() => {
+    if (subjectColorMapping && Object.keys(subjectColorMapping).length > 0) {
+      console.log("[FlashcardList] Color mapping updated:", subjectColorMapping);
+      // Force a re-render to apply new colors
+      setGroupedCards(prev => ({ ...prev }));
+    }
+  }, [subjectColorMapping]);
 
   // --- END: HOOK DEFINITIONS ---
 
@@ -447,19 +473,19 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
   // Render functions (can remain here or be moved outside if preferred)
   const renderCards = (cardsInTopic, subject, topic, topicColor) => {
     const topicKey = `${subject}-${topic}`;
-    const isVisible = expandedTopics[topicKey];
-    return (
+    const isVisible = expandedTopics.has(topicKey);
+            return (
       <div className={`topic-cards ${isVisible ? 'visible' : ''}`}>
         {cardsInTopic && cardsInTopic.length > 0 ? (
           cardsInTopic.map((card) => (
-            <Flashcard
-              key={card.id}
+              <Flashcard
+                key={card.id}
               card={{ ...card, cardColor: topicColor }}
-              onDelete={() => onDeleteCard(card.id)}
+                onDelete={() => onDeleteCard(card.id)}
               onFlip={() => {}}
-              onUpdateCard={onUpdateCard}
+                onUpdateCard={onUpdateCard}
               onSelectCard={() => handleSetShowModalAndSelectedCard(card)}
-            />
+              />
           ))
         ) : (
           <div className="no-cards-message">No cards in this topic</div>
@@ -486,14 +512,14 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
 
   const renderTopic = (subject, topic, cards, topicColor) => {
     const topicKey = `${subject}-${topic}`;
-    const isExpanded = expandedTopics[topicKey];
+    const isExpanded = expandedTopics.has(topicKey);
     const actualCards = cards.filter(item => item.type !== 'topic');
     const displayCount = actualCards.length;
     const textColor = getContrastColor(topicColor);
 
     // Add regeneration handler
     const handleRegenerateTopic = async (e) => {
-      e.stopPropagation();
+              e.stopPropagation();
       const topicData = cards.find(card => card.type === 'topic' && card.isShell);
       if (!topicData) {
         console.error('No topic shell found for regeneration');
@@ -513,7 +539,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
             examBoard: examBoard,
             examType: examType,
             isShell: true,
-            type: 'topic',
+      type: 'topic',
             regenerate: true // Add this flag to indicate regeneration
           };
           await handleSaveTopicShells([shell], true); // true indicates regeneration
@@ -538,35 +564,35 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
                   <span className="exam-board">{cards[0].examBoard}</span>
                 </>
               )}
-            </div>
           </div>
+        </div>
           <div className="topic-actions">
-            <button
+                <button
               onClick={handleRegenerateTopic}
               className="regenerate-button"
               title="Regenerate topic cards"
             >
               <FaBolt />
-            </button>
+                </button>
             {displayCount > 0 && (
               <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                     startSlideshow(subject, topic, e);
                   }}
                   className="slideshow-button"
-                  title="Start slideshow"
-                >
+                    title="Start slideshow"
+                  >
                   <FaPlay />
-                </button>
-                <button
+                  </button>
+                  <button
                   onClick={(e) => handlePrintTopic(subject, topic, e)}
                   className="print-topic-button"
                   title="Print topic cards"
                 >
                   <FaPrint />
-                </button>
+                  </button>
               </>
             )}
             <button
@@ -615,28 +641,11 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
       <div className="topics-container">
         {topicNames.map((topic, index) => {
           const topicKey = `${subject}-${topic}`;
-          const isExpanded = expandedTopics[topicKey];
-          const itemsInTopic = topicsData[topic] || [];
-          const topicShell = itemsInTopic.find(item => item.type === 'topic' && item.isShell);
-          const actualCards = itemsInTopic.filter(item => item.type !== 'topic');
-          const displayCount = actualCards.length;
-          const topicColor = subjectColorMapping[subject]?.topics?.[topic] || subjectColor;
-          const textColor = getContrastColor(topicColor);
-
+          const topicData = topicsData[topic];
+          const topicColor = subjectColorMapping[subject]?.topics[topic]?.base || BRIGHT_COLORS[index % BRIGHT_COLORS.length];
           return (
-            <div key={topicKey} className="topic-item" ref={el => topicRefs.current[topicKey] = el}>
-              <div
-                className={`topic-header ${isExpanded ? 'expanded' : ''} ${displayCount === 0 ? 'empty-shell' : ''}`}
-                style={{ backgroundColor: topicColor, color: textColor }}
-                onClick={() => toggleTopic(subject, topic)}
-              >
-                <span className="topic-name">{topic} ({displayCount})</span>
-                <div className="topic-header-controls">
-                    {renderTopicControls(subject, topic, topicColor, actualCards)}
-                    <span className="expand-icon">{isExpanded ? <FaAngleUp /> : <FaAngleDown />}</span>
-                </div>
-              </div>
-              {isExpanded && renderCards(actualCards, subject, topic, topicColor)}
+            <div key={topicKey} className="topic-container">
+              {renderTopic(subject, topic, topicData, topicColor)}
             </div>
           );
         })}
@@ -644,193 +653,128 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard, onViewTopicList, rec
     );
   };
 
- const renderSubjectHeader = ({ id: subject, title, exam_board, exam_type, color }) => {
-    const textColor = getContrastColor(color);
-    const subjectCards = [];
-     Object.values(groupedCards[subject] || {}).forEach(topicCards => {
-        subjectCards.push(...topicCards.filter(item => item.type !== 'topic'));
-     });
-     const displayCount = subjectCards.length;
-
-    return (
-      <div
-        className="subject-header"
-        style={{ backgroundColor: color, color: textColor }}
-      >
-        <span className="subject-title">{title} ({displayCount})</span>
-        <div className="subject-header-controls">
-           <button className="subject-action-button" onClick={(e) => handlePrintSubject(subject, e)} title="Print all cards in subject"> <FaPrint /> </button>
-           <button className="subject-action-button" onClick={(e) => startSlideshow(subject, null, e)} title="Start slideshow for subject"> <FaPlay /> </button>
-           <button className="subject-action-button" onClick={(e) => openColorEditor(subject, null, color, e)} title="Change subject color"> <FaPalette /> </button>
-           <span className="expand-icon" onClick={(e) => { e.stopPropagation(); toggleSubject(subject); }}> {expandedSubjects[subject] ? <FaAngleUp /> : <FaAngleDown />} </span>
-        </div>
-      </div>
-    );
-  };
-
-  const renderSubject = (subjectData) => {
-    const { id: subject, title, exam_type, exam_board, color } = subjectData;
-    const subjectColor = subjectColorMapping[subject]?.base || color || '#f0f0f0';
-    const textColor = getContrastColor(subjectColor);
-    const style = {
-      '--subject-color': subjectColor,
-      '--subject-text-color': textColor
-    };
-
-    return (
-      <div 
-        key={subject}
-        className="subject-container"
-        style={style}
-        ref={el => subjectRefs.current[subject] = el}
-      >
-        <div 
-          className="subject-header"
-          onClick={() => toggleSubject(subject)}
-          style={{ backgroundColor: subjectColor, color: textColor }}
-        >
-          <div className="subject-info">
-            <h2>{title}</h2>
-            <div className="subject-meta">
-              <span>{exam_type}</span>
-              <span>{exam_board}</span>
-            </div>
-          </div>
-          <div className="subject-actions">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setColorEditorState({ subject, color: subjectColor });
-                setColorEditorOpen(true);
-              }}
-              className="color-edit-button"
-              title="Edit subject color"
-            >
-              <FaPalette />
-            </button>
-            {expandedSubjects[subject] ? <FaAngleUp /> : <FaAngleDown />}
-          </div>
-        </div>
-        
-        {expandedSubjects[subject] && (
-          <div className="topics-container">
-            {Object.entries(groupedCards[subject] || {}).map(([topic, cards]) => {
-              const topicColor = subjectColorMapping[subject]?.topics?.[topic] || subjectColor;
-              return renderTopic(subject, topic, cards, topicColor);
-            })}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // CardModal component needs to be defined or imported if used
-   const CardModal = () => {
-       if (!selectedCard) return null;
-       const currentSubject = selectedCard.subject || "Unknown";
-       const currentTopic = selectedCard.topic || "Unknown";
-       const modalCards = (groupedCards[currentSubject]?.[currentTopic] || []).filter(c => c.type !== 'topic');
-       const currentIndex = modalCards.findIndex(c => c.id === selectedCard.id);
-       const totalCards = modalCards.length;
-
-       const handlePrevCard = (e) => { e.stopPropagation(); if (currentIndex > 0) setSelectedCard(modalCards[currentIndex - 1]); };
-       const handleNextCard = (e) => { e.stopPropagation(); if (currentIndex < totalCards - 1) setSelectedCard(modalCards[currentIndex + 1]); };
-
-       return (
-         <div className="card-modal-overlay" onClick={() => setShowModalAndSelectedCard(false)}>
-           <div className="card-modal-content" onClick={(e) => e.stopPropagation()}>
-              <button className="close-modal-button" onClick={() => setShowModalAndSelectedCard(false)}>✕</button>
-              <Flashcard card={selectedCard} onUpdateCard={onUpdateCard} isInModal={true} showButtons={true} />
-              <div className="card-modal-actions">
-                 <div className="card-info">({currentIndex + 1} of {totalCards}) {currentSubject} | {currentTopic}</div>
-                 <div className="nav-buttons">
-                    <button onClick={handlePrevCard} disabled={currentIndex <= 0}>← Prev</button>
-                    <button onClick={handleNextCard} disabled={currentIndex >= totalCards - 1}>Next →</button>
-                 </div>
-              </div>
-           </div>
-         </div>
-       );
-   };
-
-  // --- END: REGULAR LOGIC & HELPER FUNCTIONS ---
-
-  // --- START: JSX RETURN ---
-  return (
-    <div className="flashcard-list-container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Color Editor Modal */}
-      {colorEditorOpen && (
-        <ColorEditor
-          subjectColor={colorEditorState.color}
-          onClose={closeColorEditor}
-          onSelectColor={handleColorChange}
-          subject={colorEditorState.subject}
-        />
-      )}
-
-      {/* Print Modal */}
-      {printModalOpen && (
-        <PrintModal
-          cards={cardsToPrint}
-          title={printTitle}
-          onClose={() => setPrintModalOpen(false)}
-        />
-      )}
-
-      {/* Card Modal */}
-      {showModalAndSelectedCard && selectedCard && <CardModal />}
-
-      {/* Main Accordion */}
-      <div className="accordion-container" style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 120px)', padding: '0 10px' }}>
-        {sortedSubjects.map(subjectData => renderSubject(subjectData))}
-      </div>
-
-      {/* Scroll Manager */}
-      <ScrollManager
-        expandedSubjects={expandedSubjects}
-        expandedTopics={expandedTopics}
-        subjectRefs={subjectRefs}
-        topicRefs={topicRefs}
-      />
-
-      {/* Action Buttons */}
-      <div className="list-actions">
-        <button
-          onClick={() => setShowTopicCreationModal(true)}
-          className="create-topic-list-button button-primary"
-        >
-          <FaBolt style={{ marginRight: '8px' }} /> Create New Topic List
-        </button>
-      </div>
-
-      {/* Topic Creation Modal */}
-      {showTopicCreationModal && (
-        <TopicCreationModal
-          onClose={() => setShowTopicCreationModal(false)}
-          onSaveTopicShells={handleSaveTopicShells}
-          userId={"user123"}
-          recordId={recordId}
-          existingSubjects={getExistingSubjectNames}
-        />
-      )}
-
-       {/* Delete Confirmation Modal Placeholder */}
-       {showDeleteConfirmation && (
-           <div className="confirmation-modal-overlay">
-             <div className="confirmation-modal-content">
-               <h4>Confirm Deletion</h4>
-               <p>Are you sure you want to delete all {showDeleteConfirmation.count} cards for {showDeleteConfirmation.type === 'topic' ? `topic "${showDeleteConfirmation.topic}"` : `subject "${showDeleteConfirmation.subject}"`}?</p>
-               <div className="confirmation-buttons">
-                   <button className="button-danger" onClick={() => { showDeleteConfirmation.onConfirm(); }}>Yes, Delete</button>
-                   <button className="button-secondary" onClick={() => setShowDeleteConfirmation(null)}>Cancel</button>
-               </div>
-             </div>
-           </div>
-       )}
-
+  const renderSubjectMeta = (subject, metadata) => (
+    <div className="subject-meta">
+      <span className="exam-type">{metadata.examType}</span>
+      <span className="exam-board">{metadata.examBoard}</span>
+      <span className="last-modified">
+        Last modified: {new Date(metadata.lastModified).toLocaleDateString()}
+      </span>
     </div>
   );
-  // --- END: JSX RETURN ---
+
+  const renderTopicMeta = (topic, metadata) => (
+    <div className="topic-meta">
+      <span className="exam-type">{metadata.examType}</span>
+      <span className="exam-board">{metadata.examBoard}</span>
+      <span className="last-modified">
+        Last modified: {new Date(metadata.lastModified).toLocaleDateString()}
+      </span>
+    </div>
+  );
+
+                return (
+    <div className="flashcard-list">
+      {Object.entries(groupedCards).map(([subject, subjectData]) => (
+        <div 
+          key={subject}
+          className="subject-container"
+          style={{ backgroundColor: subjectData.color }}
+        >
+          <div 
+            className="subject-header"
+            onClick={() => {
+              toggleSubject(subject);
+              onSubjectClick?.(subject);
+            }}
+          >
+            <div className="subject-info">
+              <h2>{subject}</h2>
+              {renderSubjectMeta(subject, subjectData.metadata)}
+                        </div>
+            <div className="subject-actions">
+              <button onClick={(e) => {
+                e.stopPropagation();
+                onDeleteSubject?.(subject);
+              }}>
+                <FaTrash />
+              </button>
+            </div>
+          </div>
+
+          {expandedSubjects.has(subject) && (
+            <div className="topics">
+              {Object.entries(subjectData.topics).map(([topic, topicData]) => (
+                <div 
+                  key={topic}
+                  className="topic-container"
+                  style={{ backgroundColor: topicData.color }}
+                >
+                  <div 
+                    className="topic-header"
+                    onClick={() => {
+                      toggleTopic(subject, topic);
+                      onTopicClick?.(topic);
+                    }}
+                  >
+                    <div className="topic-info">
+                      <h3>{topic}</h3>
+                      {renderTopicMeta(topic, topicData.metadata)}
+                      </div>
+                      <div className="topic-actions">
+                         <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRegenerateTopic?.(topic, subject);
+                        }}
+                        title="Regenerate topic"
+                        >
+                          <FaBolt />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          onDeleteTopic?.(topic, subject);
+                        }}
+                        title="Delete topic"
+                      >
+                        <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+
+                  {expandedTopics.has(topic) && (
+                    <div className="cards">
+                      {topicData.cards.map(card => (
+                        <div 
+                          key={card.id}
+                          className="card"
+                          onClick={() => onCardClick?.(card)}
+                        >
+                          <div className="card-content">
+                            {card.question}
+                                </div>
+            <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteCard?.(card);
+                            }}
+                            className="delete-card"
+                          >
+                            <FaTrash />
+            </button>
+          </div>
+                      ))}
+        </div>
+      )}
+      </div>
+              ))}
+        </div>
+      )}
+        </div>
+      ))}
+    </div>
+  );
 };
 
 export default FlashcardList;

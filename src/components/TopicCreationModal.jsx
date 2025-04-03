@@ -65,6 +65,17 @@ const TopicCreationModal = ({
     generateTopics: false,
   });
 
+  // Add state for existing subjects
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+
+  // Add useEffect to handle subject list updates
+  useEffect(() => {
+    if (Array.isArray(existingSubjects)) {
+      console.log("[TopicCreationModal] Received existing subjects:", existingSubjects);
+      setAvailableSubjects(existingSubjects);
+    }
+  }, [existingSubjects]);
+
   // Clear error when changing steps
   useEffect(() => {
     setError(null);
@@ -120,34 +131,21 @@ const TopicCreationModal = ({
     console.log("Existing subjects in modal:", existingSubjects);
   }, [existingSubjects]);
 
-  // Function to handle input changes
+  // Update handleChange to properly handle subject selection
   const handleChange = (e) => {
     const { name, value } = e.target;
-
+    console.log("[TopicCreationModal] handleChange called with:", { name, value });
+    
     if (name === 'subject-select') {
       if (value === '--addNew--') {
         setIsAddingNewSubject(true);
-        setFormData(prev => ({
-          ...prev,
-          subject: ''
-        }));
+        setFormData(prev => ({ ...prev, subject: '' }));
       } else {
         setIsAddingNewSubject(false);
-        setFormData(prev => ({
-          ...prev,
-          subject: value
-        }));
+        setFormData(prev => ({ ...prev, subject: value }));
       }
-    } else if (name === 'subject-new') {
-      setFormData(prev => ({
-        ...prev,
-        subject: value
-      }));
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
 
     // Reset generated topics if metadata changes before reaching TopicHub
@@ -360,7 +358,7 @@ const TopicCreationModal = ({
                     className="form-control"
                   >
                     <option value="">Select a Subject</option>
-                    {Array.isArray(existingSubjects) && existingSubjects.map((subject) => (
+                    {availableSubjects.map((subject) => (
                       <option key={subject} value={subject}>{subject}</option>
                     ))}
                     <option value="--addNew--">+ Add New Subject</option>
@@ -368,28 +366,23 @@ const TopicCreationModal = ({
                 </>
               ) : (
                 <>
-                  <label htmlFor="subject-new">Enter New Subject:</label>
-                  <div className="new-subject-input">
-                    <input
-                      type="text"
-                      id="subject-new"
-                      name="subject-new"
-                      value={formData.subject || ''}
-                      onChange={handleChange}
-                      placeholder="Enter subject name"
-                      className="form-control"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAddingNewSubject(false);
-                        setFormData(prev => ({ ...prev, subject: '' }));
-                      }}
-                      className="cancel-new-subject"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                  <label htmlFor="new-subject">New Subject Name:</label>
+                  <input
+                    type="text"
+                    id="new-subject"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    className="form-control"
+                    placeholder="Enter new subject name"
+                  />
+                  <button
+                    onClick={() => setIsAddingNewSubject(false)}
+                    className="cancel-button"
+                    style={{ marginTop: '10px' }}
+                  >
+                    Cancel
+                  </button>
                 </>
               )}
             </div>

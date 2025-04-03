@@ -2178,72 +2178,99 @@ function App() {
     return;
   }
 
-  // 2. Group shells by subject for the Knack bridge format
+  // 2. Process shells and assign colors
+  const processedShells = generatedShells.map(shell => {
+    const subject = shell.subject || "General";
+    let subjectColor = subjectColorMapping[subject]?.base;
+    
+    // If no color exists for this subject, create one
+    if (!subjectColor) {
+      subjectColor = getRandomColor();
+      updateColorMapping(subject, null, subjectColor, true);
+    }
+
+    // Generate a topic color based on the subject color
+    const topicColor = generateShade(subjectColor, 0, 1);
+
+    return {
+      ...shell,
+      id: shell.id || `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'topic',
+      isShell: true,
+      color: topicColor,
+      subjectColor: subjectColor,
+      metadata: {
+        examType: shell.examType || "General",
+        examBoard: shell.examBoard || "General",
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString()
+      }
+    };
+  });
+
+  // 3. Update allCards with the new shells
+  setAllCards(prevCards => {
+    const existingCards = prevCards.filter(card => 
+      !processedShells.some(shell => shell.id === card.id)
+    );
+    return [...existingCards, ...processedShells];
+  });
+
+  // 4. Group shells by subject for the Knack bridge format
   const groupBySubject = (shells) => {
     const grouped = {};
     shells.forEach(shell => {
       if (!shell || !shell.name || !shell.subject) {
-         console.warn("[App] Skipping invalid shell during grouping:", shell);
-         return; // Skip invalid shells
+        console.warn("[App] Skipping invalid shell during grouping:", shell);
+        return;
       }
       const subject = shell.subject || 'General';
       if (!grouped[subject]) {
         grouped[subject] = [];
       }
-      // Pass essential shell info (name, id if available, maybe color?)
-      // The bridge script primarily uses name but ID might be useful later
-      const topicData = {
+      grouped[subject].push({
         name: shell.name,
-        id: shell.id, // Pass ID if it exists
-        // Add other relevant fields if Knack script uses them (e.g., examBoard, examType)
-        examBoard: shell.examBoard,
-        examType: shell.examType
-      };
-      grouped[subject].push(topicData);
+        id: shell.id,
+        examBoard: shell.metadata.examBoard,
+        examType: shell.metadata.examType,
+        color: shell.color,
+        subjectColor: shell.subjectColor
+      });
     });
-    // Convert to the array format expected by the bridge
     return Object.entries(grouped).map(([subject, topics]) => ({
-      subject: subject,
-      topics: topics // Array of topic objects
+      subject,
+      topics,
+      color: subjectColorMapping[subject]?.base
     }));
   };
 
-  const groupedTopicLists = groupBySubject(generatedShells);
+  const groupedTopicLists = groupBySubject(processedShells);
   console.log("[App] Grouped topic lists for Knack bridge:", groupedTopicLists);
 
-  if (groupedTopicLists.length === 0) {
-      console.warn("[App] No valid topic lists generated after grouping.");
-      setIsSaving(false);
-      showStatus("Error: No valid topics found to save.");
-      return;
-  }
-
-  // 3. Prepare payload for SaveQueueService
+  // 5. Save to Knack
   const payload = {
     recordId: theRecordId,
     topicLists: groupedTopicLists
   };
 
-  // 4. Add to Save Queue
-  console.log("[App] Adding TOPIC_LISTS_UPDATED to queue with payload:", payload);
-  saveQueueService.addToQueue({
-    type: 'TOPIC_LISTS_UPDATED',
-    payload: payload
-  })
-  .then(() => {
-    console.log("[App] TOPIC_LISTS_UPDATED request successfully processed by SaveQueueService.");
+  try {
+    await saveQueueService.addToQueue({
+      type: 'TOPIC_LISTS_UPDATED',
+      payload: payload
+    });
+
+    console.log("[App] TOPIC_LISTS_UPDATED request successfully processed");
     setIsSaving(false);
     showStatus("Topic list saved successfully!");
-    // Optionally: Trigger a data reload here if needed to reflect shells immediately
-    // handleTopicRefreshNeeded(); // Or a similar function
-  })
-  .catch(error => {
+
+    // 6. Force an immediate save of all data
+    setTimeout(() => saveData(null, true), 100);
+  } catch (error) {
     console.error("[App] Error in TOPIC_LISTS_UPDATED operation:", error);
     setIsSaving(false);
     showStatus("Error saving topic list: " + error.message);
-  });
-
-}, [ensureRecordId, showStatus, setIsSaving]); // Dependencies
+  }
+}, [ensureRecordId, showStatus, setIsSaving, subjectColorMapping, getRandomColor, generateShade, updateColorMapping, saveData]);
 
 // --- Filtered Cards Logic ---
 const filteredCards = useMemo(() => {
@@ -2330,50 +2357,50 @@ const filteredCards = useMemo(() => {
   }
 
  
-  
+
   return (
     <WebSocketProvider> {/* Wrap the entire app content */}
-      <div className="app-container">
-        {loading ? (
-          <LoadingSpinner message={loadingMessage} />
-        ) : (
-          <>
-            <Header
-              userInfo={getUserInfo()}
-              currentView={view}
-              onViewChange={setView}
-              onSave={saveData}
-              isSaving={isSaving}
-              onPrintAll={handlePrintAllCards}
-              onCreateCard={() => setCardCreationModalOpen(true)}
-              currentBox={currentBox}
-              onSelectBox={setCurrentBox}
-              spacedRepetitionData={spacedRepetitionData}
-            />
-            
-            {/* Temporarily hiding UserProfile */}
-            {/* {auth && <UserProfile userInfo={getUserInfo()} />} */}
+    <div className="app-container">
+      {loading ? (
+        <LoadingSpinner message={loadingMessage} />
+      ) : (
+        <>
+          <Header
+            userInfo={getUserInfo()}
+            currentView={view}
+            onViewChange={setView}
+            onSave={saveData}
+            isSaving={isSaving}
+            onPrintAll={handlePrintAllCards}
+            onCreateCard={() => setCardCreationModalOpen(true)}
+            currentBox={currentBox}
+            onSelectBox={setCurrentBox}
+            spacedRepetitionData={spacedRepetitionData}
+          />
+          
+          {/* Temporarily hiding UserProfile */}
+          {/* {auth && <UserProfile userInfo={getUserInfo()} />} */}
 
-            {statusMessage && (
-              <div className="status-message">
-                <p>{statusMessage}</p>
-              </div>
-            )}
-            
-            {/* Topic List Modal */}
-            
-            <TopicListSyncManager
-              isOpen={topicListModalOpen && topicListSubject}
-              subject={topicListSubject}
-              examBoard={topicListExamBoard}
-              examType={topicListExamType}
-              initialTopics={topicsForModal} // Pass the filtered topics
-              onClose={() => setTopicListModalOpen(false)}
-              onSelectTopic={handleSelectTopicFromList}
-              onGenerateCards={handleGenerateCardsFromTopic}
-              auth={auth}
-              userId={auth?.id}
-            />
+          {statusMessage && (
+            <div className="status-message">
+              <p>{statusMessage}</p>
+            </div>
+          )}
+          
+          {/* Topic List Modal */}
+          
+          <TopicListSyncManager
+            isOpen={topicListModalOpen && topicListSubject}
+            subject={topicListSubject}
+            examBoard={topicListExamBoard}
+            examType={topicListExamType}
+            initialTopics={topicsForModal} // Pass the filtered topics
+            onClose={() => setTopicListModalOpen(false)}
+            onSelectTopic={handleSelectTopicFromList}
+            onGenerateCards={handleGenerateCardsFromTopic}
+            auth={auth}
+            userId={auth?.id}
+          />
 
             {/* ** NEW: Conditionally render TopicCreationModal ** */}
             {isTopicCreationModalOpen && (
@@ -2387,65 +2414,65 @@ const filteredCards = useMemo(() => {
               />
             )}
 
-            {view === "cardBank" && (
-              <div className="card-bank-view">
-                {printModalOpen && (
-                  <PrintModal 
-                    cards={cardsToPrint} 
-                    title={printTitle} 
-                    onClose={() => setPrintModalOpen(false)} 
-                  />
-                )}
-                
-                {/* Card Creation Modal */}
-                {cardCreationModalOpen && (
-                  <div className="modal-overlay" onClick={() => setCardCreationModalOpen(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                      <button className="modal-close-btn" onClick={() => setCardCreationModalOpen(false)}>×</button>
-                      <h2>Create Flashcards</h2>
-                      <div className="modal-options">
-                        <button 
-                          className="primary-button"
-                          onClick={() => {
-                            setCardCreationModalOpen(false);
-                            setView("aiGenerator");
-                          }}
-                        >
-                          <span className="button-icon">🤖</span> Generate Cards with AI
-                        </button>
-                        <div className="option-divider">or</div>
-                        <button 
-                          className="secondary-button"
-                          onClick={() => {
-                            setCardCreationModalOpen(false);
-                            setView("manualCreate");
-                          }}
-                        >
-                          <span className="button-icon">✍️</span> Create Cards Manually
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="bank-container full-width">
-                  <div className="bank-content">
-                    {/* Added header showing total card count */}
-                    <div className="bank-content-header">
-                      <h2>All Flashcards ({getFilteredCards().length})</h2>
+          {view === "cardBank" && (
+            <div className="card-bank-view">
+              {printModalOpen && (
+                <PrintModal 
+                  cards={cardsToPrint} 
+                  title={printTitle} 
+                  onClose={() => setPrintModalOpen(false)} 
+                />
+              )}
+              
+              {/* Card Creation Modal */}
+              {cardCreationModalOpen && (
+                <div className="modal-overlay" onClick={() => setCardCreationModalOpen(false)}>
+                  <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <button className="modal-close-btn" onClick={() => setCardCreationModalOpen(false)}>×</button>
+                    <h2>Create Flashcards</h2>
+                    <div className="modal-options">
                       <button 
-                        className="save-icon-button" 
-                        onClick={saveData} 
-                        disabled={isSaving}
-                        title="Save All Changes"
+                        className="primary-button"
+                        onClick={() => {
+                          setCardCreationModalOpen(false);
+                          setView("aiGenerator");
+                        }}
                       >
-                        {isSaving ? '⏳' : '💾'}
+                        <span className="button-icon">🤖</span> Generate Cards with AI
+                      </button>
+                      <div className="option-divider">or</div>
+                      <button 
+                        className="secondary-button"
+                        onClick={() => {
+                          setCardCreationModalOpen(false);
+                          setView("manualCreate");
+                        }}
+                      >
+                        <span className="button-icon">✍️</span> Create Cards Manually
                       </button>
                     </div>
-                    
-                    {/* Show empty state or card list based on whether there are cards */}
-                    {allCards.length === 0 ? (
-                      <div className="empty-card-bank">
+                  </div>
+                </div>
+              )}
+              
+              <div className="bank-container full-width">
+                <div className="bank-content">
+                  {/* Added header showing total card count */}
+                  <div className="bank-content-header">
+                    <h2>All Flashcards ({getFilteredCards().length})</h2>
+                    <button 
+                      className="save-icon-button" 
+                      onClick={saveData} 
+                      disabled={isSaving}
+                      title="Save All Changes"
+                    >
+                      {isSaving ? '⏳' : '💾'}
+                    </button>
+                  </div>
+                  
+                  {/* Show empty state or card list based on whether there are cards */}
+                  {allCards.length === 0 ? (
+                    <div className="empty-card-bank">
                         <h3>No Flashcards Yet</h3>
                         {/* ** MODIFIED TEXT ** */}
                         <p>Start by adding your subjects and topic lists.</p>
@@ -2455,70 +2482,70 @@ const filteredCards = useMemo(() => {
                           onClick={() => setIsTopicCreationModalOpen(true)} // Open the new modal
                         >
                           Create Topic Lists
-                        </button>
-                      </div>
-                    ) : (
-                      <FlashcardList 
+                      </button>
+                    </div>
+                  ) : (
+                    <FlashcardList 
                         cards={filteredCards} // Use filtered cards if filtering is implemented
-                        onDeleteCard={deleteCard}
-                        onUpdateCard={updateCard}
+                      onDeleteCard={deleteCard} 
+                      onUpdateCard={updateCard}
                         onViewTopicList={(subject) => { /* Logic to show topic list modal */ }}
                         recordId={recordId}
                         onUpdateSubjectColor={updateColorMapping}
                         subjectColorMapping={subjectColorMapping}
                         handleSaveTopicShells={handleSaveTopicShells} // Pass the new function
-                      />
-                    )}
-                  </div>
+                    />
+                  )}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {view === "manualCreate" && (
-              <div className="create-card-container">
-                <CardCreator
-                  onAddCard={addCard}
-                  onCancel={() => setView("cardBank")}
-                  subjects={getSubjects()}
-                  getTopicsForSubject={getUserTopicsForSubject}
-                  currentColor={currentSubjectColor}
-                  onColorChange={setCurrentSubjectColor}
-                  getColorForSubjectTopic={getColorForSubjectTopic}
-                  updateColorMapping={updateColorMapping}
-                />
-              </div>
-            )}
-
-            {view === "aiGenerator" && (
-              <AICardGenerator
+          {view === "manualCreate" && (
+            <div className="create-card-container">
+              <CardCreator
                 onAddCard={addCard}
-                onClose={() => setView("cardBank")}
+                onCancel={() => setView("cardBank")}
                 subjects={getSubjects()}
-                auth={auth}
-                userId={auth?.id}
-                initialSubject={selectedSubject}
-                initialTopic={selectedTopic}
-                initialTopicsProp={topicsForAICG}
-                examBoard={topicListExamBoard}
-                examType={topicListExamType}
-                recordId={recordId}
-                onFinalizeTopics={handleFinalizeTopics}
+                getTopicsForSubject={getUserTopicsForSubject}
+                currentColor={currentSubjectColor}
+                onColorChange={setCurrentSubjectColor}
+                getColorForSubjectTopic={getColorForSubjectTopic}
+                updateColorMapping={updateColorMapping}
               />
-            )}
+            </div>
+          )}
 
-            {view === "spacedRepetition" && (
-              <SpacedRepetition
-                cards={getCardsForCurrentBox()}
-                currentBox={currentBox}
-                spacedRepetitionData={spacedRepetitionData}
-                onSelectBox={setCurrentBox}
-                onMoveCard={moveCardToBox}
-                onReturnToBank={() => setView("cardBank")}
-              />
-            )}
-          </>
-        )}
-      </div>
+          {view === "aiGenerator" && (
+            <AICardGenerator
+              onAddCard={addCard}
+              onClose={() => setView("cardBank")}
+              subjects={getSubjects()}
+              auth={auth}
+              userId={auth?.id}
+              initialSubject={selectedSubject}
+              initialTopic={selectedTopic}
+              initialTopicsProp={topicsForAICG}
+              examBoard={topicListExamBoard}
+              examType={topicListExamType}
+              recordId={recordId}
+              onFinalizeTopics={handleFinalizeTopics}
+            />
+          )}
+
+          {view === "spacedRepetition" && (
+            <SpacedRepetition
+              cards={getCardsForCurrentBox()}
+              currentBox={currentBox}
+              spacedRepetitionData={spacedRepetitionData}
+              onSelectBox={setCurrentBox}
+              onMoveCard={moveCardToBox}
+              onReturnToBank={() => setView("cardBank")}
+            />
+          )}
+        </>
+      )}
+    </div>
     </WebSocketProvider>
   );
 }

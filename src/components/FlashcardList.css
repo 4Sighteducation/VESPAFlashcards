@@ -1,10 +1,8 @@
 .flashcard-list {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 15px;
-  height: 100%;
-  overflow: hidden;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 /* Subjects accordion styling */
@@ -18,13 +16,11 @@
 }
 
 .subject-container {
-  background-color: white;
+  margin-bottom: 20px;
   border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-left: 5px solid var(--subject-color, #f0f0f0);
-  transition: all 0.3s ease-out;
+  transition: all 0.3s ease;
 }
 
 /* Add this new class to apply the custom border color */
@@ -37,15 +33,12 @@
 }
 
 .subject-header {
+  padding: 15px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
-  background-color: var(--subject-color, #f0f0f0);
-  color: var(--subject-text-color, #000);
-  position: relative;
+  transition: background-color 0.3s ease;
 }
 
 .subject-header::before {
@@ -59,63 +52,44 @@
 }
 
 .subject-header:hover {
-  filter: brightness(0.95);
-}
-
-.subject-container h2 {
-  margin: 0;
-  font-size: 1.4rem;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  filter: brightness(1.1);
 }
 
 .subject-info {
   flex: 1;
 }
 
-.subject-meta {
-  display: flex;
-  gap: 8px;
-  margin-top: 5px;
-  font-size: 0.85rem;
+.subject-info h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-color, #ffffff);
 }
 
-.subject-meta span {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-  color: var(--subject-text-color, #000);
+.subject-meta {
+  margin-top: 5px;
+  font-size: 0.85rem;
+  color: var(--text-color, rgba(255, 255, 255, 0.8));
+  display: flex;
+  gap: 15px;
 }
 
 .subject-actions {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  visibility: visible !important;
-  opacity: 1 !important;
+  gap: 10px;
 }
 
 .subject-actions button {
-  background: rgba(255, 255, 255, 0.2);
+  background: none;
   border: none;
-  border-radius: 4px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: var(--text-color, #ffffff);
   cursor: pointer;
-  color: var(--subject-text-color, #000);
-  transition: all 0.2s ease;
-  margin-left: 4px;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
 }
 
 .subject-actions button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .color-edit-button {
@@ -190,82 +164,112 @@
   visibility: visible !important;
 }
 
+.topic-container {
+  margin: 10px 0;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .topic-header {
+  padding: 12px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
   cursor: pointer;
-  background-color: var(--topic-color, var(--subject-color, #f0f0f0));
-  color: var(--topic-text-color, var(--subject-text-color, #000));
+  transition: background-color 0.3s ease;
 }
 
 .topic-header:hover {
-  filter: brightness(0.95);
+  filter: brightness(1.1);
 }
 
 .topic-info {
-  display: flex;
-  flex-direction: column;
   flex: 1;
-  min-width: 0;
-  max-width: calc(100% - 120px); /* Reserve space for buttons and count */
 }
 
-.topic-header h3 {
+.topic-info h3 {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 500;
-  overflow: visible;
-  white-space: normal;
-  width: 100%;
-  line-height: 1.3;
-  word-wrap: break-word;
-  hyphens: auto;
+  font-size: 1.2rem;
+  color: var(--text-color, #ffffff);
 }
 
-.topic-date {
-  font-size: 0.75rem;
-  color: #666;
-  margin-top: 3px;
-  white-space: normal;
-  overflow: visible;
-  line-height: 1.3;
-  word-wrap: break-word;
+.topic-meta {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--text-color, rgba(255, 255, 255, 0.8));
+  display: flex;
+  gap: 12px;
 }
 
 .topic-actions {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: 15px;
-  min-width: 100px;
-  justify-content: flex-end;
-  flex-shrink: 0;
+  gap: 8px;
 }
 
-.topic-cards {
+.topic-actions button {
+  background: none;
+  border: none;
+  color: var(--text-color, #ffffff);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.topic-actions button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.cards {
+  padding: 10px 15px;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.card {
+  margin: 8px 0;
+  padding: 12px;
+  background-color: white;
+  border-radius: 4px;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 15px;
-  padding: 15px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease-out;
-  flex: 1;
-  overflow-y: auto;
-  max-height: none;
-  min-height: 200px;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
-/* Style for the flashcards inside the accordion */
-.topic-cards .flashcard {
-  flex: 1 1 300px;
-  max-width: 350px;
-  min-width: 250px;
-  margin: 0;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+.card:hover {
+  transform: translateY(-2px);
+}
+
+.card-content {
+  flex: 1;
+  color: #333;
+}
+
+.delete-card {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.delete-card:hover {
+  color: #ff4444;
+  background-color: rgba(255, 68, 68, 0.1);
+}
+
+.exam-type, .exam-board {
+  padding: 2px 6px;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.last-modified {
+  opacity: 0.8;
 }
 
 /* Card modal styling */
@@ -466,10 +470,21 @@
     font-size: 1.2rem;
   }
   
-  .subject-meta {
+  .subject-meta, .topic-meta {
     flex-direction: column;
-    gap: 4px;
-    font-size: 0.8rem;
+    gap: 5px;
+  }
+  
+  .subject-header, .topic-header {
+    padding: 10px;
+  }
+  
+  .subject-info h2 {
+    font-size: 1.2rem;
+  }
+  
+  .topic-info h3 {
+    font-size: 1rem;
   }
   
   .subject-actions {
@@ -540,10 +555,6 @@
     font-size: 0.9rem;
     padding: 4px;
     margin: 0;
-  }
-  
-  .topic-header {
-    padding: 10px 15px;
   }
   
   .topic-cards {
