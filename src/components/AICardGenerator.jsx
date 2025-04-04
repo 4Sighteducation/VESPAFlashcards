@@ -330,13 +330,43 @@ useEffect(() => {
   }, [lastMessage, formData.subjectColor, formData.subject, formData.newSubject, formData.topic, formData.newTopic, formData.examType, formData.examBoard, formData.questionType, initialSubject, initialTopic, examBoard, examType]); // Added dependencies to ensure correct metadata processing
 
 
-   // Effect to auto-generate topics when Step 3 is reached - MODIFIED for WS
-   useEffect(() => {
-     // Reset topics ONLY if the subject/exam details CHANGE in step 3, not just on step entry
-     // This prevents wiping topics if user goes back and forth without changing subject
-     // NOTE: This logic might need refinement based on exact UI flow.
+   // Rewritten generateTopics function to use WebSocket - MOVED EARLIER
+   const generateTopics = useCallback(async (genExamBoard, genExamType, genSubject) => {
+     if (!genExamBoard || !genExamType || !genSubject) {
+       console.error("generateTopics: Missing required parameters.");
+       setError("Missing exam board, type, or subject to generate topics.");
+       return;
+     }
+     if (!isWsConnected) {
+         console.error("generateTopics: WebSocket not connected.");
+         setError("Not connected to generation service. Please wait or refresh.");
+         setIsGenerating(false);
+         setLoadingStatus('');
+         return;
+       }
+       
+     console.log(`Requesting topic generation via WebSocket for ${genSubject} (${genExamBoard} ${genExamType})`);
+             setError(null);
+     setAvailableTopics([]); // Clear previous topics before new request
+     setHierarchicalTopics([]);
+     setIsGenerating(true);
+     setLoadingStatus('Requesting topic list...');
 
-     // Generate topics if:
+     sendMessage(JSON.stringify({
+       action: 'generateTopics',
+       data: {
+         examBoard: genExamBoard,
+         examType: genExamType,
+         subject: genSubject
+       }
+     }));
+     // Response handled by useEffect watching lastMessage
+   }, [sendMessage, isWsConnected]); // Dependencies: sendMessage and readyState (isWsConnected)
+
+
+  // Effect to auto-generate topics when entering Step 3 if needed
+  useEffect(() => {
+     // Conditions:
      // - In Step 3
      // - Have necessary exam/subject details
      // - Not currently generating
@@ -361,39 +391,7 @@ useEffect(() => {
 
   // REMOVED: getFallbackTopics function
 
-  // Rewritten generateTopics function to use WebSocket - MOVED EARLIER
-  const generateTopics = useCallback(async (genExamBoard, genExamType, genSubject) => {
-    if (!genExamBoard || !genExamType || !genSubject) {
-      console.error("generateTopics: Missing required parameters.");
-      setError("Missing exam board, type, or subject to generate topics.");
-      return;
-    }
-    if (!isWsConnected) {
-        console.error("generateTopics: WebSocket not connected.");
-        setError("Not connected to generation service. Please wait or refresh.");
-        setIsGenerating(false);
-        setLoadingStatus('');
-        return;
-      }
-      
-    console.log(`Requesting topic generation via WebSocket for ${genSubject} (${genExamBoard} ${genExamType})`);
-            setError(null);
-    setAvailableTopics([]); // Clear previous topics before new request
-    setHierarchicalTopics([]);
-    setIsGenerating(true);
-    setLoadingStatus('Requesting topic list...');
-
-    sendMessage(JSON.stringify({
-      action: 'generateTopics',
-      data: {
-        examBoard: genExamBoard,
-        examType: genExamType,
-        subject: genSubject
-      }
-    }));
-    // Response handled by useEffect watching lastMessage
-  }, [sendMessage, isWsConnected]); // Dependencies: sendMessage and readyState (isWsConnected)
-
+  // REMOVED generateTopics definition from here (MOVED EARLIER)
 
  // --- Functions related to saving/loading topic lists (if kept) ---
   const saveTopicList = () => {

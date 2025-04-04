@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo, useContext } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import CardCreator from "./components/CardCreator";
@@ -461,6 +461,40 @@ function App() {
     console.error("[Auth Recovery] Could not recover record ID");
     return null;
   }, [recordId, auth]);
+
+  // --- MOVE loadCombinedData HERE (before saveData) ---
+  const loadCombinedData = useCallback(async (source = 'auto') => {
+      setLoading(true);
+      setLoadingMessage(`Loading data from ${source}...`);
+      console.log(`[App Load] Starting data load from ${source}`);
+      // --- Placeholder Implementation ---
+       console.warn("[App Load] loadCombinedData is a placeholder.");
+       await new Promise(resolve => setTimeout(resolve, 100));
+       try {
+            const loadedData = localStorageHelpers.loadData('flashcards_app');
+            if (loadedData) {
+                console.log("[App Load Placeholder] Processing loaded data:", { cardCount: loadedData.cards?.length });
+                setAllCards(loadedData.cards || []);
+                setSubjectColorMapping(loadedData.colorMapping || {});
+                setSpacedRepetitionData(loadedData.spacedRepetition || { box1: [], box2: [], box3: [], box4: [], box5: [] });
+                setUserTopics(loadedData.userTopics || {});
+                setTopicLists(loadedData.topicLists || []);
+                setTopicMetadata(loadedData.topicMetadata || []);
+                restoreMultipleChoiceOptions(loadedData.cards || []);
+            } else {
+                 console.log("[App Load Placeholder] No data in localStorage.");
+                 setAllCards([]);
+                 setSubjectColorMapping({});
+            }
+       } catch (error) {
+            console.error("[App Load Placeholder] Error loading from localStorage:", error);
+       } finally {
+           setLoading(false);
+           setLoadingMessage("");
+       }
+       // --- End Placeholder ---
+       // Dependencies need to include all 'set' functions used inside
+  }, [setAllCards, setSubjectColorMapping, setSpacedRepetitionData, setUserTopics, setTopicLists, setTopicMetadata, setLoading, setLoadingMessage]);
 
   // Modify the saveData function to use the ensureRecordId function
   const saveData = useCallback(async (data, preserveFields = false) => {
@@ -1791,7 +1825,7 @@ function App() {
       return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [showStatus, updateSpacedRepetitionData, loadFromLocalStorage]);
+  }, [showStatus, updateSpacedRepetitionData, loadFromLocalStorage, recordId, view]);
 
   // Function to extract user-specific topics for a subject
   const getUserTopicsForSubject = useCallback(
@@ -2208,39 +2242,9 @@ const filteredCards = useMemo(() => {
     };
   }, [setSelectedSubject, setSelectedTopic, setView]);
 
-  // --- MOVE HOOK DEFINITIONS HERE ---
-  const loadCombinedData = useCallback(async (source = 'auto') => {
-      setLoading(true);
-      setLoadingMessage(`Loading data from ${source}...`);
-      console.log(`[App Load] Starting data load from ${source}`);
-      // --- Placeholder Implementation ---
-       console.warn("[App Load] loadCombinedData is a placeholder.");
-       await new Promise(resolve => setTimeout(resolve, 100));
-       try {
-            const loadedData = localStorageHelpers.loadData('flashcards_app');
-            if (loadedData) {
-                console.log("[App Load Placeholder] Processing loaded data:", { cardCount: loadedData.cards?.length });
-                setAllCards(loadedData.cards || []);
-                setSubjectColorMapping(loadedData.colorMapping || {});
-                setSpacedRepetitionData(loadedData.spacedRepetition || { box1: [], box2: [], box3: [], box4: [], box5: [] });
-                setUserTopics(loadedData.userTopics || {});
-                setTopicLists(loadedData.topicLists || []);
-                setTopicMetadata(loadedData.topicMetadata || []);
-                restoreMultipleChoiceOptions(loadedData.cards || []);
-            } else {
-                 console.log("[App Load Placeholder] No data in localStorage.");
-                 setAllCards([]);
-                 setSubjectColorMapping({});
-            }
-       } catch (error) {
-            console.error("[App Load Placeholder] Error loading from localStorage:", error);
-       } finally {
-           setLoading(false);
-           setLoadingMessage("");
-       }
-       // --- End Placeholder ---
-       // Dependencies need to include all 'set' functions used inside
-  }, [setAllCards, setSubjectColorMapping, setSpacedRepetitionData, setUserTopics, setTopicLists, setTopicMetadata, setLoading, setLoadingMessage]);
+  // --- MOVE REMAINING HOOK DEFINITIONS HERE --- (Before early returns)
+  // --- REMOVE loadCombinedData FROM HERE ---
+  // const loadCombinedData = useCallback(...) // MOVED EARLIER
 
   const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegeneration = false) => {
        if (!topicShells || topicShells.length === 0) return;

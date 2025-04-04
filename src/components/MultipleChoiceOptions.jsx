@@ -10,7 +10,18 @@ import './Flashcard.css';
 const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, card }) => {
   const [optionsToDisplay, setOptionsToDisplay] = useState([]);
   const [error, setError] = useState(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const containerRef = React.useRef(null);
   
+  const calculateButtonWidths = (numOptions, containerWidthPx) => {
+    // Placeholder logic - In a real implementation, this would calculate
+    // optimal button widths based on container size and number of options.
+    console.log(`[calculateButtonWidths] Placeholder: ${numOptions} options, Container: ${containerWidthPx}px`);
+    // Example: Set some state based on calculation if needed
+    // const newWidth = containerWidthPx / numOptions - 10; // Basic example
+    // setButtonWidth(newWidth);
+  };
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     try {
@@ -113,7 +124,14 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
       // Set fallback options in case of error
       setOptionsToDisplay(["Option A", "Option B", "Option C", "Option D"]);
     }
-  }, [options, card, optionsToDisplay.length]);
+  }, [options, card, optionsToDisplay]);
+
+  useEffect(() => {
+    // Recalculate button widths when options or container width change
+    if (containerRef.current) {
+      calculateButtonWidths(optionsToDisplay.length, containerRef.current.offsetWidth);
+    }
+  }, [containerWidth, optionsToDisplay]);
 
   // Clean option text by removing letter prefixes (a.), a), etc.)
   const cleanOptionText = (option) => {

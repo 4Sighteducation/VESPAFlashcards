@@ -725,7 +725,7 @@ const FlashcardList = ({
           // setSubjectColorMapping({});
       }
       // Dependencies: cards array itself, regroup function, and the updateColorMapping function
-  }, [cards, regroupCards, updateColorMapping, expandedSubjects.size]);
+  }, [cards, regroupCards, updateColorMapping, expandedSubjects.size, subjectColorMapping]);
 
   // --- END: HOOK DEFINITIONS ---
 
