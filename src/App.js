@@ -582,9 +582,15 @@ function App() {
           if (window.currentSaveTimeout === saveTimeout) clearTimeout(saveTimeout);
           setIsSaving(false);
           showStatus("Saved successfully!");
-          // --- TRIGGER DATA REFRESH ---
-          console.log("[App] Triggering data refresh after successful save...");
-          loadCombinedData(isKnack ? 'knack' : 'localStorage'); // Reload data
+          // --- UPDATE STATE DIRECTLY INSTEAD OF RELOADING ---
+          console.log("[App] Updating local state after successful save...");
+          setAllCards(cardsPayload);
+          setSubjectColorMapping(colorMapPayload);
+          setSpacedRepetitionData(spacedRepPayload);
+          setUserTopics(userTopicsPayload);
+          setTopicLists(topicListsPayload);
+          setTopicMetadata(topicMetaPayload);
+          // loadCombinedData(isKnack ? 'knack' : 'localStorage'); // REMOVED RELOAD CALL
         })
         .catch(error => {
           console.error("[App] Error in SAVE_DATA:", error);

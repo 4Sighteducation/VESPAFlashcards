@@ -45,6 +45,9 @@ const generateShade = (color, percent) => {
 
 // Helper function for contrast color - IMPROVED VERSION
 const getContrastColor = (hexColor) => {
+    // DEBUG: Log input color
+    console.log("[getContrastColor] Input:", hexColor);
+
     if (!hexColor || typeof hexColor !== 'string') {
        console.warn("[getContrastColor] Invalid hexcolor input (not a string or null):", hexColor);
        return '#000000'; // Default to black
@@ -85,7 +88,12 @@ const getContrastColor = (hexColor) => {
 
         // WCAG AA requires 4.5:1 for normal text, 3:1 for large text
         // We'll aim for 4.5:1, choosing the color with better contrast
-        return contrastWithBlack >= contrastWithWhite ? '#000000' : '#ffffff';
+        const chosenColor = contrastWithBlack >= contrastWithWhite ? '#000000' : '#ffffff';
+
+        // DEBUG: Log calculation results
+        console.log(`[getContrastColor] Lum: ${luminance.toFixed(3)}, Contrast White: ${contrastWithWhite.toFixed(2)}, Contrast Black: ${contrastWithBlack.toFixed(2)}, Chosen: ${chosenColor}`);
+
+        return chosenColor;
 
     } catch (error) {
         console.error("[getContrastColor] Error processing color:", hexColor, error);

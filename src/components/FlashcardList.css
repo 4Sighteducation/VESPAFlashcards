@@ -1210,7 +1210,7 @@ html {
 }
 
 .action-button {
-  background: rgba(255, 255, 255, 0.15);
+  background-color: rgba(0, 0, 0, 0.05);
   border: none;
   color: var(--text-color, #ffffff);
   cursor: pointer;
@@ -1226,8 +1226,8 @@ html {
 }
 
 .action-button:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+  background-color: rgba(0, 0, 0, 0.1);
+  filter: none;
 }
 
 .action-button:disabled {
