@@ -52,3 +52,7 @@ KnackJavascript*.js
 *.log
 src/components/JSON IN KNACK.txt
 clineconsolelog.txt
+
+# Reference files (not part of build)
+CopyofcurrentBridgingCode.js
+CopyofKnackMultiAppLoader.js
