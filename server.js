@@ -99,16 +99,69 @@ const server = http.createServer(app);
 // Create a WebSocket server attached to the *HTTP server*
 const wss = new WebSocket.Server({ server });
 
+// Track all active connections for pinging
+const activeConnections = new Set();
+
+// Ping interval (45 seconds - just under Heroku's 55s idle timeout)
+const PING_INTERVAL_MS = 45000;
+
+// Send a ping to all connected clients to prevent Heroku H15 timeout
+const pingAllClients = () => {
+  const timestamp = new Date().toISOString();
+  
+  if (activeConnections.size > 0) {
+    console.log(`[${timestamp}] Pinging ${activeConnections.size} active clients to prevent idle timeouts`);
+  }
+  
+  activeConnections.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      try {
+        client.send(JSON.stringify({ 
+          type: 'ping', 
+          timestamp: Date.now(),
+          serverTime: timestamp
+        }));
+      } catch (err) {
+        console.error('Error sending ping to client:', err);
+        // Remove failed clients from the set
+        activeConnections.delete(client);
+      }
+    } else if (client.readyState === WebSocket.CLOSED || client.readyState === WebSocket.CLOSING) {
+      // Clean up connections that are closed or closing
+      activeConnections.delete(client);
+    }
+  });
+};
+
+// Start server-side ping interval
+const pingInterval = setInterval(pingAllClients, PING_INTERVAL_MS);
+
 console.log('WebSocket server setup complete, attached to HTTP server.');
 
 wss.on('connection', (ws) => {
   console.log('Client connected');
+  
+  // Add this connection to our active set for pinging
+  activeConnections.add(ws);
+  console.log(`Active connections: ${activeConnections.size}`);
 
   ws.on('message', async (message) => {
     let requestData;
     try {
       const messageString = message.toString();
       requestData = JSON.parse(messageString);
+      
+      // Handle ping messages for keepalive
+      if (requestData.type === 'ping') {
+        // Respond with pong to maintain the connection
+        ws.send(JSON.stringify({ 
+          type: 'pong', 
+          timestamp: Date.now(),
+          serverTime: new Date().toISOString()
+        }));
+        return; // Skip further processing for ping messages
+      }
+      
       console.log('Received:', requestData);
 
       switch (requestData.action) {
@@ -137,6 +190,8 @@ wss.on('connection', (ws) => {
   // Handle client disconnection
   ws.on('close', () => {
     console.log('Client disconnected');
+    activeConnections.delete(ws);
+    console.log(`Active connections: ${activeConnections.size}`);
   });
 
   // Handle WebSocket errors
@@ -156,7 +211,7 @@ wss.on('connection', (ws) => {
 
 async function handleGenerateTopics(ws, data) {
   console.log('Handling generateTopics request:', data);
-  const { examBoard, examType, subject } = data || {};
+  const { examBoard, examType, subject, forceAI } = data || {};
 
   if (!examBoard || !examType || !subject) {
      console.error('Missing parameters for topic generation');
@@ -165,7 +220,12 @@ async function handleGenerateTopics(ws, data) {
   }
 
   // Let the client know we've started
-  ws.send(JSON.stringify({ type: 'status', action: 'generateTopics', message: 'Generating topics...' }));
+  ws.send(JSON.stringify({ 
+    type: 'status', 
+    action: 'generateTopics', 
+    message: `Generating topics with AI for ${examBoard} ${examType} ${subject}...`,
+    progress: 10
+  }));
 
 
   try {
@@ -177,6 +237,13 @@ async function handleGenerateTopics(ws, data) {
     const prompt = generateTopicPrompt(examBoard, examType, subject); // Use the copied prompt function
 
     console.log('Calling OpenAI API for topics...');
+    // Update progress
+    ws.send(JSON.stringify({ 
+      type: 'status', 
+      action: 'generateTopics', 
+      message: 'Contacting OpenAI API to generate topics...',
+      progress: 30
+    }));
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -229,12 +296,28 @@ async function handleGenerateTopics(ws, data) {
     }
 
     console.log(`Successfully generated ${topics.length} topics.`);
+    
+    // Format the topics to ensure they include exam board and type
+    const formattedTopics = topics.map(topic => ({
+      ...topic,
+      examBoard: examBoard,
+      examType: examType,
+      subject: subject
+    }));
+
+    // Send progress update
+    ws.send(JSON.stringify({ 
+      type: 'status', 
+      action: 'generateTopics', 
+      message: 'Processing topic data...',
+      progress: 90
+    }));
 
     // Send results back to the specific client
     ws.send(JSON.stringify({
       type: 'topicResults',
       action: 'generateTopics',
-      topics: topics
+      topics: formattedTopics
     }));
 
   } catch (error) {
@@ -365,4 +448,4 @@ app.get('*', (req, res) => {
 // Start the *HTTP server* (which includes WebSocket server)
 server.listen(port, () => {
   console.log(`HTTP server (with WebSocket) listening on port ${port}`);
-}); 
+});

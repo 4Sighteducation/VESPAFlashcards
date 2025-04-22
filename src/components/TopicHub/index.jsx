@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaInfo, FaCheckCircle } from 'react-icons/fa';
+import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
+import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaInfo, FaCheckCircle, FaDatabase } from 'react-icons/fa';
 import './styles.css';
 import { generateTopicPrompt } from '../../prompts/topicListPrompt';
 import { generateId } from '../../utils/UnifiedDataModel';
+import { WebSocketContext } from '../../contexts/WebSocketContext';
+import KnackTopicService from '../../services/KnackTopicService';
 
 /**
  * TopicHub - Enhanced topic management component
@@ -163,7 +165,100 @@ const TopicHub = ({
     return false;
   };
   
-  // Call the API to generate topics
+  // Import and define WebSocket hook at the top of the component
+  const { sendMessage, lastMessage, readyState, isConnected } = useContext(WebSocketContext);
+
+  // WebSocket message handler
+  useEffect(() => {
+    if (!lastMessage) return;
+    
+    try {
+      const data = JSON.parse(lastMessage.data);
+      
+      switch (data.type) {
+        case 'topicResults':
+          if (data.action === 'generateTopics' && Array.isArray(data.topics)) {
+            console.log("Received topic results:", data.topics.length, "topics");
+            setTopics(data.topics);
+            setHasGenerated(true);
+            setIsGenerating(false);
+            
+            // Store in cache for future use
+            storeTopicsInCache(examBoard, examType, subject, data.topics);
+          }
+          break;
+          
+        case 'status':
+          if (data.action === 'generateTopics') {
+            console.log("Generation status update:", data.message);
+            setLoadingStatus(data.message);
+          }
+          break;
+          
+        case 'error':
+          if (data.action === 'generateTopics') {
+            console.error("Error from server:", data.message);
+            setErrorMessage("Server Error");
+            setErrorDetails(data.message);
+            setShowErrorModal(true);
+            setIsGenerating(false);
+            
+            // Try using fallbacks on error
+            useFallbackTopics();
+          }
+          break;
+      }
+    } catch (error) {
+      console.error("Error processing WebSocket message:", error);
+    }
+  }, [lastMessage, examBoard, examType, subject]);
+  
+  // Function to use fallback topics when API fails
+  const useFallbackTopics = () => {
+    console.log("Using fallback topics");
+    const hardcodedFallbacks = getSubjectFallbackTopics(subject, examBoard, examType);
+    
+    if (hardcodedFallbacks && hardcodedFallbacks.length > 0) {
+      console.log("Using subject-specific fallbacks:", hardcodedFallbacks.length, "topics");
+      setTopics(hardcodedFallbacks);
+      setHasGenerated(true);
+      setUsingFallbackTopics(true);
+      setShowFallbackNotice(true);
+      
+      // Also store these in the cache to prevent future API errors
+      storeTopicsInCache(examBoard, examType, subject, hardcodedFallbacks);
+    } else {
+      console.log("No subject-specific fallbacks available, using generic ones");
+      const genericFallbacks = [
+        {
+          id: "1.1",
+          topic: `${subject}: Core Concepts`,
+          mainTopic: subject,
+          subtopic: "Core Concepts"
+        },
+        {
+          id: "1.2",
+          topic: `${subject}: Key Principles`,
+          mainTopic: subject,
+          subtopic: "Key Principles"
+        },
+        {
+          id: "1.3",
+          topic: `${subject}: Fundamental Applications`,
+          mainTopic: subject,
+          subtopic: "Fundamental Applications"
+        }
+      ];
+      
+      setTopics(genericFallbacks);
+      setHasGenerated(true);
+      setUsingFallbackTopics(true);
+      setShowFallbackNotice(true);
+      storeTopicsInCache(examBoard, examType, subject, genericFallbacks);
+    }
+  };
+
+  // Generate topics using Knack database (for A-Level/GCSE) or AI (for BTEC/Cambridge National)
   const generateTopics = async () => {
     setIsGenerating(true);
     setError(null);
@@ -174,7 +269,7 @@ const TopicHub = ({
     try {
       console.log("Starting topic generation for:", examBoard, examType, subject);
       
-      // Check cache first before making API call
+      // Check cache first before making any API call
       const cachedTopics = checkTopicCache(examBoard, examType, subject);
       if (cachedTopics) {
         console.log("Using cached topics instead of making API call");
@@ -198,280 +293,98 @@ const TopicHub = ({
       // Update the last request timestamp
       lastRequestTimestamp.current = Date.now();
       
-      // Make the API call to generate topics
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [{
-            role: "user",
-            content: generateTopicPrompt(examBoard, examType, subject, academicYear)
-          }],
-          max_tokens: 2000,
-          temperature: 0.8
-        })
-      });
+      // Determine if we should use Knack database or AI based on exam type
+      const useKnackDatabase = examType === 'GCSE' || examType === 'A-Level';
       
-      if (!response.ok) {
-        throw new Error(`API call failed: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error("No content returned from API");
-      }
-      
-      // Parse and process the topics from the API response
-      let content = data.choices[0].message.content;
-      
-      // Log the raw API response
-      console.log("==== RAW API RESPONSE FROM OPENAI ====");
-      console.log(content);
-      console.log("==== END RAW API RESPONSE ====");
-      
-      // Enhanced preprocessing for GPT-4's verbose responses - more aggressive cleanup
-      content = content.replace(/```json|```javascript|```|\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
-        .replace(/^[\s\S]*?\[/m, '[')  // Remove any text before first opening bracket
-        .trim();
-      
-      // Find JSON array in response - looking for content between [ and ]
-      const jsonMatch = content.match(/\[([\s\S]*?)\]/m);
-      const potentialJson = jsonMatch ? `[${jsonMatch[1]}]` : content;
-      
-      console.log("Content after preprocessing:", potentialJson.substring(0, 150) + "...");
-      
-      let parsedTopics;
-      let usedFallback = false;
-      
-      try {
-        parsedTopics = JSON.parse(potentialJson);
-        console.log("Successfully parsed JSON response:", parsedTopics);
-        
-        // Check if the API returned an error object
-        const hasErrorObject = Array.isArray(parsedTopics) && 
-          parsedTopics.length === 1 && 
-          parsedTopics[0] && 
-          parsedTopics[0].hasOwnProperty('error');
-        
-        if (hasErrorObject) {
-          console.log("API returned an error object:", parsedTopics[0].error);
-          console.log("Switching to fallback topics");
-          usedFallback = true;
-          
-          // Use subject-specific fallbacks
-          const hardcodedFallbacks = getSubjectFallbackTopics(subject, examBoard, examType);
-          
-          if (hardcodedFallbacks && hardcodedFallbacks.length > 0) {
-            console.log("Using subject-specific fallbacks");
-            parsedTopics = hardcodedFallbacks;
-          } else {
-            // If no subject-specific fallbacks available, use generic ones
-            console.log("No subject-specific fallbacks, using generic fallbacks");
-            parsedTopics = [
-              {
-                id: "1.1",
-                topic: `${subject}: Core Concepts`,
-                mainTopic: subject,
-                subtopic: "Core Concepts"
-              },
-              {
-                id: "1.2",
-                topic: `${subject}: Key Principles`,
-                mainTopic: subject,
-                subtopic: "Key Principles"
-              },
-              {
-                id: "1.3",
-                topic: `${subject}: Fundamental Applications`,
-                mainTopic: subject,
-                subtopic: "Fundamental Applications"
-              }
-            ];
-          }
-          
-          setUsingFallbackTopics(true);
-          setShowFallbackNotice(true);
-        }
-      } catch (e) {
-        console.error("Failed to parse topic response as JSON:", e);
-        usedFallback = true;
-        
-        // Check if it's an error message and provide better feedback
-        if (content.includes("I'm sorry") || content.includes("Error")) {
-          // Extract a more useful error message
-          const displayError = content.split('.')[0] || "Error from API";
-          console.error("API returned an error message:", displayError);
-        }
-
-        // More aggressive JSON extraction
+      if (useKnackDatabase) {
+        // Use Knack database for GCSE and A-Level
         try {
-          // Find anything that looks like a JSON array using a more aggressive regex
-          const jsonRegex = /\[\s*{[\s\S]*}\s*\]/g;
-          const jsonMatches = content.match(jsonRegex);
+          console.log(`Using Knack database for ${examBoard} ${examType} ${subject}`);
+          setLoadingStatus(`Fetching ${examType} ${subject} topics from database...`);
           
-          if (jsonMatches && jsonMatches.length > 0) {
-            console.log("Found potential JSON with aggressive regex:", jsonMatches[0].substring(0, 100));
-            parsedTopics = JSON.parse(jsonMatches[0]);
-            usedFallback = false;
+          // Fetch topics from Knack database
+          const knackTopics = await KnackTopicService.fetchTopicsFromKnack(examType, examBoard, subject);
+          
+          if (knackTopics && knackTopics.length > 0) {
+            console.log(`Found ${knackTopics.length} topics in Knack database`);
+            setTopics(knackTopics);
+            setHasGenerated(true);
+            // Store in cache for future use
+            storeTopicsInCache(examBoard, examType, subject, knackTopics);
           } else {
-            // Try to handle the case where we have a valid array of strings but not JSON
-            // eslint-disable-next-line no-eval
-            const possibleArray = eval(`(${content})`);
-            if (Array.isArray(possibleArray) && possibleArray.length > 0) {
-              console.log("Response was a JavaScript array, not JSON:", possibleArray);
-              parsedTopics = possibleArray;
-              usedFallback = false;
-            } else {
-              throw new Error("Could not extract valid array");
+            console.log("No topics found in Knack database, falling back to AI generation");
+            
+            // If no topics found in Knack, fall back to AI generation
+            if (!isConnected) {
+              throw new Error("WebSocket not connected, cannot use AI fallback");
             }
-          }
-        } catch (innerError) {
-          console.error("All parsing attempts failed:", innerError);
-          // Fall back to sample topic
-          parsedTopics = [
-            {
-              id: "1.1",
-              topic: "Sample Topic: Introduction",
-              mainTopic: "Sample Topic",
-              subtopic: "Introduction"
-            }
-          ];
-          console.log("Created fallback topics due to parsing failure");
-          usedFallback = true;
-        }
-      }
-      
-      // If we used a fallback method, update the state
-      if (usedFallback) {
-        console.log("EXPLICITLY SETTING FALLBACK STATE - Parsing required fallback");
-        setUsingFallbackTopics(true);
-        setShowFallbackNotice(true);
-      }
-      
-      if (!Array.isArray(parsedTopics)) {
-        console.error("Response is not an array:", typeof parsedTopics);
-        // Convert to array if it's an object with properties we can use
-        if (typeof parsedTopics === 'object' && parsedTopics !== null) {
-          parsedTopics = [parsedTopics];
-        } else {
-          throw new Error("Unexpected response format: not an array");
-        }
-      }
-      
-      // Process array of strings if needed (convert to required object format)
-      if (parsedTopics.length > 0 && typeof parsedTopics[0] === 'string') {
-        console.log("Converting array of strings to topic objects...");
-        parsedTopics = parsedTopics.map((topicStr, index) => {
-          // Check for Option prefix and extract it
-          let optionalPrefix = "";
-          let processedTopicStr = topicStr;
-          
-          const optionMatch = topicStr.match(/^Option\s+(\d+|[A-Z]):\s*(.*)/i);
-          if (optionMatch) {
-            optionalPrefix = `[Optional - Option ${optionMatch[1]}] `;
-            processedTopicStr = optionMatch[2].trim();
+            
+            setLoadingStatus("No database topics found. Generating with AI...");
+            
+            // Send request through WebSocket for AI generation
+            sendMessage(JSON.stringify({
+              action: 'generateTopics',
+              data: {
+                examBoard,
+                examType,
+                subject,
+                academicYear,
+                forceAI: true // Flag to force AI generation even for GCSE/A-Level
+              }
+            }));
           }
           
-          // Check if the string contains a colon or section number pattern
-          const hasColon = processedTopicStr.includes(':');
-          const hasSectionNumber = /\d+\.\d+(\.\d+)?/.test(processedTopicStr);
+        } catch (knackError) {
+          console.error("Error fetching topics from Knack:", knackError);
           
-          let mainTopic, subtopic;
-          
-          if (hasColon) {
-            // Process string with a colon format (Main Topic: Subtopic)
-            [mainTopic, subtopic] = [processedTopicStr.split(':')[0].trim(), processedTopicStr.split(':').slice(1).join(':').trim()];
-          } else if (hasSectionNumber) {
-            // Try to extract a section number and use it as part of main topic
-            const sectionMatch = processedTopicStr.match(/(\d+\.\d+(\.\d+)?)\s*(.*)/);
-            if (sectionMatch) {
-              const [, , , content] = sectionMatch;
-              mainTopic = content.trim() || processedTopicStr;
-              subtopic = mainTopic; // Use main topic as subtopic
-            } else {
-              mainTopic = processedTopicStr;
-              subtopic = processedTopicStr; // Use the whole string as both
-            }
+          // Try AI generation if Knack fails and WebSocket is connected
+          if (isConnected) {
+            console.log("Falling back to AI generation after Knack error");
+            setLoadingStatus("Database error. Falling back to AI generation...");
+            
+            // Send request through WebSocket for AI generation
+            sendMessage(JSON.stringify({
+              action: 'generateTopics',
+              data: {
+                examBoard,
+                examType,
+                subject,
+                academicYear,
+                forceAI: true
+              }
+            }));
           } else {
-            // No clear structure - use the whole string as both
-            mainTopic = processedTopicStr;
-            subtopic = processedTopicStr;
+            // If WebSocket is not connected, use hardcoded fallbacks
+            throw knackError;
           }
-          
-          // Add the optional prefix if found
-          if (optionalPrefix) {
-            mainTopic = optionalPrefix + mainTopic;
-          }
-          
-          // Create a properly formatted topic object
-          return {
-            id: `${Math.floor(index / 5) + 1}.${(index % 5) + 1}`, // Create sections of 5 items
-            topic: optionalPrefix + processedTopicStr,
-            mainTopic: mainTopic,
-            subtopic: subtopic || mainTopic // Use main topic instead of "General"
-          };
-        });
-        console.log("Converted topics:", parsedTopics);
-      }
-      
-      // Handle empty arrays by using hardcoded fallbacks
-      if (parsedTopics.length === 0) {
-        console.log("Received empty topics array, using hardcoded fallbacks");
-        
-        // Use hard-coded fallbacks
-        const hardcodedFallbacks = getSubjectFallbackTopics(subject, examBoard, examType);
-        
-        if (hardcodedFallbacks && hardcodedFallbacks.length > 0) {
-          console.log("Using subject-specific fallbacks:", hardcodedFallbacks.length, "topics");
-          parsedTopics = hardcodedFallbacks;
-          setUsingFallbackTopics(true);
-          setShowFallbackNotice(true);
-        } else {
-          // Generic fallback if no subject-specific fallback available
-          console.log("No subject-specific fallbacks, using generic ones");
-          parsedTopics = [
-            {
-              id: "1.1",
-              topic: `${subject}: Core Concepts`,
-              mainTopic: subject,
-              subtopic: "Core Concepts"
-            },
-            {
-              id: "1.2",
-              topic: `${subject}: Key Principles`,
-              mainTopic: subject,
-              subtopic: "Key Principles"
-            },
-            {
-              id: "1.3",
-              topic: `${subject}: Fundamental Applications`,
-              mainTopic: subject,
-              subtopic: "Fundamental Applications"
-            }
-          ];
-          setUsingFallbackTopics(true);
-          setShowFallbackNotice(true);
         }
+      } else {
+        // Use AI generation for BTEC/Cambridge National
+        if (!isConnected) {
+          console.error("WebSocket not connected, cannot generate topics");
+          setErrorMessage("Connection Error");
+          setErrorDetails("WebSocket connection is not available. Please try refreshing the page.");
+          setShowErrorModal(true);
+          setIsGenerating(false);
+          return;
+        }
+        
+        console.log(`Using AI generation for ${examBoard} ${examType} ${subject}`);
+        setLoadingStatus(`Generating topics for ${examType} ${subject} using AI...`);
+        
+        // Send request through WebSocket instead of direct API call
+        sendMessage(JSON.stringify({
+          action: 'generateTopics',
+          data: {
+            examBoard,
+            examType,
+            subject,
+            academicYear
+          }
+        }));
       }
       
-      // Final logging of topics before updating state
-      console.log("===== FINAL TOPIC LIST BEING USED =====");
-      console.log(JSON.stringify(parsedTopics, null, 2));
-      console.log("Topic count:", parsedTopics.length);
-      console.log("Using fallback:", usingFallbackTopics);
-      console.log("===== END FINAL TOPIC LIST =====");
-      
-      // Store the topics in cache
-      storeTopicsInCache(examBoard, examType, subject, parsedTopics);
-      
-      // Update the topics
-      setTopics(parsedTopics);
-      setHasGenerated(true);
+      // Processing of the response is now handled in the WebSocket message handler above
       
     } catch (error) {
       console.error("Error generating topics:", error);
@@ -492,6 +405,7 @@ const TopicHub = ({
         setErrorMessage("Rate limit exceeded");
         setErrorDetails("We've hit the API rate limit. Please try again in a few minutes.");
         setShowErrorModal(true);
+        setIsGenerating(false);
         return;
       }
       
@@ -508,18 +422,20 @@ const TopicHub = ({
         
         // Also store these in the cache to prevent future API errors
         storeTopicsInCache(examBoard, examType, subject, hardcodedFallbacks);
-        return;
+      } else {
+        // Show a more detailed error message to the user if fallbacks didn't work
+        let errorMessage = `Failed to generate topics: ${error.message}`;
+        if (error.message.includes("API key")) {
+          errorMessage = "API key error. Please check your OpenAI API key configuration.";
+        } else if (!OPENAI_API_KEY || OPENAI_API_KEY === "your-openai-key") {
+          errorMessage = "No API key found. Please add your OpenAI API key to the environment variables.";
+        }
+        
+        setError(errorMessage);
+        setErrorMessage("Generation Error");
+        setErrorDetails(errorMessage);
+        setShowErrorModal(true);
       }
-      
-      // Show a more detailed error message to the user if fallbacks didn't work
-      let errorMessage = `Failed to generate topics: ${error.message}`;
-      if (error.message.includes("API key")) {
-        errorMessage = "API key error. Please check your OpenAI API key configuration.";
-      } else if (!OPENAI_API_KEY || OPENAI_API_KEY === "your-openai-key") {
-        errorMessage = "No API key found. Please add your OpenAI API key to the environment variables.";
-      }
-      
-      setError(errorMessage);
     } finally {
       setIsGenerating(false);
     }
@@ -1119,17 +1035,24 @@ const TopicHub = ({
         <div className="topic-generator-header">
           <h3>Generate Topics for {subject}</h3>
           <p>
-            Generate a comprehensive list of topics for {subject} ({examBoard} {examType}) 
-            using our AI-powered topic generation system. The topics will be based on 
-            the latest curriculum requirements.
+            Generate a comprehensive list of topics for {subject} ({examBoard} {examType}).
+            {examType === 'GCSE' || examType === 'A-Level' ? (
+              <span> Topics will be sourced from our curriculum database for accuracy.</span>
+            ) : (
+              <span> Topics will be generated using our AI-powered system based on latest curriculum requirements.</span>
+            )}
           </p>
         </div>
         
         {isGenerating ? (
           <div className="loading-container">
             <div className="loading-spinner"></div>
-            <p className="loading-text">Generating topics for {subject}...</p>
-            <p className="loading-text">This may take a moment while we analyze the curriculum.</p>
+            <p className="loading-text">{loadingStatus || `Generating topics for ${subject}...`}</p>
+            <p className="loading-text">
+              {(examType === 'GCSE' || examType === 'A-Level') 
+                ? 'This may take a moment while we search our database.' 
+                : 'This may take a moment while we analyze the curriculum.'}
+            </p>
           </div>
         ) : (
           <div className="generation-actions">
@@ -1138,10 +1061,12 @@ const TopicHub = ({
               onClick={generateTopics}
               disabled={isGenerating}
             >
-              <FaMagic /> Generate Topics
+              {(examType === 'GCSE' || examType === 'A-Level') 
+                ? <><FaDatabase /> Load Topics from Database</> 
+                : <><FaMagic /> Generate Topics with AI</>}
             </button>
             <p className="generation-help-text">
-              Click the button above to generate a comprehensive list of topics for your subject.
+              Click the button above to {(examType === 'GCSE' || examType === 'A-Level') ? 'load' : 'generate'} a comprehensive list of topics for your subject.
               You'll be able to review and edit the topics afterward.
             </p>
           </div>

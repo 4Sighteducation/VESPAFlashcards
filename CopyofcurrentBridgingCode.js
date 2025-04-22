@@ -1,31 +1,9 @@
 // knack-integration.js - Safe for public GitHub repository
 // Version: 5x (Introduces SaveQueue and corrected message handling)
 (function () {
-    // Only run if this is the flashcards app and config is available
-    if (!window.VESPA_APPS || !window.VESPA_APPS.flashcards) {
-        // console.log("Flashcards app (KnackJavascript6a.js) not configured for this view or config missing."); // Optional log
-        return;
-    }
-    console.log("Flashcards app (KnackJavascript6a.js) starting initialization...");
-
-    // Use the namespaced configuration
-    const appConfig = window.VESPA_APPS.flashcards;
-
     // --- Configuration and Constants ---
-    // Get Knack credentials from the namespaced config
-    const knackAppId = appConfig.knackAppId;
-    const knackApiKey = appConfig.knackApiKey;
+    // Moved config-dependent constants into initializeFlashcardApp
     const KNACK_API_URL = 'https://api.knack.com/v1';
-    // Get the scene/view specific config from the namespaced appConfig object
-    const FLASHCARD_APP_CONFIG = appConfig.appConfig || { // Ensure appConfig structure matches Knack builder
-      'scene_1206': {
-        'view_3005': {
-          appType: 'flashcard-app',
-          elementSelector: '.kn-rich-text',
-          appUrl: appConfig.appUrl || 'https://vespa-flashcards-e7f31e9ff3c9.herokuapp.com/' // Use appUrl from namespace
-        }
-      }
-    };
     const FLASHCARD_OBJECT = 'object_102'; // Your flashcard object
     const FIELD_MAPPING = {
       userId: 'field_2954',
@@ -690,22 +668,45 @@
     const saveQueue = new SaveQueue();
   
     // --- Knack Integration Initialization ---
-    $(document).on('knack-scene-render.scene_1206', function(event, scene) {
-      console.log("Flashcard app: Scene rendered:", scene.key);
-      initializeFlashcardApp();
-    });
-  
+    // REMOVED Old Scene Render Listener
+
+    // Declare variables needed within initializeFlashcardApp in a higher scope
+    let knackAppId;
+    let knackApiKey;
+    let FLASHCARD_APP_URL;
+    let APP_CONTAINER_SELECTOR;
+
     // Initialize the React app
-    function initializeFlashcardApp() {
-      console.log("Initializing Flashcard React app (Version 5x with SaveQueue)");
-      const config = FLASHCARD_APP_CONFIG['scene_1206']?.['view_3005']; // Use optional chaining
-  
-      if (!config) {
-          console.error("Flashcard app: Configuration for scene_1206/view_3005 not found.");
+    // Expose this function globally for the loader script (v3.16+)
+    window.initializeFlashcardApp = function() {
+      console.log("Initializing Flashcard React app (Version 5x with SaveQueue - Loader Compatible)"); // Updated log
+
+      // --- Initialize Config-Dependent Constants HERE ---
+      if (!window.VESPA_CONFIG) {
+          console.error("Flashcard app: Critical Error - window.VESPA_CONFIG is not defined!");
+          // Optionally, display an error message to the user in the placeholder
+          const container = document.querySelector('.kn-rich-text') || document.getElementById('view_3005') || document.getElementById('kn-scene_1206');
+          if (container) container.innerHTML = '<p style="color: red;">Error: Flashcard App Configuration Missing.</p>';
+          return; // Stop initialization
+      }
+      knackAppId = window.VESPA_CONFIG.knackAppId;
+      knackApiKey = window.VESPA_CONFIG.knackApiKey;
+      FLASHCARD_APP_URL = window.VESPA_CONFIG.appUrl || 'https://default-fallback-url-if-needed.com'; // Get App URL directly
+      APP_CONTAINER_SELECTOR = window.VESPA_CONFIG.elementSelector || '.kn-rich-text'; // Get selector from config, fallback
+      // Log the derived constants
+      console.log(`Flashcard app: Using knackAppId: ${knackAppId ? 'Set' : 'Not Set'}`);
+      console.log(`Flashcard app: Using knackApiKey: ${knackApiKey ? 'Set' : 'Not Set'}`);
+      console.log(`Flashcard app: Using FLASHCARD_APP_URL: ${FLASHCARD_APP_URL}`);
+      console.log(`Flashcard app: Using APP_CONTAINER_SELECTOR: ${APP_CONTAINER_SELECTOR}`);
+      // ----------------------------------------------------
+
+      // Check if necessary config exists directly on window.VESPA_CONFIG (redundant check, but safe)
+      // The check above for window.VESPA_CONFIG is the primary one.
+      if (!knackAppId || !knackApiKey || !FLASHCARD_APP_URL) {
+          console.error("Flashcard app: Missing required configuration values (appId, apiKey, or appUrl) after checking VESPA_CONFIG.");
           return;
       }
-  
-  
+
       // Check if user is authenticated
       if (typeof Knack === 'undefined' || !Knack.getUserToken) {
           console.error("Flashcard app: Knack context or getUserToken not available.");
@@ -731,7 +732,9 @@
             console.warn("Flashcard app: Could not get complete user data, continuing with basic info");
           }
           // Proceed with initialization using the (potentially enhanced) global user object
-          continueInitialization(config, userToken, appId);
+          // Remove the undefined 'config' variable from this call
+          // continueInitialization(config, userToken, appId); // Original call
+          continueInitialization(userToken, appId); // CORRECTED call
         });
   
       } else {
@@ -739,10 +742,45 @@
          // Handle cases where user might be logged out or session expired
          // Maybe display a message or attempt re-login if applicable
       }
+    } // <<< END OF initializeFlashcardApp FUNCTION DEFINITION
+
+    // --- PASTE THE INITIALIZATION BLOCK HERE ---
+    // Ensure Knack context and jQuery might be ready, or handle checks inside initializeFlashcardApp
+    /* // START COMMENT BLOCK
+    console.log("Flashcards1h.js: Reached execution point after initializeFlashcardApp definition."); // Updated Log
+    console.log("Flashcards1h.js: Type of initializeFlashcardApp:", typeof initializeFlashcardApp); // Check type here
+
+    if (typeof $ !== 'undefined' && typeof Knack !== 'undefined') {
+        console.log("Flashcards1h.js: Knack and $ ready. Type of initializeFlashcardApp:", typeof "initializeFlashcardApp");
+        if (typeof initializeFlashcardApp === 'function') {
+            initializeFlashcardApp(); // CALL IT HERE
+        } else {
+             console.error("Flashcards1h.js: initializeFlashcardApp is NOT a function here!");
+        }
+    } else {
+         // Fallback: Wait a very short moment
+         console.error("Flashcards1h.js: Knack or $ not immediately ready, delaying init slightly.");
+         setTimeout(() => {
+             console.log("Flashcards1h.js: Delayed check. Type of initializeFlashcardApp:", typeof initializeFlashcardApp);
+             if (typeof $ !== 'undefined' && typeof Knack !== 'undefined') {
+                 console.log("Flashcards1h.js: Delayed initialization starting.");
+                 if (typeof initializeFlashcardApp === 'function') {
+                     initializeFlashcardApp(); // CALL IT HERE (Delayed)
+                 } else {
+                      console.error("Flashcards1h.js: initializeFlashcardApp is NOT a function after delay!");
+                 }
+             } else {
+                  console.error("Flashcards1h.js: Knack or $ still not ready after delay. Initialization failed.");
+             }
+         }, 100);
     }
+    */ // END COMMENT BLOCK
+    // --- END OF PASTED BLOCK ---
   
      // Continue initialization after potentially fetching complete user data
-     function continueInitialization(config, userToken, appId) {
+     // Remove 'config' parameter from function definition as well
+     // function continueInitialization(config, userToken, appId) { // config param is no longer used here
+     function continueInitialization(userToken, appId) { // CORRECTED definition
          const currentUser = window.currentKnackUser; // Use the globally stored (potentially enhanced) user object
   
          // Extract and store connection field IDs safely
@@ -759,8 +797,8 @@
          });
   
          // Find or create container for the app
-          let container = document.querySelector(config.elementSelector);
-          // Fallback selectors
+          let container = document.querySelector(APP_CONTAINER_SELECTOR);
+          // Fallback selectors (can likely be simplified if only using .kn-rich-text)
           if (!container) container = document.querySelector('.kn-rich-text');
           if (!container) {
               const viewElement = document.getElementById('view_3005') || document.querySelector('.view_3005');
@@ -803,7 +841,7 @@
          iframe.style.minHeight = '800px'; // Use min-height for flexibility
          iframe.style.border = 'none';
          iframe.style.display = 'none'; // Hide initially
-         iframe.src = config.appUrl;
+         iframe.src = FLASHCARD_APP_URL; // Use the direct URL variable
          container.appendChild(iframe);
   
           // --- Central Message Listener ---
@@ -2051,4 +2089,4 @@
      // message routing structure (handleMessageRouter -> specific handlers -> saveQueue).
   
    // --- Self-Executing Function Closure ---
-  }()); 
+ }()); 

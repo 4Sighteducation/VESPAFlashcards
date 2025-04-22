@@ -1,81 +1,67 @@
-/* Styles for TopicCreationModal - Adapted from AICardGenerator.css */
-
+/* TopicCreationModal.css */
 .topic-creation-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1050; /* Ensure it's above other content */
+  z-index: 1000;
 }
 
 .topic-creation-modal-content {
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
   width: 90%;
-  max-width: 700px; /* Adjust max-width as needed */
+  max-width: 800px;
   max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow-y: auto; /* Allow scrolling if content overflows */
 }
 
 .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
 }
 
 .modal-header h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    color: #333;
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
 }
-
 
 .close-button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
   background: none;
   border: none;
-  font-size: 1.8rem;
+  font-size: 24px;
   cursor: pointer;
-  color: #888;
-  padding: 5px;
-  line-height: 1;
-}
-.close-button:hover {
-    color: #333;
+  color: #666;
 }
 
+.close-button:hover {
+  color: #000;
+}
 
 .step-content-container {
-  margin-top: 20px;
-  margin-bottom: 20px;
-  flex-grow: 1; /* Allow content to take available space */
-  min-height: 200px; /* Ensure minimum height for content area */
+  padding: 15px 0;
+  flex-grow: 1;
+  min-height: 300px;
 }
 
 .step-content {
-  animation: fadeIn 0.3s ease-in-out;
+  padding: 15px;
 }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 
 .form-group {
   margin-bottom: 20px;
@@ -84,18 +70,21 @@
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 600;
-  color: #555;
+  font-weight: 500;
+}
+
+.database-indicator {
+  font-size: 0.85em;
+  color: #0066cc;
+  font-weight: normal;
 }
 
 .form-control {
   width: 100%;
-  padding: 12px 15px;
+  padding: 10px;
   border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 1rem;
-  box-sizing: border-box; /* Include padding and border in element's total width/height */
-  transition: border-color 0.2s ease;
+  border-radius: 4px;
+  font-size: 16px;
 }
 
 .form-control:focus {
@@ -104,57 +93,80 @@
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
-
 .navigation-buttons {
   display: flex;
   justify-content: space-between;
+  padding: 15px 0;
+  border-top: 1px solid #eee;
   margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
-}
-
-/* Standard button styling (assuming you have these globally or need them here) */
-.button-primary, .button-secondary {
-  padding: 12px 25px;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  text-align: center;
 }
 
 .button-primary {
+  padding: 10px 20px;
   background-color: #007bff;
   color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
 }
+
 .button-primary:hover {
   background-color: #0056b3;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
+
 .button-primary:disabled {
-  background-color: #a0cfff;
+  background-color: #66a3e0;
   cursor: not-allowed;
 }
 
 .button-secondary {
-  background-color: #6c757d;
-  color: white;
+  padding: 10px 20px;
+  background-color: #f8f9fa;
+  color: #495057;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
 }
+
 .button-secondary:hover {
-  background-color: #5a6268;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  background-color: #e2e6ea;
 }
+
 .button-secondary:disabled {
-  background-color: #b0b5b9;
+  background-color: #f8f9fa;
+  color: #adb5bd;
   cursor: not-allowed;
 }
 
-/* Styles for Topic Hub within this modal */
-.topic-hub-step {
-    /* Add specific styles if TopicHub needs different layout within this modal */
+.loading-subjects {
+  display: flex;
+  align-items: center;
+  margin: 15px 0;
 }
 
-/* Ensure error display and loading spinner styles are available if not global */
-/* (Assuming ErrorDisplay and LoadingSpinner have their own CSS or inherit) */
+.cancel-button {
+  padding: 6px 12px;
+  background-color: #f8f9fa;
+  color: #495057;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.topic-hub-step {
+  padding: 0;
+}
+
+/* Progress bar styling */
+.progress-bar-container {
+  margin: 20px auto;
+}
+
+/* Error text styling */
+.error-text {
+  color: #dc3545;
+  margin-top: 5px;
+  font-size: 0.9em;
+}
