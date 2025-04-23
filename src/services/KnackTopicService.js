@@ -36,8 +36,8 @@ function getKnackHeaders() {
 }
 
 /**
- * Fetch all available exam boards from Knack object_109
- * @returns {Promise<string[]>} Array of unique exam boards
+ * Get all available exam boards (hard-coded for reliability)
+ * @returns {Promise<string[]>} Array of exam boards
  */
 export async function fetchExamBoards() {
   // Check cache first
@@ -46,42 +46,13 @@ export async function fetchExamBoards() {
     return cache.examBoards;
   }
 
-  try {
-    console.log("Fetching exam boards from Knack object_109");
-    
-    // Use fetch instead of axios for consistency with existing code
-    const response = await fetch(`${KNACK_API_URL}/objects/${TOPIC_OBJECT}/records`, {
-      method: 'GET',
-      headers: getKnackHeaders(),
-      params: {
-        format: 'raw',
-        rows_per_page: 1000  // Get sufficient records
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`API call failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    // Extract unique exam boards
-    const examBoards = [...new Set(data.records
-      .map(record => record[FIELD_MAPPING.examBoard])
-      .filter(board => board))]
-      .sort(); // Sort alphabetically
-    
-    // Store in cache
-    cache.examBoards = examBoards;
-    console.log(`Found ${examBoards.length} exam boards in Knack: ${examBoards.join(', ')}`);
-    return examBoards;
-  } catch (error) {
-    console.error('Error fetching exam boards:', error);
-    // Return fallback values
-    const fallbackBoards = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA', 'SQA'];
-    console.log(`Using fallback exam boards: ${fallbackBoards.join(', ')}`);
-    return fallbackBoards;
-  }
+  // Hard-coded list of main UK exam boards
+  const examBoards = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA'];
+  
+  // Store in cache
+  cache.examBoards = examBoards;
+  console.log(`Using hard-coded exam boards: ${examBoards.join(', ')}`);
+  return examBoards;
 }
 
 /**

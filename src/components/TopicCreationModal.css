@@ -153,7 +153,16 @@
 
 /* Styles for Topic Hub within this modal */
 .topic-hub-step {
-    /* Add specific styles if TopicHub needs different layout within this modal */
+    max-height: 60vh; /* Limit height to ensure it fits in the modal */
+    overflow-y: auto; /* Enable vertical scrolling */
+    padding-right: 10px; /* Add some padding for the scrollbar */
+    margin-right: -10px; /* Offset the padding to maintain alignment */
+}
+
+/* Ensure the main topics list is scrollable within TopicHub */
+.topic-hub-step .main-topics-list {
+    overflow-y: visible; /* Allow content to be visible when scrolling */
+    padding-bottom: 20px; /* Add space at the bottom */
 }
 
 /* Ensure error display and loading spinner styles are available if not global */
