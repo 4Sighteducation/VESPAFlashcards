@@ -1,0 +1,124 @@
+﻿Topic Generator System - Implementation Guide
+This document provides a detailed explanation of how the topic generator system works in the Study Planner application, specifically focusing on how it integrates with Knack to fetch and display topic data for student study sessions.
+Overview
+The Study Planner application includes a sophisticated topic selection system for study sessions that:
+1. Retrieves structured topic data from the Knack database (object_109)
+2. Presents topics in a hierarchical format (main topics with subtopics)
+3. Allows users to search and filter topics
+4. Falls back to OpenAI generation or predefined lists when Knack data is unavailable
+5. Integrates with the session planner to populate dropdown menus
+System Architecture
+Core Components
+1. Knack Topic Fetcher (src/api/knack/topicFetcher.js)
+   * Communicates with Knack API to fetch syllabus data
+   * Processes raw data into a hierarchical structure
+   * Provides fallback mechanisms when API calls fail
+2. Topic Generator (src/api/openai/topicGenerator.js)
+   * Manages the workflow for obtaining topics
+   * First attempts to fetch from Knack
+   * Falls back to OpenAI generation if Knack data unavailable
+   * Uses hardcoded fallback topics as a final resort
+3. Session Modal (src/components/modals/SessionModal.js)
+   * UI component that displays topic selection interface
+   * Handles user interactions with topic data
+   * Provides search functionality for topics
+Knack Database Structure
+Topic Object (object_109)
+The core of the topic system relies on a structured data object in Knack with the following fields:
+| Field Name | Field ID | Description |
+|------------|----------|-------------|
+| Exam Board | field_3034 | The examination board (e.g., "AQA", "Edexcel") |
+| Exam Type | field_3035 | Type of exam (e.g., "GCSE", "A-Level") |
+| Subject | field_3033 | The academic subject |
+| Module | field_3036 | Module or unit within the subject |
+| Topic | field_3037 | Main topic within module/subject |
+| Subtopic | field_3038 | Specific subtopic within a topic |
+This structured approach allows for flexible organization of educational content across different examination structures.
+Data Flow & Integration
+1. Fetching Topics Process
+  
+
+2. Topic Data Processing
+The system intelligently adapts to different data structures based on what's available in the Knack records:
+* Multiple modules: Groups by module, with topics and subtopics organized underneath
+* Single module with multiple topics: Groups by topic with corresponding subtopics
+* No clear structure: Creates a dynamic structure based on available data
+* Minimal data: Creates a simplified structure based on subject name
+3. Topic Normalization
+The system normalizes subject names and exam types to ensure consistent searching and matching:
+* Exam type normalization (e.g., "a-level", "A Level", and "A-Level" all map to "a-level")
+* Subject normalization (handling suffix formats like "Mathematics (A-Level)")
+UI Integration
+The Session Modal component integrates the topic data into the UI:
+1. Topic Dropdown: Displays main topics fetched from Knack
+2. Subtopic Dropdown: Dynamically updates based on selected main topic
+3. Search Functionality: Allows filtering of topics by keyword
+4. Custom Topics: Allows users to enter custom topics when needed
+Implementation Steps for a New App
+To implement this topic generator system in a new application:
+1. Knack Database Setup
+1. Create a similar object structure in your Knack database (matching object_109)
+2. Populate with topic data organized by exam board, type, subject, module, topic, and subtopic
+2. API Configuration
+1. Configure environment variables for Knack connection:
+
+REACT_APP_KNACK_APP_ID=your_app_id
+REACT_APP_KNACK_API_KEY=your_api_key
+2. 
+For AI backup functionality, configure OpenAI access:
+
+REACT_APP_OPENAI_API_KEY=your_openai_key
+3. Implementation Files
+Import and use the key modules:
+// Import the topic fetcher
+import { fetchTopicsFromKnack, fetchAvailableSubjects } from 'path/to/topicFetcher';
+
+
+// Fetch subjects for a specific exam type and board
+const subjects = await fetchAvailableSubjects("A-Level", "AQA");
+
+
+// Fetch topics for a specific subject
+const topics = await fetchTopicsFromKnack("A-Level", "Mathematics", "AQA");
+4. UI Implementation
+Implement a UI component similar to SessionModal that:
+   1. Allows selection of exam board, type, and subject
+   2. Provides a button to generate topics
+   3. Displays topics in a searchable dropdown
+   4. Shows subtopics based on the selected main topic
+Technical Considerations
+Error Handling
+The system employs multiple fallback mechanisms:
+   1. First attempts to fetch from Knack
+   2. Falls back to OpenAI if Knack fails
+   3. Uses hardcoded topic lists if both external sources fail
+Performance Optimization
+   1. Topics are cached in localStorage after fetching
+   2. Larger API requests configured with higher token limits (MAX_RECORDS = 1000)
+   3. Search functionality implemented on the client side for better responsiveness
+Adaptive Data Processing
+The system adapts to different data structures by:
+   1. Analyzing the retrieved data
+   2. Determining the best grouping strategy (by module, topic, or creating a dynamic structure)
+   3. Processing data according to the identified structure
+Troubleshooting
+Common issues and solutions:
+   1. No topics appearing: Verify Knack API credentials and that object_109 exists with proper field IDs
+   2. Incorrect topic structure: Check if data in Knack follows the expected hierarchical pattern
+   3. OpenAI fallback not working: Verify the OpenAI API key is properly configured
+API Reference
+Knack Topic Fetcher
+// Fetch available subjects
+const subjects = await fetchAvailableSubjects(examType, examBoard);
+
+
+// Fetch topics for a specific subject
+const topics = await fetchTopicsFromKnack(examType, subject, examBoard);
+Topic Generator
+// Generate topics with subtopics
+const topics = await generateTopics(courseType, subject, examBoard);
+
+
+// Generate flat topic list (legacy format)
+const flatTopics = await generateFlatTopics(courseType, subject, examBoard);
+This implementation allows for a flexible, robust topic selection system that prioritizes pre-defined syllabus data while providing intelligent fallbacks when needed.

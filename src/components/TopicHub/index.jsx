@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaInfo, FaCheckCircle } from 'react-icons/fa';
+import { FaMagic, FaExclamationTriangle, FaEdit, FaTrash, FaPlus, FaSave, FaBolt, FaRedo, FaFolder, FaChevronDown, FaChevronUp, FaTimes, FaCheck, FaInfo, FaCheckCircle, FaDatabase } from 'react-icons/fa';
 import './styles.css';
 import { generateTopicPrompt } from '../../prompts/topicListPrompt';
 import { generateId } from '../../utils/UnifiedDataModel';
+import { fetchTopics } from '../../services/KnackTopicService';
 
 /**
  * TopicHub - Enhanced topic management component
@@ -198,6 +199,39 @@ const TopicHub = ({
       // Update the last request timestamp
       lastRequestTimestamp.current = Date.now();
       
+      // First try to fetch from Knack object_109 if not BTEC
+      if (examType !== 'BTEC') {
+        try {
+          console.log("Attempting to fetch topics from Knack object_109");
+          setProgressMessage("Fetching topics from our database...");
+          
+          const knackTopics = await fetchTopics(examType, examBoard, subject);
+          
+          if (knackTopics && Array.isArray(knackTopics) && knackTopics.length > 0) {
+            console.log(`Successfully retrieved ${knackTopics.length} topics from Knack object_109`);
+            setProgressMessage("Topics found in database!");
+            
+            // Store in cache and update UI
+            storeTopicsInCache(examBoard, examType, subject, knackTopics);
+            setTopics(knackTopics);
+            setHasGenerated(true);
+            setIsGenerating(false);
+            return;
+          } else {
+            console.log("No topics found in Knack object_109 or empty result, falling back to AI generation");
+            setProgressMessage("Generating topics with AI...");
+          }
+        } catch (knackError) {
+          console.error("Error fetching from Knack:", knackError);
+          console.log("Falling back to AI generation");
+          setProgressMessage("Generating topics with AI...");
+        }
+      } else {
+        console.log("BTEC selected, using AI generation directly");
+        setProgressMessage("Generating topics with AI for BTEC...");
+      }
+      
+      // If we've reached here, we need to use OpenAI as fallback
       // Make the API call to generate topics
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",

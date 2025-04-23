@@ -4,6 +4,7 @@ import "./TopicCreationModal.css"; // Import the new CSS file
 import LoadingSpinner from "./LoadingSpinner";
 import TopicHub from "./TopicHub"; // Still needed for the final step
 import { useWebSocket } from "../hooks/useWebSocket";
+import { fetchExamBoards, fetchSubjects, fetchTopics } from "../services/KnackTopicService";
 
 // Constants related to Topic Hub functionality
 const MAX_TOPICS_GENERATED = 25; // Increased limit as discussed
@@ -65,8 +66,11 @@ const TopicCreationModal = ({
     generateTopics: false,
   });
 
-  // Add state for existing subjects
+  // Add state for dynamic data from Knack
   const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [availableExamBoards, setAvailableExamBoards] = useState([]);
+  const [isLoadingBoards, setIsLoadingBoards] = useState(false);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
   // Add useEffect to handle subject list updates
   useEffect(() => {
@@ -75,6 +79,51 @@ const TopicCreationModal = ({
       setAvailableSubjects(existingSubjects);
     }
   }, [existingSubjects]);
+  
+  // Fetch exam boards when component mounts
+  useEffect(() => {
+    const loadExamBoards = async () => {
+      setIsLoadingBoards(true);
+      try {
+        const boards = await fetchExamBoards();
+        console.log("[TopicCreationModal] Loaded exam boards from Knack:", boards);
+        setAvailableExamBoards(boards);
+      } catch (error) {
+        console.error("[TopicCreationModal] Error loading exam boards:", error);
+        // Use fallback values on error
+        setAvailableExamBoards(['AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA', 'SQA']);
+      } finally {
+        setIsLoadingBoards(false);
+      }
+    };
+    
+    loadExamBoards();
+  }, []);
+  
+  // Fetch subjects when exam type and board change
+  useEffect(() => {
+    if (formData.examType && formData.examBoard) {
+      const loadSubjects = async () => {
+        setIsLoadingSubjects(true);
+        try {
+          const subjects = await fetchSubjects(formData.examType, formData.examBoard);
+          console.log(`[TopicCreationModal] Loaded ${subjects.length} subjects for ${formData.examType} ${formData.examBoard}`);
+          
+          if (subjects && subjects.length > 0) {
+            setAvailableSubjects(subjects);
+          } else {
+            console.log("[TopicCreationModal] No subjects found in Knack, keeping existing subjects");
+          }
+        } catch (error) {
+          console.error("[TopicCreationModal] Error loading subjects:", error);
+        } finally {
+          setIsLoadingSubjects(false);
+        }
+      };
+      
+      loadSubjects();
+    }
+  }, [formData.examType, formData.examBoard]);
 
   // Clear error when changing steps
   useEffect(() => {
@@ -304,16 +353,14 @@ const TopicCreationModal = ({
                 onChange={handleChange}
                 required
                 className="form-control" // Add a class for styling
+                disabled={isLoadingBoards}
               >
                 <option value="">Select Type...</option>
                 <option value="GCSE">GCSE</option>
                 <option value="A-Level">A-Level</option>
-                <option value="AS-Level">AS-Level</option>
-                <option value="BTEC">BTEC</option>
-                <option value="Diploma">Diploma</option>
-                <option value="Certificate">Certificate</option>
-                <option value="Other">Other</option>
+                <option value="BTEC">BTEC / Cambridge National</option>
               </select>
+              {isLoadingBoards && <div className="loading-indicator"><LoadingSpinner size="small" /></div>}
             </div>
           </div>
         );
@@ -327,18 +374,18 @@ const TopicCreationModal = ({
                 value={formData.examBoard}
                 onChange={handleChange}
                 required
-                 className="form-control" // Add a class for styling
+                className="form-control"
+                disabled={isLoadingSubjects}
               >
                 <option value="">Select Board...</option>
-                <option value="AQA">AQA</option>
-                <option value="Edexcel">Edexcel</option>
-                <option value="OCR">OCR</option>
-                <option value="WJEC">WJEC</option>
-                <option value="CCEA">CCEA</option>
-                <option value="Cambridge">Cambridge International</option>
-                <option value="IB">IB (International Baccalaureate)</option>
+                {availableExamBoards.map(board => (
+                  <option key={board} value={board}>
+                    {board}
+                  </option>
+                ))}
                 <option value="Other">Other</option>
               </select>
+              {isLoadingSubjects && <div className="loading-indicator"><LoadingSpinner size="small" /></div>}
             </div>
           </div>
         );
@@ -347,7 +394,12 @@ const TopicCreationModal = ({
           <div className="step-content">
             <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select or Create Subject</h2>
             <div className="form-group">
-              {!isAddingNewSubject ? (
+              {isLoadingSubjects ? (
+                <div className="loading-container">
+                  <LoadingSpinner />
+                  <p>Loading subjects for {formData.examType} {formData.examBoard}...</p>
+                </div>
+              ) : !isAddingNewSubject ? (
                 <>
                   <label htmlFor="subject-select">Choose a Subject:</label>
                   <select
@@ -358,11 +410,20 @@ const TopicCreationModal = ({
                     className="form-control"
                   >
                     <option value="">Select a Subject</option>
-                    {availableSubjects.map((subject) => (
-                      <option key={subject} value={subject}>{subject}</option>
-                    ))}
+                    {availableSubjects.length > 0 ? (
+                      availableSubjects.map((subject) => (
+                        <option key={subject} value={subject}>{subject}</option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No subjects found for {formData.examType} {formData.examBoard}</option>
+                    )}
                     <option value="--addNew--">+ Add New Subject</option>
                   </select>
+                  {availableSubjects.length === 0 && (
+                    <div className="info-message" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                      No subjects found in database. Add a new subject or try a different exam type/board.
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
