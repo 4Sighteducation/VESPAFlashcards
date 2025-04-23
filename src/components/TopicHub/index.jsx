@@ -73,6 +73,7 @@ const TopicHub = ({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   
   // Additional state for UI and loading
+  const [progressMessage, setProgressMessage] = useState(''); // Add missing state for progress messages
   const [loadingStatus, setLoadingStatus] = useState('');
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   
