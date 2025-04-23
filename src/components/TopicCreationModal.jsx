@@ -295,7 +295,7 @@ const TopicCreationModal = ({
     }
   }, [formData, isConnected, isLoading, pendingOperations.generateTopics, sendMessage]);
 
-  // Function to handle the finalization and saving of topics from TopicHub
+  // Function to handle the finalization and saving of topics from TopicHub - updated to fix multi-subject issue
   const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
     console.log(`[TopicCreationModal] Received ${topicShells.length} finalized topic shells from TopicHub.`);
     console.log(`[TopicCreationModal] Current formData state: ExamType='${formData.examType}', ExamBoard='${formData.examBoard}', Subject='${formData.subject}'`);
@@ -320,18 +320,22 @@ const TopicCreationModal = ({
     console.log("[TopicCreationModal] Prepared shellsToSave:", shellsToSave);
 
     try {
+      // Save the onSaveTopicShells reference to a local variable before calling it
+      // This prevents issues with closure capturing old references
+      const saveFunction = onSaveTopicShells;
+      
       // Call the onSaveTopicShells prop (from App.js or parent) to handle persistence
-      if (onSaveTopicShells && typeof onSaveTopicShells === 'function') {
-        await onSaveTopicShells(shellsToSave);
+      if (saveFunction && typeof saveFunction === 'function') {
+        await saveFunction(shellsToSave);
         console.log("[TopicCreationModal] Topic shells passed to onSaveTopicShells handler.");
+        
+        // Close modal immediately after successful save (no success modal)
+        onClose();
       } else {
         console.error("[TopicCreationModal] onSaveTopicShells prop is missing or not a function.");
         setError("Configuration error: Cannot save topic shells.");
         return; // Prevent closing if save failed
       }
-
-      onClose(); // Close modal after successful save
-
     } catch (error) {
       console.error("[TopicCreationModal] Error saving topic shells:", error);
       setError(`Failed to save topic shells: ${error.message}`);

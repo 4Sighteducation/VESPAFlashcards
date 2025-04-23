@@ -505,7 +505,7 @@
   z-index: 1000;
 }
 
-.save-topic-dialog, .select-topic-dialog, .delete-topic-dialog, .error-modal {
+.save-topic-dialog, .select-topic-dialog, .delete-topic-dialog, .delete-dialog, .error-modal {
   background-color: white;
   border-radius: 8px;
   padding: 24px;
@@ -572,6 +572,65 @@
 }
 
 .danger-button:hover {
+  background-color: #c82333;
+}
+
+/* Delete dialog specific styles */
+.delete-dialog {
+  max-width: 450px;
+}
+
+.delete-dialog-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.delete-dialog-header h3 {
+  margin: 0;
+  color: #dc3545;
+  font-size: 20px;
+}
+
+.warning-icon {
+  color: #dc3545;
+  font-size: 24px;
+  margin-right: 12px;
+}
+
+.delete-dialog-content {
+  margin-bottom: 20px;
+}
+
+.delete-dialog-content p {
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.delete-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #e9ecef;
+}
+
+.delete-dialog-actions .delete-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: auto;
+  height: auto;
+}
+
+.delete-dialog-actions .delete-button:hover {
   background-color: #c82333;
 }
 

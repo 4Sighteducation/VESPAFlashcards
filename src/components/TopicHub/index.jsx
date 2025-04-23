@@ -55,9 +55,9 @@ const TopicHub = ({
   const [editMainTopicMode, setEditMainTopicMode] = useState(null);
   const [editMainTopicValue, setEditMainTopicValue] = useState('');
   
-  // State for deletion confirmation
-  const [, setShowDeleteMainTopicDialog] = useState(false);
-  const [, setMainTopicToDelete] = useState(null);
+  // State for deletion confirmation - fixed to properly destructure state
+  const [showDeleteMainTopicDialog, setShowDeleteMainTopicDialog] = useState(false);
+  const [mainTopicToDelete, setMainTopicToDelete] = useState(null);
   
   // State for save/proceed functionality
   const [listName, setListName] = useState(`${subject} - ${examBoard} ${examType}`);
@@ -1052,6 +1052,28 @@ const TopicHub = ({
     setShowDeleteMainTopicDialog(true);
   };
   
+  // Delete main topic and all its subtopics
+  const deleteMainTopic = (mainTopicName) => {
+    if (!mainTopicName) return;
+    
+    console.log(`[TopicHub] Deleting main topic: ${mainTopicName} and all its subtopics`);
+    
+    // Find all subtopics that belong to this main topic
+    const topicsToDelete = topics.filter(topic => topic.mainTopic === mainTopicName);
+    
+    // Log what's being deleted
+    console.log(`[TopicHub] Will delete ${topicsToDelete.length} subtopics`);
+    
+    // Filter out the main topic and all its subtopics
+    setTopics(prevTopics => 
+      prevTopics.filter(topic => topic.mainTopic !== mainTopicName)
+    );
+    
+    // Close the confirmation dialog
+    setShowDeleteMainTopicDialog(false);
+    setMainTopicToDelete(null);
+  };
+  
   // Handle regenerating all topics
   const handleRegenerateTopics = () => {
     if (window.confirm("This will replace all topics. Are you sure?")) {
@@ -1612,7 +1634,7 @@ const TopicHub = ({
     );
   };
   
-  // Update the finalize topics function in TopicHub
+  // Updated finalize topics function - removes success modal per user request
   const handleFinalizeTopics = () => {
     console.log(`[TopicHub] Finalizing ${topics.length} topics for subject: ${subject}`);
 
@@ -1640,29 +1662,69 @@ const TopicHub = ({
         color: topicColor, // Use assigned or random color
         timestamp: new Date().toISOString(),
         hasIcons: true, // Flag to show icons in FlashcardList
-        // Include any other relevant metadata if available
-        // metadata: { ... }
       };
     }).filter(shell => shell !== null); // Remove any null entries from invalid topics
 
     console.log(`[TopicHub] Generated ${topicShells.length} topic shells:`, topicShells);
 
-    // Call the onFinalizeTopics prop passed from AICardGenerator
+    // Call the onFinalizeTopics prop passed from parent
     if (onFinalizeTopics && typeof onFinalizeTopics === 'function') {
-      // This function should handle saving the shells and closing the AICardGenerator
+      // This function will handle saving the shells and any next steps
       onFinalizeTopics(topicShells);
       
-      // Show a success message within TopicHub (optional, as AICardGenerator will close)
-      setShowSuccessModal(true); // You might want to customize this modal
-
-      // Note: We are NOT calling onClose() here directly anymore.
-      // The AICardGenerator's onFinalizeTopics wrapper will handle closing.
-
+      // We no longer show a success modal per user request
+      // The parent component will handle the flow after saving
+      
     } else {
       console.error("[TopicHub] onFinalizeTopics function not provided or is not a function!");
       // Show an error to the user if the callback is missing
       setError("Error: Could not finalize topics. Missing callback function.");
     }
+  };
+  
+  // Render delete main topic confirmation dialog
+  const renderDeleteMainTopicDialog = () => {
+    if (!showDeleteMainTopicDialog) return null;
+    
+    return (
+      <div className="modal-overlay">
+        <div className="delete-dialog">
+          <div className="delete-dialog-header">
+            <FaExclamationTriangle className="warning-icon" />
+            <h3>Delete Main Topic?</h3>
+          </div>
+          
+          <div className="delete-dialog-content">
+            <p>
+              Are you sure you want to delete the main topic 
+              <strong> "{mainTopicToDelete}" </strong> 
+              and all its subtopics?
+            </p>
+            <p className="warning-text">
+              This action cannot be undone.
+            </p>
+          </div>
+          
+          <div className="delete-dialog-actions">
+            <button 
+              onClick={() => {
+                setShowDeleteMainTopicDialog(false);
+                setMainTopicToDelete(null);
+              }} 
+              className="cancel-button"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={() => deleteMainTopic(mainTopicToDelete)}
+              className="delete-button"
+            >
+              Delete All
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
   
   // Main render method
@@ -1672,6 +1734,7 @@ const TopicHub = ({
       {renderFallbackNotice()}
       {renderErrorModal()}
       {renderSuccessModal()}
+      {renderDeleteMainTopicDialog()}
       {renderLoadingOverlay()}
     </div>
   );
