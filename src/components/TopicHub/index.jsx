@@ -1650,8 +1650,11 @@ const TopicHub = ({
       const actualTopicName = topic.subtopic || topic.mainTopic || `Topic ${index + 1}`;
       const topicColor = topic.color || `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
 
+      // Add a timestamp to the ID to make sure it's unique
+      const uniqueId = topic.id || generateId('topic') + "_" + Date.now() + "_" + index;
+
       return {
-        id: topic.id || generateId('topic'), // Use existing ID or generate new one
+        id: uniqueId, // Use existing ID or generate unique one
         type: 'topic', // Indicate this is a topic shell
         isShell: true,
         subject: subject, // Subject from props
@@ -1669,12 +1672,19 @@ const TopicHub = ({
 
     // Call the onFinalizeTopics prop passed from parent
     if (onFinalizeTopics && typeof onFinalizeTopics === 'function') {
-      // This function will handle saving the shells and any next steps
-      onFinalizeTopics(topicShells);
-      
-      // We no longer show a success modal per user request
-      // The parent component will handle the flow after saving
-      
+      try {
+        // This function will handle saving the shells and any next steps
+        onFinalizeTopics(topicShells);
+        console.log("[TopicHub] Successfully called onFinalizeTopics with shells");
+        
+        // Show success message directly to confirm to the user something happened
+        setError(null);
+        setShowSuccessModal(true);
+        
+      } catch (error) {
+        console.error("[TopicHub] Error during onFinalizeTopics:", error);
+        setError("Error saving topics: " + error.message);
+      }
     } else {
       console.error("[TopicHub] onFinalizeTopics function not provided or is not a function!");
       // Show an error to the user if the callback is missing

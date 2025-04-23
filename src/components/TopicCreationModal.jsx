@@ -468,6 +468,7 @@ const TopicCreationModal = ({
               progressMessage={progressMessage}
               triggerTopicGeneration={triggerTopicGeneration}
               onFinalizeTopics={handleFinalizeAndSaveTopics}
+              onSaveTopicShells={onSaveTopicShells} /* Added this prop to pass through to TopicHub */
               topicGenerationComplete={topicGenerationComplete}
               maxTopicsGenerated={MAX_TOPICS_GENERATED}
               maxTopicsDisplayed={MAX_TOPICS_DISPLAYED}
