@@ -1634,7 +1634,7 @@ const TopicHub = ({
     );
   };
   
-  // Updated finalize topics function - removes success modal per user request
+  // Updated finalize topics function - completely removes success modal
   const handleFinalizeTopics = () => {
     console.log(`[TopicHub] Finalizing ${topics.length} topics for subject: ${subject}`);
 
@@ -1648,10 +1648,13 @@ const TopicHub = ({
       
       // Use the subtopic name if available, otherwise use main topic or a placeholder
       const actualTopicName = topic.subtopic || topic.mainTopic || `Topic ${index + 1}`;
-      const topicColor = topic.color || `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
+      
+      // Generate a truly unique color for each topic to ensure visibility
+      const topicColor = topic.color || `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`;
 
-      // Add a timestamp to the ID to make sure it's unique
-      const uniqueId = topic.id || generateId('topic') + "_" + Date.now() + "_" + index;
+      // Create a truly unique ID by adding a timestamp and index
+      const timestamp = Date.now();
+      const uniqueId = (topic.id || generateId('topic')) + "_" + timestamp + "_" + index;
 
       return {
         id: uniqueId, // Use existing ID or generate unique one
@@ -1663,7 +1666,7 @@ const TopicHub = ({
         examBoard: examBoard || "General", // Metadata from props
         examType: examType || "Course",
         color: topicColor, // Use assigned or random color
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(timestamp).toISOString(),
         hasIcons: true, // Flag to show icons in FlashcardList
       };
     }).filter(shell => shell !== null); // Remove any null entries from invalid topics
@@ -1677,10 +1680,12 @@ const TopicHub = ({
         onFinalizeTopics(topicShells);
         console.log("[TopicHub] Successfully called onFinalizeTopics with shells");
         
-        // Show success message directly to confirm to the user something happened
+        // Immediately close the modal WITHOUT showing a success modal
         setError(null);
-        setShowSuccessModal(true);
         
+        // Don't show success modal - the parent will handle the flow
+        // Instead, immediately trigger close to return to main app
+        onClose && onClose();
       } catch (error) {
         console.error("[TopicHub] Error during onFinalizeTopics:", error);
         setError("Error saving topics: " + error.message);
