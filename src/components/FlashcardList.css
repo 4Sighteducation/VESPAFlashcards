@@ -157,6 +157,24 @@
   background-color: white;
   padding: 10px 0;
   visibility: visible !important;
+  max-height: 70vh; /* Limit height to enable scrolling */
+  overflow-y: auto; /* Enable vertical scrolling */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent; /* Firefox */
+}
+
+/* Styling for webkit scrollbars (Chrome, Safari, Edge) */
+.topics-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.topics-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.topics-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
 }
 
 .topic-group {
