@@ -1029,7 +1029,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
   
     // --- Central Message Router ---
     // Routes messages received from the React app iframe to specific handlers
-    function handleMessageRouter(type, data, iframeWindow) { // Parameter names are fine, 'data' here IS the full messageData object now
+    function handleMessageRouter(type, data, iframeWindow) { // 'data' here IS the full messageData object
       // Basic validation
       if (!type) {
           console.warn("[Knack Script] Received message without type.");
@@ -1094,36 +1094,40 @@ function safeParseJSON(jsonString, defaultVal = null) {
     // --- Specific Message Handlers (Using Save Queue & Correct PostMessage Target) ---
   
     // Handles 'SAVE_DATA' request from React app
-    async function handleSaveDataRequest(data, iframeWindow) { // 'data' here IS the full messageData object
+    // --- RENAMED PARAMETER from 'data' to 'saveDataMessage' ---
+    async function handleSaveDataRequest(saveDataMessage, iframeWindow) { 
       console.log("[Knack Script] Handling SAVE_DATA request");
       // --- Added Detailed Logging ---
       // This should now log the actual object received
-      console.log("[Knack Script] Received SAVE_DATA payload:", JSON.stringify(data, null, 2)); 
+      console.log("[Knack Script] Received SAVE_DATA payload:", JSON.stringify(saveDataMessage, null, 2)); 
       // --- End Added Logging ---
-      if (!data || !data.recordId) { // This check should now work correctly
+      // --- Use RENAMED PARAMETER --- 
+      if (!saveDataMessage || !saveDataMessage.recordId) { 
           console.error("[Knack Script] SAVE_DATA request missing recordId.");
            // CORRECTION: Target iframeWindow for response
           if (iframeWindow) iframeWindow.postMessage({ type: 'SAVE_RESULT', success: false, error: "Missing recordId" }, '*');
           return;
       }
-      debugLog("[Knack Script] Data received for SAVE_DATA:", data);
+      // --- Use RENAMED PARAMETER --- 
+      debugLog("[Knack Script] Data received for SAVE_DATA:", saveDataMessage);
   
       try {
         // Add the 'full' save operation to the queue
         await saveQueue.addToQueue({
           type: 'full',
-          data: data, // Pass the whole data object received
-          recordId: data.recordId,
-          preserveFields: data.preserveFields || false // Default preserveFields to false if not provided
+          // --- Use RENAMED PARAMETER --- 
+          data: saveDataMessage, // Pass the whole data object received
+          recordId: saveDataMessage.recordId,
+          preserveFields: saveDataMessage.preserveFields || false // Default preserveFields to false if not provided
         });
   
-        console.log(`[Knack Script] SAVE_DATA for record ${data.recordId} completed successfully.`);
+        console.log(`[Knack Script] SAVE_DATA for record ${saveDataMessage.recordId} completed successfully.`);
         // CORRECTION: Target iframeWindow for response
         if (iframeWindow) iframeWindow.postMessage({ type: 'SAVE_RESULT', success: true, timestamp: new Date().toISOString() }, '*');
   
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`[Knack Script] SAVE_DATA failed for record ${data.recordId}:`, errorMessage);
+        console.error(`[Knack Script] SAVE_DATA failed for record ${saveDataMessage.recordId}:`, errorMessage);
         // CORRECTION: Target iframeWindow for response
         if (iframeWindow) iframeWindow.postMessage({ type: 'SAVE_RESULT', success: false, error: errorMessage || 'Unknown save error' }, '*');
       }
