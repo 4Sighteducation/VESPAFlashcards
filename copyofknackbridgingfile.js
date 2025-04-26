@@ -41,26 +41,56 @@
 
     // --- Helper Functions (Copied/Adapted from 5w) ---
   
-    // Safe URI component decoding function
-    function safeDecodeURIComponent(str) {
-      if (!str) return str;
-      // Check if it looks like it needs decoding
-      if (typeof str === 'string' && !str.includes('%')) return str;
+// Enhanced URI component decoding function with better error handling
+function safeDecodeURIComponent(str) {
+  if (!str) return str;
+  // Check if it looks like it needs decoding
+  if (typeof str === 'string' && !str.includes('%')) return str;
+  
+  try {
+    // Handle plus signs as spaces which sometimes occur
+    return decodeURIComponent(str.replace(/\+/g, ' '));
+  } catch (error) {
+    console.error("Flashcard app: Error decoding URI component:", error, "String:", String(str).substring(0, 100));
+    
+    try {
+      // First attempt to fix potentially invalid % sequences
+      const cleaned = String(str).replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
+      return decodeURIComponent(cleaned.replace(/\+/g, ' '));
+    } catch (secondError) {
+      console.error("Flashcard app: Second attempt to decode failed:", secondError);
+      
       try {
-         // Handle plus signs as spaces which sometimes occur
-        return decodeURIComponent(str.replace(/\+/g, ' '));
-      } catch (error) {
-        console.error("Flashcard app: Error decoding URI component:", error, "String:", String(str).substring(0, 100));
+        // Third attempt: Try more aggressive cleaning - handle truncated URIs by removing trailing %
+        const aggressiveCleaned = String(str)
+          .replace(/%(?![0-9A-Fa-f]{2})/g, '%25')  // Fix invalid % sequences
+          .replace(/%[0-9A-Fa-f]$/g, '%25')        // Fix truncated % at end
+          .replace(/%[0-9A-Fa-f](?![0-9A-Fa-f])/g, '%25'); // Fix single-digit % sequences
+        
+        return decodeURIComponent(aggressiveCleaned.replace(/\+/g, ' '));
+      } catch (thirdError) {
+        console.error("Flashcard app: Third attempt to decode failed:", thirdError);
+        
+        // Last resort - try to extract any valid JSON
         try {
-          // Attempt to fix potentially invalid % sequences
-          const cleaned = String(str).replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
-          return decodeURIComponent(cleaned.replace(/\+/g, ' '));
-        } catch (secondError) {
-          console.error("Flashcard app: Second attempt to decode failed:", secondError);
-          return String(str); // Return original string if all fails
+          // Look for valid JSON patterns and try to extract them
+          const jsonPattern = /\[(.*)\]|\{(.*)\}/;
+          const match = String(str).match(jsonPattern);
+          if (match) {
+            console.warn("Flashcard app: Attempting JSON extraction from corrupted URI");
+            const extracted = match[0];
+            return extracted;
+          }
+        } catch (e) {
+          console.error("Flashcard app: JSON extraction attempt failed");
         }
+        
+        // Give up and return the original string
+        return String(str);
       }
     }
+  }
+}
   
   
     // Safely encode URI component
@@ -73,34 +103,69 @@
       }
     }
   
-    // Safe JSON parsing function
-    function safeParseJSON(jsonString, defaultVal = null) {
-        if (!jsonString) return defaultVal;
+// Enhanced JSON parsing function with better recovery
+function safeParseJSON(jsonString, defaultVal = null) {
+    if (!jsonString) return defaultVal;
+    try {
+        // If it's already an object (e.g., from Knack raw format), return it directly
+        if (typeof jsonString === 'object' && jsonString !== null) return jsonString;
+        // Attempt standard parsing
+        return JSON.parse(jsonString);
+    } catch (error) {
+        console.warn("Flashcard app: Initial JSON parse failed:", error, "String:", String(jsonString).substring(0, 100));
+        
+        // Attempt recovery for common issues
         try {
-            // If it's already an object (e.g., from Knack raw format), return it directly
-            if (typeof jsonString === 'object' && jsonString !== null) return jsonString;
-            // Attempt standard parsing
-            return JSON.parse(jsonString);
-        } catch (error) {
-            console.warn("Flashcard app: Initial JSON parse failed:", error, "String:", String(jsonString).substring(0, 100));
-            // Attempt recovery for common issues
+            // Remove potential leading/trailing whitespace or BOM
+            const cleanedString = String(jsonString).trim().replace(/^\uFEFF/, '');
+            // Try common fixes like escaped quotes, trailing commas
+            const recovered = cleanedString
+                .replace(/\\"/g, '"') // Fix incorrectly escaped quotes
+                .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
+                .replace(/\n/g, ' ') // Remove newlines
+                .replace(/\r/g, ' ') // Remove carriage returns
+                .replace(/\t/g, ' '); // Remove tabs
+            
+            const result = JSON.parse(recovered);
+            console.log("Flashcard app: JSON recovery successful.");
+            return result;
+        } catch (secondError) {
+            console.error("Flashcard app: JSON recovery failed:", secondError);
+            
+            // More aggressive approach - try to extract anything that looks like JSON
             try {
-                // Remove potential leading/trailing whitespace or BOM
-                const cleanedString = String(jsonString).trim().replace(/^\uFEFF/, '');
-                // Try common fixes like escaped quotes, trailing commas
-                const recovered = cleanedString
-                    .replace(/\\"/g, '"') // Fix incorrectly escaped quotes
-                    .replace(/,\s*([}\]])/g, '$1'); // Remove trailing commas
-                const result = JSON.parse(recovered);
-                 console.log("Flashcard app: JSON recovery successful.");
-                return result;
-            } catch (secondError) {
-                console.error("Flashcard app: JSON recovery failed:", secondError);
-                // Return the default value if all parsing fails
-                return defaultVal;
+                console.warn("Flashcard app: Attempting aggressive JSON extraction");
+                
+                // Try to extract array or object pattern
+                let extractedJson = null;
+                const jsonString = String(jsonString);
+                
+                // Look for array pattern [...]
+                if (jsonString.includes('[') && jsonString.includes(']')) {
+                    const arrayMatch = jsonString.match(/\[[\s\S]*\]/);
+                    if (arrayMatch) extractedJson = arrayMatch[0];
+                }
+                // Look for object pattern {...}
+                else if (jsonString.includes('{') && jsonString.includes('}')) {
+                    const objectMatch = jsonString.match(/\{[\s\S]*\}/);
+                    if (objectMatch) extractedJson = objectMatch[0];
+                }
+                
+                if (extractedJson) {
+                    // Try parsing the extracted pattern
+                    const result = JSON.parse(extractedJson);
+                    console.log("Flashcard app: Aggressive JSON recovery successful");
+                    return result;
+                }
+            } catch (thirdError) {
+                console.error("Flashcard app: Aggressive JSON recovery failed:", thirdError);
             }
+            
+            // Return the default value if all parsing fails
+            return defaultVal;
         }
     }
+}
   
   
     // Check if a string is a valid Knack record ID
@@ -1553,20 +1618,60 @@ async function handleKnackRequest(data, iframeWindow) {
                // --- Assemble userData from record fields safely ---
                let userData = { recordId: record.id };
                try {
-                   // Helper to parse potentially encoded fields
+                   // Enhanced helper to parse potentially encoded fields with better error recovery
                    const parseField = (fieldName) => {
                       const rawValue = record[fieldName];
                       if (rawValue === undefined || rawValue === null) return null;
-                      // Decode only if it's a string and contains '%'
-                      const decodedValue = (typeof rawValue === 'string' && rawValue.includes('%'))
-                           ? safeDecodeURIComponent(rawValue)
-                           : rawValue;
-                      // Parse if it's potentially JSON (string starting with { or [)
-                       if (typeof decodedValue === 'string' && (decodedValue.startsWith('{') || decodedValue.startsWith('['))) {
-                           return safeParseJSON(decodedValue);
-                       }
-                       // Return decoded value otherwise (might be plain string, number etc.)
-                       return decodedValue;
+                      
+                      try {
+                          // Decode only if it's a string and contains '%'
+                          let decodedValue;
+                          if (typeof rawValue === 'string' && rawValue.includes('%')) {
+                              try {
+                                  decodedValue = safeDecodeURIComponent(rawValue);
+                              } catch (decodeError) {
+                                  console.error(`[Knack Script] Critical decode error for ${fieldName}:`, decodeError);
+                                  // If decoding completely fails despite our safe function's attempts,
+                                  // try to extract JSON pattern directly from the raw string as last resort
+                                  decodedValue = rawValue;
+                              }
+                          } else {
+                              decodedValue = rawValue;
+                          }
+                          
+                          // Parse if it's potentially JSON (string starting with { or [)
+                          if (typeof decodedValue === 'string' && 
+                             (decodedValue.startsWith('{') || decodedValue.startsWith('['))) {
+                              try {
+                                  return safeParseJSON(decodedValue);
+                              } catch (parseError) {
+                                  console.error(`[Knack Script] JSON parse error for ${fieldName}:`, parseError);
+                                  
+                                  // Last resort emergency extraction - look for JSON patterns in raw string
+                                  if (typeof rawValue === 'string') {
+                                      const jsonPattern = /(\[.*?\]|\{.*?\})/s;
+                                      const match = rawValue.match(jsonPattern);
+                                      if (match && match[0]) {
+                                          console.warn(`[Knack Script] Attempting emergency JSON extraction for ${fieldName}`);
+                                          try {
+                                              return safeParseJSON(match[0], null);
+                                          } catch (e) {
+                                              console.error(`[Knack Script] Emergency extraction failed for ${fieldName}`);
+                                              return null;
+                                          }
+                                      }
+                                  }
+                                  
+                                  return null; // Give up and return null
+                              }
+                          }
+                          
+                          // Return decoded value otherwise (might be plain string, number etc.)
+                          return decodedValue;
+                      } catch (e) {
+                          console.error(`[Knack Script] Unhandled error in parseField for ${fieldName}:`, e);
+                          return null; // Return null as ultimate fallback
+                      }
                    };
   
   

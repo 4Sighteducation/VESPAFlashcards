@@ -1635,7 +1635,7 @@ const TopicHub = ({
   };
   
   // Updated finalize topics function - improved for stability and multi-subject support
-  const handleFinalizeTopics = () => {
+  const handleFinalizeTopics = useCallback(() => {
     console.log(`[TopicHub] Finalizing ${topics.length} topics for subject: ${subject}`);
 
     // Generate topic shells based on the current state of topics
@@ -1677,19 +1677,36 @@ const TopicHub = ({
 
     console.log(`[TopicHub] Generated ${topicShells.length} topic shells:`, topicShells);
 
+    // Store a reference to the handler to avoid any scope/closure issues
+    const finalizeHandler = onFinalizeTopics;
+    const closeHandler = onClose;
+
+    // Extra verification logging
+    if (!finalizeHandler) {
+      console.error("[TopicHub] ERROR: onFinalizeTopics is null or undefined!");
+    } else if (typeof finalizeHandler !== 'function') {
+      console.error("[TopicHub] ERROR: onFinalizeTopics is not a function, type:", typeof finalizeHandler);
+    } else {
+      console.log("[TopicHub] onFinalizeTopics check passed - it's a function");
+    }
+
     // Call the onFinalizeTopics prop passed from parent
-    if (onFinalizeTopics && typeof onFinalizeTopics === 'function') {
+    if (finalizeHandler && typeof finalizeHandler === 'function') {
       try {
         // This function will handle saving the shells and any next steps
-        onFinalizeTopics(topicShells);
+        finalizeHandler(topicShells);
         console.log("[TopicHub] Successfully called onFinalizeTopics with shells");
         
-        // Immediately close the modal WITHOUT showing a success modal
+        // Clear any error state
         setError(null);
         
         // Don't show success modal - the parent will handle the flow
         // Instead, immediately trigger close to return to main app
-        onClose && onClose();
+        if (closeHandler && typeof closeHandler === 'function') {
+          closeHandler();
+        } else {
+          console.warn("[TopicHub] Close handler is missing or not a function");
+        }
       } catch (error) {
         console.error("[TopicHub] Error during onFinalizeTopics:", error);
         setError("Error saving topics: " + error.message);
@@ -1699,7 +1716,7 @@ const TopicHub = ({
       // Show an error to the user if the callback is missing
       setError("Error: Could not finalize topics. Missing callback function.");
     }
-  };
+  }, [topics, subject, examBoard, examType, onFinalizeTopics, onClose]);
   
   // Render delete main topic confirmation dialog
   const renderDeleteMainTopicDialog = () => {

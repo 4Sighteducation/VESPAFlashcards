@@ -2434,154 +2434,148 @@ const filteredCards = useMemo(() => {
   // --- REMOVE loadCombinedData FROM HERE ---
   // const loadCombinedData = useCallback(...) // MOVED EARLIER
 
-  const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegeneration = false) => {
-       if (!topicShells || topicShells.length === 0) return;
-       console.log(`[App handleSaveTopicShellsAndRefresh] Received ${topicShells.length} shells. Regen: ${isRegeneration}`);
+const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegeneration = false) => {
+    if (!topicShells || topicShells.length === 0) return;
+    console.log(`[App handleSaveTopicShellsAndRefresh] Received ${topicShells.length} shells. Regen: ${isRegeneration}`);
 
-        // Generate a unique timestamp for this batch of shells
-        const timestamp = Date.now();
-        // Process shells with improved ID generation to prevent collisions
-        const itemsToSave = topicShells.map((shell, index) => {
-            // Generate a truly unique ID that won't collide with other shells
-            const uniqueId = `shell_${timestamp}_${index}_${Math.random().toString(36).substring(2, 9)}`;
+    try {
+        // 1. Extract and ensure we have the subject information from these shells
+        const subject = topicShells[0]?.subject || "General";
+        console.log(`[App handleSaveTopicShellsAndRefresh] Processing shells for subject: ${subject}`);
+
+        // 2. Use the IDs provided by the component, but ensure they're unique
+        // We'll assume the IDs from TopicCreationModal already have subject prefixes
+        const itemsToSave = topicShells.map((shell) => {
+            // Ensure each shell has the proper metadata
             return {
                 ...shell,
-                id: shell.id || uniqueId,
+                id: shell.id, // Keep original ID which should already be unique
                 timestamp: new Date().toISOString(),
                 type: 'topic',
                 isShell: true,
-                regenerate: isRegeneration
+                regenerate: isRegeneration,
+                // Ensure the subject is explicitly set
+                subject: subject
             };
         });
 
-        // First retrieve current state safely
+        // 3. Get the current cards and topicLists states
         const currentCards = [...allCards];
         const currentTopicLists = [...topicLists];
 
-        // Create a map of existing shells by subject and topic for reference
-        const existingShellMap = new Map();
-        currentCards
-          .filter(item => item.type === 'topic' && item.isShell)
-          .forEach(shell => {
-             // Create a composite key to identify unique subject-topic combinations
-             const key = `${shell.subject || 'General'}-${shell.topic || shell.name || 'Unknown'}`;
-             existingShellMap.set(key, shell.id);
-        });
+        // 4. Create filtered arrays for each subject - CRITICAL FIX
+        // First, separate cards for the current subject
+        const thisSubjectCards = currentCards.filter(card => 
+            (card.subject || "General") === subject && 
+            (card.type !== 'topic' || !card.isShell)
+        );
+        
+        const thisSubjectShells = currentCards.filter(card => 
+            (card.subject || "General") === subject && 
+            card.type === 'topic' && 
+            card.isShell
+        );
+        
+        // This is the key fix - preserve cards from OTHER subjects
+        const otherSubjectItems = currentCards.filter(card => 
+            (card.subject || "General") !== subject
+        );
+        
+        console.log(`[App handleSaveTopicShellsAndRefresh] Current card counts by type:
+            - This subject cards: ${thisSubjectCards.length}
+            - This subject shells: ${thisSubjectShells.length}
+            - Other subjects items: ${otherSubjectItems.length}
+            - New shells to add: ${itemsToSave.length}`);
 
-        // Prepare the updated cards collection, preserving all non-matching cards
-        // This ensures we don't lose existing cards or overwrite other subjects
-        const updatedCardsPayload = currentCards.filter(card => {
-            // Keep all non-topic cards
-            if (card.type !== 'topic' || !card.isShell) return true;
+        // 5. Create a set of topic IDs to check for duplicates
+        const newShellIds = new Set(itemsToSave.map(shell => shell.id));
+        
+        // 6. Keep existing shells for this subject that aren't being replaced
+        const remainingShells = thisSubjectShells.filter(shell => !newShellIds.has(shell.id));
+        
+        // 7. Build the final cards array, preserving all other subjects completely
+        const updatedCardsPayload = [
+            ...otherSubjectItems,       // Cards from other subjects (unchanged)
+            ...thisSubjectCards,        // Regular cards for this subject (unchanged)
+            ...remainingShells,         // Existing shells for this subject that aren't replaced
+            ...itemsToSave              // New shells for this subject
+        ];
+        
+        console.log(`[App handleSaveTopicShellsAndRefresh] Final merged cards payload count: ${updatedCardsPayload.length}`);
+
+        // 8. Update the topic lists - CRITICAL FIX FOR TOPIC LISTS
+        const topicListEntries = itemsToSave.map(shell => ({
+            id: shell.id,
+            name: shell.name || shell.topic || "Unknown Topic",
+            examBoard: shell.examBoard || '',
+            examType: shell.examType || '',
+            color: shell.color || '#cccccc',
+            subjectColor: shell.subjectColor || subjectColorMapping[subject]?.base || '#3cb44b'
+        }));
+        
+        // Find existing topic list for this subject
+        const existingListIndex = currentTopicLists.findIndex(list => list.subject === subject);
+        let updatedTopicLists = [];
+        
+        if (existingListIndex >= 0) {
+            // Update existing topic list for this subject
+            updatedTopicLists = [...currentTopicLists];
             
-            // For topic shells, check if we're replacing this one
-            const key = `${card.subject || 'General'}-${card.topic || card.name || 'Unknown'}`;
-            const isReplaced = itemsToSave.some(newShell => {
-                const newKey = `${newShell.subject || 'General'}-${newShell.topic || newShell.name || 'Unknown'}`;
-                return key === newKey;
-            });
+            // Keep track of existing topic IDs to avoid duplicates
+            const existingTopicIds = new Set(updatedTopicLists[existingListIndex].topics?.map(t => t.id) || []);
             
-            // Keep if it's not going to be replaced
-            return !isReplaced;
-        });
-        
-        // Add all new shells to the cards payload
-        updatedCardsPayload.push(...itemsToSave);
-        
-        console.log(`[App handleSaveTopicShellsAndRefresh] Merged ${itemsToSave.length} shells with existing cards.`);
-        console.log(`[App handleSaveTopicShellsAndRefresh] Final cards payload count: ${updatedCardsPayload.length}`);
-        
-        // Create topic list entries from our shells
-        // First group the shells by subject
-        const groupedShells = {};
-        itemsToSave.forEach(shell => {
-            const subject = shell.subject || 'General';
-            if (!groupedShells[subject]) {
-                groupedShells[subject] = [];
-            }
-            groupedShells[subject].push({
-                id: shell.id,
-                name: shell.name,
-                examBoard: shell.examBoard || shell.metadata?.examBoard || '',
-                examType: shell.examType || shell.metadata?.examType || '',
-                color: shell.color || '#cccccc',
-                subjectColor: shell.subjectColor || subjectColorMapping[subject]?.base || '#3cb44b'
-            });
-        });
-        
-        // Now merge with existing topic lists, preserving other subjects
-        const updatedTopicLists = [...currentTopicLists];
-        
-        // For each subject in our grouped shells
-        Object.entries(groupedShells).forEach(([subject, topics]) => {
-            // Find an existing topic list for this subject
-            const existingListIndex = updatedTopicLists.findIndex(list => list.subject === subject);
+            // Add new topics to existing list, avoiding duplicates
+            const updatedTopics = [...(updatedTopicLists[existingListIndex].topics || [])];
             
-            if (existingListIndex >= 0) {
-                // Update existing topic list with new topics
-                console.log(`[App handleSaveTopicShellsAndRefresh] Updating existing topic list for subject: ${subject}`);
-                
-                // Create a set of existing topic IDs for faster lookups
-                const existingTopicIds = new Set(updatedTopicLists[existingListIndex].topics?.map(t => t.id) || []);
-                
-                // Merge existing topics with new ones, avoiding duplicates
-                const mergedTopics = [...(updatedTopicLists[existingListIndex].topics || [])];
-                
-                // Add new topics if they don't exist yet by ID
-                topics.forEach(topic => {
-                    if (!existingTopicIds.has(topic.id)) {
-                        mergedTopics.push(topic);
-                    }
-                });
-                
-                // Update the topic list entry
-                updatedTopicLists[existingListIndex] = {
-                    ...updatedTopicLists[existingListIndex],
-                    topics: mergedTopics,
-                    // Keep existing color
-                    color: updatedTopicLists[existingListIndex].color || '#3cb44b'  
-                };
-            } else {
-                // Add a new topic list for this subject
-                console.log(`[App handleSaveTopicShellsAndRefresh] Adding new topic list for subject: ${subject}`);
-                updatedTopicLists.push({
+            // Filter out any existing topics that are being replaced
+            const filteredTopics = updatedTopics.filter(topic => !newShellIds.has(topic.id));
+            
+            // Add the new topic entries
+            updatedTopicLists[existingListIndex] = {
+                ...updatedTopicLists[existingListIndex],
+                topics: [...filteredTopics, ...topicListEntries]
+            };
+            
+            console.log(`[App handleSaveTopicShellsAndRefresh] Updated existing topic list for ${subject} with ${topicListEntries.length} new entries`);
+        } else {
+            // Create a new topic list for this subject
+            updatedTopicLists = [
+                ...currentTopicLists,
+                {
                     subject,
-                    topics,
+                    topics: topicListEntries,
                     color: subjectColorMapping[subject]?.base || getRandomColor()
-                });
-            }
-        });
-        
-        // Log the result for debugging
-        console.log(`[App handleSaveTopicShellsAndRefresh] Final topic lists count: ${updatedTopicLists.length}`);
-        
-        try {
-            // Update topic lists state
-            setTopicLists(updatedTopicLists);
+                }
+            ];
             
-            // Save everything to the database
-            console.log(`[App handleSaveTopicShellsAndRefresh] Calling saveData with ${updatedCardsPayload.length} total items.`);
-            await saveData({
-                cards: updatedCardsPayload,
-                // Include all necessary state
-                colorMapping: subjectColorMapping,
-                spacedRepetition: spacedRepetitionData,
-                userTopics: userTopics,
-                topicLists: updatedTopicLists, // Use our updated topic lists
-                topicMetadata: topicMetadata
-            }, true); // preserveFields=true
-            
-            console.log("[App handleSaveTopicShellsAndRefresh] saveData call completed successfully.");
-            showStatus("Topics saved successfully!");
-            
-            // Update local state to reflect the changes
-            setAllCards(updatedCardsPayload);
-            
-        } catch (error) {
-            console.error("[App handleSaveTopicShellsAndRefresh] Error calling saveData:", error);
-            showStatus("Error saving topics. Please try again.");
+            console.log(`[App handleSaveTopicShellsAndRefresh] Added new topic list for subject: ${subject}`);
         }
-   }, [allCards, saveData, showStatus, subjectColorMapping, getRandomColor, spacedRepetitionData, userTopics, topicLists, topicMetadata, setTopicLists, setAllCards]);
+        
+        console.log(`[App handleSaveTopicShellsAndRefresh] Final topic lists count: ${updatedTopicLists.length}`);
+
+        // 9. Save the data - First update local state
+        setAllCards(updatedCardsPayload);
+        setTopicLists(updatedTopicLists);
+            
+        // 10. Then save to storage/backend
+        console.log(`[App handleSaveTopicShellsAndRefresh] Calling saveData with ${updatedCardsPayload.length} total items`);
+        await saveData({
+            cards: updatedCardsPayload,
+            colorMapping: subjectColorMapping,
+            spacedRepetition: spacedRepetitionData,
+            userTopics: userTopics,
+            topicLists: updatedTopicLists,
+            topicMetadata: topicMetadata
+        }, true); // preserveFields=true to ensure other data is preserved
+            
+        console.log("[App handleSaveTopicShellsAndRefresh] saveData call completed successfully");
+        showStatus("Topics saved successfully!");
+            
+    } catch (error) {
+        console.error("[App handleSaveTopicShellsAndRefresh] Error saving topic shells:", error);
+        showStatus("Error saving topics. Please try again.");
+    }
+}, [allCards, saveData, showStatus, subjectColorMapping, getRandomColor, spacedRepetitionData, userTopics, topicLists, topicMetadata, setTopicLists, setAllCards]);
 
   const handleUpdateSubjectColor = useCallback(async (subject, topic, newColor) => {
       // ... (implementation as before) ...

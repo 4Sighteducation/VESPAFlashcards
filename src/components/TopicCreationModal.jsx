@@ -295,53 +295,81 @@ const TopicCreationModal = ({
     }
   }, [formData, isConnected, isLoading, pendingOperations.generateTopics, sendMessage]);
 
-  // Function to handle the finalization and saving of topics from TopicHub - updated to fix multi-subject issue
-  const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
-    console.log(`[TopicCreationModal] Received ${topicShells.length} finalized topic shells from TopicHub.`);
-    console.log(`[TopicCreationModal] Current formData state: ExamType='${formData.examType}', ExamBoard='${formData.examBoard}', Subject='${formData.subject}'`);
+// Function to handle the finalization and saving of topics from TopicHub - fixed for multi-subject support
+const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
+  console.log(`[TopicCreationModal] Received ${topicShells.length} finalized topic shells from TopicHub.`);
+  console.log(`[TopicCreationModal] Current formData state: ExamType='${formData.examType}', ExamBoard='${formData.examBoard}', Subject='${formData.subject}'`);
 
-    if (!Array.isArray(topicShells) || topicShells.length === 0) {
-      console.warn("[TopicCreationModal] No topic shells provided for finalization. Closing modal.");
-      onClose();
+  if (!Array.isArray(topicShells) || topicShells.length === 0) {
+    console.warn("[TopicCreationModal] No topic shells provided for finalization. Closing modal.");
+    onClose();
+    return;
+  }
+
+  // CRITICAL FIX: Store references OUTSIDE the closure to prevent "stale" props issue
+  // This ensures we're using the latest prop values, not ones captured at component mount
+  const saveHandler = onSaveTopicShells;
+  const closeHandler = onClose;
+
+  // Extra verification logging
+  if (!saveHandler) {
+    console.error("[TopicCreationModal] CRITICAL ERROR: onSaveTopicShells is null or undefined");
+  } else if (typeof saveHandler !== 'function') {
+    console.error("[TopicCreationModal] CRITICAL ERROR: onSaveTopicShells is not a function, type:", typeof saveHandler);
+  } else {
+    console.log("[TopicCreationModal] onSaveTopicShells verification passed - it's a function");
+  }
+
+  // Make a copy of the current form data
+  const currentFormData = { ...formData };
+
+  // Ensure shells have the necessary metadata before saving
+  const shellsToSave = topicShells.map(shell => {
+    // Generate a truly unique ID that includes timestamp, randomness, and subject name
+    const timestamp = Date.now();
+    const randomSuffix = Math.floor(Math.random() * 1000000); // Larger random range
+    // Include subject in the ID to ensure uniqueness across subjects
+    const uniqueId = shell.id || `topic_${currentFormData.subject.replace(/\s+/g, '_')}_${timestamp}_${randomSuffix}`;
+    
+    return {
+      ...shell, // Include name, color, etc. from TopicHub selection
+      id: uniqueId, // Ensure unique ID across subjects
+      examType: currentFormData.examType,
+      examBoard: currentFormData.examBoard,
+      subject: currentFormData.subject,
+      type: 'topic', // Ensure type is set correctly
+      isShell: true, // Mark as a shell
+      timestamp: new Date().toISOString(), // Add creation timestamp
+    };
+  });
+
+  console.log("[TopicCreationModal] Prepared shellsToSave:", shellsToSave);
+
+  try {
+    // Final verification before calling save handler
+    if (!saveHandler || typeof saveHandler !== 'function') {
+      console.error("[TopicCreationModal] Cannot save - save handler is missing or not a function");
+      setError("Cannot save topics - configuration error with save handler");
       return;
     }
 
-    // Ensure shells have the necessary metadata before saving
-    const shellsToSave = topicShells.map(shell => ({
-        ...shell, // Include name, color, etc. from TopicHub selection
-        examType: formData.examType,
-        examBoard: formData.examBoard,
-        subject: formData.subject,
-        type: 'topic', // Ensure type is set correctly
-        isShell: true, // Mark as a shell
-        timestamp: new Date().toISOString(), // Add creation timestamp
-    }));
-
-    console.log("[TopicCreationModal] Prepared shellsToSave:", shellsToSave);
-
-    try {
-      // Save the onSaveTopicShells reference to a local variable before calling it
-      // This prevents issues with closure capturing old references
-      const saveFunction = onSaveTopicShells;
-      
-      // Call the onSaveTopicShells prop (from App.js or parent) to handle persistence
-      if (saveFunction && typeof saveFunction === 'function') {
-        await saveFunction(shellsToSave);
-        console.log("[TopicCreationModal] Topic shells passed to onSaveTopicShells handler.");
-        
-        // Close modal immediately after successful save (no success modal)
-        onClose();
-      } else {
-        console.error("[TopicCreationModal] onSaveTopicShells prop is missing or not a function.");
-        setError("Configuration error: Cannot save topic shells.");
-        return; // Prevent closing if save failed
-      }
-    } catch (error) {
-      console.error("[TopicCreationModal] Error saving topic shells:", error);
-      setError(`Failed to save topic shells: ${error.message}`);
+    // Call the save handler with the prepared shells
+    console.log("[TopicCreationModal] Calling save handler with shells...");
+    await saveHandler(shellsToSave);
+    console.log("[TopicCreationModal] Topic shells passed to onSaveTopicShells handler.");
+    
+    // Close modal immediately after successful save
+    if (closeHandler && typeof closeHandler === 'function') {
+      closeHandler();
+    } else {
+      console.warn("[TopicCreationModal] Close handler is missing or not a function.");
     }
+  } catch (error) {
+    console.error("[TopicCreationModal] Error saving topic shells:", error);
+    setError(`Failed to save topic shells: ${error.message}`);
+  }
 
-  }, [onSaveTopicShells, onClose, formData.examType, formData.examBoard, formData.subject]);
+}, [formData]); // <-- CRITICAL FIX: Remove onSaveTopicShells and onClose from dependency array
 
   // Render content based on the current step
   const renderStepContent = () => {
@@ -474,6 +502,8 @@ const TopicCreationModal = ({
               maxTopicsGenerated={MAX_TOPICS_GENERATED}
               maxTopicsDisplayed={MAX_TOPICS_DISPLAYED}
               onClose={onClose}
+              userId={userId}
+              recordId={recordId}
             />
           </div>
         );
