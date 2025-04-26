@@ -2,8 +2,11 @@
 // This version fixes URI malformed errors with multi-subject support
 
 // Import enhanced utilities for data handling
-import { safeDecodeKnackTopicLists, safeDecodeKnackCards, 
-         processKnackUserData, prepareKnackSaveData } from '../utils/KnackAuthUpdates';
+import { 
+    safeDecodeKnackCards, 
+    processKnackUserData, 
+    prepareKnackSaveData 
+} from '../utils/KnackAuthUpdates';
 
 // --- Helper Functions ---
 
@@ -391,11 +394,6 @@ const SaveQueueService = {
     /*
      * Modified routines for safely parsing loaded data with multi-subject support
      */
-    processLoadedTopicLists: function(topicListsData) {
-        // Use the enhanced utility for topic list decoding
-        return safeDecodeKnackTopicLists(topicListsData);
-    },
-    
     processLoadedCards: function(cardsData) {
         // Use the enhanced utility for cards decoding
         return safeDecodeKnackCards(cardsData);
