@@ -34,7 +34,7 @@
   'flashcards': {
             scenes: ['scene_1206'],
             views: ['view_3005'],
-            scriptUrl: 'https://cdn.jsdelivr.net/gh/4Sighteducation/FlashcardLoader@main/integrations/Flashcards1v.js',
+            scriptUrl: 'https://cdn.jsdelivr.net/gh/4Sighteducation/FlashcardLoader@main/integrations/Flashcards2a.js',
             configBuilder: (baseConfig, sceneKey, viewKey) => ({
                 ...baseConfig,
                 appType: 'flashcards', // Add appType for potential use
