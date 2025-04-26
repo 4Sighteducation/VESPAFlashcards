@@ -927,6 +927,24 @@ function safeParseJSON(jsonString, defaultVal = null) {
          // window.removeEventListener('message', window.flashcardMessageHandler); // Remove old if exists
   
           const messageHandler = function(event) {
+              // --- DEBUG: Log raw event and data --- 
+              console.log("[Knack Script] Raw Message Event Received:", event); 
+              try {
+                  // Attempt to log event.data safely, handling potential circular refs
+                  const dataString = JSON.stringify(event.data, (key, value) => {
+                      if (typeof value === 'object' && value !== null) {
+                          // Basic cycle detection (not foolproof)
+                          if (key === 'source' || key === 'target' || key === 'currentTarget') return '[Window]'; // Avoid logging window objects
+                      }
+                      return value;
+                  }, 2); 
+                  console.log("[Knack Script] Raw event.data:", dataString);
+              } catch (e) {
+                  console.error("[Knack Script] Error stringifying event.data:", e);
+                  console.log("[Knack Script] Raw event.data (logging directly):", event.data);
+              }
+              // --- END DEBUG ---
+
               // IMPORTANT: Check origin for security if appUrl is known and consistent
               // const expectedOrigin = new URL(config.appUrl).origin;
               // if (event.origin !== expectedOrigin) {

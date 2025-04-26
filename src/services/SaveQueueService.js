@@ -336,26 +336,24 @@ const SaveQueueService = {
         
         const recordId = data.recordId; // Use the ID from the prepared data
         
-        // --- REVISED FIX: Construct message explicitly with known good fields --- 
+        // --- DEBUGGING STEP: Construct MINIMAL message explicitly --- 
         const message = {
             type: 'SAVE_DATA',
             preserveFields: true, 
             recordId: recordId, // Use the verified recordId
-            // Explicitly include ONLY the fields the bridge script needs, 
-            // using the properties from the 'data' object (which are already encoded strings)
-            [FIELD_MAPPING.cardBankData]: data.cards, // Assuming FIELD_MAPPING is accessible or use field name directly
-            [FIELD_MAPPING.topicLists]: data.topicLists,
-            [FIELD_MAPPING.colorMapping]: data.colorMapping,
-            [FIELD_MAPPING.spacedRepetition]: data.spacedRepetition, // Assuming these are stringified by prepareKnackSaveData
-            [FIELD_MAPPING.topicMetadata]: data.topicMetadata,
-            [FIELD_MAPPING.lastSaved]: new Date().toISOString() // Add lastSaved timestamp
-            // DO NOT spread the entire 'data' object: ...data
+            // --- Temporarily OMIT large encoded fields --- 
+            // [FIELD_MAPPING.cardBankData]: data.cards, 
+            // [FIELD_MAPPING.topicLists]: data.topicLists,
+            // [FIELD_MAPPING.colorMapping]: data.colorMapping,
+            // [FIELD_MAPPING.spacedRepetition]: data.spacedRepetition, 
+            // [FIELD_MAPPING.topicMetadata]: data.topicMetadata,
+            [FIELD_MAPPING.lastSaved]: new Date().toISOString() // Keep lastSaved
         };
 
-        console.log(`[SaveQueueService] Queuing SAVE_DATA message for recordId: ${recordId}`);
+        console.log(`[SaveQueueService] Queuing MINIMAL SAVE_DATA message for recordId: ${recordId}`);
         // Log the message structure JUST BEFORE sending to see if it looks correct
-        console.log("[SaveQueueService] Message Payload being sent:", JSON.stringify(message)); 
-        // --- End Revised Fixes ---
+        console.log("[SaveQueueService] MINIMAL Message Payload being sent:", JSON.stringify(message)); 
+        // --- End Debugging Step ---
 
         // Dispatch message to queue management in Knack
         window.parent.postMessage(message, '*');
