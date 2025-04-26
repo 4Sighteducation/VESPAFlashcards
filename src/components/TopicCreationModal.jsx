@@ -130,6 +130,9 @@ const TopicCreationModal = ({
     setError(null);
   }, [currentStep]);
 
+  const saveHandlerRef = useRef();
+  const closeHandlerRef = useRef();
+
   // WebSocket message handler
   useEffect(() => {
     if (!lastMessage) return;
@@ -179,6 +182,13 @@ const TopicCreationModal = ({
   useEffect(() => {
     console.log("Existing subjects in modal:", existingSubjects);
   }, [existingSubjects]);
+
+// Add this useEffect before the handleChange function
+useEffect(() => {
+  // Update refs to always point to the latest prop values
+  saveHandlerRef.current = onSaveTopicShells;
+  closeHandlerRef.current = onClose;
+}, [onSaveTopicShells, onClose]);
 
   // Update handleChange to properly handle subject selection
   const handleChange = (e) => {
@@ -302,14 +312,13 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
 
   if (!Array.isArray(topicShells) || topicShells.length === 0) {
     console.warn("[TopicCreationModal] No topic shells provided for finalization. Closing modal.");
-    onClose();
+    if (closeHandlerRef.current) closeHandlerRef.current();
     return;
   }
 
-  // CRITICAL FIX: Store references OUTSIDE the closure to prevent "stale" props issue
-  // This ensures we're using the latest prop values, not ones captured at component mount
-  const saveHandler = onSaveTopicShells;
-  const closeHandler = onClose;
+  // Get current handlers from refs - always up to date
+  const saveHandler = saveHandlerRef.current;
+  const closeHandler = closeHandlerRef.current;
 
   // Extra verification logging
   if (!saveHandler) {
@@ -320,23 +329,20 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
     console.log("[TopicCreationModal] onSaveTopicShells verification passed - it's a function");
   }
 
-  // Make a copy of the current form data
-  const currentFormData = { ...formData };
-
   // Ensure shells have the necessary metadata before saving
   const shellsToSave = topicShells.map(shell => {
     // Generate a truly unique ID that includes timestamp, randomness, and subject name
     const timestamp = Date.now();
     const randomSuffix = Math.floor(Math.random() * 1000000); // Larger random range
     // Include subject in the ID to ensure uniqueness across subjects
-    const uniqueId = shell.id || `topic_${currentFormData.subject.replace(/\s+/g, '_')}_${timestamp}_${randomSuffix}`;
+    const uniqueId = shell.id || `topic_${formData.subject.replace(/\s+/g, '_')}_${timestamp}_${randomSuffix}`;
     
     return {
       ...shell, // Include name, color, etc. from TopicHub selection
       id: uniqueId, // Ensure unique ID across subjects
-      examType: currentFormData.examType,
-      examBoard: currentFormData.examBoard,
-      subject: currentFormData.subject,
+      examType: formData.examType,
+      examBoard: formData.examBoard,
+      subject: formData.subject,
       type: 'topic', // Ensure type is set correctly
       isShell: true, // Mark as a shell
       timestamp: new Date().toISOString(), // Add creation timestamp
@@ -349,11 +355,31 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
     // Final verification before calling save handler
     if (!saveHandler || typeof saveHandler !== 'function') {
       console.error("[TopicCreationModal] Cannot save - save handler is missing or not a function");
-      setError("Cannot save topics - configuration error with save handler");
-      return;
+      
+      // FALLBACK: If normal prop is missing, try custom event as backup
+      console.warn("[TopicCreationModal] Save handler missing - attempting event fallback");
+      try {
+        const event = new CustomEvent('saveTopicShells', {
+          detail: { shells: shellsToSave }
+        });
+        window.dispatchEvent(event);
+        console.log("[TopicCreationModal] Dispatched saveTopicShells event as fallback");
+        
+        // Close modal after event dispatch
+        if (closeHandler && typeof closeHandler === 'function') {
+          closeHandler();
+        } else if (closeHandlerRef.current) {
+          closeHandlerRef.current();
+        }
+        return;
+      } catch (e) {
+        console.error("[TopicCreationModal] Fallback event dispatch failed:", e);
+        setError("Cannot save topics - all save methods failed");
+        return;
+      }
     }
 
-    // Call the save handler with the prepared shells
+    // Main path: Use the saveHandler function
     console.log("[TopicCreationModal] Calling save handler with shells...");
     await saveHandler(shellsToSave);
     console.log("[TopicCreationModal] Topic shells passed to onSaveTopicShells handler.");
@@ -367,9 +393,21 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
   } catch (error) {
     console.error("[TopicCreationModal] Error saving topic shells:", error);
     setError(`Failed to save topic shells: ${error.message}`);
+    
+    // FALLBACK ON ERROR: Try event dispatch as a last resort
+    try {
+      console.warn("[TopicCreationModal] Save handler failed - attempting event fallback");
+      const event = new CustomEvent('saveTopicShells', {
+        detail: { shells: shellsToSave }
+      });
+      window.dispatchEvent(event);
+      console.log("[TopicCreationModal] Dispatched saveTopicShells event as fallback after error");
+    } catch (e) {
+      console.error("[TopicCreationModal] Fallback event dispatch failed:", e);
+    }
   }
 
-}, [formData]); // <-- CRITICAL FIX: Remove onSaveTopicShells and onClose from dependency array
+}, [formData]); // Keep formData in dependencies, but use refs for handlers
 
   // Render content based on the current step
   const renderStepContent = () => {

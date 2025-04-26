@@ -1587,155 +1587,233 @@ async function handleKnackRequest(data, iframeWindow) {
           });
     }
   
-     // Load user's flashcard data (Object_102)
-     function loadFlashcardUserData(userId, callback) {
-         console.log(`[Knack Script] Loading flashcard user data for user ID: ${userId}`);
-         const findRecordApiCall = () => new Promise((resolve, reject) => {
-             $.ajax({
-                 url: `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records`,
-                 type: 'GET',
-                 headers: saveQueue.getKnackHeaders(), // Use headers from queue instance
-                 data: {
-                     format: 'raw', // Important: Use raw format
-                     filters: JSON.stringify({
-                         match: 'and',
-                         rules: [{ field: FIELD_MAPPING.userId, operator: 'is', value: userId }]
-                     })
-                 },
-                 success: resolve,
-                 error: reject // Let retry handle failures
-             });
-         });
-  
-         retryApiCall(findRecordApiCall)
-           .then((response) => {
-             debugLog("[Knack Script] Flashcard User data search response:", response);
-             if (response && response.records && response.records.length > 0) {
-               const record = response.records[0];
-               console.log(`[Knack Script] Found existing flashcard record: ${record.id}`);
-               // debugLog("[Knack Script] RAW flashcard record data:", record);
-  
-               // --- Assemble userData from record fields safely ---
-               let userData = { recordId: record.id };
-               try {
-                   // Enhanced helper to parse potentially encoded fields with better error recovery
-                   const parseField = (fieldName) => {
-                      const rawValue = record[fieldName];
-                      if (rawValue === undefined || rawValue === null) return null;
-                      
-                      try {
-                          // Decode only if it's a string and contains '%'
-                          let decodedValue;
-                          if (typeof rawValue === 'string' && rawValue.includes('%')) {
-                              try {
-                                  decodedValue = safeDecodeURIComponent(rawValue);
-                              } catch (decodeError) {
-                                  console.error(`[Knack Script] Critical decode error for ${fieldName}:`, decodeError);
-                                  // If decoding completely fails despite our safe function's attempts,
-                                  // try to extract JSON pattern directly from the raw string as last resort
-                                  decodedValue = rawValue;
-                              }
-                          } else {
-                              decodedValue = rawValue;
-                          }
-                          
-                          // Parse if it's potentially JSON (string starting with { or [)
-                          if (typeof decodedValue === 'string' && 
-                             (decodedValue.startsWith('{') || decodedValue.startsWith('['))) {
-                              try {
-                                  return safeParseJSON(decodedValue);
-                              } catch (parseError) {
-                                  console.error(`[Knack Script] JSON parse error for ${fieldName}:`, parseError);
-                                  
-                                  // Last resort emergency extraction - look for JSON patterns in raw string
-                                  if (typeof rawValue === 'string') {
-                                      const jsonPattern = /(\[.*?\]|\{.*?\})/s;
-                                      const match = rawValue.match(jsonPattern);
-                                      if (match && match[0]) {
-                                          console.warn(`[Knack Script] Attempting emergency JSON extraction for ${fieldName}`);
-                                          try {
-                                              return safeParseJSON(match[0], null);
-                                          } catch (e) {
-                                              console.error(`[Knack Script] Emergency extraction failed for ${fieldName}`);
-                                              return null;
-                                          }
-                                      }
-                                  }
-                                  
-                                  return null; // Give up and return null
-                              }
-                          }
-                          
-                          // Return decoded value otherwise (might be plain string, number etc.)
-                          return decodedValue;
-                      } catch (e) {
-                          console.error(`[Knack Script] Unhandled error in parseField for ${fieldName}:`, e);
-                          return null; // Return null as ultimate fallback
-                      }
-                   };
-  
-  
-                   userData.cards = parseField(FIELD_MAPPING.cardBankData) || [];
-                   userData.cards = migrateTypeToQuestionType(userData.cards); // Migrate legacy types
-                   userData.cards = standardizeCards(userData.cards); // Standardize structure
-                   console.log(`[Knack Script] Loaded ${userData.cards.length} cards/shells from bank.`);
-  
-                   userData.spacedRepetition = {};
-                   for (let i = 1; i <= 5; i++) {
-                       const fieldKey = FIELD_MAPPING[`box${i}Data`];
-                       userData.spacedRepetition[`box${i}`] = parseField(fieldKey) || [];
-                   }
-                   console.log(`[Knack Script] Loaded spaced repetition data.`);
-  
-                   userData.topicLists = parseField(FIELD_MAPPING.topicLists) || [];
-                   console.log(`[Knack Script] Loaded ${userData.topicLists.length} topic lists.`);
-  
-                   userData.colorMapping = parseField(FIELD_MAPPING.colorMapping) || {};
-                   console.log(`[Knack Script] Loaded color mapping.`);
-  
-                   userData.topicMetadata = parseField(FIELD_MAPPING.topicMetadata) || [];
-                   console.log(`[Knack Script] Loaded ${userData.topicMetadata.length} topic metadata items.`);
-  
-                   // Add lastSaved timestamp if needed
-                   userData.lastSaved = record[FIELD_MAPPING.lastSaved];
-  
-  
-                   debugLog("[Knack Script] ASSEMBLED USER DATA from loaded record", userData);
-                   callback(userData);
-  
-               } catch (e) {
-                 console.error("[Knack Script] Error parsing loaded user data fields:", e);
-                 // Return partially assembled data or fallback
-                 callback(userData); // Return whatever was parsed successfully before the error
-               }
-  
-             } else {
-               // No existing data, create a new record
-               console.log(`[Knack Script] No existing flashcard record found for user ${userId}, creating new one...`);
-               createFlashcardUserRecord(userId, function(success, newRecordId) {
-                 if (success && newRecordId) {
-                    console.log(`[Knack Script] New record created with ID: ${newRecordId}`);
-                   // Return the default empty structure with the new record ID
-                   callback({
-                     recordId: newRecordId,
-                     cards: [],
-                     spacedRepetition: { box1: [], box2: [], box3: [], box4: [], box5: [] },
-                     topicLists: [],
-                     topicMetadata: [],
-                     colorMapping: {}
-                   });
-                 } else {
-                     console.error(`[Knack Script] Failed to create new flashcard record for user ${userId}.`);
-                   callback(null); // Indicate failure to load/create data
-                 }
-               });
-             }
-           })
-           .catch((error) => {
-             console.error("[Knack Script] Error loading flashcard user data after retries:", error);
-             callback(null); // Indicate failure
-           });
-     }
+     // Load user's flashcard data (Object_102) - Enhanced for multi-subject support
+function loadFlashcardUserData(userId, callback) {
+  console.log(`[Knack Script] Loading flashcard user data for user ID: ${userId}`);
+  const findRecordApiCall = () => new Promise((resolve, reject) => {
+      $.ajax({
+          url: `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records`,
+          type: 'GET',
+          headers: saveQueue.getKnackHeaders(), // Use headers from queue instance
+          data: {
+              format: 'raw', // Important: Use raw format
+              filters: JSON.stringify({
+                  match: 'and',
+                  rules: [{ field: FIELD_MAPPING.userId, operator: 'is', value: userId }]
+              })
+          },
+          success: resolve,
+          error: reject // Let retry handle failures
+      });
+  });
+
+  retryApiCall(findRecordApiCall)
+    .then((response) => {
+      debugLog("[Knack Script] Flashcard User data search response:", response);
+      if (response && response.records && response.records.length > 0) {
+        const record = response.records[0];
+        console.log(`[Knack Script] Found existing flashcard record: ${record.id}`);
+        
+        try {
+            // Use enhanced data processing from MultiSubjectBridge
+            const userData = {
+                recordId: record.id,
+                cards: [],
+                spacedRepetition: { box1: [], box2: [], box3: [], box4: [], box5: [] },
+                topicLists: [],
+                colorMapping: {},
+                topicMetadata: [],
+                lastSaved: record[FIELD_MAPPING.lastSaved] || null
+            };
+            
+            // Enhanced parsing for cards with better error handling
+            const rawCardData = record[FIELD_MAPPING.cardBankData];
+            if (rawCardData) {
+                try {
+                    // First try to decode if needed
+                    let decodedData = rawCardData;
+                    if (typeof rawCardData === 'string' && rawCardData.includes('%')) {
+                        try {
+                            decodedData = safeDecodeURIComponent(rawCardData);
+                        } catch (decodeError) {
+                            console.error('[Knack Script] Error with primary decode, trying backup method:', decodeError);
+                            // Try handling broken encodings
+                            decodedData = String(rawCardData)
+                                .replace(/%(?![0-9A-Fa-f]{2})/g, '%25'); // Fix invalid % sequences
+                            try {
+                                decodedData = decodeURIComponent(decodedData);
+                            } catch (secondError) {
+                                console.error('[Knack Script] Advanced URI decode failed, using original:', secondError);
+                            }
+                        }
+                    }
+                    
+                    // Parse the JSON safely
+                    userData.cards = safeParseJSON(decodedData, []);
+                    userData.cards = migrateTypeToQuestionType(userData.cards); // Migrate legacy types
+                    userData.cards = standardizeCards(userData.cards); // Standardize structure
+                } catch (cardError) {
+                    console.error('[Knack Script] Fatal error processing cards:', cardError);
+                    userData.cards = []; // Reset to empty array
+                }
+            }
+            console.log(`[Knack Script] Loaded ${userData.cards.length} cards/shells from bank.`);
+            
+            // Enhanced parsing for spaced repetition
+            for (let i = 1; i <= 5; i++) {
+                const fieldKey = FIELD_MAPPING[`box${i}Data`];
+                const boxData = record[fieldKey];
+                try {
+                    if (boxData) {
+                        let decodedBox = boxData;
+                        if (typeof boxData === 'string' && boxData.includes('%')) {
+                            try {
+                                decodedBox = safeDecodeURIComponent(boxData);
+                            } catch (e) {
+                                console.error(`[Knack Script] Error decoding box${i} data:`, e);
+                            }
+                        }
+                        userData.spacedRepetition[`box${i}`] = safeParseJSON(decodedBox, []);
+                    } else {
+                        userData.spacedRepetition[`box${i}`] = [];
+                    }
+                } catch (boxError) {
+                    console.error(`[Knack Script] Error processing box${i}:`, boxError);
+                    userData.spacedRepetition[`box${i}`] = [];
+                }
+            }
+            console.log(`[Knack Script] Loaded spaced repetition data.`);
+            
+            // Enhanced parsing for topic lists - CRITICAL for multi-subject
+            const rawTopicLists = record[FIELD_MAPPING.topicLists];
+            try {
+                if (rawTopicLists) {
+                    let decodedLists = rawTopicLists;
+                    if (typeof rawTopicLists === 'string' && rawTopicLists.includes('%')) {
+                        try {
+                            decodedLists = safeDecodeURIComponent(rawTopicLists);
+                        } catch (decodeError) {
+                            console.error('[Knack Script] Topic lists decode error, trying backup:', decodeError);
+                            // Try to recover with pattern matching
+                            const jsonPattern = /\[\s*\{.*\}\s*\]/s;
+                            const match = String(rawTopicLists).match(jsonPattern);
+                            if (match) {
+                                console.log('[Knack Script] Found JSON pattern in topic lists');
+                                decodedLists = match[0];
+                            }
+                        }
+                    }
+                    
+                    const parsedLists = safeParseJSON(decodedLists, []);
+                    
+                    // Ensure topic lists have minimal valid structure
+                    userData.topicLists = Array.isArray(parsedLists) ? parsedLists.map(list => {
+                        // Basic validation
+                        if (!list || typeof list !== 'object') return null;
+                        
+                        // Clean up potentially malformed lists
+                        return {
+                            subject: list.subject || "General",
+                            topics: Array.isArray(list.topics) ? list.topics.filter(Boolean) : [],
+                            color: list.color || "#808080"
+                        };
+                    }).filter(Boolean) : [];
+                }
+            } catch (listError) {
+                console.error('[Knack Script] Error processing topic lists:', listError);
+                userData.topicLists = [];
+            }
+            console.log(`[Knack Script] Loaded ${userData.topicLists.length} topic lists.`);
+            
+            // Enhanced parsing for color mapping
+            const rawColorData = record[FIELD_MAPPING.colorMapping];
+            try {
+                if (rawColorData) {
+                    let decodedColor = rawColorData;
+                    if (typeof rawColorData === 'string' && rawColorData.includes('%')) {
+                        try {
+                            decodedColor = safeDecodeURIComponent(rawColorData);
+                        } catch (e) {
+                            console.error('[Knack Script] Error decoding color mapping:', e);
+                        }
+                    }
+                    userData.colorMapping = safeParseJSON(decodedColor, {});
+                    // Ensure it's an object
+                    if (typeof userData.colorMapping !== 'object' || userData.colorMapping === null) {
+                        userData.colorMapping = {};
+                    }
+                }
+            } catch (colorError) {
+                console.error('[Knack Script] Error processing color mapping:', colorError);
+                userData.colorMapping = {};
+            }
+            console.log(`[Knack Script] Loaded color mapping.`);
+            
+            // Enhanced parsing for topic metadata
+            const rawMetaData = record[FIELD_MAPPING.topicMetadata];
+            try {
+                if (rawMetaData) {
+                    let decodedMeta = rawMetaData;
+                    if (typeof rawMetaData === 'string' && rawMetaData.includes('%')) {
+                        try {
+                            decodedMeta = safeDecodeURIComponent(rawMetaData);
+                        } catch (e) {
+                            console.error('[Knack Script] Error decoding topic metadata:', e);
+                        }
+                    }
+                    userData.topicMetadata = safeParseJSON(decodedMeta, []);
+                    // Ensure it's an array
+                    if (!Array.isArray(userData.topicMetadata)) {
+                        userData.topicMetadata = [];
+                    }
+                }
+            } catch (metaError) {
+                console.error('[Knack Script] Error processing topic metadata:', metaError);
+                userData.topicMetadata = [];
+            }
+            console.log(`[Knack Script] Loaded ${userData.topicMetadata.length} topic metadata items.`);
+
+            debugLog("[Knack Script] ASSEMBLED USER DATA from loaded record", userData);
+            callback(userData);
+        } catch (e) {
+            console.error("[Knack Script] Error processing user data fields:", e);
+            // Return partially assembled data or fallback
+            callback({ 
+                recordId: record.id,
+                cards: [],
+                topicLists: [],
+                colorMapping: {},
+                spacedRepetition: { box1: [], box2: [], box3: [], box4: [], box5: [] }
+            });
+        }
+
+      } else {
+        // No existing data, create a new record
+        console.log(`[Knack Script] No existing flashcard record found for user ${userId}, creating new one...`);
+        createFlashcardUserRecord(userId, function(success, newRecordId) {
+          if (success && newRecordId) {
+             console.log(`[Knack Script] New record created with ID: ${newRecordId}`);
+            // Return the default empty structure with the new record ID
+            callback({
+              recordId: newRecordId,
+              cards: [],
+              spacedRepetition: { box1: [], box2: [], box3: [], box4: [], box5: [] },
+              topicLists: [],
+              topicMetadata: [],
+              colorMapping: {}
+            });
+          } else {
+              console.error(`[Knack Script] Failed to create new flashcard record for user ${userId}.`);
+            callback(null); // Indicate failure to load/create data
+          }
+        });
+      }
+    })
+    .catch((error) => {
+      console.error("[Knack Script] Error loading flashcard user data after retries:", error);
+      callback(null); // Indicate failure
+    });
+}
   
      // Create a new flashcard user record in Object_102
      function createFlashcardUserRecord(userId, callback) {

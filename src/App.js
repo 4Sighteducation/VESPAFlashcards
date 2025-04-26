@@ -1,3 +1,4 @@
+import { prepareKnackSaveData } from './utils/KnackAuthUpdates';
 import React, { useState, useEffect, useCallback, useRef, useMemo, useContext } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
@@ -677,16 +678,19 @@ function App() {
        const topicListsPayload = safeSerializeData(dataToSave.topicLists || topicLists || []);
        const topicMetaPayload = safeSerializeData(dataToSave.topicMetadata || topicMetadata || []);
 
-       const safeData = {
-           recordId: safeRecordId,
-           cards: cardsPayload,
-           colorMapping: colorMapPayload,
-           spacedRepetition: spacedRepPayload,
-           userTopics: userTopicsPayload,
-           topicLists: topicListsPayload,
-           topicMetadata: topicMetaPayload,
-           preserveFields: preserveFields
-       };
+       let safeData = {
+        recordId: safeRecordId,
+        cards: cardsPayload,
+        colorMapping: colorMapPayload,
+        spacedRepetition: spacedRepPayload,
+        userTopics: userTopicsPayload,
+        topicLists: topicListsPayload,
+        topicMetadata: topicMetaPayload,
+        preserveFields: preserveFields
+     };
+     
+     // Apply enhanced encoding for multi-subject support
+     safeData = prepareKnackSaveData(safeData);
 
 
       console.log(`[Save] Sending data to Knack. Payload size: ${safeData.cards?.length} items.`);
@@ -1227,6 +1231,22 @@ function App() {
       updateKnackBoxNotifications();
     }
   }, [knackFieldsNeedUpdate, auth, updateKnackBoxNotifications]);
+
+// Add event listener for fallback topic shell saving
+useEffect(() => {
+  const handleFallbackShellSave = (event) => {
+    if (event.detail && Array.isArray(event.detail.shells)) {
+      console.log("[App] Received fallback saveTopicShells event");
+      handleSaveTopicShellsAndRefresh(event.detail.shells);
+    }
+  };
+  
+  window.addEventListener('saveTopicShells', handleFallbackShellSave);
+  
+  return () => {
+    window.removeEventListener('saveTopicShells', handleFallbackShellSave);
+  };
+}, [handleSaveTopicShellsAndRefresh]); // Include in dependencies
 
   // Get cards for the current box in spaced repetition mode
   const getCardsForCurrentBox = useCallback(() => {

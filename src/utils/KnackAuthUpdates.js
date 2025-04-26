@@ -1,173 +1,236 @@
-/**
- * KnackAuthUpdates.js
- * 
- * Helper utilities to integrate AuthManager with Knack API operations
- * in TopicPersistenceService and similar services.
- */
+// KnackAuthUpdates.js - Functions to support multiple subjects by enhancing data parsing
+import SaveQueueService from '../services/SaveQueueService';
+import { safeParseJSON, safeDecodeURIComponent } from './DataUtils';
 
-import authManager from '../services/AuthManager';
-
-/**
- * Wrap a fetch call with AuthManager authentication
- * @param {string} url - The URL to fetch
- * @param {Object} options - Fetch options
- * @returns {Promise<Response>} - Fetch response with authentication
- */
-export const fetchWithAuth = async (url, options = {}) => {
+// Safely decode Knack topic lists with robust error recovery
+export function safeDecodeKnackTopicLists(topicListsData) {
   try {
-    // Check if AuthManager is available and initialized
-    if (authManager && authManager.isAuthenticated()) {
-      // Use AuthManager's fetchWithAuth for automatic token handling
-      return await authManager.fetchWithAuth(url, options);
-    } else {
-      console.warn('[KnackAuthUpdates] AuthManager not initialized or authenticated, falling back to regular fetch');
-      return await fetch(url, options);
-    }
-  } catch (error) {
-    console.error('[KnackAuthUpdates] Error in fetchWithAuth:', error);
-    throw error;
-  }
-};
-
-/**
- * Request token refresh through AuthManager
- * @returns {Promise<boolean>} - Success status
- */
-export const requestTokenRefresh = async () => {
-  try {
-    // Check if AuthManager is available and initialized
-    if (authManager && authManager.isAuthenticated()) {
-      console.log('[KnackAuthUpdates] Requesting token refresh via AuthManager');
-      await authManager.refreshToken();
-      return true;
-    } else {
-      console.warn('[KnackAuthUpdates] AuthManager not initialized, falling back to legacy refresh');
-      
-      // Legacy approach via postMessage
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-          type: "REQUEST_TOKEN_REFRESH",
-          timestamp: new Date().toISOString()
-        }, "*");
-        
-        // Wait a moment to allow token refresh to happen
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        return true;
-      }
-      
-      return false;
-    }
-  } catch (error) {
-    console.error('[KnackAuthUpdates] Error requesting token refresh:', error);
+    if (!topicListsData) return [];
     
-    // Try legacy refresh as a fallback
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage({
-        type: "REQUEST_TOKEN_REFRESH",
-        timestamp: new Date().toISOString()
-      }, "*");
-      
-      // Wait a moment to allow token refresh to happen
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      return true;
-    }
-    
-    return false;
-  }
-};
-
-/**
- * Get authentication headers for Knack API
- * @param {string} appId - Knack application ID
- * @param {string} apiKey - Knack API key (optional, for object-level access)
- * @param {Object} additionalHeaders - Additional headers to include
- * @returns {Object} - Headers with authentication
- */
-export const getKnackHeaders = (appId, apiKey = null, additionalHeaders = {}) => {
-  const headers = {
-    ...additionalHeaders,
-    'Content-Type': 'application/json',
-    'X-Knack-Application-ID': appId
-  };
-  
-  // Add REST API key if provided
-  if (apiKey) {
-    headers['X-Knack-REST-API-Key'] = apiKey;
-  }
-  
-  return headers;
-};
-
-/**
- * Implement a retry mechanism with token refresh for Knack API calls
- * @param {Function} apiCall - API call to execute and potentially retry
- * @param {number} maxRetries - Maximum number of retries
- * @returns {Promise<any>} - Result of the API call
- */
-export const withRetryAndRefresh = async (apiCall, maxRetries = 3) => {
-  let lastError = null;
-  
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const result = await apiCall();
-      return result;
-    } catch (error) {
-      console.error(`API call failed (attempt ${attempt + 1}/${maxRetries}):`, error);
-      lastError = error;
-      
-      // If it's an auth error (401/403), try refreshing the token
-      if (error.message?.includes('401') || 
-          error.message?.includes('403') ||
-          error.message?.includes('Authentication') ||
-          error.status === 401 ||
-          error.status === 403) {
-        
-        console.log(`Attempting token refresh after auth error on attempt ${attempt + 1}`);
-        
+    // First try to decode URI if needed
+    let decodedData = topicListsData;
+    if (typeof topicListsData === 'string' && topicListsData.includes('%')) {
+      try {
+        decodedData = safeDecodeURIComponent(topicListsData);
+      } catch (decodeError) {
+        console.error('Error decoding topic lists URI component:', decodeError);
+        // Try advanced recovery by escaping problematic characters
+        decodedData = topicListsData.replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
         try {
-          await requestTokenRefresh();
-          
-          // Add short delay after token refresh before retry
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
+          decodedData = decodeURIComponent(decodedData);
+        } catch (secondError) {
+          console.error('Advanced URI decode failed, using original:', secondError);
+          decodedData = topicListsData;
         }
-      } else {
-        // For non-auth errors, add exponential backoff delay
-        const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
-        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
+    
+    // Now safely parse as JSON
+    const parsedLists = safeParseJSON(decodedData, []);
+    if (!Array.isArray(parsedLists)) {
+      console.warn('Topic lists data is not an array after parsing:', parsedLists);
+      return [];
+    }
+    
+    // Add basic validation for expected topic list structure
+    return parsedLists.map(list => {
+      // Ensure minimal valid structure
+      if (!list || typeof list !== 'object') return null;
+      
+      // Ensure subject exists
+      const subject = list.subject || "Unknown Subject";
+      
+      // Ensure topics array exists and has proper structure
+      let topics = [];
+      if (Array.isArray(list.topics)) {
+        topics = list.topics.map(topic => {
+          if (!topic || typeof topic !== 'object') return null;
+          
+          // Create consistent topic structure
+          return {
+            id: topic.id || `topic_${Date.now()}_${Math.random().toString(36).substring(2,9)}`,
+            name: topic.name || 'Unknown Topic',
+            // Include other critical fields if available
+            examBoard: topic.examBoard || '',
+            examType: topic.examType || '',
+            color: topic.color || '#808080',
+            subjectColor: topic.subjectColor || ''
+          };
+        }).filter(Boolean); // Remove any null/invalid topics
+      }
+      
+      // Return validated topic list
+      return {
+        subject,
+        topics,
+        color: list.color || '#808080'
+      };
+    }).filter(Boolean); // Remove any null/invalid lists
+  } catch (error) {
+    console.error('Fatal error processing topic lists:', error);
+    return []; // Return empty array on catastrophic failure
   }
-  
-  // If we get here, all retries failed
-  throw lastError || new Error('API call failed after retries');
-};
+}
 
-/**
- * Safe JSON parsing with fallback
- * @param {string|Object} data - Data to parse
- * @param {any} defaultValue - Default value if parsing fails
- * @returns {any} - Parsed data or default value
- */
-export const safeParseJSON = (data, defaultValue = null) => {
-  if (!data) return defaultValue;
-  
-  // If it's already an object, just return it
-  if (typeof data === 'object' && data !== null) return data;
+// Safely decode Knack card data with robust error recovery
+export function safeDecodeKnackCards(cardsData) {
+  try {
+    if (!cardsData) return [];
+    
+    // First try to decode URI if needed
+    let decodedData = cardsData;
+    if (typeof cardsData === 'string' && cardsData.includes('%')) {
+      try {
+        decodedData = safeDecodeURIComponent(cardsData);
+      } catch (decodeError) {
+        console.error('Error decoding cards URI component:', decodeError);
+        // Try advanced recovery by escaping problematic characters
+        decodedData = cardsData.replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
+        try {
+          decodedData = decodeURIComponent(decodedData);
+        } catch (secondError) {
+          console.error('Advanced URI decode failed for cards, using original:', secondError);
+          decodedData = cardsData;
+        }
+      }
+    }
+    
+    // Now safely parse as JSON
+    const parsedCards = safeParseJSON(decodedData, []);
+    if (!Array.isArray(parsedCards)) {
+      console.warn('Cards data is not an array after parsing:', parsedCards);
+      return [];
+    }
+    
+    // Filter out any invalid cards and ensure minimal structure
+    return parsedCards.filter(card => {
+      return card && typeof card === 'object' && card.id;
+    });
+  } catch (error) {
+    console.error('Fatal error processing cards data:', error);
+    return []; // Return empty array on catastrophic failure
+  }
+}
+
+// Process Knack user data safely when loading
+export function processKnackUserData(userData) {
+  if (!userData) return { cards: [], topicLists: [], colorMapping: {}, spacedRepetition: {} };
   
   try {
-    return JSON.parse(data);
+    // Process basic structure check
+    const processedData = {
+      recordId: userData.recordId || null,
+      cards: [],
+      colorMapping: {},
+      spacedRepetition: { box1: [], box2: [], box3: [], box4: [], box5: [] },
+      topicLists: [],
+      topicMetadata: []
+    };
+    
+    // Process cards safely
+    if (userData.cards) {
+      processedData.cards = safeDecodeKnackCards(userData.cards);
+      console.log(`Processed ${processedData.cards.length} cards from Knack data`);
+    }
+    
+    // Process topic lists safely
+    if (userData.topicLists) {
+      processedData.topicLists = safeDecodeKnackTopicLists(userData.topicLists);
+      console.log(`Processed ${processedData.topicLists.length} topic lists from Knack data`);
+    }
+    
+    // Process color mapping safely
+    if (userData.colorMapping) {
+      processedData.colorMapping = safeParseJSON(userData.colorMapping, {});
+      console.log('Processed color mapping from Knack data');
+    }
+    
+    // Process spaced repetition data safely
+    if (userData.spacedRepetition) {
+      processedData.spacedRepetition = safeParseJSON(userData.spacedRepetition, 
+        { box1: [], box2: [], box3: [], box4: [], box5: [] });
+      console.log('Processed spaced repetition data from Knack data');
+    }
+    
+    // Process topic metadata safely
+    if (userData.topicMetadata) {
+      processedData.topicMetadata = safeParseJSON(userData.topicMetadata, []);
+      console.log(`Processed ${processedData.topicMetadata.length} topic metadata items from Knack data`);
+    }
+    
+    return processedData;
   } catch (error) {
-    console.error('Error parsing JSON:', error);
-    return defaultValue;
+    console.error('Error processing Knack user data:', error);
+    return { 
+      recordId: userData.recordId || null,
+      cards: [], 
+      topicLists: [], 
+      colorMapping: {}, 
+      spacedRepetition: { box1: [], box2: [], box3: [], box4: [], box5: [] },
+      topicMetadata: []
+    };
   }
-};
+}
 
-export default {
-  fetchWithAuth,
-  requestTokenRefresh,
-  getKnackHeaders,
-  withRetryAndRefresh,
-  safeParseJSON
-};
+// Safely encode topic lists for storage in Knack
+export function safeEncodeKnackTopicLists(topicLists) {
+  try {
+    if (!Array.isArray(topicLists)) return '[]';
+    
+    // First validate and clean the topic lists
+    const cleanedLists = topicLists.map(list => {
+      if (!list || typeof list !== 'object') return null;
+      
+      // Ensure subject exists
+      const subject = list.subject || "Unknown Subject";
+      
+      // Clean and validate topics array
+      let topics = [];
+      if (Array.isArray(list.topics)) {
+        topics = list.topics.filter(topic => 
+          topic && typeof topic === 'object' && (topic.id || topic.name)
+        );
+      }
+      
+      return {
+        subject,
+        topics,
+        color: list.color || '#808080'
+      };
+    }).filter(Boolean); // Remove any null/invalid lists
+    
+    // Convert to JSON string
+    const jsonString = JSON.stringify(cleanedLists);
+    
+    // No need to URI encode here - let the server handle that if needed
+    return jsonString;
+  } catch (error) {
+    console.error('Error encoding topic lists for Knack:', error);
+    return '[]'; // Return empty array string on failure
+  }
+}
+
+// Functions to ensure consistency when saving data to Knack
+export function prepareKnackSaveData(data) {
+  const prepared = { ...data };
+  
+  // Ensure topic lists are properly processed
+  if (prepared.topicLists) {
+    prepared.topicLists = safeEncodeKnackTopicLists(prepared.topicLists);
+  }
+  
+  // Ensure other data fields are properly JSON stringified
+  if (prepared.colorMapping && typeof prepared.colorMapping !== 'string') {
+    prepared.colorMapping = JSON.stringify(prepared.colorMapping);
+  }
+  
+  if (prepared.spacedRepetition && typeof prepared.spacedRepetition !== 'string') {
+    prepared.spacedRepetition = JSON.stringify(prepared.spacedRepetition);
+  }
+  
+  if (prepared.topicMetadata && typeof prepared.topicMetadata !== 'string') {
+    prepared.topicMetadata = JSON.stringify(prepared.topicMetadata);
+  }
+  
+  return prepared;
+}
