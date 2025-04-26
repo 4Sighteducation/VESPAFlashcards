@@ -1,77 +1,7 @@
 // KnackAuthUpdates.js - Functions to support multiple subjects by enhancing data parsing
 import SaveQueueService from '../services/SaveQueueService';
 import { safeParseJSON, safeDecodeURIComponent } from './DataUtils';
-import MultiSubjectBridge from '../services/MultiSubjectBridge';
-
-// Safely decode Knack topic lists with robust error recovery
-export function safeDecodeKnackTopicLists(topicListsData) {
-  try {
-    if (!topicListsData) return [];
-    
-    // First try to decode URI if needed
-    let decodedData = topicListsData;
-    if (typeof topicListsData === 'string' && topicListsData.includes('%')) {
-      try {
-        decodedData = safeDecodeURIComponent(topicListsData);
-      } catch (decodeError) {
-        console.error('Error decoding topic lists URI component:', decodeError);
-        // Try advanced recovery by escaping problematic characters
-        decodedData = topicListsData.replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
-        try {
-          decodedData = decodeURIComponent(decodedData);
-        } catch (secondError) {
-          console.error('Advanced URI decode failed, using original:', secondError);
-          decodedData = topicListsData;
-        }
-      }
-    }
-    
-    // Now safely parse as JSON
-    const parsedLists = safeParseJSON(decodedData, []);
-    if (!Array.isArray(parsedLists)) {
-      console.warn('Topic lists data is not an array after parsing:', parsedLists);
-      return [];
-    }
-    
-    // Add basic validation for expected topic list structure
-    return parsedLists.map(list => {
-      // Ensure minimal valid structure
-      if (!list || typeof list !== 'object') return null;
-      
-      // Ensure subject exists
-      const subject = list.subject || "Unknown Subject";
-      
-      // Ensure topics array exists and has proper structure
-      let topics = [];
-      if (Array.isArray(list.topics)) {
-        topics = list.topics.map(topic => {
-          if (!topic || typeof topic !== 'object') return null;
-          
-          // Create consistent topic structure
-          return {
-            id: topic.id || `topic_${Date.now()}_${Math.random().toString(36).substring(2,9)}`,
-            name: topic.name || 'Unknown Topic',
-            // Include other critical fields if available
-            examBoard: topic.examBoard || '',
-            examType: topic.examType || '',
-            color: topic.color || '#808080',
-            subjectColor: topic.subjectColor || ''
-          };
-        }).filter(Boolean); // Remove any null/invalid topics
-      }
-      
-      // Return validated topic list
-      return {
-        subject,
-        topics,
-        color: list.color || '#808080'
-      };
-    }).filter(Boolean); // Remove any null/invalid lists
-  } catch (error) {
-    console.error('Fatal error processing topic lists:', error);
-    return []; // Return empty array on catastrophic failure
-  }
-}
+// import MultiSubjectBridge from '../services/MultiSubjectBridge'; // Bridge likely not needed here now
 
 // Safely decode Knack card data with robust error recovery
 export function safeDecodeKnackCards(cardsData) {
@@ -124,7 +54,6 @@ export function processKnackUserData(userData) {
       cards: [],
       colorMapping: {},
       spacedRepetition: { box1: [], box2: [], box3: [], box4: [], box5: [] },
-      topicLists: [],
       topicMetadata: []
     };
     
@@ -132,12 +61,6 @@ export function processKnackUserData(userData) {
     if (userData.cards) {
       processedData.cards = safeDecodeKnackCards(userData.cards);
       console.log(`Processed ${processedData.cards.length} cards from Knack data`);
-    }
-    
-    // Process topic lists safely
-    if (userData.topicLists) {
-      processedData.topicLists = safeDecodeKnackTopicLists(userData.topicLists);
-      console.log(`Processed ${processedData.topicLists.length} topic lists from Knack data`);
     }
     
     // Process color mapping safely
@@ -170,54 +93,6 @@ export function processKnackUserData(userData) {
       spacedRepetition: { box1: [], box2: [], box3: [], box4: [], box5: [] },
       topicMetadata: []
     };
-  }
-}
-
-// Safely encode topic lists for storage in Knack
-export function safeEncodeKnackTopicLists(topicLists) {
-  try {
-    if (!Array.isArray(topicLists)) return '[]';
-    
-    // First validate and clean the topic lists
-    const cleanedLists = topicLists.map(list => {
-      if (!list || typeof list !== 'object') return null;
-      
-      // Ensure subject exists
-      const subject = list.subject || "Unknown Subject";
-      
-      // Clean and validate topics array with more detailed properties
-      let topics = [];
-      if (Array.isArray(list.topics)) {
-        topics = list.topics
-          .filter(topic => topic && typeof topic === 'object' && (topic.id || topic.name))
-          .map(topic => ({
-            id: topic.id || `topic_${Date.now()}_${Math.random().toString(36).substring(2,9)}`,
-            name: topic.name || 'Unknown Topic',
-            examBoard: topic.examBoard || '',
-            examType: topic.examType || '',
-            color: topic.color || topic.cardColor || '#808080',
-            subjectColor: topic.subjectColor || list.color || '#808080',
-          }));
-      }
-      
-      return {
-        subject,
-        topics,
-        color: list.color || '#808080'
-      };
-    }).filter(Boolean); // Remove any null/invalid lists
-    
-    // Convert to JSON string
-    const jsonString = JSON.stringify(cleanedLists);
-    
-    // Add additional encoding steps to prevent issues with Knack
-    return jsonString
-      .replace(/\+/g, '%2B') // Plus signs often cause issues
-      .replace(/\//g, '%2F') // Forward slashes can be problematic
-      .replace(/\\/g, '%5C'); // Backslashes need escaping
-  } catch (error) {
-    console.error('Error encoding topic lists for Knack:', error);
-    return '[]'; // Return empty array string on failure
   }
 }
 
@@ -301,18 +176,11 @@ export function prepareKnackSaveData(data) {
     // Enhanced logging to help debug
     console.log(`[prepareKnackSaveData] Processing data for Knack save:`);
     console.log(`- Cards: ${Array.isArray(prepared.cards) ? prepared.cards.length : 'None'}`);
-    console.log(`- Topic lists: ${Array.isArray(prepared.topicLists) ? prepared.topicLists.length : 'None'}`);
     
     // Process cards with enhanced encoding
     if (Array.isArray(prepared.cards)) {
       prepared.cards = safeEncodeKnackCards(prepared.cards);
       console.log(`[prepareKnackSaveData] Encoded ${data.cards.length} cards for Knack`);
-    }
-    
-    // Process topic lists with enhanced encoding
-    if (prepared.topicLists) {
-      prepared.topicLists = safeEncodeKnackTopicLists(prepared.topicLists);
-      console.log(`[prepareKnackSaveData] Encoded topic lists for Knack`);
     }
     
     // Ensure other data fields are properly JSON stringified
@@ -331,6 +199,8 @@ export function prepareKnackSaveData(data) {
     // Set a flag to indicate this data was specially prepared for multi-subject support
     prepared._multiSubjectEnabled = true;
     
+    delete prepared.topicLists; // Explicitly remove the property before returning
+    
     return prepared;
   } catch (error) {
     console.error('[prepareKnackSaveData] Error preparing data for Knack:', error);
@@ -339,17 +209,13 @@ export function prepareKnackSaveData(data) {
     if (fallback.cards && typeof fallback.cards !== 'string') {
       fallback.cards = JSON.stringify(fallback.cards);
     }
-    if (fallback.topicLists && typeof fallback.topicLists !== 'string') {
-      fallback.topicLists = JSON.stringify(fallback.topicLists);
-    }
     return fallback;
   }
 }
 
-
-
-
 // Initialize the handler fixes
+// --- OMITTING MultiSubjectBridge initialization if no longer needed ---
+/*
 setTimeout(() => {
   try {
     console.log('[KnackAuthUpdates] Initializing MultiSubjectBridge handler fixes');
@@ -358,3 +224,4 @@ setTimeout(() => {
     console.error('[KnackAuthUpdates] Error initializing MultiSubjectBridge:', e);
   }
 }, 1000);
+*/

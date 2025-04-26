@@ -336,24 +336,28 @@ const SaveQueueService = {
         
         const recordId = data.recordId; // Use the ID from the prepared data
         
-        // --- DEBUGGING STEP: Construct MINIMAL message explicitly --- 
+        // --- Restore Full Message Construction --- 
         const message = {
             type: 'SAVE_DATA',
             preserveFields: true, 
             recordId: recordId, // Use the verified recordId
-            // --- Temporarily OMIT large encoded fields --- 
-            // [FIELD_MAPPING.cardBankData]: data.cards, 
-            // [FIELD_MAPPING.topicLists]: data.topicLists,
-            // [FIELD_MAPPING.colorMapping]: data.colorMapping,
-            // [FIELD_MAPPING.spacedRepetition]: data.spacedRepetition, 
-            // [FIELD_MAPPING.topicMetadata]: data.topicMetadata,
-            [FIELD_MAPPING.lastSaved]: new Date().toISOString() // Keep lastSaved
+            // Explicitly include ONLY the fields the bridge script needs, 
+            // using the properties from the 'data' object (which are already encoded strings)
+            [FIELD_MAPPING.cardBankData]: data.cards, 
+            // [FIELD_MAPPING.topicLists]: data.topicLists, // OMITTING topicLists
+            [FIELD_MAPPING.colorMapping]: data.colorMapping,
+            // Handle Spaced Repetition - Check if prepareKnackSaveData stringifies this or sends individual boxes
+            // Assuming it's stringified for now:
+            [FIELD_MAPPING.spacedRepetition]: data.spacedRepetition, 
+            // If individual boxes are needed, adjust prepareKnackSaveData and use FIELD_MAPPING.box1Data etc. here
+            [FIELD_MAPPING.topicMetadata]: data.topicMetadata,
+            [FIELD_MAPPING.lastSaved]: new Date().toISOString() // Add lastSaved timestamp
         };
 
-        console.log(`[SaveQueueService] Queuing MINIMAL SAVE_DATA message for recordId: ${recordId}`);
+        console.log(`[SaveQueueService] Queuing FULL SAVE_DATA message for recordId: ${recordId}`);
         // Log the message structure JUST BEFORE sending to see if it looks correct
-        console.log("[SaveQueueService] MINIMAL Message Payload being sent:", JSON.stringify(message)); 
-        // --- End Debugging Step ---
+        console.log("[SaveQueueService] FULL Message Payload being sent:", JSON.stringify(message).substring(0, 500) + "..."); // Log only beginning
+        // --- End Restore ---
 
         // Dispatch message to queue management in Knack
         window.parent.postMessage(message, '*');
@@ -412,7 +416,7 @@ const SaveQueueService = {
 // For now, using placeholders - replace with actual field IDs from your bridge script.
 const FIELD_MAPPING = {
     cardBankData: 'field_2979', // Replace with actual field ID
-    topicLists: 'field_3011',   // Replace with actual field ID
+    // topicLists: 'field_3011',   // OMITTED
     colorMapping: 'field_3000', // Replace with actual field ID
     spacedRepetition: 'field_xxxx', // Placeholder - Check if needed/stringified correctly
     box1Data: 'field_2986', // Replace with actual field ID (Needed if spacedRepetition isn't one field)
