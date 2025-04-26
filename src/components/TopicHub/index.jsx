@@ -1634,7 +1634,7 @@ const TopicHub = ({
     );
   };
   
-  // Updated finalize topics function - completely removes success modal
+  // Updated finalize topics function - improved for stability and multi-subject support
   const handleFinalizeTopics = () => {
     console.log(`[TopicHub] Finalizing ${topics.length} topics for subject: ${subject}`);
 
@@ -1652,22 +1652,26 @@ const TopicHub = ({
       // Generate a truly unique color for each topic to ensure visibility
       const topicColor = topic.color || `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`;
 
-      // Create a truly unique ID by adding a timestamp and index
+      // Create a truly unique ID by adding a timestamp and random number to ensure uniqueness
+      // We'll create a unique ID that won't conflict with other subjects
       const timestamp = Date.now();
-      const uniqueId = (topic.id || generateId('topic')) + "_" + timestamp + "_" + index;
+      const randomSuffix = Math.floor(Math.random() * 10000);
+      // Make sure uniqueId format is consistent across saves
+      const uniqueId = `${index+1}.${(index % 5) + 1}_${timestamp}_${randomSuffix}`;
 
       return {
-        id: uniqueId, // Use existing ID or generate unique one
+        id: uniqueId, // Create a guaranteed unique ID
         type: 'topic', // Indicate this is a topic shell
         isShell: true,
+        isEmpty: true, // Explicitly mark as empty
         subject: subject, // Subject from props
         name: `${subject}: ${actualTopicName}`, // Standard naming convention
         topic: actualTopicName, // The actual topic name
         examBoard: examBoard || "General", // Metadata from props
         examType: examType || "Course",
         color: topicColor, // Use assigned or random color
-        timestamp: new Date(timestamp).toISOString(),
-        hasIcons: true, // Flag to show icons in FlashcardList
+        createdAt: new Date(timestamp).toISOString(),
+        updatedAt: new Date(timestamp).toISOString(),
       };
     }).filter(shell => shell !== null); // Remove any null entries from invalid topics
 

@@ -26,7 +26,19 @@
       yearGroup: 'field_548',
       userRole: 'field_73'
     };
-  
+   
+    const TOPIC_CURRICULUM_OBJECT = 'object_109'; // Topic curriculum data object
+    
+    // Topic curriculum object field mapping
+    const TOPIC_FIELD_MAPPING = {
+      examType: 'field_3035',
+      examBoard: 'field_3034',
+      subject: 'field_3033',
+      module: 'field_3036',
+      topic: 'field_3037',
+      subtopic: 'field_3038'
+    };
+
     // --- Helper Functions (Copied/Adapted from 5w) ---
   
     // Safe URI component decoding function
@@ -978,6 +990,17 @@
          case 'REQUEST_RECORD_ID':
              handleRecordIdRequest(data, iframeWindow); // Pass iframeWindow
              break;
+             case 'KNACK_REQUEST':
+                // Log the request for debugging
+                console.log(`[Knack Script] Received KNACK_REQUEST:`, data);
+                
+                // Reconstruct the full message structure that handleKnackRequest expects
+                handleKnackRequest({
+                  action: data.action,
+                  data: data.data,
+                  requestId: data.requestId
+                }, iframeWindow);
+                break;
         // Add other cases for messages from React app as needed
         default:
           console.warn(`[Knack Script] Unhandled message type: ${type}`);
@@ -1301,6 +1324,176 @@
        }
   
   
+// Handles requests to Knack's object_109 for curriculum data
+async function handleKnackRequest(data, iframeWindow) {
+    console.log("[Knack Script] Handling KNACK_REQUEST:", data.action);
+    
+    if (!data || !data.action || !data.requestId) {
+      console.error("[Knack Script] Invalid KNACK_REQUEST: Missing action or requestId");
+      if (iframeWindow) iframeWindow.postMessage({ 
+        type: 'KNACK_RESPONSE', 
+        requestId: data?.requestId || 'unknown',
+        error: "Invalid request format" 
+      }, '*');
+      return;
+    }
+    
+    try {
+      switch (data.action) {
+        case 'GET_SUBJECTS':
+          await handleGetSubjectsRequest(data, iframeWindow);
+          break;
+        case 'GET_TOPICS':
+          await handleGetTopicsRequest(data, iframeWindow);
+          break;
+        default:
+          console.warn(`[Knack Script] Unhandled KNACK_REQUEST action: ${data.action}`);
+          if (iframeWindow) iframeWindow.postMessage({ 
+            type: 'KNACK_RESPONSE', 
+            requestId: data.requestId,
+            error: `Unknown action: ${data.action}` 
+          }, '*');
+      }
+    } catch (error) {
+      console.error(`[Knack Script] Error handling ${data.action} request:`, error);
+      if (iframeWindow) iframeWindow.postMessage({ 
+        type: 'KNACK_RESPONSE', 
+        requestId: data.requestId,
+        error: error.message || "Error processing request" 
+      }, '*');
+    }
+  }
+  
+  // Handles GET_SUBJECTS requests to get subjects for a given exam type and board
+  async function handleGetSubjectsRequest(data, iframeWindow) {
+    console.log(`[Knack Script] Handling GET_SUBJECTS for ${data.data.examType}, ${data.data.examBoard}`);
+    
+    const { examType, examBoard } = data.data;
+    if (!examType || !examBoard) {
+      throw new Error("Missing required parameters: examType or examBoard");
+    }
+    
+    // Build filters for the API call
+    const filters = {
+      match: 'and',
+      rules: [
+        { field: TOPIC_FIELD_MAPPING.examType, operator: 'is', value: examType },
+        { field: TOPIC_FIELD_MAPPING.examBoard, operator: 'is', value: examBoard }
+      ]
+    };
+    
+    // Make API call to Knack
+    const apiCall = () => new Promise((resolve, reject) => {
+      $.ajax({
+        url: `${KNACK_API_URL}/objects/${TOPIC_CURRICULUM_OBJECT}/records`,
+        type: 'GET',
+        headers: saveQueue.getKnackHeaders(),
+        data: {
+          format: 'raw', 
+          filters: JSON.stringify(filters)
+        },
+        success: resolve,
+        error: reject
+      });
+    });
+    
+    // Execute API call with retry logic
+    const response = await retryApiCall(apiCall);
+    
+    // Process the results
+    if (response && response.records) {
+      // Extract unique subjects from results
+      const subjects = [...new Set(
+        response.records
+          .map(record => record[TOPIC_FIELD_MAPPING.subject])
+          .filter(subject => subject) // Filter out null/undefined/empty
+      )];
+      
+      console.log(`[Knack Script] Found ${subjects.length} subjects for ${examType}, ${examBoard}`);
+      
+      // Send response back to React app
+      if (iframeWindow) iframeWindow.postMessage({ 
+        type: 'KNACK_RESPONSE', 
+        requestId: data.requestId,
+        data: subjects 
+      }, '*');
+    } else {
+      // No results found
+      if (iframeWindow) iframeWindow.postMessage({ 
+        type: 'KNACK_RESPONSE', 
+        requestId: data.requestId,
+        data: [] 
+      }, '*');
+    }
+  }
+  
+  // Handles GET_TOPICS requests to get topics for a given subject, exam type, and board
+  async function handleGetTopicsRequest(data, iframeWindow) {
+    console.log(`[Knack Script] Handling GET_TOPICS for ${data.data.subject}, ${data.data.examType}, ${data.data.examBoard}`);
+    
+    const { subject, examType, examBoard } = data.data;
+    if (!subject || !examType || !examBoard) {
+      throw new Error("Missing required parameters: subject, examType, or examBoard");
+    }
+    
+    // Build filters for the API call
+    const filters = {
+      match: 'and',
+      rules: [
+        { field: TOPIC_FIELD_MAPPING.subject, operator: 'is', value: subject },
+        { field: TOPIC_FIELD_MAPPING.examType, operator: 'is', value: examType },
+        { field: TOPIC_FIELD_MAPPING.examBoard, operator: 'is', value: examBoard }
+      ]
+    };
+    
+    // Make API call to Knack
+    const apiCall = () => new Promise((resolve, reject) => {
+      $.ajax({
+        url: `${KNACK_API_URL}/objects/${TOPIC_CURRICULUM_OBJECT}/records`,
+        type: 'GET',
+        headers: saveQueue.getKnackHeaders(),
+        data: {
+          format: 'raw', 
+          filters: JSON.stringify(filters)
+        },
+        success: resolve,
+        error: reject
+      });
+    });
+    
+    // Execute API call with retry logic
+    const response = await retryApiCall(apiCall);
+    
+    // Process the results
+    if (response && response.records && response.records.length > 0) {
+      // Format the results for the React app
+      const topicsData = response.records.map(record => {
+        // Extract all relevant fields
+        const result = {};
+        Object.entries(TOPIC_FIELD_MAPPING).forEach(([key, fieldId]) => {
+          result[key] = record[fieldId] || "";
+        });
+        return result;
+      });
+      
+      console.log(`[Knack Script] Found ${topicsData.length} topics for ${subject}, ${examType}, ${examBoard}`);
+      
+      // Send response back to React app
+      if (iframeWindow) iframeWindow.postMessage({ 
+        type: 'KNACK_RESPONSE', 
+        requestId: data.requestId,
+        data: topicsData 
+      }, '*');
+    } else {
+      // No results found
+      if (iframeWindow) iframeWindow.postMessage({ 
+        type: 'KNACK_RESPONSE', 
+        requestId: data.requestId,
+        data: [] 
+      }, '*');
+    }
+  }
+
     // --- Data Loading and Utility Functions (Adapted from 5w) ---
   
     // Get complete user data from Knack (Object_3)
@@ -2089,4 +2282,4 @@
      // message routing structure (handleMessageRouter -> specific handlers -> saveQueue).
   
    // --- Self-Executing Function Closure ---
- }()); 
+ }());
