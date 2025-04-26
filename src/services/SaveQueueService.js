@@ -6,7 +6,7 @@ import { safeDecodeKnackTopicLists, safeDecodeKnackCards,
          processKnackUserData, prepareKnackSaveData } from '../utils/KnackAuthUpdates';
 
 // Import AuthManager (adjust path/name as needed)
-import AuthManager from './AuthManager'; // Or './AuthManager' or '../state/AuthManager' etc.
+import authManager from './AuthManager'; // Adjust path ONLY if it's different from '../services/AuthManager.js' relative to this file
 
 // --- Helper Functions ---
 
@@ -331,12 +331,13 @@ const SaveQueueService = {
     },
     
     queueKnackSave: function(data) {
-        // Retrieve recordId directly
-        const recordId = AuthManager.getRecordId(); // Assumes AuthManager has a static or instance method
+        // Retrieve recordId directly from the authManager instance
+        const userInfo = authManager.getUserInfo();
+        const recordId = userInfo?.id; // Access the 'id' property from the userInfo object
 
         // Add check for recordId
         if (!recordId) {
-            console.error("[SaveQueueService] CRITICAL ERROR: Cannot queue Knack save - recordId is missing from AuthManager.");
+            console.error("[SaveQueueService] CRITICAL ERROR: Cannot queue Knack save - recordId is missing from AuthManager's userInfo.");
             // Reject the promise immediately if recordId is missing
             return Promise.reject(new Error("Cannot save to Knack: Missing recordId."));
         }
