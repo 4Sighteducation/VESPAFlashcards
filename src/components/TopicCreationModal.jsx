@@ -130,8 +130,9 @@ const TopicCreationModal = ({
     setError(null);
   }, [currentStep]);
 
-  const saveHandlerRef = useRef();
-  const closeHandlerRef = useRef();
+  // Create refs to store the handlers and ensure they're always accessible
+  const saveHandlerRef = useRef(onSaveTopicShells);
+  const closeHandlerRef = useRef(onClose);
 
   // WebSocket message handler
   useEffect(() => {

@@ -207,6 +207,66 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
 // Save Queue configuration for multi-subject support
 const SaveQueueService = {
+    // Add the missing addToQueue method that App.js is trying to use
+    addToQueue: function(operation) {
+        console.log(`[SaveQueueService] Adding operation to queue: ${operation.type}`);
+        
+        // Create a promise to handle the operation
+        return new Promise((resolve, reject) => {
+            // Process based on operation type
+            switch (operation.type) {
+                case 'SAVE_DATA':
+                    // For SAVE_DATA operations, use the saveData method
+                    this.saveData(operation.payload, true)
+                        .then(result => resolve(result))
+                        .catch(error => reject(error));
+                    break;
+                    
+                case 'TOPIC_LISTS_UPDATED':
+                case 'TOPIC_METADATA_UPDATED':
+                case 'TOPIC_EVENT':
+                case 'CARDS_UPDATED':
+                    // Forward these operations to parent window using postMessage
+                    if (window.parent) {
+                        window.parent.postMessage(operation, '*');
+                        
+                        // Set up a listener for the response
+                        const messageHandler = (event) => {
+                            if (event.data && 
+                                (event.data.type === `${operation.type}_RESULT` || 
+                                 event.data.type === `${operation.type}_ERROR`)) {
+                                
+                                // Remove the listener
+                                window.removeEventListener('message', messageHandler);
+                                
+                                if (event.data.type === `${operation.type}_RESULT` && event.data.success) {
+                                    resolve(event.data);
+                                } else {
+                                    reject(new Error(event.data.error || 'Unknown error'));
+                                }
+                            }
+                        };
+                        
+                        // Add the listener
+                        window.addEventListener('message', messageHandler);
+                        
+                        // Add a timeout to prevent hanging
+                        setTimeout(() => {
+                            window.removeEventListener('message', messageHandler);
+                            reject(new Error(`Operation ${operation.type} timed out after 30 seconds`));
+                        }, 30000);
+                    } else {
+                        // If no parent window, reject with error
+                        reject(new Error('No parent window available for operation'));
+                    }
+                    break;
+                    
+                default:
+                    reject(new Error(`Unknown operation type: ${operation.type}`));
+            }
+        });
+    },
+    
     saveData: function(data, isKnack = true) {
         console.log(`[App] saveData triggered. IsKnack: ${isKnack}`);
         

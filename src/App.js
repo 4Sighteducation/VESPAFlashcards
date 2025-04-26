@@ -1,3 +1,5 @@
+import saveQueueService from './services/SaveQueueService';
+import { initializeAppGlobals } from './services/AppLoaderInit';
 import { prepareKnackSaveData } from './utils/KnackAuthUpdates';
 import React, { useState, useEffect, useCallback, useRef, useMemo, useContext } from "react";
 import "./App.css";
@@ -33,6 +35,9 @@ import saveQueueService from './services/SaveQueueService';
 // API Keys and constants
 // Removed unused KNACK_APP_ID
 // Removed unused KNACK_API_KEY
+
+// Add near other refs, like authProcessedRef
+const appInstanceRef = useRef(null);
 
 // Define isKnack - true if running inside iframe
 const isKnack = window.parent !== window;
@@ -1235,7 +1240,7 @@ function App() {
 // Define handleSaveTopicShellsAndRefresh before it's used
 const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegeneration = false) => {
     if (!topicShells || topicShells.length === 0) return;
-    console.log(`[App handleSaveTopicShellsAndRefresh] Received ${topicShells.length} shells. Regen: ${isRegeneration}`);
+    console.log(`[App handleSaveTopicShellsAndRefresh] Function called directly, shells: ${topicShells?.length || 0}`);
 
     try {
         // 1. Extract and ensure we have the subject information from these shells
@@ -1366,13 +1371,21 @@ const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegene
             topicLists: updatedTopicLists,
             topicMetadata: topicMetadata
         }, true); // preserveFields=true to ensure other data is preserved
-            
+         // Make the window.App reference available globally if it isn't already
+        if (window.App) {
+          window.App.handleSaveTopicShellsAndRefresh = handleSaveTopicShellsAndRefresh;
+          console.log("[App handleSaveTopicShellsAndRefresh] Refreshed global handler reference");
+        } 
+   
         console.log("[App handleSaveTopicShellsAndRefresh] saveData call completed successfully");
         showStatus("Topics saved successfully!");
             
     } catch (error) {
-        console.error("[App handleSaveTopicShellsAndRefresh] Error saving topic shells:", error);
-        showStatus("Error saving topics. Please try again.");
+      console.error("[App handleSaveTopicShellsAndRefresh] Error details:", error);
+      // Attempt to fix window.App reference if it was lost
+      if (window.App) {
+        window.App.handleSaveTopicShellsAndRefresh = handleSaveTopicShellsAndRefresh;
+      }
     }
 }, [allCards, saveData, showStatus, subjectColorMapping, getRandomColor, spacedRepetitionData, userTopics, topicLists, topicMetadata, setTopicLists, setAllCards]);
 
@@ -2635,6 +2648,25 @@ const filteredCards = useMemo(() => {
         // setAllCards(allCards); // Revert card colors if they were updated optimistically
       }
   }, [saveData, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, showStatus]); // Adjusted dependencies
+
+// Initialize AppLoaderInit to expose critical handlers globally
+useEffect(() => {
+  // Store the current instance in the ref
+  appInstanceRef.current = {
+    handleSaveTopicShellsAndRefresh
+  };
+  
+  // Initialize the global App reference with our instance
+  console.log("[App] Initializing global App reference with handlers");
+  initializeAppGlobals(appInstanceRef.current);
+  
+  return () => {
+    // Cleanup on unmount if needed
+    console.log("[App] Cleaning up global App reference");
+    appInstanceRef.current = null;
+  };
+}, [handleSaveTopicShellsAndRefresh]); // Only re-initialize if the handler changes
+
 
   // --- Initial Load useEffect ---
   useEffect(() => {
