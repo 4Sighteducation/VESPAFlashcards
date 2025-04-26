@@ -382,9 +382,15 @@ function safeParseJSON(jsonString, defaultVal = null) {
   
         try {
           const updateData = await this.prepareSaveData(operation);
-          debugLog("[SaveQueue] Prepared update data", updateData);
+          // --- DEBUG: Log prepared data before save attempt ---
+          console.log(`[SaveQueue DEBUG] Data prepared for API PUT (Record ${operation.recordId}):`, JSON.stringify(updateData));
+          debugLog("[SaveQueue] Prepared update data (Detailed)", updateData); // Keep detailed log too
+          // --- END DEBUG ---
           const response = await this.performSave(updateData, operation.recordId);
-          debugLog("[SaveQueue] API Save successful", response);
+          // --- DEBUG: Log API response on success --- 
+          console.log(`[SaveQueue DEBUG] API PUT success response (Record ${operation.recordId}):`, JSON.stringify(response));
+          debugLog("[SaveQueue] API Save successful (Detailed)", response); // Keep detailed log
+          // --- END DEBUG ---
           this.handleSaveSuccess(operation);
         } catch (error) {
            // Error should be the original error object from performSave or prepareSaveData
@@ -402,13 +408,15 @@ function safeParseJSON(jsonString, defaultVal = null) {
        // Prepares the final data payload for the Knack API PUT request
        async prepareSaveData(operation) {
            const { type, data, recordId, preserveFields } = operation;
+           // 'data' here is the object received from postMessage, containing raw JS objects/arrays
            console.log(`[SaveQueue] Preparing save data for type: ${type}, record: ${recordId}, preserveFields: ${preserveFields}`);
-  
+           debugLog("[SaveQueue] Raw data received by prepareSaveData:", data);
+
            // Start with the mandatory lastSaved field
            const updateData = {
                [FIELD_MAPPING.lastSaved]: new Date().toISOString()
            };
-  
+
            try {
                 // Fetch existing data ONLY if preserving fields
                let existingData = null;
@@ -430,36 +438,61 @@ function safeParseJSON(jsonString, defaultVal = null) {
   
                // Add data based on operation type
                switch (type) {
-                   case 'cards': // Only updates cardBankData
-                       // IMPORTANT: This assumes 'cards' type means REPLACE cardBankData.
-                       // If it means ADD/MERGE, the logic needs to be in the caller or here.
-                       // For ADD_TO_BANK, the caller (handleAddToBankRequest) now prepares the full merged list.
+                   // --- REVISED: Stringify data *here* before assigning to updateData ---
+                   case 'cards': // Assuming this type might still be used elsewhere? If not, remove.
                        updateData[FIELD_MAPPING.cardBankData] = JSON.stringify(
-                           this.ensureSerializable(data || []) // data should be the full card array
+                           this.ensureSerializable(data.cards || []) // data.cards should be the raw array
                        );
-                        console.log("[SaveQueue] Prepared cardBankData for 'cards' save.");
+                       console.log("[SaveQueue] Stringified cardBankData for 'cards' save.");
                        break;
-                   case 'colors': // Only updates colorMapping
+                   case 'colors': // Assuming this type might still be used elsewhere?
                        updateData[FIELD_MAPPING.colorMapping] = JSON.stringify(
-                           this.ensureSerializable(data || {})
+                           this.ensureSerializable(data.colorMapping || {}) // data.colorMapping should be the raw object
                        );
-                       console.log("[SaveQueue] Prepared colorMapping for 'colors' save.");
+                       console.log("[SaveQueue] Stringified colorMapping for 'colors' save.");
                        break;
-                   case 'topics': // Only updates topicLists
+                   // REMOVED 'topics' case as topicLists are no longer saved separately
+                   /* case 'topics': 
                        updateData[FIELD_MAPPING.topicLists] = JSON.stringify(
-                           this.ensureSerializable(data || [])
+                           this.ensureSerializable(data.topicLists || [])
                        );
-                        console.log("[SaveQueue] Prepared topicLists for 'topics' save.");
-                       break;
-                   case 'full': // Includes all provided fields from the 'data' object
-                        console.log("[SaveQueue] Preparing 'full' save data.");
-                       // 'data' in a 'full' save should contain the keys like 'cards', 'colorMapping', etc.
-                       Object.assign(updateData, this.prepareFullSaveData(data || {})); // Pass the data object itself
+                       console.log("[SaveQueue] Stringified topicLists for 'topics' save.");
+                       break; */
+                   case 'full': // This is the primary case used now
+                       console.log("[SaveQueue] Preparing 'full' save data by stringifying fields.");
+                       // 'data' contains the raw JS objects/arrays (cards, colorMapping, etc.)
+                       // Stringify each relevant piece before adding to updateData
+                       if (data.cards !== undefined) {
+                           updateData[FIELD_MAPPING.cardBankData] = JSON.stringify(this.ensureSerializable(data.cards || []));
+                       }
+                       if (data.colorMapping !== undefined) {
+                           updateData[FIELD_MAPPING.colorMapping] = JSON.stringify(this.ensureSerializable(data.colorMapping || {}));
+                       }
+                       if (data.spacedRepetition !== undefined) {
+                           // Assuming spacedRepetition is an object { box1: [], ... }
+                           // We need to stringify the *whole object* if the bridge expects one field,
+                           // OR stringify each box individually if separate fields are expected.
+                           // --> Assuming ONE field for now based on SaveQueueService mapping
+                           // updateData[FIELD_MAPPING.spacedRepetition] = JSON.stringify(this.ensureSerializable(data.spacedRepetition || {}));
+                           // --> OR if separate fields are needed:
+                           const srData = data.spacedRepetition || {};
+                           if (srData.box1 !== undefined) updateData[FIELD_MAPPING.box1Data] = JSON.stringify(this.ensureSerializable(srData.box1 || []));
+                           if (srData.box2 !== undefined) updateData[FIELD_MAPPING.box2Data] = JSON.stringify(this.ensureSerializable(srData.box2 || []));
+                           if (srData.box3 !== undefined) updateData[FIELD_MAPPING.box3Data] = JSON.stringify(this.ensureSerializable(srData.box3 || []));
+                           if (srData.box4 !== undefined) updateData[FIELD_MAPPING.box4Data] = JSON.stringify(this.ensureSerializable(srData.box4 || []));
+                           if (srData.box5 !== undefined) updateData[FIELD_MAPPING.box5Data] = JSON.stringify(this.ensureSerializable(srData.box5 || []));
+                       }
+                       if (data.topicMetadata !== undefined) {
+                           updateData[FIELD_MAPPING.topicMetadata] = JSON.stringify(this.ensureSerializable(data.topicMetadata || []));
+                       }
+                       // Removed prepareFullSaveData helper as logic is now inline
+                       // Object.assign(updateData, this.prepareFullSaveData(data || {})); 
                        break;
                    default:
-                        console.error(`[SaveQueue] Unknown save operation type: ${type}`);
+                       console.error(`[SaveQueue] Unknown save operation type: ${type}`);
                        throw new Error(`Unknown save operation type: ${type}`);
                }
+               // --- END REVISION ---
   
                // If preserving fields and we successfully fetched existing data, merge
                if (preserveFields && existingData) {
@@ -534,62 +567,12 @@ function safeParseJSON(jsonString, defaultVal = null) {
   
   
       // Prepares the payload specifically for a 'full' save operation based on the input 'data' object
+       // --- REMOVING prepareFullSaveData helper as logic is now in prepareSaveData case 'full' --- 
+       /*
        prepareFullSaveData(data) {
-           // 'data' should contain keys like 'cards', 'colorMapping', 'spacedRepetition', etc.
-           const updatePayload = {};
-           console.log("[SaveQueue] Preparing full save data from data object:", Object.keys(data));
-  
-           // Standardize and include card bank data if present in 'data'
-           if (data.cards !== undefined) {
-               console.log("[SaveQueue] Processing 'cards' for full save");
-               let cardsToSave = data.cards || []; // Default to empty array if null/undefined
-               cardsToSave = migrateTypeToQuestionType(cardsToSave); // Migrate legacy types
-               cardsToSave = standardizeCards(cardsToSave); // Ensure standard structure
-               updatePayload[FIELD_MAPPING.cardBankData] = JSON.stringify(
-                   this.ensureSerializable(cardsToSave)
-               );
-               console.log(`[SaveQueue] Included ${cardsToSave.length} cards in full save payload.`);
-           } else {
-                console.log("[SaveQueue] 'cards' field missing in full save data object.");
-           }
-  
-           if (data.colorMapping !== undefined) {
-                console.log("[SaveQueue] Processing 'colorMapping' for full save");
-               updatePayload[FIELD_MAPPING.colorMapping] = JSON.stringify(
-                   this.ensureSerializable(data.colorMapping || {})
-               );
-           }
-  
-           if (data.topicLists !== undefined) {
-                console.log("[SaveQueue] Processing 'topicLists' for full save");
-               updatePayload[FIELD_MAPPING.topicLists] = JSON.stringify(
-                   this.ensureSerializable(data.topicLists || [])
-               );
-           }
-  
-           // Include spaced repetition data if present in 'data'
-           if (data.spacedRepetition !== undefined) {
-                console.log("[SaveQueue] Processing 'spacedRepetition' for full save");
-               const { box1, box2, box3, box4, box5 } = data.spacedRepetition || {}; // Default to empty object
-               // Ensure boxes are arrays before stringifying
-               if (box1 !== undefined) updatePayload[FIELD_MAPPING.box1Data] = JSON.stringify(this.ensureSerializable(box1 || []));
-               if (box2 !== undefined) updatePayload[FIELD_MAPPING.box2Data] = JSON.stringify(this.ensureSerializable(box2 || []));
-               if (box3 !== undefined) updatePayload[FIELD_MAPPING.box3Data] = JSON.stringify(this.ensureSerializable(box3 || []));
-               if (box4 !== undefined) updatePayload[FIELD_MAPPING.box4Data] = JSON.stringify(this.ensureSerializable(box4 || []));
-               if (box5 !== undefined) updatePayload[FIELD_MAPPING.box5Data] = JSON.stringify(this.ensureSerializable(box5 || []));
-           }
-  
-            // Include topic metadata if present in 'data'
-            if (data.topicMetadata !== undefined) {
-                 console.log("[SaveQueue] Processing 'topicMetadata' for full save");
-                updatePayload[FIELD_MAPPING.topicMetadata] = JSON.stringify(
-                    this.ensureSerializable(data.topicMetadata || [])
-                );
-            }
-  
-  
-           return updatePayload; // Return only the fields provided in the 'data' object
+           // ... existing implementation ...
        }
+       */
   
   
       // Performs the actual Knack API PUT request
@@ -612,10 +595,16 @@ function safeParseJSON(jsonString, defaultVal = null) {
                    headers: this.getKnackHeaders(), // Use headers method
                    data: JSON.stringify(updateData), // Send prepared data
                    success: function(response) {
+                      // --- DEBUG: Log success directly --- 
+                      console.log(`[SaveQueue DEBUG] AJAX PUT success for record ${recordId}`);
+                      // --- END DEBUG ---
                       console.log(`[SaveQueue] API PUT successful for record ${recordId}`);
                       resolve(response);
                    },
                    error: function(jqXHR, textStatus, errorThrown) {
+                       // --- DEBUG: Log error directly --- 
+                       console.error(`[SaveQueue DEBUG] AJAX PUT failed for record ${recordId}. Status: ${jqXHR.status}, Error: ${errorThrown}`);
+                       // --- END DEBUG ---
                        // Log more detailed error info
                       console.error(`[SaveQueue] API PUT failed for record ${recordId}: Status ${jqXHR.status} - ${errorThrown}`, jqXHR.responseText);
                        // Create a more informative error object
@@ -983,7 +972,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
   
                    loadFlashcardUserData(window.currentKnackUser.id, function(userData) {
                         // Ensure iframeWindow is still valid
-                       if (iframeWindow && iframe.contentWindow === iframeWindow) { // Check if iframe still exists
+                       if (iframe && iframe.contentWindow) { 
                            const initialData = {
                                type: 'KNACK_USER_INFO',
                                data: {
@@ -1002,8 +991,9 @@ function safeParseJSON(jsonString, defaultVal = null) {
                                }
                            };
                            debugLog("--> Sending KNACK_USER_INFO to React App", initialData.data);
-                           iframeWindow.postMessage(initialData, '*'); // Target specific iframe window
-  
+                           // --- FIX: Use iframe.contentWindow --- 
+                           iframe.contentWindow.postMessage(initialData, '*'); 
+
                            // Show iframe after sending initial data
                            loadingDiv.style.display = 'none';
                            iframe.style.display = 'block';
@@ -1830,7 +1820,7 @@ function loadFlashcardUserData(userId, callback) {
             });
           } else {
               console.error(`[Knack Script] Failed to create new flashcard record for user ${userId}.`);
-            callback(null); // Indicate failure to load/create data
+              callback(null); // Indicate failure to load/create data
           }
         });
       }

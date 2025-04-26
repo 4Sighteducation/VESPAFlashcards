@@ -339,28 +339,26 @@ const SaveQueueService = {
         
         const recordId = data.recordId; // Use the ID from the prepared data
         
-        // --- Restore Full Message Construction --- 
+        // --- NEW FIX: Construct message with RAW JS objects/arrays --- 
         const message = {
             type: 'SAVE_DATA',
-            preserveFields: true, 
-            recordId: recordId, // Use the verified recordId
-            // Explicitly include ONLY the fields the bridge script needs, 
-            // using the properties from the 'data' object (which are already encoded strings)
-            [FIELD_MAPPING.cardBankData]: data.cards, 
-            // [FIELD_MAPPING.topicLists]: data.topicLists, // OMITTING topicLists
-            [FIELD_MAPPING.colorMapping]: data.colorMapping,
-            // Handle Spaced Repetition - Check if prepareKnackSaveData stringifies this or sends individual boxes
-            // Assuming it's stringified for now:
-            [FIELD_MAPPING.spacedRepetition]: data.spacedRepetition, 
-            // If individual boxes are needed, adjust prepareKnackSaveData and use FIELD_MAPPING.box1Data etc. here
-            [FIELD_MAPPING.topicMetadata]: data.topicMetadata,
-            [FIELD_MAPPING.lastSaved]: new Date().toISOString() // Add lastSaved timestamp
+            preserveFields: true, // This likely doesn't matter much now but keep for bridge
+            recordId: recordId, 
+            // Pass the RAW data objects/arrays 
+            cards: data.cards, 
+            colorMapping: data.colorMapping,
+            spacedRepetition: data.spacedRepetition, 
+            topicMetadata: data.topicMetadata,
+            // DO NOT pass encoded strings like data.field_xxxx 
+            // The bridge script will handle stringifying before the PUT request
         };
 
-        console.log(`[SaveQueueService] Queuing FULL SAVE_DATA message for recordId: ${recordId}`);
+        console.log(`[SaveQueueService] Queuing SAVE_DATA message with RAW data for recordId: ${recordId}`);
         // Log the message structure JUST BEFORE sending to see if it looks correct
-        console.log("[SaveQueueService] FULL Message Payload being sent:", JSON.stringify(message).substring(0, 500) + "..."); // Log only beginning
-        // --- End Restore ---
+        // Only log keys/types to avoid huge console output
+        const payloadKeys = Object.keys(message).map(key => `${key}: ${typeof message[key]}`).join(', ');
+        console.log(`[SaveQueueService] RAW Message Payload being sent (Keys/Types): {${payloadKeys}}`); 
+        // --- End New Fix ---
 
         // Dispatch message to queue management in Knack
         window.parent.postMessage(message, '*');

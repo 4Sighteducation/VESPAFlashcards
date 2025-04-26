@@ -154,11 +154,12 @@ export function safeEncodeKnackCards(cards) {
     // Convert to JSON string
     const jsonString = JSON.stringify(cleanedCards);
     
-    // Add additional encoding steps to prevent issues with Knack
-    return jsonString
-      .replace(/\+/g, '%2B')
-      .replace(/\//g, '%2F')
-      .replace(/\\/g, '%5C');
+    // --- OMITTING additional encoding steps for debugging ---
+    // return jsonString
+    //   .replace(/\+/g, '%2B')
+    //   .replace(/\//g, '%2F')
+    //   .replace(/\\/g, '%5C');
+    return jsonString; // Return plain JSON string
   } catch (error) {
     console.error('Error encoding cards for Knack:', error);
     return '[]'; // Return empty array string on failure
@@ -177,38 +178,43 @@ export function prepareKnackSaveData(data) {
     console.log(`[prepareKnackSaveData] Processing data for Knack save:`);
     console.log(`- Cards: ${Array.isArray(prepared.cards) ? prepared.cards.length : 'None'}`);
     
-    // Process cards with enhanced encoding
-    if (Array.isArray(prepared.cards)) {
-      prepared.cards = safeEncodeKnackCards(prepared.cards);
-      console.log(`[prepareKnackSaveData] Encoded ${data.cards.length} cards for Knack`);
-    }
+    // --- OMITTING ENCODING/STRINGIFYING --- 
+    // // Process cards with enhanced encoding
+    // if (Array.isArray(prepared.cards)) {
+    //   prepared.cards = safeEncodeKnackCards(prepared.cards);
+    //   console.log(`[prepareKnackSaveData] Encoded ${data.cards.length} cards for Knack`);
+    // }
     
-    // Ensure other data fields are properly JSON stringified
-    if (prepared.colorMapping && typeof prepared.colorMapping !== 'string') {
-      prepared.colorMapping = JSON.stringify(prepared.colorMapping);
-    }
-    
-    if (prepared.spacedRepetition && typeof prepared.spacedRepetition !== 'string') {
-      prepared.spacedRepetition = JSON.stringify(prepared.spacedRepetition);
-    }
-    
-    if (prepared.topicMetadata && typeof prepared.topicMetadata !== 'string') {
-      prepared.topicMetadata = JSON.stringify(prepared.topicMetadata);
-    }
+    // // Ensure other data fields are properly JSON stringified
+    // if (prepared.colorMapping && typeof prepared.colorMapping !== 'string') {
+    //   prepared.colorMapping = JSON.stringify(prepared.colorMapping);
+    // }
+    // 
+    // if (prepared.spacedRepetition && typeof prepared.spacedRepetition !== 'string') {
+    //   prepared.spacedRepetition = JSON.stringify(prepared.spacedRepetition);
+    // }
+    // 
+    // if (prepared.topicMetadata && typeof prepared.topicMetadata !== 'string') {
+    //   prepared.topicMetadata = JSON.stringify(prepared.topicMetadata);
+    // }
+    // --- END OMITTING --- 
     
     // Set a flag to indicate this data was specially prepared for multi-subject support
-    prepared._multiSubjectEnabled = true;
+    prepared._multiSubjectEnabled = true; // Keep this flag if needed elsewhere
     
-    delete prepared.topicLists; // Explicitly remove the property before returning
+    delete prepared.topicLists; // Keep this removed
     
+    // Return the data with RAW JS objects/arrays for cards, colors, etc.
     return prepared;
   } catch (error) {
     console.error('[prepareKnackSaveData] Error preparing data for Knack:', error);
     // Try to recover with a simpler approach
+    // --- OMITTING STRINGIFY IN FALLBACK TOO ---
     const fallback = { ...data };
-    if (fallback.cards && typeof fallback.cards !== 'string') {
-      fallback.cards = JSON.stringify(fallback.cards);
-    }
+    // if (fallback.cards && typeof fallback.cards !== 'string') {
+    //   fallback.cards = JSON.stringify(fallback.cards);
+    // }
+    // --- END OMITTING --- 
     return fallback;
   }
 }
