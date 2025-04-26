@@ -1078,6 +1078,9 @@ function safeParseJSON(jsonString, defaultVal = null) {
     // Handles 'SAVE_DATA' request from React app
     async function handleSaveDataRequest(data, iframeWindow) {
       console.log("[Knack Script] Handling SAVE_DATA request");
+      // --- Added Detailed Logging ---
+      console.log("[Knack Script] Received SAVE_DATA payload:", JSON.stringify(data, null, 2));
+      // --- End Added Logging ---
       if (!data || !data.recordId) {
           console.error("[Knack Script] SAVE_DATA request missing recordId.");
            // CORRECTION: Target iframeWindow for response

@@ -629,6 +629,16 @@ function App() {
 
   // Modify the saveData function to use the ensureRecordId function
   const saveData = useCallback(async (data, preserveFields = false) => {
+    // --- FIX: Add check for recordId at the very beginning ---
+    const currentRecordId = recordId || (auth && auth.recordId); // Get ID from state or auth object
+    if (!currentRecordId && isKnack) { // Only block Knack save if ID is missing
+        console.error("[App] saveData ABORTED: Cannot save to Knack - recordId is missing.");
+        showStatus("Save Error: Missing user record ID. Please refresh.");
+        setIsSaving(false); // Ensure saving state is reset
+        return; // Stop execution
+    }
+    // --- End Fix ---
+
     console.log("[App] saveData triggered. IsKnack:", isKnack);
     if (!auth) {
       console.warn("[App] No auth, saving locally only");
@@ -646,7 +656,7 @@ function App() {
     saveToLocalStorage(); // Save locally first
 
     if (isKnack) {
-      let safeRecordId = recordId || await ensureRecordId();
+      let safeRecordId = currentRecordId || await ensureRecordId();
       if (!safeRecordId) {
         console.error("[Save] No record ID, cannot save to Knack");
         setIsSaving(false);

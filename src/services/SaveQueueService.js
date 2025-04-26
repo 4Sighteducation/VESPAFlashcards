@@ -5,6 +5,9 @@
 import { safeDecodeKnackTopicLists, safeDecodeKnackCards, 
          processKnackUserData, prepareKnackSaveData } from '../utils/KnackAuthUpdates';
 
+// Import AuthManager (adjust path/name as needed)
+import AuthManager from './AuthManager'; // Or './AuthManager' or '../state/AuthManager' etc.
+
 // --- Helper Functions ---
 
 // Enhanced URI component decoding function with better error handling for multi-subject
@@ -328,16 +331,32 @@ const SaveQueueService = {
     },
     
     queueKnackSave: function(data) {
+        // Retrieve recordId directly
+        const recordId = AuthManager.getRecordId(); // Assumes AuthManager has a static or instance method
+
+        // Add check for recordId
+        if (!recordId) {
+            console.error("[SaveQueueService] CRITICAL ERROR: Cannot queue Knack save - recordId is missing from AuthManager.");
+            // Reject the promise immediately if recordId is missing
+            return Promise.reject(new Error("Cannot save to Knack: Missing recordId."));
+        }
+
+        // Construct message using the retrieved recordId
         const message = {
             type: 'SAVE_DATA',
-            preserveFields: true,  // Important for multi-subject: preserve other fields
-            recordId: data.recordId,
-            ...data // Spread all data properties into the message
+            preserveFields: true, // Important for multi-subject: preserve other fields
+            recordId: recordId, // Use the reliably retrieved recordId
+            // Pass the rest of the prepared data (cards, lists, etc.)
+            // Exclude any potential 'recordId' that might be in the input 'data' object
+            // to avoid conflict, although spreading should overwrite it anyway.
+            ...data
         };
-        
+
+        console.log(`[SaveQueueService] Queuing SAVE_DATA for recordId: ${recordId}`);
+
         // Dispatch message to queue management in Knack
         window.parent.postMessage(message, '*');
-        
+
         // Return a promise that will be resolved when the save response is received
         return new Promise((resolve, reject) => {
             const timeoutId = setTimeout(() => {
