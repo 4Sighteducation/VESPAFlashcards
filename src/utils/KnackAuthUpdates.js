@@ -1,6 +1,7 @@
 // KnackAuthUpdates.js - Functions to support multiple subjects by enhancing data parsing
 import SaveQueueService from '../services/SaveQueueService';
 import { safeParseJSON, safeDecodeURIComponent } from './DataUtils';
+import MultiSubjectBridge from '../services/MultiSubjectBridge';
 
 // Safely decode Knack topic lists with robust error recovery
 export function safeDecodeKnackTopicLists(topicListsData) {
@@ -345,8 +346,8 @@ export function prepareKnackSaveData(data) {
   }
 }
 
-// Import our MultiSubjectBridge and register it to handle saves
-import MultiSubjectBridge from '../services/MultiSubjectBridge';
+
+
 
 // Initialize the handler fixes
 setTimeout(() => {
