@@ -35,8 +35,6 @@ import {
 // Removed unused KNACK_APP_ID
 // Removed unused KNACK_API_KEY
 
-// Add near other refs, like authProcessedRef
-const appInstanceRef = useRef(null);
 
 // Define isKnack - true if running inside iframe
 const isKnack = window.parent !== window;
@@ -60,6 +58,8 @@ function App() {
 
   // App view state
   const [view, setView] = useState("cardBank"); // cardBank, createCard, spacedRepetition
+
+  const appInstanceRef = useRef(null);
 
   // Flashcard data
   const [allCards, setAllCards] = useState([]);
@@ -105,6 +105,8 @@ function App() {
   const [cardsToPrint, setCardsToPrint] = useState([]);
   const [printTitle, setPrintTitle] = useState("");
   const [cardCreationModalOpen, setCardCreationModalOpen] = useState(false);
+
+  
 
   // User information - enhanced with additional student data
   const getUserInfo = useCallback(() => {
@@ -1580,6 +1582,7 @@ useEffect(() => {
   // Initialize communication with parent window (Knack)
   // Reference to track if auth has been processed to prevent loops
   const authProcessedRef = useRef(false);
+  
   
   useEffect(() => {
     // Prevent duplicate message sending
