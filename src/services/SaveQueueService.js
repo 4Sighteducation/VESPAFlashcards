@@ -5,9 +5,6 @@
 import { safeDecodeKnackTopicLists, safeDecodeKnackCards, 
          processKnackUserData, prepareKnackSaveData } from '../utils/KnackAuthUpdates';
 
-// Import AuthManager (adjust path/name as needed)
-import authManager from './AuthManager'; // Adjust path ONLY if it's different from '../services/AuthManager.js' relative to this file
-
 // --- Helper Functions ---
 
 // Enhanced URI component decoding function with better error handling for multi-subject
@@ -331,29 +328,34 @@ const SaveQueueService = {
     },
     
     queueKnackSave: function(data) {
-        // Retrieve recordId directly from the authManager instance
-        const userInfo = authManager.getUserInfo();
-        const recordId = userInfo?.id; // Access the 'id' property from the userInfo object
-
-        // Add check for recordId
-        if (!recordId) {
-            console.error("[SaveQueueService] CRITICAL ERROR: Cannot queue Knack save - recordId is missing from AuthManager's userInfo.");
-            // Reject the promise immediately if recordId is missing
-            return Promise.reject(new Error("Cannot save to Knack: Missing recordId."));
+        // --- REVISED FIX: Check recordId on the *incoming* data object --- 
+        if (!data || !data.recordId) {
+            console.error("[SaveQueueService] CRITICAL ERROR: Cannot queue Knack save - recordId is missing in the prepared data.");
+            return Promise.reject(new Error("Cannot save to Knack: Missing recordId in prepared data."));
         }
-
-        // Construct message using the retrieved recordId
+        
+        const recordId = data.recordId; // Use the ID from the prepared data
+        
+        // --- REVISED FIX: Construct message explicitly with known good fields --- 
         const message = {
             type: 'SAVE_DATA',
-            preserveFields: true, // Important for multi-subject: preserve other fields
-            recordId: recordId, // Use the reliably retrieved recordId
-            // Pass the rest of the prepared data (cards, lists, etc.)
-            // Exclude any potential 'recordId' that might be in the input 'data' object
-            // to avoid conflict, although spreading should overwrite it anyway.
-            ...data
+            preserveFields: true, 
+            recordId: recordId, // Use the verified recordId
+            // Explicitly include ONLY the fields the bridge script needs, 
+            // using the properties from the 'data' object (which are already encoded strings)
+            [FIELD_MAPPING.cardBankData]: data.cards, // Assuming FIELD_MAPPING is accessible or use field name directly
+            [FIELD_MAPPING.topicLists]: data.topicLists,
+            [FIELD_MAPPING.colorMapping]: data.colorMapping,
+            [FIELD_MAPPING.spacedRepetition]: data.spacedRepetition, // Assuming these are stringified by prepareKnackSaveData
+            [FIELD_MAPPING.topicMetadata]: data.topicMetadata,
+            [FIELD_MAPPING.lastSaved]: new Date().toISOString() // Add lastSaved timestamp
+            // DO NOT spread the entire 'data' object: ...data
         };
 
-        console.log(`[SaveQueueService] Queuing SAVE_DATA for recordId: ${recordId}`);
+        console.log(`[SaveQueueService] Queuing SAVE_DATA message for recordId: ${recordId}`);
+        // Log the message structure JUST BEFORE sending to see if it looks correct
+        console.log("[SaveQueueService] Message Payload being sent:", JSON.stringify(message)); 
+        // --- End Revised Fixes ---
 
         // Dispatch message to queue management in Knack
         window.parent.postMessage(message, '*');
@@ -405,6 +407,23 @@ const SaveQueueService = {
     // Safe recovery functions that can be used by other services
     safeDecodeURIComponent,
     safeParseJSON
+};
+
+// --- TODO: Need to make FIELD_MAPPING available here --- 
+// This might require importing it from the bridge script or defining it here.
+// For now, using placeholders - replace with actual field IDs from your bridge script.
+const FIELD_MAPPING = {
+    cardBankData: 'field_2979', // Replace with actual field ID
+    topicLists: 'field_3011',   // Replace with actual field ID
+    colorMapping: 'field_3000', // Replace with actual field ID
+    spacedRepetition: 'field_xxxx', // Placeholder - Check if needed/stringified correctly
+    box1Data: 'field_2986', // Replace with actual field ID (Needed if spacedRepetition isn't one field)
+    box2Data: 'field_2987', // Replace with actual field ID
+    box3Data: 'field_2988', // Replace with actual field ID
+    box4Data: 'field_2989', // Replace with actual field ID
+    box5Data: 'field_2990', // Replace with actual field ID
+    topicMetadata: 'field_3030', // Replace with actual field ID
+    lastSaved: 'field_2957' // Replace with actual field ID
 };
 
 export default SaveQueueService;
