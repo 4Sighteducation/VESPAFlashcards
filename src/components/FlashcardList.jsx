@@ -435,40 +435,78 @@ const FlashcardList = ({
   // 4. useEffect for Color Initialization and Synchronization with Props
   useEffect(() => {
     const colorMappingFromProps = subjectColorMappingFromProps || {};
-    console.log("[FlashcardList Color Sync Effect] Running. Props received:", colorMappingFromProps);
+    console.log("[FlashcardList Color Sync Effect V2] Running. Props received:", colorMappingFromProps);
 
     if (!groupedCards || Object.keys(groupedCards).length === 0) {
-      // If there are no cards, ensure local state is empty too
       if (Object.keys(subjectColorMapping).length > 0) {
-          console.log("[FlashcardList Color Sync Effect] No grouped cards, clearing local color state.");
-          setSubjectColorMapping({});
+        console.log("[FlashcardList Color Sync Effect V2] No grouped cards, clearing local color state.");
+        setSubjectColorMapping({});
       }
       return;
     }
 
     let needsLocalUpdate = false;
-    // Start building the new local state based *primarily* on props
-    const nextLocalMapping = { ...colorMappingFromProps };
+    // Start with a deep copy of the current local state
+    // This ensures we preserve existing local colors unless overwritten by props
+    const nextLocalMapping = JSON.parse(JSON.stringify(subjectColorMapping || {}));
 
+    // --- Step 1: Sync with Props --- 
+    // Update local state with colors definitively provided by props
+    Object.keys(colorMappingFromProps).forEach(subject => {
+        const propSubjectInfo = colorMappingFromProps[subject];
+        if (!propSubjectInfo) return; // Skip if prop info is somehow null/undefined
+
+        // Ensure subject entry exists locally
+        if (!nextLocalMapping[subject]) {
+            nextLocalMapping[subject] = { base: null, topics: {} };
+            needsLocalUpdate = true;
+        }
+
+        // Update base color if provided in props and different from local
+        if (propSubjectInfo.base && propSubjectInfo.base !== nextLocalMapping[subject].base) {
+            console.log(`[FlashcardList Color Sync V2] Updating subject '${subject}' base color from props: ${propSubjectInfo.base}`);
+            nextLocalMapping[subject].base = propSubjectInfo.base;
+            needsLocalUpdate = true;
+        }
+
+        // Ensure topics object exists locally
+        if (!nextLocalMapping[subject].topics) {
+             nextLocalMapping[subject].topics = {};
+             // No need to set needsLocalUpdate just for creating empty object
+        }
+
+        // Update topic colors if provided in props
+        if (propSubjectInfo.topics) {
+             Object.keys(propSubjectInfo.topics).forEach(topic => {
+                 const propTopicInfo = propSubjectInfo.topics[topic];
+                 const propTopicColor = propTopicInfo?.base || propTopicInfo; // Handle old/new format
+                 const localTopicColor = nextLocalMapping[subject].topics[topic]?.base || nextLocalMapping[subject].topics[topic];
+
+                 if (propTopicColor && propTopicColor !== localTopicColor) {
+                    console.log(`[FlashcardList Color Sync V2] Updating topic '${topic}' color for subject '${subject}' from props: ${propTopicColor}`);
+                    // Ensure topic entry exists in the modern object format
+                    nextLocalMapping[subject].topics[topic] = { base: propTopicColor };
+                    needsLocalUpdate = true;
+                 }
+             });
+        }
+    });
+
+    // --- Step 2: Assign Defaults ONLY for Missing Entries --- 
     // Iterate subjects derived from the current cards
     Object.keys(groupedCards).forEach(subject => {
-      let subjectNeedsUpdate = false;
-
-      // Check if subject exists in the mapping derived from props
+      // Check if subject base color is missing locally *after* syncing with props
       if (!nextLocalMapping[subject] || !nextLocalMapping[subject].base) {
         const randomBaseColor = BRIGHT_COLORS[Math.floor(Math.random() * BRIGHT_COLORS.length)];
-        console.log(`[FlashcardList Color Sync Effect] Subject '${subject}' missing base color in props mapping. Assigning default: ${randomBaseColor}`);
-        nextLocalMapping[subject] = {
-            base: randomBaseColor,
-            topics: nextLocalMapping[subject]?.topics || {} // Preserve any existing topic colors if only base was missing
-        };
-        subjectNeedsUpdate = true;
+        console.log(`[FlashcardList Color Sync V2] Subject '${subject}' missing base color locally. Assigning default: ${randomBaseColor}`);
+        if (!nextLocalMapping[subject]) nextLocalMapping[subject] = { topics: {} }; // Ensure subject entry exists
+        nextLocalMapping[subject].base = randomBaseColor;
+        needsLocalUpdate = true;
       }
 
-      // Ensure topics object exists for the subject
+      // Ensure topics object exists
       if (!nextLocalMapping[subject].topics) {
          nextLocalMapping[subject].topics = {};
-         // No need to set needsUpdate here, adding empty object is fine
       }
 
       const subjectBaseColor = nextLocalMapping[subject].base;
@@ -476,32 +514,32 @@ const FlashcardList = ({
 
       // Check topics within the subject
       topicsInSubject.forEach((topic, index) => {
-        if (!nextLocalMapping[subject].topics[topic]) { // If topic color missing in mapping from props
+        const localTopicEntry = nextLocalMapping[subject].topics[topic];
+        const localTopicColor = localTopicEntry?.base || localTopicEntry; // Handle old/new format
+
+        // Assign default shade ONLY if topic color is missing locally
+        if (!localTopicColor) {
           const shadePercent = -10 + (index % 5) * 5;
           const topicShade = generateShade(subjectBaseColor, shadePercent);
-          console.log(`[FlashcardList Color Sync Effect] Topic '${topic}' missing color in props mapping for subject '${subject}'. Assigning default shade: ${topicShade}`);
-          nextLocalMapping[subject].topics[topic] = { base: topicShade };
-          subjectNeedsUpdate = true;
+          console.log(`[FlashcardList Color Sync V2] Topic '${topic}' missing color locally for subject '${subject}'. Assigning default shade: ${topicShade}`);
+          nextLocalMapping[subject].topics[topic] = { base: topicShade }; // Store in modern format
+          needsLocalUpdate = true;
         }
       });
-
-      if (subjectNeedsUpdate) {
-          needsLocalUpdate = true;
-      }
     });
 
+    // --- Step 3: Update State if Changed --- 
     // Compare the derived nextLocalMapping with the current local state
     // Only update local state if there's an actual difference to prevent loops
-    // Use stringify for a reasonable comparison, acknowledging its limitations
     if (needsLocalUpdate || JSON.stringify(nextLocalMapping) !== JSON.stringify(subjectColorMapping)) {
-       console.log("[FlashcardList Color Sync Effect] Updating local color mapping state.", nextLocalMapping);
+       console.log("[FlashcardList Color Sync V2] Updating local color mapping state.", nextLocalMapping);
        setSubjectColorMapping(nextLocalMapping);
     } else {
-        console.log("[FlashcardList Color Sync Effect] Local color mapping state is already synchronized.");
+        console.log("[FlashcardList Color Sync V2] Local color mapping state is already synchronized.");
     }
 
   // Dependency: Run when groupedCards changes OR when the mapping from props changes.
-  }, [groupedCards, subjectColorMappingFromProps]); // Removed local subjectColorMapping from deps
+  }, [groupedCards, subjectColorMappingFromProps, subjectColorMapping]); // Added subjectColorMapping back as dependency for comparison logic
 
   const getExistingSubjectNames = useMemo(() => {
     // Now depends on groupedCards which is defined above
