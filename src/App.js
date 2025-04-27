@@ -2626,40 +2626,20 @@ const filteredCards = useMemo(() => {
 // Function already moved above, removing duplicate declaration
 
   const handleUpdateSubjectColor = useCallback(async (subject, topic, newColor) => {
-      // ... (implementation as before) ...
-      // ** Make sure the full implementation of this function is moved **
-      // Example:
-      console.log(`[App] Updating color for ${subject} - ${topic} to ${newColor}`);
-      const updatedMapping = { ...subjectColorMapping, [`${subject}-${topic}`]: newColor };
-      setSubjectColorMapping(updatedMapping);
-
-      // Also update any cards associated with this subject/topic if needed
-      const updatedCards = allCards.map(card => {
-        if (card.subject === subject && card.topic === topic) {
-          return { ...card, color: newColor };
-        }
-        return card;
-      });
-      // setAllCards(updatedCards); // Consider if this immediate update is needed or rely on saveData refresh
-
-      try {
-        await saveData({
-          cards: updatedCards, // Pass the potentially updated cards
-          colorMapping: updatedMapping,
-          spacedRepetition: spacedRepetitionData,
-          userTopics: userTopics,
-          topicLists: topicLists,
-          topicMetadata: topicMetadata
-        });
-        showStatus(`Color updated for ${subject} - ${topic}.`);
-      } catch (error) {
-        console.error("Error saving updated color mapping:", error);
-        showStatus("Error saving color update.");
-        // Revert optimistic update on error?
-        setSubjectColorMapping(subjectColorMapping); // Revert color map
-        // setAllCards(allCards); // Revert card colors if they were updated optimistically
+      // Call the existing updateColorMapping function which handles state update and saving
+      console.log(`[App handleUpdateSubjectColor] Received update for ${subject} / ${topic || 'Subject Base'} to ${newColor}. Delegating to updateColorMapping.`);
+      if (subject && newColor) {
+          // The third argument 'false' indicates not to automatically update all topic shades
+          // when only the subject base or a single topic is being changed manually.
+          updateColorMapping(subject, topic, newColor, false);
+          showStatus(`Color updated for ${topic ? topic : subject}.`);
+      } else {
+          console.error("[App handleUpdateSubjectColor] Invalid arguments received:", { subject, topic, newColor });
+          showStatus("Error: Could not update color.");
       }
-  }, [saveData, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, showStatus]); // Adjusted dependencies
+      // Removed the incorrect manual state update and saveData call here.
+      // updateColorMapping handles saving internally.
+  }, [updateColorMapping, showStatus]); // Dependencies updated
 
 // Initialize AppLoaderInit to expose critical handlers globally
 useEffect(() => {
