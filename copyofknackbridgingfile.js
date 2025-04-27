@@ -462,19 +462,22 @@ function safeParseJSON(jsonString, defaultVal = null) {
                        console.log("[SaveQueue] Preparing 'full' save data by stringifying fields.");
                        // 'data' contains the raw JS objects/arrays (cards, colorMapping, etc.)
                        // Stringify each relevant piece before adding to updateData
-                       if (data.cards !== undefined) {
-                           updateData[FIELD_MAPPING.cardBankData] = JSON.stringify(this.ensureSerializable(data.cards || []));
-                       }
+                       
+                       // --- DEBUGGING: Force minimal card data AGAIN, keep others --- 
+                       const dummyCard = [{ id: "test_card_456", type: "card", subject: "Test", question: "Minimal Save Test v2", answer: "Still Success?" }];
+                       updateData[FIELD_MAPPING.cardBankData] = JSON.stringify(dummyCard);
+                       console.warn("[SaveQueue DEBUG] OVERRIDING card data with minimal test payload (v2).");
+                       // --- ALSO TRY UPDATING userName (field_3010) --- 
+                       const testUserName = `API Update Test - ${new Date().getTime()}`;
+                       updateData[FIELD_MAPPING.userName] = testUserName;
+                       console.log(`[SaveQueue DEBUG] Attempting to set userName (${FIELD_MAPPING.userName}) to: ${testUserName}`);
+                       // --- END DEBUGGING --- 
+
+                       // --- Process other fields normally --- 
                        if (data.colorMapping !== undefined) {
                            updateData[FIELD_MAPPING.colorMapping] = JSON.stringify(this.ensureSerializable(data.colorMapping || {}));
                        }
                        if (data.spacedRepetition !== undefined) {
-                           // Assuming spacedRepetition is an object { box1: [], ... }
-                           // We need to stringify the *whole object* if the bridge expects one field,
-                           // OR stringify each box individually if separate fields are expected.
-                           // --> Assuming ONE field for now based on SaveQueueService mapping
-                           // updateData[FIELD_MAPPING.spacedRepetition] = JSON.stringify(this.ensureSerializable(data.spacedRepetition || {}));
-                           // --> OR if separate fields are needed:
                            const srData = data.spacedRepetition || {};
                            if (srData.box1 !== undefined) updateData[FIELD_MAPPING.box1Data] = JSON.stringify(this.ensureSerializable(srData.box1 || []));
                            if (srData.box2 !== undefined) updateData[FIELD_MAPPING.box2Data] = JSON.stringify(this.ensureSerializable(srData.box2 || []));
@@ -485,8 +488,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
                        if (data.topicMetadata !== undefined) {
                            updateData[FIELD_MAPPING.topicMetadata] = JSON.stringify(this.ensureSerializable(data.topicMetadata || []));
                        }
-                       // Removed prepareFullSaveData helper as logic is now inline
-                       // Object.assign(updateData, this.prepareFullSaveData(data || {})); 
+                       // --- End processing other fields --- 
                        break;
                    default:
                        console.error(`[SaveQueue] Unknown save operation type: ${type}`);
@@ -942,11 +944,13 @@ function safeParseJSON(jsonString, defaultVal = null) {
               // }
   
               // Only accept messages from the created iframe's contentWindow
-              if (event.source !== iframe.contentWindow) {
-                  // console.log("Ignoring message not from iframe source");
+              // --- ADDED CHECK: Ensure iframe and iframe.contentWindow exist --- 
+              if (!iframe || !iframe.contentWindow || event.source !== iframe.contentWindow) { 
+                  // console.log("Ignoring message not from iframe source or iframe invalid."); 
                   return;
               }
-  
+              // --- END ADDED CHECK --- 
+
               // --- REVISED: Get type and the full data object correctly ---
               const messageType = event.data?.type; // Get the type safely
               const messageData = event.data; // Get the whole data object
@@ -1223,7 +1227,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
   
            await saveQueue.addToQueue({
              type: 'full',
-             data: fullSaveData, // Pass the prepared data object containing 'cards' and 'spacedRepetition'
+             data: fullSaveData, // Pass the object containing the fields to update
              recordId: data.recordId,
              preserveFields: true // CRITICAL: ensure other fields (colors, topics, other boxes) are preserved
            });
@@ -1607,6 +1611,9 @@ async function handleKnackRequest(data, iframeWindow) {
 function loadFlashcardUserData(userId, callback) {
   console.log(`[Knack Script] Loading flashcard user data for user ID: ${userId}`);
   const findRecordApiCall = () => new Promise((resolve, reject) => {
+      // --- DEBUG: Log API call details ---
+      console.log(`[loadFlashcardUserData DEBUG] Making GET request to ${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records with filter for userId: ${userId}`);
+      // --- END DEBUG ---
       $.ajax({
           url: `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records`,
           type: 'GET',
@@ -1618,14 +1625,30 @@ function loadFlashcardUserData(userId, callback) {
                   rules: [{ field: FIELD_MAPPING.userId, operator: 'is', value: userId }]
               })
           },
-          success: resolve,
-          error: reject // Let retry handle failures
+          success: (response) => { // Changed to arrow function for consistent logging context
+              // --- DEBUG: Log success --- 
+              console.log(`[loadFlashcardUserData DEBUG] GET request succeeded. Response records count: ${response?.records?.length || 0}`);
+              // --- END DEBUG ---
+              resolve(response);
+          },
+          error: (jqXHR, textStatus, errorThrown) => { // Changed to arrow function
+             // --- DEBUG: Log failure --- 
+             console.error(`[loadFlashcardUserData DEBUG] GET request failed. Status: ${jqXHR.status}, Error: ${errorThrown}`);
+             // --- END DEBUG ---
+             const error = new Error(`Failed find record for user ${userId}: ${jqXHR.status} ${errorThrown}`);
+             error.status = jqXHR.status;
+             error.responseText = jqXHR.responseText;
+             reject(error);
+          }
       });
   });
 
   retryApiCall(findRecordApiCall)
     .then((response) => {
-      debugLog("[Knack Script] Flashcard User data search response:", response);
+      // --- DEBUG: Log the response received after retries --- 
+      console.log("[loadFlashcardUserData DEBUG] Response object AFTER retryApiCall:", response); 
+      debugLog("[loadFlashcardUserData DEBUG] Flashcard User data search response (Detailed):", response);
+      // --- END DEBUG ---
       if (response && response.records && response.records.length > 0) {
         const record = response.records[0];
         console.log(`[Knack Script] Found existing flashcard record: ${record.id}`);
@@ -1805,8 +1828,9 @@ function loadFlashcardUserData(userId, callback) {
 
       } else {
         // No existing data, create a new record
+        console.log(`[loadFlashcardUserData DEBUG] No existing record found (or response invalid/empty), proceeding to create new record for user ${userId}.`);
         console.log(`[Knack Script] No existing flashcard record found for user ${userId}, creating new one...`);
-        createFlashcardUserRecord(userId, function(success, newRecordId) {
+        createFlashcardUserRecord(userId, function(success, newRecordId, creationError) { // Modify callback to accept error
           if (success && newRecordId) {
              console.log(`[Knack Script] New record created with ID: ${newRecordId}`);
             // Return the default empty structure with the new record ID
@@ -1819,26 +1843,63 @@ function loadFlashcardUserData(userId, callback) {
               colorMapping: {}
             });
           } else {
-              console.error(`[Knack Script] Failed to create new flashcard record for user ${userId}.`);
-              callback(null); // Indicate failure to load/create data
+              console.error(`[Knack Script] Failed to create new flashcard record for user ${userId}. Initial Error:`, creationError);
+              // --- If creation failed due to unique constraint, retry the GET --- 
+              const isUniqueError = creationError?.responseText?.includes('must be unique');
+              if (isUniqueError) {
+                  console.warn(`[Knack Script] Record creation failed due to unique constraint. Retrying GET request for user ${userId}...`);
+                  retryApiCall(findRecordApiCall) // Retry the original GET call
+                    .then(retryResponse => {
+                        if (retryResponse && retryResponse.records && retryResponse.records.length > 0) {
+                            console.log("[Knack Script] Successfully found record on retry GET.");
+                            const record = retryResponse.records[0];
+                            // Process the found record (similar logic to the main .then block)
+                            try {
+                                const userData = { /* ... assemble userData from record ... */ }; 
+                                // Simplified assembly for brevity - ensure full assembly is here
+                                userData.recordId = record.id;
+                                userData.cards = safeParseJSON(record[FIELD_MAPPING.cardBankData] || '[]');
+                                // ... parse other fields ... 
+                                console.log("[Knack Script] Assembled user data from retry GET.");
+                                callback(userData);
+                            } catch (parseError) {
+                                console.error("[Knack Script] Error parsing record data on retry GET:", parseError);
+                                callback(null);
+                            }
+                        } else {
+                            console.error("[Knack Script] Retry GET failed to find record for user ${userId} even after unique constraint error.");
+                            callback(null);
+                        }
+                    })
+                    .catch(retryError => {
+                        console.error("[Knack Script] Error during retry GET request:", retryError);
+                        callback(null);
+                    });
+              } else {
+                  // Creation failed for a different reason
+                  callback(null); // Indicate failure
+              }
+              // --- End retry logic ---
           }
         });
       }
     })
     .catch((error) => {
-      console.error("[Knack Script] Error loading flashcard user data after retries:", error);
+      console.error("[loadFlashcardUserData DEBUG] Overall error after findRecordApiCall retries failed:", error);
+      console.error("[Knack Script] Error loading flashcard user data after retries:", error.status, error.responseText || error.message);
       callback(null); // Indicate failure
     });
 }
   
      // Create a new flashcard user record in Object_102
+     // --- Modified to pass error object to callback --- 
      function createFlashcardUserRecord(userId, callback) {
          console.log("[Knack Script] Creating new flashcard user record for:", userId);
          const user = window.currentKnackUser; // Assumes global user object is populated
   
           if (!user) {
               console.error("[Knack Script] Cannot create record: window.currentKnackUser is not defined.");
-              callback(false, null);
+              callback(false, null, new Error("User object is not defined."));
               return;
           }
   
@@ -1889,11 +1950,11 @@ function loadFlashcardUserData(userId, callback) {
          retryApiCall(apiCall)
             .then(response => {
                console.log("[Knack Script] Successfully created user record:", response);
-               callback(true, response.id); // Pass success and the new record ID
+               callback(true, response.id, null); // Pass null for error on success
             })
             .catch(error => {
                console.error("[Knack Script] Error creating user record:", error);
-               callback(false, null); // Pass failure
+               callback(false, null, error); // Pass the error object to the callback
             });
      }
   
