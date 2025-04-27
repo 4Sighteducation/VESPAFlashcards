@@ -539,7 +539,7 @@ const FlashcardList = ({
     }
 
   // Dependency: Run when groupedCards changes OR when the mapping from props changes.
-  }, [groupedCards, subjectColorMappingFromProps, subjectColorMapping]); // Added subjectColorMapping back as dependency for comparison logic
+  }, [groupedCards, subjectColorMappingFromProps]); // REMOVED local subjectColorMapping from deps again
 
   const getExistingSubjectNames = useMemo(() => {
     // Now depends on groupedCards which is defined above
