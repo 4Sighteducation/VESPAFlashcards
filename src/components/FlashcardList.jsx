@@ -1167,10 +1167,10 @@ const FlashcardList = ({
       )}
       {colorEditorOpen && (
         <ColorEditor
-          isOpen={colorEditorOpen}
+          subject={colorEditorState.subject}
+          subjectColor={colorEditorState.color}
           onClose={closeColorEditor}
-          currentColor={colorEditorState.color}
-          onChange={handleColorChange}
+          onSelectColor={handleColorChange}
         />
       )}
       {showTopicCreationModal && (
