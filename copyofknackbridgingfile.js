@@ -461,19 +461,11 @@ function safeParseJSON(jsonString, defaultVal = null) {
                    case 'full': // This is the primary case used now
                        console.log("[SaveQueue] Preparing 'full' save data by stringifying fields.");
                        // 'data' contains the raw JS objects/arrays (cards, colorMapping, etc.)
-                       // Stringify each relevant piece before adding to updateData
                        
-                       // --- DEBUGGING: Force minimal card data AGAIN, keep others --- 
-                       const dummyCard = [{ id: "test_card_456", type: "card", subject: "Test", question: "Minimal Save Test v2", answer: "Still Success?" }];
-                       updateData[FIELD_MAPPING.cardBankData] = JSON.stringify(dummyCard);
-                       console.warn("[SaveQueue DEBUG] OVERRIDING card data with minimal test payload (v2).");
-                       // --- ALSO TRY UPDATING userName (field_3010) --- 
-                       const testUserName = `API Update Test - ${new Date().getTime()}`;
-                       updateData[FIELD_MAPPING.userName] = testUserName;
-                       console.log(`[SaveQueue DEBUG] Attempting to set userName (${FIELD_MAPPING.userName}) to: ${testUserName}`);
-                       // --- END DEBUGGING --- 
-
-                       // --- Process other fields normally --- 
+                       // --- Restoring processing of actual data --- 
+                       if (data.cards !== undefined) {
+                           updateData[FIELD_MAPPING.cardBankData] = JSON.stringify(this.ensureSerializable(data.cards || []));
+                       }
                        if (data.colorMapping !== undefined) {
                            updateData[FIELD_MAPPING.colorMapping] = JSON.stringify(this.ensureSerializable(data.colorMapping || {}));
                        }
@@ -488,7 +480,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
                        if (data.topicMetadata !== undefined) {
                            updateData[FIELD_MAPPING.topicMetadata] = JSON.stringify(this.ensureSerializable(data.topicMetadata || []));
                        }
-                       // --- End processing other fields --- 
+                       // --- End restoring processing --- 
                        break;
                    default:
                        console.error(`[SaveQueue] Unknown save operation type: ${type}`);
@@ -1116,14 +1108,30 @@ function safeParseJSON(jsonString, defaultVal = null) {
         });
   
         console.log(`[Knack Script] SAVE_DATA for record ${saveDataMessage.recordId} completed successfully.`);
-        // CORRECTION: Target iframeWindow for response
-        if (iframeWindow) iframeWindow.postMessage({ type: 'SAVE_RESULT', success: true, timestamp: new Date().toISOString() }, '*');
+        // --- FIX: Re-get iframe reference before sending result back --- 
+        const iframeEl = document.getElementById('flashcard-app-iframe');
+        if (iframeEl && iframeEl.contentWindow) { 
+            console.log("[Knack Script] Attempting to send SAVE_RESULT back to React app.");
+            iframeEl.contentWindow.postMessage({ type: 'SAVE_RESULT', success: true, timestamp: new Date().toISOString() }, '*'); // Send success
+            console.log("[Knack Script] SAVE_RESULT sent.");
+        } else {
+            console.error("[Knack Script] Cannot send SAVE_RESULT: iframe or contentWindow not found.");
+        }
+        // --- END FIX ---
   
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`[Knack Script] SAVE_DATA failed for record ${saveDataMessage.recordId}:`, errorMessage);
-        // CORRECTION: Target iframeWindow for response
-        if (iframeWindow) iframeWindow.postMessage({ type: 'SAVE_RESULT', success: false, error: errorMessage || 'Unknown save error' }, '*');
+        // --- FIX: Re-get iframe reference before sending result back --- 
+        const iframeEl = document.getElementById('flashcard-app-iframe');
+        if (iframeEl && iframeEl.contentWindow) { 
+            console.log("[Knack Script] Attempting to send SAVE_RESULT (failure) back to React app.");
+            iframeEl.contentWindow.postMessage({ type: 'SAVE_RESULT', success: false, error: errorMessage || 'Unknown save error' }, '*'); // Send failure
+            console.log("[Knack Script] SAVE_RESULT (failure) sent.");
+        } else {
+            console.error("[Knack Script] Cannot send SAVE_RESULT (failure): iframe or contentWindow not found.");
+        }
+        // --- END FIX ---
       }
     }
   
