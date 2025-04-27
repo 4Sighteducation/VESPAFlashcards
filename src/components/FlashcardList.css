@@ -1092,3 +1092,38 @@ html {
   z-index: 10;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
+
+/* Styles for the container holding the list of topics within an expanded subject */
+.subject-container .topics-container {
+  max-height: 400px; /* Adjust this value as needed - e.g., 50vh or a fixed pixel value */
+  overflow-y: auto;  /* Show scrollbar only when content overflows */
+  padding: 5px; /* Add some padding */
+  border-top: 1px solid #eee; /* Optional: visual separator */
+  margin-left: 15px; /* Indent the topic list slightly */
+  margin-right: 5px; /* Prevent scrollbar overlapping content */
+}
+
+/* Optional: Style the scrollbar for webkit browsers */
+.subject-container .topics-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.subject-container .topics-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.subject-container .topics-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.subject-container .topics-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* --- Ensure other styles don't interfere --- */
+/* Make sure topic-container doesn't have conflicting height/overflow */
+.topic-container {
+  /* overflow: visible; /* Reset if previously set */
+}
