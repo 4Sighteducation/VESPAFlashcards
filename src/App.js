@@ -2837,14 +2837,16 @@ useEffect(() => {
                     </div>
                   ) : (
                     <FlashcardList 
-                        cards={filteredCards} // Use filtered cards if filtering is implemented
+                      cards={filteredCards} // Use filtered cards if filtering is implemented
                       onDeleteCard={deleteCard} 
                       onUpdateCard={updateCard}
-                        onViewTopicList={(subject) => { /* Logic to show topic list modal */ }}
-                        recordId={recordId}
-                        onUpdateSubjectColor={updateColorMapping}
-                        subjectColorMapping={subjectColorMapping}
-                        handleSaveTopicShells={handleSaveTopicShellsAndRefresh} // Pass the new function
+                      onViewTopicList={handleViewTopicList} // Corrected prop name based on usage
+                      recordId={recordId}
+                      // --- Pass the state and the handler function --- 
+                      subjectColorMapping={subjectColorMapping} 
+                      onUpdateSubjectColor={handleUpdateSubjectColor} 
+                      // --- End Pass --- 
+                      handleSaveTopicShells={handleSaveTopicShellsAndRefresh} // Pass the new function
                     />
                   )}
                 </div>

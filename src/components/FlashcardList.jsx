@@ -311,6 +311,7 @@ const FlashcardList = ({
   onRegenerateTopic,
   onUpdateCard,
   onUpdateSubjectColor,
+  subjectColorMapping: subjectColorMappingFromProps,
   handleSaveTopicShells
 }) => {
   // --- START: HOOK DEFINITIONS ---
@@ -433,35 +434,29 @@ const FlashcardList = ({
 
   // 4. useEffect for Color Initialization and Update
   useEffect(() => {
-    console.log("[FlashcardList Color useEffect] Running. Grouped cards:", groupedCards);
+    // Receive subjectColorMapping from props
+    const colorMappingFromProps = subjectColorMappingFromProps || {}; 
+    console.log("[FlashcardList Color useEffect] Running. Grouped cards:", groupedCards, "Mapping from props:", colorMappingFromProps);
+    
     if (!groupedCards || Object.keys(groupedCards).length === 0) {
       console.log("[FlashcardList Color useEffect] No grouped cards, skipping color update.");
-      // Optionally clear colors if needed: setSubjectColorMapping({});
       return; // No subjects, nothing to color
     }
 
     const currentSubjects = Object.keys(groupedCards);
     let needsUpdate = false;
-    const updatedMapping = { ...subjectColorMapping }; // Create mutable copy
-
-    // Prune colors for subjects that no longer exist
-    Object.keys(updatedMapping).forEach(existingSubject => {
-      if (!groupedCards[existingSubject]) {
-        console.log(`[FlashcardList Color useEffect] Pruning color for removed subject: ${existingSubject}`);
-        delete updatedMapping[existingSubject];
-        needsUpdate = true;
-      }
-    });
+    const updatedMapping = { ...colorMappingFromProps }; // Start with the mapping from props
 
     // Iterate through current subjects and topics from groupedCards
     currentSubjects.forEach(subject => {
-      // Assign base color if subject is new or missing it
+      // Assign base color ONLY if subject is completely missing from the prop mapping
       if (!updatedMapping[subject] || !updatedMapping[subject].base) {
         const randomBaseColor = BRIGHT_COLORS[Math.floor(Math.random() * BRIGHT_COLORS.length)];
         console.log(`[FlashcardList Color useEffect] Assigning NEW base color ${randomBaseColor} to subject: ${subject}`);
-        updatedMapping[subject] = {
-          base: randomBaseColor,
-          topics: updatedMapping[subject]?.topics || {} // Preserve existing topics if base was missing
+        // Initialize structure correctly
+        updatedMapping[subject] = { 
+            base: randomBaseColor, 
+            topics: updatedMapping[subject]?.topics || {} // Preserve existing topics if only base was missing
         };
         needsUpdate = true;
       }
@@ -471,21 +466,12 @@ const FlashcardList = ({
         updatedMapping[subject].topics = {};
       }
 
-      const subjectBaseColor = updatedMapping[subject].base;
+      const subjectBaseColor = updatedMapping[subject].base; // Use the potentially newly assigned base color
       const currentTopicsInSubject = Object.keys(groupedCards[subject] || {});
 
-      // Prune colors for topics that no longer exist within this subject
-      Object.keys(updatedMapping[subject].topics).forEach(existingTopic => {
-        if (!groupedCards[subject]?.[existingTopic]) {
-          console.log(`[FlashcardList Color useEffect] Pruning color for removed topic: ${subject} -> ${existingTopic}`);
-          delete updatedMapping[subject].topics[existingTopic];
-          needsUpdate = true;
-        }
-      });
-
-      // Assign topic colors if they are new or missing
+      // Assign topic colors ONLY if they are new or missing from the prop mapping
       currentTopicsInSubject.forEach((topic, index) => {
-        if (!updatedMapping[subject].topics[topic] || !updatedMapping[subject].topics[topic].base) {
+        if (!updatedMapping[subject].topics[topic]) { // Check if topic color exists
           const shadePercent = -10 + (index % 5) * 5; // e.g., -10%, -5%, 0%, 5%, 10%
           const topicShade = generateShade(subjectBaseColor, shadePercent);
           console.log(`[FlashcardList Color useEffect] Assigning NEW shade ${topicShade} to topic: ${subject} -> ${topic}`);
@@ -495,15 +481,23 @@ const FlashcardList = ({
       });
     });
 
-    // Update state only if changes occurred
+    // Update local state only if changes were needed relative to the prop
     if (needsUpdate) {
-      console.log("[FlashcardList Color useEffect] Updating subjectColorMapping state:", updatedMapping);
-      setSubjectColorMapping(updatedMapping); // Update the state
-      // No need to call updateColorMapping here, we're setting directly
+      console.log("[FlashcardList Color useEffect] Updating LOCAL color mapping state:", updatedMapping);
+      setSubjectColorMapping(updatedMapping); // Update the local state used for rendering
+      // --- DO NOT CALL PARENT UPDATE HERE --- 
+      // This effect should only *reflect* the prop or initialize defaults.
+      // The actual update/save is triggered by user actions (like the color editor).
     } else {
-      console.log("[FlashcardList Color useEffect] No color changes needed.");
+      // If no updates were needed BUT the local state differs from props, sync local to prop
+      if (JSON.stringify(subjectColorMapping) !== JSON.stringify(colorMappingFromProps)) {
+        console.log("[FlashcardList Color useEffect] Syncing local color state with props.");
+        setSubjectColorMapping(colorMappingFromProps);
+      }
+      console.log("[FlashcardList Color useEffect] No color changes needed based on props.");
     }
-  }, [groupedCards]);
+    // Depend on groupedCards AND the color mapping prop from App.js
+  }, [groupedCards, subjectColorMappingFromProps]); 
 
   const getExistingSubjectNames = useMemo(() => {
     // Now depends on groupedCards which is defined above
