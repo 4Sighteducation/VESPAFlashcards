@@ -156,9 +156,9 @@
   flex-direction: column;
   background-color: white;
   padding: 10px 0;
-  visibility: visible !important;
-  max-height: none !important; /* Remove height limit to fix visibility */
-  overflow: visible !important; /* Changed to visible to ensure content is displayed */
+  visibility: visible !important; /* Keep visibility if needed */
+  /* max-height: none !important; /* Remove height limit to fix visibility */
+  /* overflow: visible !important; /* Changed to visible to ensure content is displayed */
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
   position: relative;
