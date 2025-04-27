@@ -726,15 +726,18 @@ function App() {
           if (window.currentSaveTimeout === saveTimeout) clearTimeout(saveTimeout);
           setIsSaving(false);
           showStatus("Saved successfully!");
-          // --- UPDATE STATE DIRECTLY INSTEAD OF RELOADING ---
-          console.log("[App] Updating local state after successful save...");
-          setAllCards(cardsPayload);
-          setSubjectColorMapping(colorMapPayload);
-          setSpacedRepetitionData(spacedRepPayload);
-          setUserTopics(userTopicsPayload);
-          setTopicLists(topicListsPayload);
-          setTopicMetadata(topicMetaPayload);
-          // loadCombinedData(isKnack ? 'knack' : 'localStorage'); // REMOVED RELOAD CALL
+          // --- REMOVE STATE UPDATES HERE --- 
+          // The state should already be correct due to direct updates
+          // in functions like updateColorMapping, addCard, etc.
+          // Reloading state from potentially stale payloads here causes overwrites.
+          // console.log("[App] Updating local state after successful save...");
+          // setAllCards(cardsPayload);
+          // setSubjectColorMapping(colorMapPayload);
+          // setSpacedRepetitionData(spacedRepPayload);
+          // setUserTopics(userTopicsPayload);
+          // setTopicLists(topicListsPayload);
+          // setTopicMetadata(topicMetaPayload);
+          // --- END REMOVAL ---
         })
         .catch(error => {
           console.error("[App] Error in SAVE_DATA:", error);
@@ -2625,16 +2628,16 @@ const filteredCards = useMemo(() => {
 
 // Function already moved above, removing duplicate declaration
 
-  const handleUpdateSubjectColor = useCallback(async (subject, topic, newColor) => {
+  // Modified to accept and pass the applyToTopics flag
+  const handleUpdateSubjectColor = useCallback(async (subject, topic, newColor, applyToTopics = false) => {
       // Call the existing updateColorMapping function which handles state update and saving
-      console.log(`[App handleUpdateSubjectColor] Received update for ${subject} / ${topic || 'Subject Base'} to ${newColor}. Delegating to updateColorMapping.`);
+      console.log(`[App handleUpdateSubjectColor] Received update for ${subject} / ${topic || 'Subject Base'} to ${newColor}. ApplyToTopics: ${applyToTopics}. Delegating to updateColorMapping.`);
       if (subject && newColor) {
-          // The third argument 'false' indicates not to automatically update all topic shades
-          // when only the subject base or a single topic is being changed manually.
-          updateColorMapping(subject, topic, newColor, false);
+          // Pass the applyToTopics flag (which is the 4th argument to updateColorMapping)
+          updateColorMapping(subject, topic, newColor, applyToTopics);
           showStatus(`Color updated for ${topic ? topic : subject}.`);
       } else {
-          console.error("[App handleUpdateSubjectColor] Invalid arguments received:", { subject, topic, newColor });
+          console.error("[App handleUpdateSubjectColor] Invalid arguments received:", { subject, topic, newColor, applyToTopics });
           showStatus("Error: Could not update color.");
       }
       // Removed the incorrect manual state update and saveData call here.

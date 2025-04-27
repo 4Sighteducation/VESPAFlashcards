@@ -858,29 +858,30 @@ const FlashcardList = ({
     setColorEditorState({ subject: null, topic: null, color: '#e6194b' });
   };
 
-  const handleColorChange = (newColor) => {
+  const handleColorChange = (newColor, applyToTopics = false) => {
     const { subject, topic } = colorEditorState;
     if (subject) {
       // Update local state immediately for responsiveness
       setSubjectColorMapping(prev => {
         const newMapping = { ...prev };
-        if (topic) {
+        if (topic && !applyToTopics) { // Only update specific topic if applyToTopics is false
           // Update topic color
           if (!newMapping[subject]) newMapping[subject] = { base: '#f0f0f0', topics: {} }; // Initialize if somehow missing
           if (!newMapping[subject].topics) newMapping[subject].topics = {};
           newMapping[subject].topics[topic] = { base: newColor };
-        } else {
+        } else { // Update subject base color (and potentially all topics if applyToTopics is true)
           // Update subject base color
            if (!newMapping[subject]) newMapping[subject] = { topics: {} }; // Initialize if somehow missing
           newMapping[subject].base = newColor;
-           // Optional: Update topic shades based on new subject color? Maybe later.
+          // Logic to update topic shades based on new subject color will be handled by parent if applyToTopics is true
         }
         return newMapping;
       });
 
       // Notify parent component to handle persistence/global state
       if (typeof onUpdateSubjectColor === 'function') {
-          onUpdateSubjectColor(subject, topic, newColor); // Pass subject, topic (or null), and new color
+          // Pass subject, topic (or null), new color, AND the applyToTopics flag
+          onUpdateSubjectColor(subject, topic, newColor, applyToTopics);
       } else {
           console.warn("onUpdateSubjectColor prop is not defined. Color changes might not persist.");
       }
