@@ -2631,7 +2631,323 @@ function loadFlashcardUserData(userId, callback) {
      // and _handleIframeMessageLogic have been replaced by the new SaveQueue and
      // message routing structure (handleMessageRouter -> specific handlers -> saveQueue).
   
-   // --- Self-Executing Function Closure ---
+  // Add these new handler functions for deletion operations
+
+// Handle request to delete a subject
+async function handleDeleteSubjectRequest(data, iframeWindow) {
+  console.log("[Knack Script] Handling DELETE_SUBJECT request", data);
+  
+  if (!data || !data.recordId || !data.subject) {
+      console.error("[Knack Script] DELETE_SUBJECT request missing recordId or subject name");
+      if (iframeWindow) iframeWindow.postMessage({ 
+          type: 'DELETE_SUBJECT_RESULT', 
+          success: false, 
+          error: "Missing recordId or subject name" 
+      }, '*');
+      return;
+  }
+  
+  try {
+      // 1. Fetch existing data
+      const existingData = await saveQueue.getExistingData(data.recordId);
+      if (!existingData) {
+          throw new Error(`Failed to fetch existing data for record ${data.recordId}`);
+      }
+      
+      // 2. Parse and update card bank data (remove topics and shells for this subject)
+      let bankData = [];
+      let topicLists = [];
+      let colorMapping = {};
+      
+      // Process cardBankData
+      try {
+          let bankDataStr = existingData[FIELD_MAPPING.cardBankData];
+          if (typeof bankDataStr === 'string' && bankDataStr.includes('%')) {
+              bankDataStr = safeDecodeURIComponent(bankDataStr);
+          }
+          bankData = safeParseJSON(bankDataStr, []);
+          
+          // Filter out topic shells and cards for this subject
+          bankData = bankData.filter(item => 
+              item && item.subject !== data.subject
+          );
+      } catch (e) {
+          console.error("[Knack Script] Error processing card bank during subject deletion:", e);
+          // Continue with empty array if parsing failed
+          bankData = [];
+      }
+      
+      // Process topicLists
+      try {
+          let listsStr = existingData[FIELD_MAPPING.topicLists];
+          if (typeof listsStr === 'string' && listsStr.includes('%')) {
+              listsStr = safeDecodeURIComponent(listsStr);
+          }
+          topicLists = safeParseJSON(listsStr, []);
+          
+          // Filter out lists for this subject
+          topicLists = topicLists.filter(list => 
+              list && list.subject !== data.subject
+          );
+      } catch (e) {
+          console.error("[Knack Script] Error processing topic lists during subject deletion:", e);
+          topicLists = [];
+      }
+      
+      // Process colorMapping
+      try {
+          let colorStr = existingData[FIELD_MAPPING.colorMapping];
+          if (typeof colorStr === 'string' && colorStr.includes('%')) {
+              colorStr = safeDecodeURIComponent(colorStr);
+          }
+          colorMapping = safeParseJSON(colorStr, {});
+          
+          // Remove this subject from colorMapping
+          if (colorMapping && typeof colorMapping === 'object') {
+              delete colorMapping[data.subject];
+          }
+      } catch (e) {
+          console.error("[Knack Script] Error processing color mapping during subject deletion:", e);
+          colorMapping = {};
+      }
+      
+      // 3. Update any SR boxes to remove this subject's cards if necessary
+      const updatedSR = {
+          box1: processBoxForDeletion(existingData[FIELD_MAPPING.box1Data], bankData),
+          box2: processBoxForDeletion(existingData[FIELD_MAPPING.box2Data], bankData),
+          box3: processBoxForDeletion(existingData[FIELD_MAPPING.box3Data], bankData),
+          box4: processBoxForDeletion(existingData[FIELD_MAPPING.box4Data], bankData),
+          box5: processBoxForDeletion(existingData[FIELD_MAPPING.box5Data], bankData)
+      };
+      
+      // 4. Prepare final save data
+      const saveData = {
+          cards: bankData,
+          topicLists: topicLists,
+          colorMapping: colorMapping,
+          spacedRepetition: updatedSR
+      };
+      
+      // 5. Queue the save operation
+      await saveQueue.addToQueue({
+          type: 'full',
+          data: saveData,
+          recordId: data.recordId,
+          preserveFields: true // Preserve other fields not included here
+      });
+      
+      console.log(`[Knack Script] Successfully deleted subject: ${data.subject}`);
+      
+      // 6. Send success response
+      if (iframeWindow) {
+          iframeWindow.postMessage({
+              type: 'DELETE_SUBJECT_RESULT',
+              success: true,
+              subject: data.subject,
+              timestamp: new Date().toISOString()
+          }, '*');
+      }
+      
+  } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[Knack Script] Error deleting subject ${data.subject}:`, errorMessage);
+      
+      // Send error response
+      if (iframeWindow) {
+          iframeWindow.postMessage({
+              type: 'DELETE_SUBJECT_RESULT',
+              success: false,
+              error: errorMessage || 'Unknown error deleting subject',
+              subject: data.subject
+          }, '*');
+      }
+  }
+}
+
+// Handle request to delete a topic
+async function handleDeleteTopicRequest(data, iframeWindow) {
+  console.log("[Knack Script] Handling DELETE_TOPIC request", data);
+  
+  if (!data || !data.recordId || !data.subject || !data.topic) {
+      console.error("[Knack Script] DELETE_TOPIC request missing recordId, subject name, or topic name");
+      if (iframeWindow) iframeWindow.postMessage({ 
+          type: 'DELETE_TOPIC_RESULT', 
+          success: false, 
+          error: "Missing recordId, subject name, or topic name" 
+      }, '*');
+      return;
+  }
+  
+  try {
+      // 1. Fetch existing data
+      const existingData = await saveQueue.getExistingData(data.recordId);
+      if (!existingData) {
+          throw new Error(`Failed to fetch existing data for record ${data.recordId}`);
+      }
+      
+      // 2. Parse and update card bank data (remove this topic's shell and cards)
+      let bankData = [];
+      let topicLists = [];
+      let colorMapping = {};
+      
+      // Process cardBankData
+      try {
+          let bankDataStr = existingData[FIELD_MAPPING.cardBankData];
+          if (typeof bankDataStr === 'string' && bankDataStr.includes('%')) {
+              bankDataStr = safeDecodeURIComponent(bankDataStr);
+          }
+          bankData = safeParseJSON(bankDataStr, []);
+          
+          // Filter out this topic's shell and cards
+          bankData = bankData.filter(item => 
+              !(item && 
+                item.subject === data.subject && 
+                item.topic === data.topic)
+          );
+      } catch (e) {
+          console.error("[Knack Script] Error processing card bank during topic deletion:", e);
+          // Continue with empty array if parsing failed
+          bankData = [];
+      }
+      
+      // Process topicLists
+      try {
+          let listsStr = existingData[FIELD_MAPPING.topicLists];
+          if (typeof listsStr === 'string' && listsStr.includes('%')) {
+              listsStr = safeDecodeURIComponent(listsStr);
+          }
+          topicLists = safeParseJSON(listsStr, []);
+          
+          // Update topic lists to remove this topic
+          topicLists = topicLists.map(list => {
+              if (list && list.subject === data.subject && Array.isArray(list.topics)) {
+                  // Create a new list without this topic
+                  return {
+                      ...list,
+                      topics: list.topics.filter(t => {
+                          // Handle both string topics and object topics
+                          if (typeof t === 'string') {
+                              return t !== data.topic;
+                          } else if (t && typeof t === 'object') {
+                              return t.name !== data.topic && t.topic !== data.topic;
+                          }
+                          return true; // Keep anything we can't identify
+                      })
+                  };
+              }
+              return list; // Return other lists unchanged
+          });
+      } catch (e) {
+          console.error("[Knack Script] Error processing topic lists during topic deletion:", e);
+          topicLists = [];
+      }
+      
+      // Process colorMapping
+      try {
+          let colorStr = existingData[FIELD_MAPPING.colorMapping];
+          if (typeof colorStr === 'string' && colorStr.includes('%')) {
+              colorStr = safeDecodeURIComponent(colorStr);
+          }
+          colorMapping = safeParseJSON(colorStr, {});
+          
+          // Remove this topic from subject's topics in colorMapping
+          if (colorMapping && 
+              typeof colorMapping === 'object' && 
+              colorMapping[data.subject] && 
+              colorMapping[data.subject].topics) {
+              delete colorMapping[data.subject].topics[data.topic];
+          }
+      } catch (e) {
+          console.error("[Knack Script] Error processing color mapping during topic deletion:", e);
+          colorMapping = {};
+      }
+      
+      // 3. Update any SR boxes to remove this topic's cards if necessary
+      const updatedSR = {
+          box1: processBoxForDeletion(existingData[FIELD_MAPPING.box1Data], bankData),
+          box2: processBoxForDeletion(existingData[FIELD_MAPPING.box2Data], bankData),
+          box3: processBoxForDeletion(existingData[FIELD_MAPPING.box3Data], bankData),
+          box4: processBoxForDeletion(existingData[FIELD_MAPPING.box4Data], bankData),
+          box5: processBoxForDeletion(existingData[FIELD_MAPPING.box5Data], bankData)
+      };
+      
+      // 4. Prepare final save data
+      const saveData = {
+          cards: bankData,
+          topicLists: topicLists,
+          colorMapping: colorMapping,
+          spacedRepetition: updatedSR
+      };
+      
+      // 5. Queue the save operation
+      await saveQueue.addToQueue({
+          type: 'full',
+          data: saveData,
+          recordId: data.recordId,
+          preserveFields: true // Preserve other fields not included here
+      });
+      
+      console.log(`[Knack Script] Successfully deleted topic: ${data.topic} from subject: ${data.subject}`);
+      
+      // 6. Send success response
+      if (iframeWindow) {
+          iframeWindow.postMessage({
+              type: 'DELETE_TOPIC_RESULT',
+              success: true,
+              subject: data.subject,
+              topic: data.topic,
+              timestamp: new Date().toISOString()
+          }, '*');
+      }
+      
+  } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[Knack Script] Error deleting topic ${data.topic} from subject ${data.subject}:`, errorMessage);
+      
+      // Send error response
+      if (iframeWindow) {
+          iframeWindow.postMessage({
+              type: 'DELETE_TOPIC_RESULT',
+              success: false,
+              error: errorMessage || 'Unknown error deleting topic',
+              subject: data.subject,
+              topic: data.topic
+          }, '*');
+      }
+  }
+}
+
+// Helper function to process SR boxes for deletion
+function processBoxForDeletion(boxDataStr, remainingCards) {
+  try {
+      // Parse box data
+      let boxData = [];
+      if (boxDataStr) {
+          if (typeof boxDataStr === 'string' && boxDataStr.includes('%')) {
+              boxDataStr = safeDecodeURIComponent(boxDataStr);
+          }
+          boxData = safeParseJSON(boxDataStr, []);
+      }
+      
+      // Create a map of remaining card IDs for quick lookup
+      const remainingCardIds = new Set();
+      remainingCards.forEach(card => {
+          if (card && card.id && card.type === 'card') {
+              remainingCardIds.add(card.id);
+          }
+      });
+      
+      // Filter box to only include entries for cards that still exist
+      return boxData.filter(entry => 
+          entry && entry.cardId && remainingCardIds.has(entry.cardId)
+      );
+  } catch (e) {
+      console.error("[Knack Script] Error processing SR box for deletion:", e);
+      return []; // Return empty array on error
+  }
+}
+     
+
  }());
 
 // Add/replace the assignSubjectColorPalette function with this updated version:
@@ -2724,320 +3040,4 @@ function ensureValidColorMapping(colorMapping) {
     });
     
     return updatedMapping;
-}
-
-// Add these new handler functions for deletion operations
-
-// Handle request to delete a subject
-async function handleDeleteSubjectRequest(data, iframeWindow) {
-    console.log("[Knack Script] Handling DELETE_SUBJECT request", data);
-    
-    if (!data || !data.recordId || !data.subject) {
-        console.error("[Knack Script] DELETE_SUBJECT request missing recordId or subject name");
-        if (iframeWindow) iframeWindow.postMessage({ 
-            type: 'DELETE_SUBJECT_RESULT', 
-            success: false, 
-            error: "Missing recordId or subject name" 
-        }, '*');
-        return;
-    }
-    
-    try {
-        // 1. Fetch existing data
-        const existingData = await saveQueue.getExistingData(data.recordId);
-        if (!existingData) {
-            throw new Error(`Failed to fetch existing data for record ${data.recordId}`);
-        }
-        
-        // 2. Parse and update card bank data (remove topics and shells for this subject)
-        let bankData = [];
-        let topicLists = [];
-        let colorMapping = {};
-        
-        // Process cardBankData
-        try {
-            let bankDataStr = existingData[FIELD_MAPPING.cardBankData];
-            if (typeof bankDataStr === 'string' && bankDataStr.includes('%')) {
-                bankDataStr = safeDecodeURIComponent(bankDataStr);
-            }
-            bankData = safeParseJSON(bankDataStr, []);
-            
-            // Filter out topic shells and cards for this subject
-            bankData = bankData.filter(item => 
-                item && item.subject !== data.subject
-            );
-        } catch (e) {
-            console.error("[Knack Script] Error processing card bank during subject deletion:", e);
-            // Continue with empty array if parsing failed
-            bankData = [];
-        }
-        
-        // Process topicLists
-        try {
-            let listsStr = existingData[FIELD_MAPPING.topicLists];
-            if (typeof listsStr === 'string' && listsStr.includes('%')) {
-                listsStr = safeDecodeURIComponent(listsStr);
-            }
-            topicLists = safeParseJSON(listsStr, []);
-            
-            // Filter out lists for this subject
-            topicLists = topicLists.filter(list => 
-                list && list.subject !== data.subject
-            );
-        } catch (e) {
-            console.error("[Knack Script] Error processing topic lists during subject deletion:", e);
-            topicLists = [];
-        }
-        
-        // Process colorMapping
-        try {
-            let colorStr = existingData[FIELD_MAPPING.colorMapping];
-            if (typeof colorStr === 'string' && colorStr.includes('%')) {
-                colorStr = safeDecodeURIComponent(colorStr);
-            }
-            colorMapping = safeParseJSON(colorStr, {});
-            
-            // Remove this subject from colorMapping
-            if (colorMapping && typeof colorMapping === 'object') {
-                delete colorMapping[data.subject];
-            }
-        } catch (e) {
-            console.error("[Knack Script] Error processing color mapping during subject deletion:", e);
-            colorMapping = {};
-        }
-        
-        // 3. Update any SR boxes to remove this subject's cards if necessary
-        const updatedSR = {
-            box1: processBoxForDeletion(existingData[FIELD_MAPPING.box1Data], bankData),
-            box2: processBoxForDeletion(existingData[FIELD_MAPPING.box2Data], bankData),
-            box3: processBoxForDeletion(existingData[FIELD_MAPPING.box3Data], bankData),
-            box4: processBoxForDeletion(existingData[FIELD_MAPPING.box4Data], bankData),
-            box5: processBoxForDeletion(existingData[FIELD_MAPPING.box5Data], bankData)
-        };
-        
-        // 4. Prepare final save data
-        const saveData = {
-            cards: bankData,
-            topicLists: topicLists,
-            colorMapping: colorMapping,
-            spacedRepetition: updatedSR
-        };
-        
-        // 5. Queue the save operation
-        await saveQueue.addToQueue({
-            type: 'full',
-            data: saveData,
-            recordId: data.recordId,
-            preserveFields: true // Preserve other fields not included here
-        });
-        
-        console.log(`[Knack Script] Successfully deleted subject: ${data.subject}`);
-        
-        // 6. Send success response
-        if (iframeWindow) {
-            iframeWindow.postMessage({
-                type: 'DELETE_SUBJECT_RESULT',
-                success: true,
-                subject: data.subject,
-                timestamp: new Date().toISOString()
-            }, '*');
-        }
-        
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`[Knack Script] Error deleting subject ${data.subject}:`, errorMessage);
-        
-        // Send error response
-        if (iframeWindow) {
-            iframeWindow.postMessage({
-                type: 'DELETE_SUBJECT_RESULT',
-                success: false,
-                error: errorMessage || 'Unknown error deleting subject',
-                subject: data.subject
-            }, '*');
-        }
-    }
-}
-
-// Handle request to delete a topic
-async function handleDeleteTopicRequest(data, iframeWindow) {
-    console.log("[Knack Script] Handling DELETE_TOPIC request", data);
-    
-    if (!data || !data.recordId || !data.subject || !data.topic) {
-        console.error("[Knack Script] DELETE_TOPIC request missing recordId, subject name, or topic name");
-        if (iframeWindow) iframeWindow.postMessage({ 
-            type: 'DELETE_TOPIC_RESULT', 
-            success: false, 
-            error: "Missing recordId, subject name, or topic name" 
-        }, '*');
-        return;
-    }
-    
-    try {
-        // 1. Fetch existing data
-        const existingData = await saveQueue.getExistingData(data.recordId);
-        if (!existingData) {
-            throw new Error(`Failed to fetch existing data for record ${data.recordId}`);
-        }
-        
-        // 2. Parse and update card bank data (remove this topic's shell and cards)
-        let bankData = [];
-        let topicLists = [];
-        let colorMapping = {};
-        
-        // Process cardBankData
-        try {
-            let bankDataStr = existingData[FIELD_MAPPING.cardBankData];
-            if (typeof bankDataStr === 'string' && bankDataStr.includes('%')) {
-                bankDataStr = safeDecodeURIComponent(bankDataStr);
-            }
-            bankData = safeParseJSON(bankDataStr, []);
-            
-            // Filter out this topic's shell and cards
-            bankData = bankData.filter(item => 
-                !(item && 
-                  item.subject === data.subject && 
-                  item.topic === data.topic)
-            );
-        } catch (e) {
-            console.error("[Knack Script] Error processing card bank during topic deletion:", e);
-            // Continue with empty array if parsing failed
-            bankData = [];
-        }
-        
-        // Process topicLists
-        try {
-            let listsStr = existingData[FIELD_MAPPING.topicLists];
-            if (typeof listsStr === 'string' && listsStr.includes('%')) {
-                listsStr = safeDecodeURIComponent(listsStr);
-            }
-            topicLists = safeParseJSON(listsStr, []);
-            
-            // Update topic lists to remove this topic
-            topicLists = topicLists.map(list => {
-                if (list && list.subject === data.subject && Array.isArray(list.topics)) {
-                    // Create a new list without this topic
-                    return {
-                        ...list,
-                        topics: list.topics.filter(t => {
-                            // Handle both string topics and object topics
-                            if (typeof t === 'string') {
-                                return t !== data.topic;
-                            } else if (t && typeof t === 'object') {
-                                return t.name !== data.topic && t.topic !== data.topic;
-                            }
-                            return true; // Keep anything we can't identify
-                        })
-                    };
-                }
-                return list; // Return other lists unchanged
-            });
-        } catch (e) {
-            console.error("[Knack Script] Error processing topic lists during topic deletion:", e);
-            topicLists = [];
-        }
-        
-        // Process colorMapping
-        try {
-            let colorStr = existingData[FIELD_MAPPING.colorMapping];
-            if (typeof colorStr === 'string' && colorStr.includes('%')) {
-                colorStr = safeDecodeURIComponent(colorStr);
-            }
-            colorMapping = safeParseJSON(colorStr, {});
-            
-            // Remove this topic from subject's topics in colorMapping
-            if (colorMapping && 
-                typeof colorMapping === 'object' && 
-                colorMapping[data.subject] && 
-                colorMapping[data.subject].topics) {
-                delete colorMapping[data.subject].topics[data.topic];
-            }
-        } catch (e) {
-            console.error("[Knack Script] Error processing color mapping during topic deletion:", e);
-            colorMapping = {};
-        }
-        
-        // 3. Update any SR boxes to remove this topic's cards if necessary
-        const updatedSR = {
-            box1: processBoxForDeletion(existingData[FIELD_MAPPING.box1Data], bankData),
-            box2: processBoxForDeletion(existingData[FIELD_MAPPING.box2Data], bankData),
-            box3: processBoxForDeletion(existingData[FIELD_MAPPING.box3Data], bankData),
-            box4: processBoxForDeletion(existingData[FIELD_MAPPING.box4Data], bankData),
-            box5: processBoxForDeletion(existingData[FIELD_MAPPING.box5Data], bankData)
-        };
-        
-        // 4. Prepare final save data
-        const saveData = {
-            cards: bankData,
-            topicLists: topicLists,
-            colorMapping: colorMapping,
-            spacedRepetition: updatedSR
-        };
-        
-        // 5. Queue the save operation
-        await saveQueue.addToQueue({
-            type: 'full',
-            data: saveData,
-            recordId: data.recordId,
-            preserveFields: true // Preserve other fields not included here
-        });
-        
-        console.log(`[Knack Script] Successfully deleted topic: ${data.topic} from subject: ${data.subject}`);
-        
-        // 6. Send success response
-        if (iframeWindow) {
-            iframeWindow.postMessage({
-                type: 'DELETE_TOPIC_RESULT',
-                success: true,
-                subject: data.subject,
-                topic: data.topic,
-                timestamp: new Date().toISOString()
-            }, '*');
-        }
-        
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`[Knack Script] Error deleting topic ${data.topic} from subject ${data.subject}:`, errorMessage);
-        
-        // Send error response
-        if (iframeWindow) {
-            iframeWindow.postMessage({
-                type: 'DELETE_TOPIC_RESULT',
-                success: false,
-                error: errorMessage || 'Unknown error deleting topic',
-                subject: data.subject,
-                topic: data.topic
-            }, '*');
-        }
-    }
-}
-
-// Helper function to process SR boxes for deletion
-function processBoxForDeletion(boxDataStr, remainingCards) {
-    try {
-        // Parse box data
-        let boxData = [];
-        if (boxDataStr) {
-            if (typeof boxDataStr === 'string' && boxDataStr.includes('%')) {
-                boxDataStr = safeDecodeURIComponent(boxDataStr);
-            }
-            boxData = safeParseJSON(boxDataStr, []);
-        }
-        
-        // Create a map of remaining card IDs for quick lookup
-        const remainingCardIds = new Set();
-        remainingCards.forEach(card => {
-            if (card && card.id && card.type === 'card') {
-                remainingCardIds.add(card.id);
-            }
-        });
-        
-        // Filter box to only include entries for cards that still exist
-        return boxData.filter(entry => 
-            entry && entry.cardId && remainingCardIds.has(entry.cardId)
-        );
-    } catch (e) {
-        console.error("[Knack Script] Error processing SR box for deletion:", e);
-        return []; // Return empty array on error
-    }
 }
