@@ -972,7 +972,7 @@ html {
   transition: all 0.3s ease-out;
   flex: 1; /* Allow topic cards to grow and fill available space */
   overflow-y: auto; /* Enable scrolling within the container */
-  max-height: none; /* Remove any max-height limitations */
+  max-height: 400px; /* ADDED: Set a max-height for the card list */
   min-height: 200px; /* Ensure minimum height for better visibility */
 }
 
@@ -1095,8 +1095,8 @@ html {
 
 /* Styles for the container holding the list of topics within an expanded subject */
 .subject-container .topics-container {
-  max-height: 400px; /* Re-added: Set a max height before scrolling starts */
-  overflow-y: auto;  /* Re-added: Enable vertical scrolling when needed */
+  /* max-height: 400px; /* REMOVED - Let the container grow naturally */
+  /* overflow-y: auto;  /* REMOVED - Don't make this container scrollable */
   padding: 5px; /* Add some padding */
   border-top: 1px solid #eee; /* Optional: visual separator */
   margin-left: 15px; /* Indent the topic list slightly */
