@@ -288,3 +288,28 @@
     padding: 8px 5px;
   }
 }
+
+.app-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-stats {
+  font-size: 0.8rem;
+  margin-top: 0.2rem;
+  display: flex;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.stat-item {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .card-stats {
+    font-size: 0.7rem;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+}

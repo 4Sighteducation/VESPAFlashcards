@@ -851,7 +851,42 @@ const FlashcardList = ({
     const examBoard = topicShell?.examBoard || "General";
     const examType = topicShell?.examType || "Course";
 
-    // Add regeneration handler
+    // Add handlePrintTopic function implementation specific to this scope
+    const handlePrintTopic = (e) => {
+      e.stopPropagation();
+      console.log(`Printing ${displayCount} cards for topic: ${topic}`);
+      
+      // Create a formatted title
+      const printTitle = `${subject} - ${topic}`;
+      
+      // Call the openPrintModal function with the filtered cards and title
+      openPrintModal(actualCards, printTitle);
+    };
+
+    // Handle delete topic
+    const handleDeleteTopic = async (e) => {
+      e.stopPropagation();
+      if (window.confirm(`Are you sure you want to delete the topic "${topic}" and all its cards?`)) {
+        console.log(`Deleting topic: ${subject} - ${topic}`);
+        
+        // If a specific deletion handler is provided via props, use it
+        if (typeof onDeleteTopic === 'function') {
+          try {
+            await onDeleteTopic(topic, subject);
+            console.log(`Topic deleted: ${subject} - ${topic}`);
+          } catch (error) {
+            console.error(`Error deleting topic: ${error.message}`);
+            alert(`Error deleting topic: ${error.message}`);
+          }
+        } else {
+          // If no handler is provided, show message
+          console.warn("No delete handler available");
+          alert("Delete functionality is not available in this context.");
+        }
+      }
+    };
+
+    // Handle regenerating topic
     const handleRegenerateTopicClick = async (e) => {
       e.stopPropagation();
       if (!topicShell) {
@@ -872,8 +907,8 @@ const FlashcardList = ({
           };
           await handleSaveTopicShells([shellToRegen], true);
         } else {
-           console.error("handleSaveTopicShells prop is not available for regeneration!");
-           alert("Error: Regeneration function is not available.");
+          console.error("handleSaveTopicShells prop is not available for regeneration!");
+          alert("Error: Regeneration function is not available.");
         }
       }
     };
@@ -900,56 +935,26 @@ const FlashcardList = ({
                 className="action-button regenerate-button"
                 title="Generate/Regenerate topic cards"
               >
-                <FaBolt />
+                <FaBolt className="standard-icon" />
               </button>
             )}
+            {/* Only show print button if there are cards */}
             {displayCount > 0 && (
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startSlideshow(subject, topic, e);
-                }}
-                className="action-button slideshow-button"
-                title="Start slideshow"
-              >
-                <FaPlay />
-              </button>
-            )}
-            {displayCount > 0 && (
-              <button
-                onClick={(e) => handlePrintTopic(subject, topic, e)}
+                onClick={handlePrintTopic}
                 className="action-button print-topic-button"
                 title="Print topic cards"
               >
-                <FaPrint />
+                <FaPrint className="standard-icon" />
               </button>
             )}
+            {/* Remove color palette button */}
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                openColorEditor(subject, topic, topicColor, e);
-              }}
-              className="action-button color-edit-button"
-              title="Edit topic color"
-            >
-              <FaPalette />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (typeof onDeleteTopic === 'function') {
-                    if (window.confirm(`Are you sure you want to delete the topic "${topic}" and all its cards?`)) {
-                       console.log(`[Delete Topic] Deleting: ${subject} - ${topic}`);
-                       onDeleteTopic(topic, subject);
-                    }
-                } else {
-                    console.error("onDeleteTopic prop is not a function!");
-                }
-              }}
+              onClick={handleDeleteTopic}
               className="action-button delete-topic-button"
               title="Delete topic and cards"
             >
-              <FaTrash />
+              <FaTrash className="standard-icon" />
             </button>
           </div>
         </div>
@@ -985,16 +990,48 @@ const FlashcardList = ({
         className="create-topic-list-button button-primary floating-create-button"
         title="Create New Topic List"
       >
-        <FaBolt /> <span>Create Topics</span>
+        <FaBolt className="standard-icon" /> <span>Create Topics</span>
       </button>
       {sortedSubjects.map(({ id: subject, title, cards: topicsData, exam_type, exam_board, color: subjectBaseColor, creationDate }) => {
         const subjectKey = subject;
         const isExpanded = expandedSubjects.has(subjectKey);
         const subjectTextColor = getContrastColor(subjectBaseColor);
 
+        // Count total cards and topics
+        const totalTopics = Object.keys(topicsData || {}).length;
         const totalCardCount = Object.values(topicsData || {}).reduce((count, items) => {
-            return count + items.filter(item => item.type !== 'topic').length;
+          return count + items.filter(item => item.type !== 'topic').length;
         }, 0);
+        
+        // Handle print subject
+        const handlePrintSubject = (e) => {
+          e.stopPropagation();
+          const subjectCards = [];
+          Object.values(topicsData || {}).forEach(topicCards => {
+            subjectCards.push(...topicCards.filter(item => item.type !== 'topic'));
+          });
+          openPrintModal(subjectCards, subject);
+        };
+        
+        // Handle delete subject
+        const handleDeleteSubject = async (e) => {
+          e.stopPropagation();
+          if (window.confirm(`Are you sure you want to delete the subject "${subject}" and ALL its topics and cards? This cannot be undone.`)) {
+            console.log(`Deleting subject: ${subject}`);
+            if (typeof onDeleteSubject === 'function') {
+              try {
+                await onDeleteSubject(subject);
+                console.log(`Subject deleted: ${subject}`);
+              } catch (error) {
+                console.error(`Error deleting subject: ${error.message}`);
+                alert(`Error deleting subject: ${error.message}`);
+              }
+            } else {
+              console.warn("No delete handler available for subjects");
+              alert("Delete functionality is not available in this context.");
+            }
+          }
+        };
 
         return (
           <div
@@ -1010,55 +1047,38 @@ const FlashcardList = ({
               <div className="subject-info">
                 <h2>{title}</h2>
                 <div className="subject-meta">
-                  <span className="card-count">({totalCardCount} cards total)</span>
+                  <span className="topic-count">({totalTopics} topics)</span>
+                  <span className="card-count">({totalCardCount} cards)</span>
                   <span className="exam-type">{exam_type}</span>
                   <span className="exam-board">{exam_board}</span>
                 </div>
               </div>
               <div className="subject-actions">
                 <button
-                  onClick={(e) => { e.stopPropagation(); startSlideshow(subject, null, e); }}
-                  className="action-button subject-slideshow-button"
-                  title="Start slideshow for subject"
-                  disabled={totalCardCount === 0}
-                >
-                  <FaPlay />
-                </button>
-                <button
-                  onClick={(e) => handlePrintSubject(subject, e)}
+                  onClick={handlePrintSubject}
                   className="action-button subject-print-button"
                   title="Print subject cards"
                   disabled={totalCardCount === 0}
                 >
-                  <FaPrint />
-                </button>
-                <button
-                  onClick={(e) => openColorEditor(subject, null, subjectBaseColor, e)}
-                  className="action-button subject-color-button"
-                  title="Edit subject color"
-                >
-                  <FaPalette />
+                  <FaPrint className="standard-icon" />
                 </button>
                 <button
                   onClick={(e) => {
-                      e.stopPropagation();
-                      if (typeof onDeleteSubject === 'function') {
-                           if (window.confirm(`Are you sure you want to delete the subject "${subject}" and ALL its topics and cards? This cannot be undone.`)) {
-                              console.log(`[Delete Subject] Deleting: ${subject}`);
-                              onDeleteSubject(subject);
-                           }
-                      } else {
-                           console.error("onDeleteSubject prop is not defined!");
-                      }
+                    e.stopPropagation();
+                    openColorEditor(subject, null, subjectBaseColor, e);
                   }}
+                  className="action-button subject-color-button"
+                  title="Edit subject color"
+                >
+                  <FaPalette className="standard-icon" />
+                </button>
+                <button
+                  onClick={handleDeleteSubject}
                   className="action-button subject-delete-button"
                   title="Delete subject"
                 >
-                  <FaTrash />
+                  <FaTrash className="standard-icon" />
                 </button>
-                <span className="expand-icon">
-                  {isExpanded ? <FaAngleUp /> : <FaAngleDown />}
-                </span>
               </div>
             </div>
             {isExpanded && renderTopics(subject, subjectBaseColor)}

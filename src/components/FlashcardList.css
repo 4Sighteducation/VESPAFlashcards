@@ -1279,3 +1279,19 @@ html {
     font-size: 1rem;
   }
 }
+
+/* Standard Icon class to ensure icons render with proper color */
+.standard-icon {
+  color: inherit; /* Use the parent element's text color */
+  font-size: 1rem;
+}
+
+.action-button .standard-icon {
+  color: inherit;
+}
+
+.topic-count {
+  font-size: 0.85rem;
+  font-weight: 400;
+  white-space: nowrap;
+}

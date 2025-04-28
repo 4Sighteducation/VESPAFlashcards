@@ -12,7 +12,8 @@ const Header = ({
   // New props for spaced repetition
   currentBox = 1,
   onSelectBox = () => {},
-  spacedRepetitionData = {}
+  spacedRepetitionData = {},
+  cardCounts = { subjects: 0, topics: 0, flashcards: 0 }
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -91,7 +92,14 @@ const Header = ({
           alt="Vespa Academy Logo"
           className="logo"
         />
-        <h1>VESPA Flashcards</h1>
+        <div className="app-info">
+          <h1>VESPA Flashcards</h1>
+          <div className="card-stats">
+            <span className="stat-item">Subjects: {cardCounts.subjects}</span>
+            <span className="stat-item">Topics: {cardCounts.topics}</span>
+            <span className="stat-item">Flashcards: {cardCounts.flashcards}</span>
+          </div>
+        </div>
       </div>
 
       <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>

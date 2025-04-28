@@ -2692,6 +2692,27 @@ useEffect(() => {
     );
   }
 
+  const getCardCounts = useCallback(() => {
+    // Calculate total subjects (excluding General/default)
+    const validSubjects = allCards.filter(card => card.subject && card.subject !== "General");
+    const uniqueSubjects = [...new Set(validSubjects.map(card => card.subject))];
+    const subjectCount = uniqueSubjects.length;
+    
+    // Calculate total topics (those with type='topic' and isShell=true)
+    const topicShells = allCards.filter(card => card.type === 'topic' && card.isShell);
+    const topicCount = topicShells.length;
+    
+    // Calculate actual flashcards (not topic shells)
+    const actualCards = allCards.filter(card => !card.isShell);
+    const cardCount = actualCards.length;
+    
+    return {
+      subjects: subjectCount,
+      topics: topicCount,
+      flashcards: cardCount
+    };
+  }, [allCards]);
+
   return (
     <WebSocketProvider> {/* Wrap the entire app content */}
     <div className="app-container">
@@ -2710,6 +2731,7 @@ useEffect(() => {
             currentBox={currentBox}
             onSelectBox={setCurrentBox}
             spacedRepetitionData={spacedRepetitionData}
+            cardCounts={getCardCounts()} // Add this line to pass the counts
           />
           
           {/* Temporarily hiding UserProfile */}
