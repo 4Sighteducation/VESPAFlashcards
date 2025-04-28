@@ -189,9 +189,16 @@ const TopicHub = ({
           console.log(`Successfully retrieved ${knackTopics.length} topics from Knack object_109`);
           setProgressMessage("Topics found in database!");
           
+          // STRICT LIMIT: Ensure no more than 30 topics
+          let limitedTopics = knackTopics;
+          if (limitedTopics.length > 30) {
+            console.warn(`Limiting database topics from ${limitedTopics.length} to 30`);
+            limitedTopics = limitedTopics.slice(0, 30);
+          }
+          
           // Store in cache and update UI
-          storeTopicsInCache(examBoard, examType, subject, knackTopics);
-          setTopics(knackTopics);
+          storeTopicsInCache(examBoard, examType, subject, limitedTopics);
+          setTopics(limitedTopics);
           setHasGenerated(true);
           setIsGenerating(false);
           return;
@@ -519,13 +526,19 @@ const TopicHub = ({
     console.log("Using fallback:", usingFallbackTopics);
     console.log("===== END FINAL TOPIC LIST =====");
     
+    // STRICT LIMIT: Final enforcement of 30 topic maximum
+    if (parsedTopics.length > 30) {
+      console.warn(`[TopicHub] Final enforcement - limiting ${parsedTopics.length} topics to 30`);
+      parsedTopics = parsedTopics.slice(0, 30);
+    }
+    
     // Store the topics in cache
     storeTopicsInCache(examBoard, examType, subject, parsedTopics);
     
     // Update the topics
     setTopics(parsedTopics);
     setHasGenerated(true);
-    
+    setIsGenerating(false);
   };
   
   // Get fallback topics for specific subjects
@@ -1273,7 +1286,13 @@ const TopicHub = ({
     return (
       <div className="topics-container">
         <div className="topics-header">
-          <h3>Topics for {subject} ({examBoard} {examType})</h3>
+          <h3>Topics for {subject} ({examBoard} {examType}) 
+            <span className="topic-limit-badge">
+              {topics.length > 30 ? 
+                <span style={{color: 'red'}}>(Showing 30/{topics.length})</span> : 
+                `(${topics.length}/30 max)`}
+            </span>
+          </h3>
           
           <div className="topics-actions">
             <button 
@@ -1646,8 +1665,15 @@ const TopicHub = ({
   const handleFinalizeTopics = useCallback(() => {
     console.log(`[TopicHub] Finalizing ${topics.length} topics for subject: ${subject}`);
 
+    // STRICT LIMIT: Ensure no more than 30 topics are processed
+    let topicsToProcess = [...topics];
+    if (topicsToProcess.length > 30) {
+      console.warn(`[TopicHub] Too many topics (${topicsToProcess.length}), limiting to 30`);
+      topicsToProcess = topicsToProcess.slice(0, 30);
+    }
+
     // Generate topic shells based on the current state of topics
-    const topicShells = topics.map((topic, index) => {
+    const topicShells = topicsToProcess.map((topic, index) => {
       // Ensure we have a valid topic object
       if (!topic || typeof topic !== 'object') {
         console.warn(`[TopicHub] Skipping invalid topic at index ${index}:`, topic);
