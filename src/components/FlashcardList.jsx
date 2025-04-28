@@ -2,7 +2,6 @@ import React, {useState, useEffect, useMemo, useRef, useCallback} from "react";
 import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
 import "./FlashcardList.css";
-import { FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBolt, FaTrash, FaSlideshow } from 'react-icons/fa';
 import ColorEditor from "./ColorEditor";
 import TopicCreationModal from "./TopicCreationModal";
 
@@ -972,6 +971,12 @@ const FlashcardList = ({
       }
     };
 
+    // Add slidehsow functionality for topic
+    const handleSlideshowTopicClick = (e) => {
+      e.stopPropagation();
+      startSlideshow(subject, topic, e);
+    };
+
     return (
       <div key={`${subject}-${topic}`} className="topic-container">
         <div
@@ -994,25 +999,33 @@ const FlashcardList = ({
                 className="nav-button regenerate-button"
                 title="Generate/Regenerate topic cards"
               >
-                <FaBolt className="button-icon" />
+                <span className="button-icon">⚡</span>
               </button>
             )}
-            {/* Only show print button if there are cards */}
-            {displayCount > 0 && (
-              <button
-                onClick={handlePrintTopicClick}
-                className="nav-button print-topic-button"
-                title="Print topic cards"
-              >
-                <FaPrint className="button-icon" />
-              </button>
-            )}
+            {/* Add slideshow button */}
+            <button
+              onClick={handleSlideshowTopicClick}
+              className="nav-button slideshow-button"
+              title="View cards as slideshow"
+              disabled={displayCount === 0}
+            >
+              <span className="button-icon">🔄</span>
+            </button>
+            {/* Always show print button, but disable if no cards */}
+            <button
+              onClick={handlePrintTopicClick}
+              className="nav-button print-topic-button"
+              title="Print topic cards"
+              disabled={displayCount === 0}
+            >
+              <span className="button-icon">🖨️</span>
+            </button>
             <button
               onClick={handleDeleteTopicClick}
               className="nav-button delete-topic-button"
               title="Delete topic and cards"
             >
-              <FaTrash className="button-icon" />
+              <span className="button-icon">🗑️</span>
             </button>
           </div>
         </div>
@@ -1048,7 +1061,7 @@ const FlashcardList = ({
         className="create-topic-list-button button-primary floating-create-button"
         title="Create New Topic List"
       >
-        <FaBolt className="button-icon" /> <span>Create Topics</span>
+        <span className="button-icon">⚡</span> <span>Create Topics</span>
       </button>
       {sortedSubjects.map(({ id: subject, title, cards: topicsData, exam_type, exam_board, color: subjectBaseColor, creationDate }) => {
         const subjectKey = subject;
@@ -1084,6 +1097,12 @@ const FlashcardList = ({
           handleDeleteSubject(subject);
         };
 
+        // Handle subject color click
+        const handleColorSubjectClick = (e) => {
+          e.stopPropagation();
+          openColorEditor(subject, null, subjectBaseColor, e);
+        };
+
         return (
           <div
             key={subjectKey}
@@ -1111,7 +1130,7 @@ const FlashcardList = ({
                   title="Start slideshow with all cards"
                   disabled={totalCardCount === 0}
                 >
-                  <FaPlay className="button-icon" />
+                  <span className="button-icon">🔄</span>
                 </button>
                 <button
                   onClick={handlePrintSubjectClick}
@@ -1119,24 +1138,21 @@ const FlashcardList = ({
                   title="Print subject cards"
                   disabled={totalCardCount === 0}
                 >
-                  <FaPrint className="button-icon" />
+                  <span className="button-icon">🖨️</span>
                 </button>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openColorEditor(subject, null, subjectBaseColor, e);
-                  }}
+                  onClick={handleColorSubjectClick}
                   className="nav-button color-button"
                   title="Edit subject color"
                 >
-                  <FaPalette className="button-icon" />
+                  <span className="button-icon">🎨</span>
                 </button>
                 <button
                   onClick={handleDeleteSubjectClick}
                   className="nav-button delete-button"
                   title="Delete subject"
                 >
-                  <FaTrash className="button-icon" />
+                  <span className="button-icon">🗑️</span>
                 </button>
               </div>
             </div>
