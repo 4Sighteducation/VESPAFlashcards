@@ -1295,6 +1295,16 @@ const TopicHub = ({
             </button>
             
             <button
+              className="confirm-shells-button"
+              onClick={handleFinalizeTopics}
+              disabled={isGenerating || topics.length === 0}
+              title="Create empty topic shells for these topics"
+              style={{ backgroundColor: '#2c3e50', color: 'white', fontWeight: 'bold' }}
+            >
+              <FaCheckCircle /> Confirm and Save Shells
+            </button>
+            
+            <button
               className="add-topic-button"
               onClick={() => setShowAddTopicForm(true)}
               title="Add a new topic manually"
