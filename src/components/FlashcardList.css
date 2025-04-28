@@ -971,8 +971,8 @@ html {
   border-top: 1px solid rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease-out;
   flex: 1; /* Allow topic cards to grow and fill available space */
-  overflow-y: auto; /* Keep this? Or remove? Let's remove for now to be safe */
-  max-height: none; /* Restore original */
+  overflow-y: auto; /* RE-ADDED: Enable scrolling within the container */
+  max-height: 400px; /* RE-ADDED: Set a max-height for the card list */
   min-height: 200px; /* Ensure minimum height for better visibility */
 }
 
@@ -1095,7 +1095,7 @@ html {
 
 /* Styles for the container holding the list of topics within an expanded subject */
 .subject-container .topics-container {
-  /* Ensure no max-height or overflow-y */
+  /* Ensure NO max-height or overflow-y here */
   padding: 5px; /* Add some padding */
   border-top: 1px solid #eee; /* Optional: visual separator */
   margin-left: 15px; /* Indent the topic list slightly */

@@ -785,24 +785,40 @@ const FlashcardList = ({
     let slideshowCardsToUse = [];
     let slideshowTitleToUse = "Slideshow";
     if (topic) {
-      slideshowCardsToUse = (groupedCards[subject]?.[topic] || []).filter(item => item.type !== 'topic');
+      // Ensure groupedCards and the subject/topic exist before filtering
+      slideshowCardsToUse = (groupedCards?.[subject]?.[topic] || []).filter(item => item.type !== 'topic');
       slideshowTitleToUse = `${subject} - ${topic}`;
     } else {
-      const allTopics = Object.keys(groupedCards[subject] || {});
+      // Ensure groupedCards and the subject exist
+      const allTopics = Object.keys(groupedCards?.[subject] || {});
       slideshowCardsToUse = allTopics.reduce((all, currentTopic) => {
-        const topicCardsOnly = (groupedCards[subject][currentTopic] || []).filter(item => item.type !== 'topic');
-        return all.concat(topicCardsOnly || []);
+        // Ensure the specific topic exists before filtering
+        const topicCardsOnly = (groupedCards[subject]?.[currentTopic] || []).filter(item => item.type !== 'topic');
+        return all.concat(topicCardsOnly);
       }, []);
       slideshowTitleToUse = subject;
     }
-    if (slideshowCardsToUse.length > 0) {
-      setSlideshowCards(slideshowCardsToUse);
-      setSlideshowTitle(slideshowTitleToUse);
-      setShowSlideshow(true);
-    } else {
-      console.warn(`No cards found for slideshow: ${slideshowTitleToUse}`);
-      alert(`No cards available for slideshow: ${slideshowTitleToUse}`);
+    
+    // --- Placeholder logic ---
+    if (slideshowCardsToUse.length === 0) {
+      console.warn(`No cards found for slideshow: ${slideshowTitleToUse}. Showing placeholder.`);
+      slideshowCardsToUse = [
+        {
+          id: `placeholder-${Date.now()}`,
+          front: `No cards generated for this topic yet.`, 
+          back: '(Click Create Topics or Generate Cards)',
+          subject: subject,
+          topic: topic || 'General'
+        }
+      ];
     }
+    // --- End Placeholder logic ---
+    
+    // Always open the slideshow now
+    setSlideshowCards(slideshowCardsToUse);
+    setSlideshowTitle(slideshowTitleToUse);
+    setShowSlideshow(true);
+
   }, [groupedCards]);
 
   const openColorEditor = (subject, topic = null, currentColor, e) => {
@@ -974,9 +990,9 @@ const FlashcardList = ({
       <div className="topic-list-wrapper">
         {topicNames.map((topic, index) => {
           const topicItems = topicsData[topic];
-          const topicColor = subjectColorMapping[subject]?.topics[topic]?.base || generateShade(subjectColor, -10 + (index % 5) * 5);
+          const topicBaseColor = subjectColorMapping[subject]?.topics[topic]?.base || generateShade(subjectColor, -10 + (index % 5) * 5);
           return (
-            renderTopic(subject, topic, topicItems, topicColor)
+            renderTopic(subject, topic, topicItems, topicBaseColor)
           );
         })}
       </div>
