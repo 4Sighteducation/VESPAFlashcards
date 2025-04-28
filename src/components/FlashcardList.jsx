@@ -102,11 +102,11 @@ const getContrastColor = (hexColor) => {
 };
 
 // ScrollManager component to handle scrolling to elements
-const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRefs }) => {
+const ScrollManager = ({ expandedSubjects, subjectRefs }) => {
   // Track if the component is mounted
   const isMounted = useRef(true);
   
-  // Effect to handle scrolling when subjects or topics expand
+  // Effect to handle scrolling when subjects expand
   useEffect(() => {
     return () => {
       isMounted.current = false;
@@ -147,26 +147,6 @@ const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRef
     
     handleNewlyExpandedSubjects();
   }, [expandedSubjects, subjectRefs]);
-  
-  // Process any newly expanded topics
-  useEffect(() => {
-    const handleNewlyExpandedTopics = () => {
-      // Check if any newly expanded topics need scrolling
-      Object.entries(expandedTopics).forEach(([topicKey, isExpanded]) => {
-        if (isExpanded) {
-          const topicEl = topicRefs.current[topicKey];
-          if (topicEl) {
-            // Add a delay to ensure DOM has updated
-            setTimeout(() => {
-              scrollToElement(topicEl, 20);
-            }, 150);
-          }
-        }
-      });
-    };
-    
-    handleNewlyExpandedTopics();
-  }, [expandedTopics, topicRefs]);
   
   return null; // This is a utility component with no UI
 };
@@ -303,7 +283,6 @@ const SlideshowModal = ({ cards, title, onClose }) => {
 const FlashcardList = ({
   cards,
   onCardClick,
-  onTopicClick,
   onSubjectClick,
   onDeleteCard,
   onDeleteTopic,
@@ -318,7 +297,6 @@ const FlashcardList = ({
 
   // 1. useState Hooks
   const [expandedSubjects, setExpandedSubjects] = useState(new Set());
-  const [expandedTopics, setExpandedTopics] = useState(new Set());
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [cardsToPrint, setCardsToPrint] = useState([]);
   const [printTitle, setPrintTitle] = useState("");
@@ -367,23 +345,6 @@ const FlashcardList = ({
       onSubjectClick(subject);
     }
   }, [onSubjectClick]);
-
-  const toggleTopic = useCallback((subject, topic) => {
-    const topicKey = `${subject}-${topic}`;
-    setExpandedTopics(prev => {
-      const newState = new Set(prev);
-      if (newState.has(topicKey)) {
-        newState.delete(topicKey);
-      } else {
-        newState.add(topicKey);
-      }
-      return newState;
-    });
-    // Call the optional prop if provided
-    if (typeof onTopicClick === 'function') {
-      onTopicClick(topic, subject);
-    }
-  }, [onTopicClick]);
 
   // Regroup cards whenever the 'cards' prop changes
   useEffect(() => {
@@ -819,7 +780,7 @@ const FlashcardList = ({
     openPrintModal(topicCards, `${subject} - ${topic}`);
   };
 
-  const startSlideshow = (subject, topic, e) => {
+  const startSlideshow = useCallback((subject, topic, e) => {
     if (e) e.stopPropagation();
     let slideshowCardsToUse = [];
     let slideshowTitleToUse = "Slideshow";
@@ -840,8 +801,9 @@ const FlashcardList = ({
       setShowSlideshow(true);
     } else {
       console.warn(`No cards found for slideshow: ${slideshowTitleToUse}`);
+      alert(`No cards available for slideshow: ${slideshowTitleToUse}`);
     }
-  };
+  }, [groupedCards]);
 
   const openColorEditor = (subject, topic = null, currentColor, e) => {
     e.stopPropagation();
@@ -890,40 +852,11 @@ const FlashcardList = ({
   };
 
   // Render functions (can remain here or be moved outside if preferred)
-  const renderCards = (cardsInTopic, subject, topic, topicColor) => {
-    const topicKey = `${subject}-${topic}`;
-    const isVisible = expandedTopics.has(topicKey);
-    // Filter out topic shells before rendering cards
-    const actualCards = cardsInTopic.filter(item => item.type !== 'topic');
-
-    return (
-      <div className={`topic-cards ${isVisible ? 'visible' : ''}`}>
-        {actualCards.length > 0 ? (
-          actualCards.map((card) => (
-            <Flashcard
-              key={card.id}
-              card={{ ...card, cardColor: topicColor }}
-              onDelete={() => onDeleteCard(card.id)}
-              onFlip={() => {}}
-              onUpdateCard={onUpdateCard}
-              onSelectCard={() => handleCardClick(card)}
-            />
-          ))
-        ) : (
-          <div className="no-cards-message">No cards generated for this topic yet.</div>
-        )}
-      </div>
-    );
-  };
-
   const renderTopic = (subject, topic, items, topicColor) => {
-    const topicKey = `${subject}-${topic}`;
-    const isExpanded = expandedTopics.has(topicKey);
     const topicShell = items.find(item => item.type === 'topic' && item.isShell);
     const actualCards = items.filter(item => item.type !== 'topic');
     const displayCount = actualCards.length;
     const textColor = getContrastColor(topicColor);
-    // Get metadata from the shell if available
     const examBoard = topicShell?.examBoard || "General";
     const examType = topicShell?.examType || "Course";
 
@@ -955,11 +888,11 @@ const FlashcardList = ({
     };
 
     return (
-      <div key={topicKey} className="topic-container" ref={el => topicRefs.current[topicKey] = el}>
+      <div key={`${subject}-${topic}`} className="topic-container">
         <div
-          className={`topic-header ${isExpanded ? 'expanded' : ''} ${displayCount === 0 ? 'empty-shell' : ''}`}
+          className={`topic-header ${displayCount === 0 ? 'empty-shell' : ''}`}
           style={{ backgroundColor: topicColor, color: textColor }}
-          onClick={() => toggleTopic(subject, topic)}
+          onClick={(e) => startSlideshow(subject, topic, e)}
         >
           <div className="topic-info">
             <h3>{topic}</h3>
@@ -1027,12 +960,8 @@ const FlashcardList = ({
             >
               <FaTrash />
             </button>
-            <span className="expand-icon">
-              {isExpanded ? <FaAngleUp /> : <FaAngleDown />}
-            </span>
           </div>
         </div>
-        {isExpanded && renderCards(actualCards, subject, topic, topicColor)}
       </div>
     );
   };
@@ -1042,9 +971,8 @@ const FlashcardList = ({
     const topicNames = Object.keys(topicsData).sort((a, b) => a.localeCompare(b));
 
     return (
-      <div className="topics-container">
+      <div className="topic-list-wrapper">
         {topicNames.map((topic, index) => {
-          const topicKey = `${subject}-${topic}`;
           const topicItems = topicsData[topic];
           const topicColor = subjectColorMapping[subject]?.topics[topic]?.base || generateShade(subjectColor, -10 + (index % 5) * 5);
           return (
@@ -1059,9 +987,7 @@ const FlashcardList = ({
     <div className="flashcard-list">
       <ScrollManager
         expandedSubjects={expandedSubjects}
-        expandedTopics={expandedTopics}
         subjectRefs={subjectRefs}
-        topicRefs={topicRefs}
       />
       <button
         onClick={() => setShowTopicCreationModal(true)}
@@ -1139,9 +1065,6 @@ const FlashcardList = ({
                 >
                   <FaTrash />
                 </button>
-                <span className="expand-icon">
-                  {isExpanded ? <FaAngleUp /> : <FaAngleDown />}
-                </span>
               </div>
             </div>
             {isExpanded && renderTopics(subject, subjectBaseColor)}
