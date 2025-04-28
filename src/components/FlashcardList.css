@@ -970,10 +970,10 @@ html {
   background-color: rgba(0, 0, 0, 0.02);
   border-top: 1px solid rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease-out;
-  flex: 1; /* Allow topic cards to grow and fill available space */
-  overflow-y: auto; /* RE-ADDED: Enable scrolling within the container */
-  max-height: 400px; /* RE-ADDED: Set a max-height for the card list */
-  min-height: 200px; /* Ensure minimum height for better visibility */
+  flex: 1;
+  overflow-y: auto; /* Enable scrolling *within* the expanded card list */
+  max-height: 400px; /* Set a max-height for the card list */
+  min-height: 200px; /* Optional: Ensure it has some base height */
 }
 
 /* Ensure the flashcard-list uses full height available */
