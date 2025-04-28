@@ -1129,11 +1129,6 @@ html {
   background: #555;
 }
 
-/* --- Ensure other styles don't interfere --- */
-/* Make sure topic-container doesn't have conflicting height/overflow */
-.topic-container {
-  /* overflow: visible; /* Reset if previously set */
-}
 
 /* Modal Styling - Improved for centered overlay */
 
