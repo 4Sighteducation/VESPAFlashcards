@@ -1,0 +1,49 @@
+.topic-generator-connector {
+  margin: 15px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.generate-flashcards-btn {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background-color: #06206e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  margin: 0 auto;
+}
+
+.generate-flashcards-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.generate-flashcards-btn:active {
+  transform: translateY(-1px);
+}
+
+.btn-icon {
+  margin-right: 8px;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .generate-flashcards-btn {
+    width: 95%;
+    padding: 12px;
+    font-size: 0.95rem;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+/* Color contrast adjustment function is handled inline in the component */ 

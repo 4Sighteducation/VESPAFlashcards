@@ -1884,3 +1884,63 @@
     font-size: 0.9rem;
   }
 }
+
+/* Skipped steps message styles */
+.skipped-steps-message,
+.metadata-summary {
+  background-color: #f0f5ff;
+  border-left: 4px solid #06206e;
+  padding: 15px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.skipped-steps-message p,
+.metadata-summary p {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.skipped-steps-message ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.skipped-steps-message li {
+  margin-bottom: 5px;
+  color: #444;
+}
+
+.metadata-summary {
+  background-color: #f9f9f9;
+  border-left-color: #4CAF50;
+  margin-bottom: 15px;
+}
+
+.metadata-summary p {
+  margin: 5px 0;
+  font-size: 0.9rem;
+}
+
+/* WebSocket Status Indicator */
+.ws-status {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  border-radius: 20px;
+  opacity: 0.7;
+}
+
+.ws-status.connected {
+  background-color: #e8f5e9;
+  color: #4CAF50;
+}
+
+.ws-status.disconnected {
+  background-color: #ffebee;
+  color: #f44336;
+}

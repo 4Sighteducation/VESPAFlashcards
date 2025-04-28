@@ -5,6 +5,7 @@ import "./FlashcardList.css";
 import ColorEditor from "./ColorEditor";
 import TopicCreationModal from "./TopicCreationModal";
 import { deleteSubject, deleteTopic } from "./FlashcardTopicHandler";
+import AICardGenerator from './AICardGenerator';
 
 // Define bright colors constant
 const BRIGHT_COLORS = [
@@ -292,7 +293,9 @@ const FlashcardList = ({
   onUpdateCard,
   onUpdateSubjectColor,
   subjectColorMapping: subjectColorMappingFromProps,
-  handleSaveTopicShells
+  handleSaveTopicShells,
+  recordId,
+  userId
 }) => {
   // --- START: HOOK DEFINITIONS ---
 
@@ -320,9 +323,31 @@ const FlashcardList = ({
     itemType: null, // "topic" or "subject"
     parentSubject: null // only for topics
   });
+  const [showCardGenerator, setShowCardGenerator] = useState(false);
+  const [generatorTopic, setGeneratorTopic] = useState(null);
+  // Add state to track if we need to get userId from localStorage if not provided
+  const [localUserId, setLocalUserId] = useState(null);
 
   // 2. useRef Hooks
   const subjectRefs = useRef({});
+
+  // Try to get userId from localStorage if not provided as prop
+  useEffect(() => {
+    if (!userId && !localUserId) {
+      try {
+        const authData = localStorage.getItem('flashcards_auth');
+        if (authData) {
+          const parsedAuth = JSON.parse(authData);
+          if (parsedAuth && parsedAuth.id) {
+            console.log("[FlashcardList] Retrieved userId from localStorage:", parsedAuth.id);
+            setLocalUserId(parsedAuth.id);
+          }
+        }
+      } catch (error) {
+        console.error("[FlashcardList] Error getting userId from localStorage:", error);
+      }
+    }
+  }, [userId, localUserId]);
 
   // 3. useCallback Hooks for State Updates & Grouping
   const updateColorMapping = useCallback((newMapping) => {
@@ -978,22 +1003,21 @@ const FlashcardList = ({
         return;
       }
 
-      if (window.confirm(`This will generate new cards for "${topic}". Existing cards will remain. Continue?`)) {
-        // Call the WebSocket-based generation via the passed prop
-        if (typeof handleSaveTopicShells === 'function') {
-          console.log(`[Regen Trigger] Regenerating topic: ${subject} - ${topic}`);
-          const shellToRegen = {
-            ...topicShell,
-            subject: subject,
-            topic: topic,
-            regenerate: true
-          };
-          await handleSaveTopicShells([shellToRegen], true);
-        } else {
-          console.error("handleSaveTopicShells prop is not available for regeneration!");
-          alert("Error: Regeneration function is not available.");
-        }
-      }
+      // NOTE: Despite the name, this function doesn't actually "regenerate" the topic.
+      // It opens the AICardGenerator to create new flashcards for this topic,
+      // passing the topic's metadata to the generator.
+      // The name is kept for backward compatibility.
+      setGeneratorTopic({
+        subject: subject,
+        topic: topic,
+        name: topic,
+        color: topicColor,
+        cardColor: topicColor,
+        examBoard: examBoard,
+        examType: examType,
+        ...topicShell // Include all other topic shell properties
+      });
+      setShowCardGenerator(true);
     };
 
     // Add slidehsow functionality for topic
@@ -1242,6 +1266,22 @@ const FlashcardList = ({
           cards={slideshowCards}
           title={slideshowTitle}
           onClose={() => setShowSlideshow(false)}
+        />
+      )}
+      {showCardGenerator && generatorTopic && (
+        <AICardGenerator
+          initialSubject={generatorTopic.subject}
+          initialTopic={generatorTopic.topic || generatorTopic.name}
+          examBoard={generatorTopic.examBoard || "AQA"}
+          examType={generatorTopic.examType || "A-Level"}
+          skipMetadataSteps={true}
+          topicColor={generatorTopic.color || generatorTopic.cardColor}
+          recordId={recordId || null}
+          userId={userId || localUserId || null}
+          onClose={() => {
+            setShowCardGenerator(false);
+            setGeneratorTopic(null);
+          }}
         />
       )}
     </div>

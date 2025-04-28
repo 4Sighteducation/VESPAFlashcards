@@ -59,6 +59,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [showAnswer, setShowAnswer] = useState(false);
   const cardRef = useRef(null);
   
   // Color priority:
@@ -213,6 +215,68 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
     return '';
   };
 
+  // Find correct answer index for multiple choice cards
+  const getCorrectAnswerIndex = () => {
+    if (!card || !card.questionType || card.questionType !== 'multiple_choice' || !card.options) {
+      return -1;
+    }
+    
+    // Try to find correct answer based on multiple matching strategies
+    
+    // Strategy 1: Use the correctAnswer field directly if it exists
+    if (card.correctAnswer) {
+      // Handle if correctAnswer is a full option text
+      const correctAnswerText = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
+      return card.options.findIndex(option => {
+        const optionText = typeof option === 'string' 
+          ? option.replace(/^[a-d]\)\s*/i, '').trim() 
+          : (option?.text || '').replace(/^[a-d]\)\s*/i, '').trim();
+        return optionText === correctAnswerText;
+      });
+    }
+    
+    // Strategy 2: Look for option with isCorrect flag
+    const correctOptionIndex = card.options.findIndex(option => 
+      option && typeof option === 'object' && option.isCorrect === true
+    );
+    if (correctOptionIndex >= 0) return correctOptionIndex;
+    
+    // Strategy 3: Parse the back text if it contains "Correct Answer: [letter])"
+    if (typeof card.back === 'string') {
+      const correctAnswerMatch = card.back.match(/Correct Answer:\s*([a-d])\)/i);
+      if (correctAnswerMatch) {
+        const letter = correctAnswerMatch[1].toLowerCase();
+        return letter.charCodeAt(0) - 97; // 'a' => 0, 'b' => 1, etc.
+      }
+    }
+    
+    // Default to first option if no correct answer found
+    return 0;
+  };
+  
+  // Handle option click for multiple choice
+  const handleOptionSelect = (index, e) => {
+    e.stopPropagation(); // Prevent card flip when clicking an option
+    
+    // Only allow selection if not already showing answer
+    if (!showAnswer) {
+      setSelectedOption(index);
+      
+      // Show the answer after a slight delay
+      setTimeout(() => {
+        setShowAnswer(true);
+      }, 300);
+    }
+  };
+  
+  // Reset selections when card is flipped back
+  useEffect(() => {
+    if (!isFlipped) {
+      setSelectedOption(null);
+      setShowAnswer(false);
+    }
+  }, [isFlipped]);
+
   // Determine if we have options for this card
   const isMultipleChoice = Boolean(card.options && Array.isArray(card.options) && card.options.length > 0);
   const questionText = card.front || card.question || '';
@@ -344,6 +408,96 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
     );
   };
 
+  // Update the front side rendering to include interactive multiple choice options
+  const renderFront = () => {
+    const isMultipleChoice = Boolean(card.options && Array.isArray(card.options) && card.options.length > 0);
+    const questionText = card.front || card.question || '';
+    const questionLengthClass = getQuestionClassByLength(questionText);
+    const correctAnswerIndex = getCorrectAnswerIndex();
+    
+    return (
+      <div className="flashcard-front flashcard-flip-area" style={{ 
+        color: textColor,
+        backgroundColor: card.cardColor || '#3cb44b',
+        padding: '15px',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        height: '100%',
+        width: '100%',
+        position: 'absolute',
+        boxSizing: 'border-box',
+        cursor: preview ? 'default' : 'pointer'
+      }}>
+        {card.topic && !preview && (
+          <div className="card-topic-indicator" style={{ color: textColor }}>
+            {card.topic}
+          </div>
+        )}
+        {isMultipleChoice ? (
+          <>
+            <div className={`question-title ${questionLengthClass}`} style={{ color: textColor }}>
+              {questionText || "No question available"}
+            </div>
+            <div style={{ 
+              flex: 1, 
+              overflow: 'auto', 
+              width: '100%', 
+              display: 'block',
+              marginTop: '10px',
+              position: 'relative'
+            }}>
+              <div className="options-container">
+                <ol>
+                  {card.options.map((option, index) => {
+                    const optionText = typeof option === 'string' ? option : option?.text || '';
+                    // Determine option class based on selection state and correct answer
+                    const optionClass = `
+                      option-item
+                      ${selectedOption === index ? 'selected-option' : ''}
+                      ${showAnswer && index === correctAnswerIndex ? 'correct-option' : ''}
+                      ${showAnswer && selectedOption === index && index !== correctAnswerIndex ? 'incorrect-option' : ''}
+                    `;
+                    
+                    return (
+                      <li 
+                        key={index} 
+                        className={optionClass}
+                        onClick={(e) => handleOptionSelect(index, e)}
+                      >
+                        <span className="option-letter">{String.fromCharCode(97 + index)})</span>
+                        <span className="option-text">{optionText}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+              {showAnswer && (
+                <div className="answer-feedback">
+                  {selectedOption === correctAnswerIndex ? (
+                    <div className="correct-feedback">Correct!</div>
+                  ) : (
+                    <div className="incorrect-feedback">
+                      Incorrect. The correct answer is {String.fromCharCode(97 + correctAnswerIndex)}.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className={`question-title ${questionLengthClass}`} style={{ color: textColor }}>
+            {typeof questionText === 'string' ? (
+              <div dangerouslySetInnerHTML={{ __html: questionText || "No question available" }} />
+            ) : (
+              <div>No question available</div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Update the main return to use renderFront and renderBack
   return (
     <>
@@ -416,69 +570,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
         )}
         
         <div className="flashcard-inner">
-          <div className="flashcard-front flashcard-flip-area" style={{ 
-            color: textColor,
-            backgroundColor: card.cardColor || '#3cb44b',
-            padding: '15px',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            height: '100%',
-            width: '100%',
-            position: 'absolute',
-            boxSizing: 'border-box',
-            cursor: preview ? 'default' : 'pointer'
-          }}>
-            {card.topic && !preview && (
-              <div className="card-topic-indicator" style={{ color: textColor }}>
-                {card.topic}
-              </div>
-            )}
-            {isMultipleChoice ? (
-              <>
-                <div className={`question-title ${questionLengthClass}`} style={{ color: textColor }}>
-                  {questionText || "No question available"}
-                </div>
-                <div style={{ 
-                  flex: 1, 
-                  overflow: 'auto', 
-                  width: '100%', 
-                  display: 'block',
-                  marginTop: '10px',
-                  position: 'relative'
-                }}>
-                  <MultipleChoiceOptions 
-                    options={card.options || []} 
-                    preview={preview} 
-                    isInModal={isInModal} 
-                    card={{
-                      ...card,
-                      onUpdateOptions: (newOptions) => {
-                        if (onUpdateCard && newOptions && newOptions.length > 0) {
-                          // Update card with recovered options
-                          onUpdateCard({
-                            ...card,
-                            options: newOptions,
-                            savedOptions: newOptions,
-                            questionType: 'multiple_choice'
-                          });
-                        }
-                      }
-                    }} 
-                  />
-                </div>
-              </>
-            ) : (
-              <div className={`question-title ${questionLengthClass}`} style={{ color: textColor }}>
-                {typeof questionText === 'string' ? (
-                  <div dangerouslySetInnerHTML={{ __html: questionText || "No question available" }} />
-                ) : (
-                  <div>No question available</div>
-                )}
-              </div>
-            )}
-          </div>
-          
+          {renderFront()}
           {renderBack()}
         </div>
       </div>

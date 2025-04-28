@@ -2025,3 +2025,61 @@
   color: white !important;
 }
 
+/* Improved styles for multiple choice interaction */
+.selected-option {
+  background-color: rgba(0, 0, 0, 0.25) !important;
+  border-left: 3px solid rgba(255, 255, 255, 0.7) !important;
+  transition: all 0.2s ease;
+}
+
+.correct-option {
+  background-color: rgba(76, 175, 80, 0.3) !important;
+  border-left: 3px solid #4CAF50 !important;
+}
+
+.incorrect-option {
+  background-color: rgba(244, 67, 54, 0.3) !important;
+  border-left: 3px solid #F44336 !important;
+}
+
+.answer-feedback {
+  margin-top: 12px;
+  padding: 10px;
+  text-align: center;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.correct-feedback {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #2E7D32;
+  padding: 12px;
+  border-radius: 4px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.incorrect-feedback {
+  background-color: rgba(244, 67, 54, 0.2);
+  color: #C62828;
+  padding: 12px;
+  border-radius: 4px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Make options more clickable with cursor change */
+.options-container li {
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.options-container li:hover {
+  transform: translateX(3px);
+  background-color: rgba(0, 0, 0, 0.18) !important;
+}
+

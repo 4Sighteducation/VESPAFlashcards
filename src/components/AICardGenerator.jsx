@@ -74,17 +74,19 @@ const AICardGenerator = ({
   examType = "A-Level",
   recordId,
   initialTopicsProp, // Topics possibly coming from FlashcardList
-  onFinalizeTopics // Callback possibly related to TopicHub interaction
+  onFinalizeTopics,
+  skipMetadataSteps = false, // Add this new prop
+  topicColor = null,         // Add topicColor prop
 }) => {
   // WebSocket Hook Usage - ADDED
   const { sendMessage, lastMessage, readyState } = useWebSocket();
   const isWsConnected = readyState === WebSocket.OPEN;
 
-  // Step management state
-  const [currentStep, setCurrentStep] = useState(1);
+  // Step management state - modify to use skipMetadataSteps
+  const [currentStep, setCurrentStep] = useState(skipMetadataSteps ? 4 : 1);
   const totalSteps = 5; // Adjusted steps: 1:Meta, 2:Subject, 3:Topic Gen/Select, 4:Card Options, 5:Review Cards
   
-  // Form data state
+  // Form data state - set color from topicColor if provided
   const [formData, setFormData] = useState({
     examBoard: examBoard,
     examType: examType,
@@ -94,7 +96,7 @@ const AICardGenerator = ({
     newTopic: "",
     numCards: 5,
     questionType: "multiple_choice", // Default question type
-    subjectColor: BRIGHT_COLORS[0], // Default color
+    subjectColor: topicColor || BRIGHT_COLORS[0], // Use topic color if provided
   });
   
   // Processing states
@@ -516,6 +518,25 @@ useEffect(() => {
   // Validation logic for proceeding
   const canProceed = () => {
     setError(null); // Clear previous validation errors
+
+    // If skipMetadataSteps is true, only validate relevant steps
+    if (skipMetadataSteps) {
+      // Only validate steps 4-5 when skipMetadataSteps is true
+      switch (currentStep) {
+        case 4: // Card Options
+          if (formData.numCards <= 0 || !formData.questionType) {
+            setError("Please set the number of cards and select a question type.");
+            return false;
+          }
+          return true;
+        case 5: // Review Cards - Always allow going back from here
+          return true;
+        default:
+          return true; // Skip validation for earlier steps
+      }
+    }
+
+    // Regular validation for all steps when not skipping
     switch (currentStep) {
       case 1: // Exam Details
         if (!formData.examBoard || !formData.examType) {
@@ -669,6 +690,9 @@ useEffect(() => {
     const localTopic = card.topic || formData.topic || formData.newTopic || initialTopic || "General";
     const topicId = selectedTopic?.id || card.topicId || null; // Prefer ID from selectedTopic object if available
     
+    // Ensure the card color is set from topic color if available, or from form data
+    const cardColor = topicColor || formData.subjectColor || card.cardColor || BRIGHT_COLORS[0];
+    
     const recordIdToUse = recordId || window.recordId || ''; // Get recordId reliably
     const userIdToUse = userId || window.VESPA_USER_ID || "current_user"; // Get userId reliably
     
@@ -680,7 +704,8 @@ useEffect(() => {
       topic: localTopic, // Use the determined localTopic
       cardId: card.id,
       recordId: recordIdToUse,
-      userId: userIdToUse
+      userId: userIdToUse,
+      cardColor // Debug the determined color
     });
 
     try {      
@@ -692,6 +717,8 @@ useEffect(() => {
         subject: localSubject,     // Overwrite with stable value
         topic: localTopic,         // Overwrite with stable value
         topicId: topicId,          // Add topicId if available
+        cardColor: cardColor,      // Ensure card color is set correctly
+        subjectColor: cardColor,   // Set subject color for consistency
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
         lastReviewed: new Date().toISOString(), // Initialize review dates
@@ -704,6 +731,9 @@ useEffect(() => {
              correctAnswer: card.correctAnswer || (card.options ? card.options[0] : null) // Ensure correctAnswer exists
         }),
       };
+
+      // Extract the contrast color from the card color
+      enrichedCard.textColor = getContrastColor(cardColor);
 
       // Remove the temporary processing flag before sending
       delete enrichedCard.processing;
@@ -791,12 +821,16 @@ useEffect(() => {
     const localTopic = generatedCards[0]?.topic || formData.topic || formData.newTopic || initialTopic || "General";
     const topicId = selectedTopic?.id || generatedCards[0]?.topicId || null;
     
+    // Get color from topic or form data
+    const cardColor = topicColor || formData.subjectColor || BRIGHT_COLORS[0];
+    
     const recordIdToUse = recordId || window.recordId || '';
     const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
 
     debugLog("Starting add all cards with stable metadata", {
       examType: localExamType, examBoard: localExamBoard, subject: localSubject, topic: localTopic,
-      cardCount: generatedCards.length, recordId: recordIdToUse, userId: userIdToUse
+      cardCount: generatedCards.length, recordId: recordIdToUse, userId: userIdToUse,
+      cardColor // Log the color being used
     });
     
     try {
@@ -806,6 +840,9 @@ useEffect(() => {
                 ...card, // Spread original card data (already processed by WS handler)
                 examBoard: localExamBoard, subject: localSubject, topic: localTopic, examType: localExamType,
                 topicId: topicId,
+                cardColor: cardColor, // Set consistent card color
+                subjectColor: cardColor, // Set subject color for consistency
+                textColor: getContrastColor(cardColor), // Calculate appropriate text color
                 created: new Date().toISOString(), updated: new Date().toISOString(),
                 lastReviewed: new Date().toISOString(), nextReviewDate: new Date().toISOString(),
                 boxNum: card.boxNum || 1,
@@ -929,6 +966,21 @@ useEffect(() => {
 
   // Main function to render content based on currentStep
   const renderStepContent = () => {
+    // If skipMetadataSteps is true and we're at step < 4, show a message
+    if (skipMetadataSteps && currentStep < 4) {
+      return (
+        <div className="skipped-steps-message">
+          <p>Using metadata from selected topic:</p>
+          <ul>
+            <li><strong>Subject:</strong> {formData.subject}</li>
+            <li><strong>Topic:</strong> {formData.topic}</li>
+            <li><strong>Exam Board:</strong> {formData.examBoard}</li>
+            <li><strong>Exam Type:</strong> {formData.examType}</li>
+          </ul>
+        </div>
+      );
+    }
+
     switch (currentStep) {
            case 1: // Exam Details
         return (
@@ -1018,6 +1070,13 @@ useEffect(() => {
         return (
                     <div>
                        <h4>Step 4: Card Options</h4>
+                       {/* Display selected metadata if skipping steps */}
+                       {skipMetadataSteps && (
+                         <div className="metadata-summary">
+                           <p><strong>Subject:</strong> {formData.subject}</p>
+                           <p><strong>Topic:</strong> {formData.topic}</p>
+                         </div>
+                       )}
                        {/* Number of Cards Input */}
                        <label>Number of Cards:</label>
               <input 
@@ -1136,13 +1195,15 @@ useEffect(() => {
               <button className="close-button" onClick={handleClose}>×</button>
               <h2>AI Flashcard Generator</h2>
 
-              {/* Progress Indicator */}
-              <div className="progress-indicator">
-                  Step {currentStep} of {totalSteps}
-                  <div className="progress-bar-container">
-                      <div className="progress-bar" style={{ width: `${(currentStep / totalSteps) * 100}%` }}></div>
-          </div>
-      </div>
+              {/* Progress Indicator - hide if skipMetadataSteps */}
+              {!skipMetadataSteps && (
+                <div className="progress-indicator">
+                    Step {currentStep} of {totalSteps}
+                    <div className="progress-bar-container">
+                        <div className="progress-bar" style={{ width: `${(currentStep / totalSteps) * 100}%` }}></div>
+                    </div>
+                </div>
+              )}
       
               {/* Render content for the current step */}
                <div className="step-content">
@@ -1152,15 +1213,18 @@ useEffect(() => {
                {/* Display general errors */}
               {error && currentStep !== 5 && <div className="error-message general-error">{error}</div>}
 
-               {/* Navigation Buttons */}
+               {/* Navigation Buttons - modify for skipMetadataSteps */}
               <div className="navigation-buttons">
-                  <button onClick={handlePrevStep} disabled={currentStep === 1}>
-                      Previous
-          </button>
+                  {/* Only show Previous button if not skipping metadata or if on review step */}
+                  {(!skipMetadataSteps || currentStep === 5) && (
+                    <button onClick={handlePrevStep} disabled={currentStep === 1 || (skipMetadataSteps && currentStep === 4)}>
+                        Previous
+                    </button>
+                  )}
                   <button onClick={handleNextStep} disabled={currentStep === totalSteps || isGenerating || !canProceed()}>
                       {currentStep === totalSteps -1 ? 'Generate & Review Cards' : 'Next'}
-          </button>
-      </div>
+                  </button>
+              </div>
       
                {/* WebSocket Status Indicator */}
                 <div className={`ws-status ${isWsConnected ? 'connected' : 'disconnected'}`}>

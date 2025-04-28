@@ -2849,6 +2849,7 @@ useEffect(() => {
                       onUpdateCard={updateCard}
                       onViewTopicList={handleViewTopicList} // Corrected prop name based on usage
                       recordId={recordId}
+                      userId={auth?.id} // Add userId prop
                       // --- Pass the state and the handler function --- 
                       subjectColorMapping={subjectColorMapping} 
                       onUpdateSubjectColor={handleUpdateSubjectColor} 
