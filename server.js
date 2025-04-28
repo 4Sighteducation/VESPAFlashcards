@@ -167,7 +167,6 @@ async function handleGenerateTopics(ws, data) {
   // Let the client know we've started
   ws.send(JSON.stringify({ type: 'status', action: 'generateTopics', message: 'Generating topics...' }));
 
-
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -228,13 +227,50 @@ async function handleGenerateTopics(ws, data) {
         throw new Error('AI response was not a valid JSON array.');
     }
 
-    console.log(`Successfully generated ${topics.length} topics.`);
+    // Post-process the topics to enforce our rules
+    let processedTopics = topics;
+    
+    // 1. Filter out coursework/investigation/set works topics
+    const excludeKeywords = [
+      'coursework', 'investigation', 'set work', 'portfolio', 'project', 
+      'non-examined', 'practical exam', 'field study', 'field trip'
+    ];
+    
+    processedTopics = processedTopics.filter(topic => {
+      // Skip topics that match exclusion keywords
+      const mainTopic = (topic.mainTopic || '').toLowerCase();
+      const subtopic = (topic.subtopic || '').toLowerCase();
+      
+      return !excludeKeywords.some(keyword => 
+        mainTopic.includes(keyword) || subtopic.includes(keyword)
+      );
+    });
+    
+    // 2. Limit to maximum of 30 topics
+    if (processedTopics.length > 30) {
+      console.log(`Limiting topics from ${processedTopics.length} to 30`);
+      processedTopics = processedTopics.slice(0, 30);
+    }
+    
+    // 3. Re-number topics after filtering if needed
+    if (processedTopics.length !== topics.length) {
+      processedTopics = processedTopics.map((topic, index) => {
+        const mainTopicNum = Math.floor(index / 5) + 1;
+        const subtopicNum = (index % 5) + 1;
+        return {
+          ...topic,
+          id: `${mainTopicNum}.${subtopicNum}`
+        };
+      });
+    }
+
+    console.log(`Successfully processed ${processedTopics.length} topics.`);
 
     // Send results back to the specific client
     ws.send(JSON.stringify({
       type: 'topicResults',
       action: 'generateTopics',
-      topics: topics
+      topics: processedTopics
     }));
 
   } catch (error) {

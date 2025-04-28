@@ -31,6 +31,21 @@ IMPORTANT: Try your best to be highly specific to {examBoard}. You have sufficie
 
 If you're unsure of the exact current specification, providing approximated topics based on your knowledge is MUCH BETTER than returning an error. Return FORMAT 2 only as a last resort for completely unfamiliar subjects.
 
+CRITICAL NEW LIMIT - MAXIMUM TOPIC COUNT:
+You must produce a MAXIMUM of 30 topics total, combining main topics and subtopics. Aim for a balanced structure with fewer, more meaningful topics rather than an exhaustive list. For example, you could have 10 main topics with 2-3 subtopics each, or 5-6 main topics with 4-5 subtopics each. The total count of distinct topics should never exceed 30.
+
+EXCLUDING NON-EXAM CONTENT:
+Exclude any topics primarily focused on:
+1. Coursework components
+2. Investigations/field studies
+3. Set works (unless they're directly examined in written papers)
+4. Project work
+5. Non-examined assessment components
+6. Portfolio work
+7. Practical examinations
+
+FOCUS ONLY on topics that are assessed in written examinations. The flashcards are intended to help with exam preparation, not coursework or practical components.
+
 HANDLING OPTIONAL TOPICS:
 1. If a topic or subtopic is marked as "optional," "non-compulsory," or similar in the curriculum:
    - Add "[Optional]" at the beginning of the mainTopic field
@@ -47,6 +62,7 @@ Apply the specific structure used by this exam board:
 - OCR structures using Modules/Topics → use this organization if working with OCR
 - WJEC/Eduqas structures using Themes/Areas of study → use this organization if working with WJEC/Eduqas
 - SQA structures using Outcomes/Assessment standards → use this organization if working with SQA
+- IB structures using Core/Options → use this organization if working with International Baccalaureate
 
 QUALIFICATION LEVELS - Use appropriate depth and complexity:
 - A Level: Advanced level qualifications (England, Wales, and Northern Ireland)
@@ -59,7 +75,7 @@ QUALIFICATION LEVELS - Use appropriate depth and complexity:
 - BTEC Level 3: Equivalent to A Level (vocational qualification)
 - Cambridge National Level 2: Equivalent to GCSE (vocational qualification)
 - Cambridge National Level 3: Equivalent to A Level (vocational qualification)
-- International Baccalaureate: IB curriculum structure
+- International Baccalaureate: IB curriculum structure with Standard Level and Higher Level
 
 SUBJECT DISAMBIGUATION - PREVENT CROSS-CONTAMINATION:
 When generating topics for a specific subject, ensure content is strictly relevant to that subject only.
@@ -118,7 +134,7 @@ RULES:
 5. CONSISTENT NUMBERING - Use simple sequential numbering (1.1, 1.2, 2.1, 2.2, etc.)
 6. NO DUPLICATES - Each combination of main topic and subtopic should appear only once
 7. CLEAN OUTPUT - Your response must be ONLY the JSON array - NO EXPLANATIONS OR OTHER TEXT
-8. BE COMPREHENSIVE - Include ALL standard topics for this subject, typically 15-30 topics depending on subject breadth
+8. BE COMPREHENSIVE - Include core topics for this subject, but NEVER exceed 30 topics total
 9. SPECIFICITY IS CRITICAL - Be as specific as possible to {examBoard}'s curriculum, NOT generic topics
 10. SANITIZE JSON - Ensure all strings are properly escaped and there are no unterminated strings
 
@@ -159,12 +175,6 @@ Example (partial) for AQA A Level Dance:
     "subtopic": "Analysis of set work - Rooster by Christopher Bruce"
   },
   {
-    "id": "2.1",
-    "topic": "[Practical] Performance: Solo performance",
-    "mainTopic": "[Practical] Performance",
-    "subtopic": "Solo performance"
-  },
-  {
     "id": "3.1",
     "topic": "Dance theory: Elements of dance - space, dynamics, and relationships",
     "mainTopic": "Dance theory",
@@ -172,7 +182,11 @@ Example (partial) for AQA A Level Dance:
   }
 ]
 
-FINAL VERIFICATION: Before returning your response, verify that ALL topics are strictly relevant to {subject} and do not contain content from other subjects. If you detect ANY cross-subject contamination, regenerate the entire topic list.
+FINAL VERIFICATION: Before returning your response, verify that:
+1. ALL topics are strictly relevant to {subject} and do not contain content from other subjects
+2. The total topic count DOES NOT EXCEED 30 topics
+3. You have EXCLUDED coursework and practical assessment topics unless explicitly examined
+4. Only written exam content is prioritized
 
 REMEMBER: You must provide a comprehensive topic list in almost all cases. Returning an error should be extremely rare.`;
 

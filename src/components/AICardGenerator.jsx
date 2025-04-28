@@ -30,7 +30,7 @@ const EXAM_TYPES = [
   { value: "IB", label: "International Baccalaureate" },
   { value: "AP", label: "Advanced Placement" },
   { value: "Scottish Higher", label: "Scottish Higher" },
-  { value: "BTEC", label: "BTEC" },
+  { value: "BTEC", label: "BTEC / Vocational" },
   { value: "Other", label: "Other" }
 ];
 

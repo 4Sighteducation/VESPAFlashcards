@@ -429,7 +429,8 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
                 <option value="">Select Type...</option>
                 <option value="GCSE">GCSE</option>
                 <option value="A-Level">A-Level</option>
-                <option value="BTEC">BTEC / Cambridge National</option>
+                <option value="BTEC">BTEC / Vocational</option>
+                <option value="IB">International Baccalaureate</option>
               </select>
               {isLoadingBoards && <div className="loading-indicator"><LoadingSpinner size="small" /></div>}
             </div>

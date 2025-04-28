@@ -169,306 +169,161 @@ const TopicHub = ({
   const generateTopics = async () => {
     setIsGenerating(true);
     setError(null);
-    setUsingCache(false);
     setUsingFallbackTopics(false);
     setShowFallbackNotice(false);
     
-    try {
-      console.log("Starting topic generation for:", examBoard, examType, subject);
-      
-      // Check cache first before making API call
-      const cachedTopics = checkTopicCache(examBoard, examType, subject);
-      if (cachedTopics) {
-        console.log("Using cached topics instead of making API call");
-        setTopics(cachedTopics);
-        setHasGenerated(true);
-        setUsingCache(true);
-        setIsGenerating(false);
-        return;
-      }
-      
-      // Check if we should throttle this request
-      if (shouldThrottleRequest()) {
-        console.log("Request throttled, showing error modal");
-        setErrorMessage("Too many requests in a short time period");
-        setErrorDetails("Please wait a moment before generating more topics. We limit requests to prevent API rate limits.");
-        setShowErrorModal(true);
-        setIsGenerating(false);
-        return;
-      }
-      
-      // Update the last request timestamp
-      lastRequestTimestamp.current = Date.now();
-      
-      // First try to fetch from Knack object_109 if not BTEC
-      if (examType !== 'BTEC') {
-        try {
-          console.log("Attempting to fetch topics from Knack object_109");
-          setProgressMessage("Fetching topics from our database...");
+    // Save the current timestamp to avoid race conditions with multiple requests
+    const currentRequestTimestamp = Date.now();
+    lastRequestTimestamp.current = currentRequestTimestamp;
+    
+    // First try to fetch from Knack object_109 if not BTEC or IB
+    if (examType !== 'BTEC' && examType !== 'IB' && examType !== 'International Baccalaureate') {
+      try {
+        console.log("Attempting to fetch topics from Knack object_109");
+        setProgressMessage("Fetching topics from our database...");
+        
+        const knackTopics = await fetchTopics(examType, examBoard, subject);
+        
+        if (knackTopics && Array.isArray(knackTopics) && knackTopics.length > 0) {
+          console.log(`Successfully retrieved ${knackTopics.length} topics from Knack object_109`);
+          setProgressMessage("Topics found in database!");
           
-          const knackTopics = await fetchTopics(examType, examBoard, subject);
-          
-          if (knackTopics && Array.isArray(knackTopics) && knackTopics.length > 0) {
-            console.log(`Successfully retrieved ${knackTopics.length} topics from Knack object_109`);
-            setProgressMessage("Topics found in database!");
-            
-            // Store in cache and update UI
-            storeTopicsInCache(examBoard, examType, subject, knackTopics);
-            setTopics(knackTopics);
-            setHasGenerated(true);
-            setIsGenerating(false);
-            return;
-          } else {
-            console.log("No topics found in Knack object_109 or empty result, falling back to AI generation");
-            setProgressMessage("Generating topics with AI...");
-          }
-        } catch (knackError) {
-          console.error("Error fetching from Knack:", knackError);
-          console.log("Falling back to AI generation");
+          // Store in cache and update UI
+          storeTopicsInCache(examBoard, examType, subject, knackTopics);
+          setTopics(knackTopics);
+          setHasGenerated(true);
+          setIsGenerating(false);
+          return;
+        } else {
+          console.log("No topics found in Knack object_109 or empty result, falling back to AI generation");
           setProgressMessage("Generating topics with AI...");
         }
-      } else {
-        console.log("BTEC selected, using AI generation directly");
-        setProgressMessage("Generating topics with AI for BTEC...");
+      } catch (knackError) {
+        console.error("Error fetching from Knack:", knackError);
+        console.log("Falling back to AI generation");
+        setProgressMessage("Generating topics with AI...");
       }
+    } else {
+      console.log("BTEC selected, using AI generation directly");
+      setProgressMessage("Generating topics with AI for BTEC...");
+    }
+    
+    // If we've reached here, we need to use OpenAI as fallback
+    // Make the API call to generate topics
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [{
+          role: "user",
+          content: generateTopicPrompt(examBoard, examType, subject, academicYear)
+        }],
+        max_tokens: 2000,
+        temperature: 0.8
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API call failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.choices || data.choices.length === 0) {
+      throw new Error("No content returned from API");
+    }
+    
+    // Parse and process the topics from the API response
+    let content = data.choices[0].message.content;
+    
+    // Log the raw API response
+    console.log("==== RAW API RESPONSE FROM OPENAI ====");
+    console.log(content);
+    console.log("==== END RAW API RESPONSE ====");
+    
+    // Enhanced preprocessing for GPT-4's verbose responses - more aggressive cleanup
+    content = content.replace(/```json|```javascript|```|\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
+      .replace(/^[\s\S]*?\[/m, '[')  // Remove any text before first opening bracket
+      .trim();
+    
+    // Find JSON array in response - looking for content between [ and ]
+    const jsonMatch = content.match(/\[([\s\S]*?)\]/m);
+    const potentialJson = jsonMatch ? `[${jsonMatch[1]}]` : content;
+    
+    console.log("Content after preprocessing:", potentialJson.substring(0, 150) + "...");
+    
+    let parsedTopics;
+    let usedFallback = false;
+    
+    try {
+      parsedTopics = JSON.parse(potentialJson);
+      console.log("Successfully parsed JSON response:", parsedTopics);
       
-      // If we've reached here, we need to use OpenAI as fallback
-      // Make the API call to generate topics
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [{
-            role: "user",
-            content: generateTopicPrompt(examBoard, examType, subject, academicYear)
-          }],
-          max_tokens: 2000,
-          temperature: 0.8
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API call failed: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error("No content returned from API");
-      }
-      
-      // Parse and process the topics from the API response
-      let content = data.choices[0].message.content;
-      
-      // Log the raw API response
-      console.log("==== RAW API RESPONSE FROM OPENAI ====");
-      console.log(content);
-      console.log("==== END RAW API RESPONSE ====");
-      
-      // Enhanced preprocessing for GPT-4's verbose responses - more aggressive cleanup
-      content = content.replace(/```json|```javascript|```|\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
-        .replace(/^[\s\S]*?\[/m, '[')  // Remove any text before first opening bracket
-        .trim();
-      
-      // Find JSON array in response - looking for content between [ and ]
-      const jsonMatch = content.match(/\[([\s\S]*?)\]/m);
-      const potentialJson = jsonMatch ? `[${jsonMatch[1]}]` : content;
-      
-      console.log("Content after preprocessing:", potentialJson.substring(0, 150) + "...");
-      
-      let parsedTopics;
-      let usedFallback = false;
-      
-      try {
-        parsedTopics = JSON.parse(potentialJson);
-        console.log("Successfully parsed JSON response:", parsedTopics);
+      // Post-process the topics to enforce our rules
+      if (Array.isArray(parsedTopics) && parsedTopics.length > 0) {
+        // 1. Filter out coursework/investigation/set works topics
+        const excludeKeywords = [
+          'coursework', 'investigation', 'set work', 'portfolio', 'project', 
+          'non-examined', 'practical exam', 'field study', 'field trip'
+        ];
         
-        // Check if the API returned an error object
-        const hasErrorObject = Array.isArray(parsedTopics) && 
-          parsedTopics.length === 1 && 
-          parsedTopics[0] && 
-          parsedTopics[0].hasOwnProperty('error');
+        let processedTopics = parsedTopics.filter(topic => {
+          if (!topic || !topic.mainTopic || !topic.subtopic) return true;
+          
+          // Skip topics that match exclusion keywords
+          const mainTopic = topic.mainTopic.toLowerCase();
+          const subtopic = topic.subtopic.toLowerCase();
+          
+          return !excludeKeywords.some(keyword => 
+            mainTopic.includes(keyword) || subtopic.includes(keyword)
+          );
+        });
         
-        if (hasErrorObject) {
-          console.log("API returned an error object:", parsedTopics[0].error);
-          console.log("Switching to fallback topics");
-          usedFallback = true;
-          
-          // Use subject-specific fallbacks
-          const hardcodedFallbacks = getSubjectFallbackTopics(subject, examBoard, examType);
-          
-          if (hardcodedFallbacks && hardcodedFallbacks.length > 0) {
-            console.log("Using subject-specific fallbacks");
-            parsedTopics = hardcodedFallbacks;
-          } else {
-            // If no subject-specific fallbacks available, use generic ones
-            console.log("No subject-specific fallbacks, using generic fallbacks");
-            parsedTopics = [
-              {
-                id: "1.1",
-                topic: `${subject}: Core Concepts`,
-                mainTopic: subject,
-                subtopic: "Core Concepts"
-              },
-              {
-                id: "1.2",
-                topic: `${subject}: Key Principles`,
-                mainTopic: subject,
-                subtopic: "Key Principles"
-              },
-              {
-                id: "1.3",
-                topic: `${subject}: Fundamental Applications`,
-                mainTopic: subject,
-                subtopic: "Fundamental Applications"
-              }
-            ];
-          }
-          
-          setUsingFallbackTopics(true);
-          setShowFallbackNotice(true);
+        // 2. Limit to maximum of 30 topics
+        if (processedTopics.length > 30) {
+          console.log(`Limiting topics from ${processedTopics.length} to 30`);
+          processedTopics = processedTopics.slice(0, 30);
         }
-      } catch (e) {
-        console.error("Failed to parse topic response as JSON:", e);
+        
+        // 3. Re-number topics after filtering if needed
+        if (processedTopics.length !== parsedTopics.length) {
+          processedTopics = processedTopics.map((topic, index) => {
+            const mainTopicNum = Math.floor(index / 5) + 1;
+            const subtopicNum = (index % 5) + 1;
+            return {
+              ...topic,
+              id: `${mainTopicNum}.${subtopicNum}`
+            };
+          });
+        }
+        
+        parsedTopics = processedTopics;
+      }
+      
+      // Check if the API returned an error object
+      const hasErrorObject = Array.isArray(parsedTopics) && 
+        parsedTopics.length === 1 && 
+        parsedTopics[0] && 
+        parsedTopics[0].hasOwnProperty('error');
+      
+      if (hasErrorObject) {
+        console.log("API returned an error object:", parsedTopics[0].error);
+        console.log("Switching to fallback topics");
         usedFallback = true;
         
-        // Check if it's an error message and provide better feedback
-        if (content.includes("I'm sorry") || content.includes("Error")) {
-          // Extract a more useful error message
-          const displayError = content.split('.')[0] || "Error from API";
-          console.error("API returned an error message:", displayError);
-        }
-
-        // More aggressive JSON extraction
-        try {
-          // Find anything that looks like a JSON array using a more aggressive regex
-          const jsonRegex = /\[\s*{[\s\S]*}\s*\]/g;
-          const jsonMatches = content.match(jsonRegex);
-          
-          if (jsonMatches && jsonMatches.length > 0) {
-            console.log("Found potential JSON with aggressive regex:", jsonMatches[0].substring(0, 100));
-            parsedTopics = JSON.parse(jsonMatches[0]);
-            usedFallback = false;
-          } else {
-            // Try to handle the case where we have a valid array of strings but not JSON
-            // eslint-disable-next-line no-eval
-            const possibleArray = eval(`(${content})`);
-            if (Array.isArray(possibleArray) && possibleArray.length > 0) {
-              console.log("Response was a JavaScript array, not JSON:", possibleArray);
-              parsedTopics = possibleArray;
-              usedFallback = false;
-            } else {
-              throw new Error("Could not extract valid array");
-            }
-          }
-        } catch (innerError) {
-          console.error("All parsing attempts failed:", innerError);
-          // Fall back to sample topic
-          parsedTopics = [
-            {
-              id: "1.1",
-              topic: "Sample Topic: Introduction",
-              mainTopic: "Sample Topic",
-              subtopic: "Introduction"
-            }
-          ];
-          console.log("Created fallback topics due to parsing failure");
-          usedFallback = true;
-        }
-      }
-      
-      // If we used a fallback method, update the state
-      if (usedFallback) {
-        console.log("EXPLICITLY SETTING FALLBACK STATE - Parsing required fallback");
-        setUsingFallbackTopics(true);
-        setShowFallbackNotice(true);
-      }
-      
-      if (!Array.isArray(parsedTopics)) {
-        console.error("Response is not an array:", typeof parsedTopics);
-        // Convert to array if it's an object with properties we can use
-        if (typeof parsedTopics === 'object' && parsedTopics !== null) {
-          parsedTopics = [parsedTopics];
-        } else {
-          throw new Error("Unexpected response format: not an array");
-        }
-      }
-      
-      // Process array of strings if needed (convert to required object format)
-      if (parsedTopics.length > 0 && typeof parsedTopics[0] === 'string') {
-        console.log("Converting array of strings to topic objects...");
-        parsedTopics = parsedTopics.map((topicStr, index) => {
-          // Check for Option prefix and extract it
-          let optionalPrefix = "";
-          let processedTopicStr = topicStr;
-          
-          const optionMatch = topicStr.match(/^Option\s+(\d+|[A-Z]):\s*(.*)/i);
-          if (optionMatch) {
-            optionalPrefix = `[Optional - Option ${optionMatch[1]}] `;
-            processedTopicStr = optionMatch[2].trim();
-          }
-          
-          // Check if the string contains a colon or section number pattern
-          const hasColon = processedTopicStr.includes(':');
-          const hasSectionNumber = /\d+\.\d+(\.\d+)?/.test(processedTopicStr);
-          
-          let mainTopic, subtopic;
-          
-          if (hasColon) {
-            // Process string with a colon format (Main Topic: Subtopic)
-            [mainTopic, subtopic] = [processedTopicStr.split(':')[0].trim(), processedTopicStr.split(':').slice(1).join(':').trim()];
-          } else if (hasSectionNumber) {
-            // Try to extract a section number and use it as part of main topic
-            const sectionMatch = processedTopicStr.match(/(\d+\.\d+(\.\d+)?)\s*(.*)/);
-            if (sectionMatch) {
-              const [, , , content] = sectionMatch;
-              mainTopic = content.trim() || processedTopicStr;
-              subtopic = mainTopic; // Use main topic as subtopic
-            } else {
-              mainTopic = processedTopicStr;
-              subtopic = processedTopicStr; // Use the whole string as both
-            }
-          } else {
-            // No clear structure - use the whole string as both
-            mainTopic = processedTopicStr;
-            subtopic = processedTopicStr;
-          }
-          
-          // Add the optional prefix if found
-          if (optionalPrefix) {
-            mainTopic = optionalPrefix + mainTopic;
-          }
-          
-          // Create a properly formatted topic object
-          return {
-            id: `${Math.floor(index / 5) + 1}.${(index % 5) + 1}`, // Create sections of 5 items
-            topic: optionalPrefix + processedTopicStr,
-            mainTopic: mainTopic,
-            subtopic: subtopic || mainTopic // Use main topic instead of "General"
-          };
-        });
-        console.log("Converted topics:", parsedTopics);
-      }
-      
-      // Handle empty arrays by using hardcoded fallbacks
-      if (parsedTopics.length === 0) {
-        console.log("Received empty topics array, using hardcoded fallbacks");
-        
-        // Use hard-coded fallbacks
+        // Use subject-specific fallbacks
         const hardcodedFallbacks = getSubjectFallbackTopics(subject, examBoard, examType);
         
         if (hardcodedFallbacks && hardcodedFallbacks.length > 0) {
-          console.log("Using subject-specific fallbacks:", hardcodedFallbacks.length, "topics");
+          console.log("Using subject-specific fallbacks");
           parsedTopics = hardcodedFallbacks;
-          setUsingFallbackTopics(true);
-          setShowFallbackNotice(true);
         } else {
-          // Generic fallback if no subject-specific fallback available
-          console.log("No subject-specific fallbacks, using generic ones");
+          // If no subject-specific fallbacks available, use generic ones
+          console.log("No subject-specific fallbacks, using generic fallbacks");
           parsedTopics = [
             {
               id: "1.1",
@@ -489,75 +344,187 @@ const TopicHub = ({
               subtopic: "Fundamental Applications"
             }
           ];
-          setUsingFallbackTopics(true);
-          setShowFallbackNotice(true);
         }
+        
+        setUsingFallbackTopics(true);
+        setShowFallbackNotice(true);
       }
+    } catch (e) {
+      console.error("Failed to parse topic response as JSON:", e);
+      usedFallback = true;
       
-      // Final logging of topics before updating state
-      console.log("===== FINAL TOPIC LIST BEING USED =====");
-      console.log(JSON.stringify(parsedTopics, null, 2));
-      console.log("Topic count:", parsedTopics.length);
-      console.log("Using fallback:", usingFallbackTopics);
-      console.log("===== END FINAL TOPIC LIST =====");
-      
-      // Store the topics in cache
-      storeTopicsInCache(examBoard, examType, subject, parsedTopics);
-      
-      // Update the topics
-      setTopics(parsedTopics);
-      setHasGenerated(true);
-      
-    } catch (error) {
-      console.error("Error generating topics:", error);
-      
-      // Additional debugging info
-      console.error("API Key available:", !!OPENAI_API_KEY);
-      console.error("API Key length:", OPENAI_API_KEY ? OPENAI_API_KEY.length : 0);
-      
-      // Log more detailed error information
-      if (error.response) {
-        console.error("API response status:", error.response.status);
-        console.error("API response data:", error.response.data);
+      // Check if it's an error message and provide better feedback
+      if (content.includes("I'm sorry") || content.includes("Error")) {
+        // Extract a more useful error message
+        const displayError = content.split('.')[0] || "Error from API";
+        console.error("API returned an error message:", displayError);
       }
-      
-      // Check specifically for rate limit error (HTTP 429)
-      if (error.message && error.message.includes('429')) {
-        console.error("Rate limit error detected!");
-        setErrorMessage("Rate limit exceeded");
-        setErrorDetails("We've hit the API rate limit. Please try again in a few minutes.");
-        setShowErrorModal(true);
-        return;
+
+      // More aggressive JSON extraction
+      try {
+        // Find anything that looks like a JSON array using a more aggressive regex
+        const jsonRegex = /\[\s*{[\s\S]*}\s*\]/g;
+        const jsonMatches = content.match(jsonRegex);
+        
+        if (jsonMatches && jsonMatches.length > 0) {
+          console.log("Found potential JSON with aggressive regex:", jsonMatches[0].substring(0, 100));
+          parsedTopics = JSON.parse(jsonMatches[0]);
+          usedFallback = false;
+        } else {
+          // Try to handle the case where we have a valid array of strings but not JSON
+          // eslint-disable-next-line no-eval
+          const possibleArray = eval(`(${content})`);
+          if (Array.isArray(possibleArray) && possibleArray.length > 0) {
+            console.log("Response was a JavaScript array, not JSON:", possibleArray);
+            parsedTopics = possibleArray;
+            usedFallback = false;
+          } else {
+            throw new Error("Could not extract valid array");
+          }
+        }
+      } catch (innerError) {
+        console.error("All parsing attempts failed:", innerError);
+        // Fall back to sample topic
+        parsedTopics = [
+          {
+            id: "1.1",
+            topic: "Sample Topic: Introduction",
+            mainTopic: "Sample Topic",
+            subtopic: "Introduction"
+          }
+        ];
+        console.log("Created fallback topics due to parsing failure");
+        usedFallback = true;
       }
+    }
+    
+    // If we used a fallback method, update the state
+    if (usedFallback) {
+      console.log("EXPLICITLY SETTING FALLBACK STATE - Parsing required fallback");
+      setUsingFallbackTopics(true);
+      setShowFallbackNotice(true);
+    }
+    
+    if (!Array.isArray(parsedTopics)) {
+      console.error("Response is not an array:", typeof parsedTopics);
+      // Convert to array if it's an object with properties we can use
+      if (typeof parsedTopics === 'object' && parsedTopics !== null) {
+        parsedTopics = [parsedTopics];
+      } else {
+        throw new Error("Unexpected response format: not an array");
+      }
+    }
+    
+    // Process array of strings if needed (convert to required object format)
+    if (parsedTopics.length > 0 && typeof parsedTopics[0] === 'string') {
+      console.log("Converting array of strings to topic objects...");
+      parsedTopics = parsedTopics.map((topicStr, index) => {
+        // Check for Option prefix and extract it
+        let optionalPrefix = "";
+        let processedTopicStr = topicStr;
+        
+        const optionMatch = topicStr.match(/^Option\s+(\d+|[A-Z]):\s*(.*)/i);
+        if (optionMatch) {
+          optionalPrefix = `[Optional - Option ${optionMatch[1]}] `;
+          processedTopicStr = optionMatch[2].trim();
+        }
+        
+        // Check if the string contains a colon or section number pattern
+        const hasColon = processedTopicStr.includes(':');
+        const hasSectionNumber = /\d+\.\d+(\.\d+)?/.test(processedTopicStr);
+        
+        let mainTopic, subtopic;
+        
+        if (hasColon) {
+          // Process string with a colon format (Main Topic: Subtopic)
+          [mainTopic, subtopic] = [processedTopicStr.split(':')[0].trim(), processedTopicStr.split(':').slice(1).join(':').trim()];
+        } else if (hasSectionNumber) {
+          // Try to extract a section number and use it as part of main topic
+          const sectionMatch = processedTopicStr.match(/(\d+\.\d+(\.\d+)?)\s*(.*)/);
+          if (sectionMatch) {
+            const [, , , content] = sectionMatch;
+            mainTopic = content.trim() || processedTopicStr;
+            subtopic = mainTopic; // Use main topic as subtopic
+          } else {
+            mainTopic = processedTopicStr;
+            subtopic = processedTopicStr; // Use the whole string as both
+          }
+        } else {
+          // No clear structure - use the whole string as both
+          mainTopic = processedTopicStr;
+          subtopic = processedTopicStr;
+        }
+        
+        // Add the optional prefix if found
+        if (optionalPrefix) {
+          mainTopic = optionalPrefix + mainTopic;
+        }
+        
+        // Create a properly formatted topic object
+        return {
+          id: `${Math.floor(index / 5) + 1}.${(index % 5) + 1}`, // Create sections of 5 items
+          topic: optionalPrefix + processedTopicStr,
+          mainTopic: mainTopic,
+          subtopic: subtopic || mainTopic // Use main topic instead of "General"
+        };
+      });
+      console.log("Converted topics:", parsedTopics);
+    }
+    
+    // Handle empty arrays by using hardcoded fallbacks
+    if (parsedTopics.length === 0) {
+      console.log("Received empty topics array, using hardcoded fallbacks");
       
-      // Use hardcoded fallbacks for any error
-      console.log("Error occurred, using hardcoded fallbacks");
+      // Use hard-coded fallbacks
       const hardcodedFallbacks = getSubjectFallbackTopics(subject, examBoard, examType);
       
       if (hardcodedFallbacks && hardcodedFallbacks.length > 0) {
-        console.log("Using hardcoded fallbacks after error");
-        setTopics(hardcodedFallbacks);
-        setHasGenerated(true);
+        console.log("Using subject-specific fallbacks:", hardcodedFallbacks.length, "topics");
+        parsedTopics = hardcodedFallbacks;
         setUsingFallbackTopics(true);
         setShowFallbackNotice(true);
-        
-        // Also store these in the cache to prevent future API errors
-        storeTopicsInCache(examBoard, examType, subject, hardcodedFallbacks);
-        return;
+      } else {
+        // Generic fallback if no subject-specific fallback available
+        console.log("No subject-specific fallbacks, using generic ones");
+        parsedTopics = [
+          {
+            id: "1.1",
+            topic: `${subject}: Core Concepts`,
+            mainTopic: subject,
+            subtopic: "Core Concepts"
+          },
+          {
+            id: "1.2",
+            topic: `${subject}: Key Principles`,
+            mainTopic: subject,
+            subtopic: "Key Principles"
+          },
+          {
+            id: "1.3",
+            topic: `${subject}: Fundamental Applications`,
+            mainTopic: subject,
+            subtopic: "Fundamental Applications"
+          }
+        ];
+        setUsingFallbackTopics(true);
+        setShowFallbackNotice(true);
       }
-      
-      // Show a more detailed error message to the user if fallbacks didn't work
-      let errorMessage = `Failed to generate topics: ${error.message}`;
-      if (error.message.includes("API key")) {
-        errorMessage = "API key error. Please check your OpenAI API key configuration.";
-      } else if (!OPENAI_API_KEY || OPENAI_API_KEY === "your-openai-key") {
-        errorMessage = "No API key found. Please add your OpenAI API key to the environment variables.";
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setIsGenerating(false);
     }
+    
+    // Final logging of topics before updating state
+    console.log("===== FINAL TOPIC LIST BEING USED =====");
+    console.log(JSON.stringify(parsedTopics, null, 2));
+    console.log("Topic count:", parsedTopics.length);
+    console.log("Using fallback:", usingFallbackTopics);
+    console.log("===== END FINAL TOPIC LIST =====");
+    
+    // Store the topics in cache
+    storeTopicsInCache(examBoard, examType, subject, parsedTopics);
+    
+    // Update the topics
+    setTopics(parsedTopics);
+    setHasGenerated(true);
+    
   };
   
   // Get fallback topics for specific subjects
@@ -1278,6 +1245,24 @@ const TopicHub = ({
     );
   };
   
+  // Add a notice to explain topic generation
+  const renderTopicGenerationNotice = () => {
+    if (!hasGenerated || !topics || topics.length === 0) return null;
+    
+    return (
+      <div className="topic-generation-notice">
+        <div className="notice-icon">ℹ️</div>
+        <div className="notice-content">
+          <p>
+            <strong>About these topics:</strong> We've curated up to 30 key topics from the {examBoard} {examType} {subject} specification, 
+            focusing on written exam content. While taken directly from the curriculum, the list may not be exhaustive.
+            You can add your own topics as needed.
+          </p>
+        </div>
+      </div>
+    );
+  };
+  
   // Render the main topics and subtopics
   const renderTopics = () => {
     if (!mainTopics || mainTopics.length === 0) {
@@ -1287,26 +1272,38 @@ const TopicHub = ({
     return (
       <div className="topics-container">
         <div className="topics-header">
-          <h3>Generated Topics ({topics.length})</h3>
+          <h3>Topics for {subject} ({examBoard} {examType})</h3>
+          
           <div className="topics-actions">
-            {hasGenerated && (
-              <button 
-                className="regenerate-button" 
-                onClick={handleRegenerateTopics}
-                disabled={isGenerating}
-              >
-                <FaRedo /> Regenerate All Topics
-              </button>
-            )}
             <button 
-              className="finalize-button primary-button" 
-              onClick={handleFinalizeTopics}
-              disabled={topics.length === 0 || isGenerating}
+              className="regenerate-button" 
+              onClick={handleRegenerateTopics}
+              disabled={isGenerating}
+              title="Generate a new set of topics"
             >
-              <FaCheckCircle /> Confirm and Save Shells
+              <FaRedo /> Regenerate
+            </button>
+            
+            <button
+              className="save-topics-button"
+              onClick={handleSaveTopicList}
+              disabled={isGenerating || topicListSaved}
+              title={topicListSaved ? "Topics already saved" : "Save this topic list"}
+            >
+              <FaSave /> {topicListSaved ? "Saved" : "Save List"}
+            </button>
+            
+            <button
+              className="add-topic-button"
+              onClick={() => setShowAddTopicForm(true)}
+              title="Add a new topic manually"
+            >
+              <FaPlus /> Add Topic
             </button>
           </div>
         </div>
+        
+        {renderTopicGenerationNotice()}
         
         <div className="main-topics-list">
           {mainTopics.map((mainTopic, index) => (
