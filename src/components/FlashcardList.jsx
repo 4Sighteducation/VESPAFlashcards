@@ -101,59 +101,37 @@ const getContrastColor = (hexColor) => {
     }
 };
 
-// ScrollManager component - Re-add expandedTopics and topicRefs
-const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRefs }) => {
+// ScrollManager component - Only needs expandedSubjects now
+const ScrollManager = ({ expandedSubjects, subjectRefs }) => {
   // Track if the component is mounted
   const isMounted = useRef(true);
   
-  // Effect to handle scrolling when subjects expand
   useEffect(() => {
     return () => {
       isMounted.current = false;
     };
   }, []);
   
-  // Function to scroll to an element
   const scrollToElement = (element, offset = 0) => {
     if (!element || !isMounted.current) return;
-    
     const rect = element.getBoundingClientRect();
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     const targetY = rect.top + scrollTop - offset;
-    
-    // Smooth scroll to the target position
-    window.scrollTo({
-      top: targetY,
-      behavior: 'smooth'
-    });
+    window.scrollTo({ top: targetY, behavior: 'smooth' });
   };
   
-  // Process any newly expanded subjects
   useEffect(() => {
     Object.entries(expandedSubjects).forEach(([subject, isExpanded]) => {
       if (isExpanded) {
         const subjectEl = subjectRefs.current[subject];
-        if (subjectEl) {
-          // Add a delay to ensure DOM has updated
-          setTimeout(() => {
-            scrollToElement(subjectEl, 10);
-          }, 150);
-        }
+        if (subjectEl) setTimeout(() => scrollToElement(subjectEl, 10), 150);
       }
     });
   }, [expandedSubjects, subjectRefs]);
   
-  // Restore topic scrolling logic
-  useEffect(() => {
-    Object.entries(expandedTopics).forEach(([topicKey, isExpanded]) => {
-      if (isExpanded) {
-        const topicEl = topicRefs.current[topicKey];
-        if (topicEl) setTimeout(() => scrollToElement(topicEl, 20), 150);
-      }
-    });
-  }, [expandedTopics, topicRefs]);
+  // No more expandedTopics effect needed
   
-  return null; // This is a utility component with no UI
+  return null;
 };
 
 // --- Define Helper Modals BEFORE FlashcardList ---
@@ -288,7 +266,6 @@ const SlideshowModal = ({ cards, title, onClose }) => {
 const FlashcardList = ({
   cards,
   onCardClick,
-  onTopicClick,
   onSubjectClick,
   onDeleteCard,
   onDeleteTopic,
@@ -303,7 +280,6 @@ const FlashcardList = ({
 
   // 1. useState Hooks
   const [expandedSubjects, setExpandedSubjects] = useState(new Set());
-  const [expandedTopics, setExpandedTopics] = useState(new Set());
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [cardsToPrint, setCardsToPrint] = useState([]);
   const [printTitle, setPrintTitle] = useState("");
@@ -320,7 +296,6 @@ const FlashcardList = ({
 
   // 2. useRef Hooks
   const subjectRefs = useRef({});
-  const topicRefs = useRef({});
 
   // 3. useCallback Hooks for State Updates & Grouping
   const updateColorMapping = useCallback((newMapping) => {
@@ -352,24 +327,6 @@ const FlashcardList = ({
       onSubjectClick(subject);
     }
   }, [onSubjectClick]);
-
-  // Restore toggleTopic function
-  const toggleTopic = useCallback((subject, topic) => {
-    const topicKey = `${subject}-${topic}`;
-    setExpandedTopics(prev => {
-      const newState = new Set(prev);
-      if (newState.has(topicKey)) {
-        newState.delete(topicKey);
-      } else {
-        newState.add(topicKey);
-      }
-      return newState;
-    });
-    // Call the optional prop if provided (restored)
-    if (typeof onTopicClick === 'function') {
-      onTopicClick(topic, subject);
-    }
-  }, [onTopicClick]);
 
   // Regroup cards whenever the 'cards' prop changes
   useEffect(() => {
@@ -821,12 +778,18 @@ const FlashcardList = ({
       slideshowTitleToUse = subject;
     }
     
-    // Use placeholder for slideshow button click if desired
+    // Always create placeholder for empty topics
     if (slideshowCardsToUse.length === 0) {
-       console.warn(`No cards found for slideshow: ${slideshowTitleToUse}. Showing placeholder.`);
-       slideshowCardsToUse = [
-         { id: `placeholder-${Date.now()}`, front: `No cards generated yet.`, back: '', subject: subject, topic: topic || 'General' }
-       ];
+      console.log(`No cards found for slideshow: ${slideshowTitleToUse}. Creating placeholder.`);
+      slideshowCardsToUse = [
+        {
+          id: `placeholder-${Date.now()}`,
+          front: `No cards generated for this topic yet.`, 
+          back: 'Click the "lightning" button to generate cards.',
+          subject: subject,
+          topic: topic || 'General'
+        }
+      ];
     }
     
     setSlideshowCards(slideshowCardsToUse);
@@ -880,35 +843,7 @@ const FlashcardList = ({
     closeColorEditor();
   };
 
-  // Restore renderCards function for inline display
-  const renderCards = (cardsInTopic, subject, topic, topicColor) => {
-    // Filter out topic shells before rendering cards
-    const actualCards = cardsInTopic.filter(item => item.type !== 'topic');
-
-    return (
-       // Add max-height and overflow-y here for the card list container
-      <div className="topic-cards">
-        {actualCards.length > 0 ? (
-          actualCards.map((card) => (
-            <Flashcard
-              key={card.id}
-              card={{ ...card, cardColor: topicColor }} // Pass color if needed
-              onDelete={() => onDeleteCard(card.id)}
-              onFlip={() => {}} // Placeholder if needed
-              onUpdateCard={onUpdateCard}
-              onSelectCard={() => handleCardClick(card)} // Or other action
-            />
-          ))
-        ) : (
-          <div className="no-cards-message">No cards generated for this topic yet.</div>
-        )}
-      </div>
-    );
-  };
-
   const renderTopic = (subject, topic, items, topicColor) => {
-    const topicKey = `${subject}-${topic}`;
-    const isExpanded = expandedTopics.has(topicKey);
     const topicShell = items.find(item => item.type === 'topic' && item.isShell);
     const actualCards = items.filter(item => item.type !== 'topic');
     const displayCount = actualCards.length;
@@ -944,11 +879,11 @@ const FlashcardList = ({
     };
 
     return (
-      <div key={topicKey} className="topic-container" ref={el => topicRefs.current[topicKey] = el}>
+      <div key={`${subject}-${topic}`} className="topic-container">
         <div
-          className={`topic-header ${isExpanded ? 'expanded' : ''} ${displayCount === 0 ? 'empty-shell' : ''}`}
+          className={`topic-header ${displayCount === 0 ? 'empty-shell' : ''}`}
           style={{ backgroundColor: topicColor, color: textColor }}
-          onClick={() => toggleTopic(subject, topic)}
+          onClick={(e) => startSlideshow(subject, topic, e)}
         >
           <div className="topic-info">
             <h3>{topic}</h3>
@@ -1016,12 +951,8 @@ const FlashcardList = ({
             >
               <FaTrash />
             </button>
-            <span className="expand-icon">
-              {isExpanded ? <FaAngleUp /> : <FaAngleDown />}
-            </span>
           </div>
         </div>
-        {isExpanded && renderCards(actualCards, subject, topic, topicColor)}
       </div>
     );
   };
@@ -1031,7 +962,7 @@ const FlashcardList = ({
     const topicNames = Object.keys(topicsData).sort((a, b) => a.localeCompare(b));
 
     return (
-      <div className="topics-container"> 
+      <div className="topics-container">
         {topicNames.map((topic, index) => {
           const topicItems = topicsData[topic];
           const topicBaseColor = subjectColorMapping[subject]?.topics[topic]?.base || generateShade(subjectColor, -10 + (index % 5) * 5);
@@ -1047,9 +978,7 @@ const FlashcardList = ({
     <div className="flashcard-list">
       <ScrollManager
         expandedSubjects={expandedSubjects}
-        expandedTopics={expandedTopics}
         subjectRefs={subjectRefs}
-        topicRefs={topicRefs}
       />
       <button
         onClick={() => setShowTopicCreationModal(true)}
