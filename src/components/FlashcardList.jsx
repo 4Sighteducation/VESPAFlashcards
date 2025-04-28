@@ -4,6 +4,7 @@ import PrintModal from "./PrintModal";
 import "./FlashcardList.css";
 import ColorEditor from "./ColorEditor";
 import TopicCreationModal from "./TopicCreationModal";
+import { deleteSubject, deleteTopic } from "./FlashcardTopicHandler";
 
 // Define bright colors constant
 const BRIGHT_COLORS = [
@@ -895,16 +896,40 @@ const FlashcardList = ({
     });
   };
   
-  // Confirm deletion handler
+  // Modify the confirmDelete function to use the handlers directly if props aren't provided
   const confirmDelete = async () => {
     const { itemToDelete, itemType, parentSubject } = deleteConfirmState;
     
     try {
-      if (itemType === "topic" && typeof onDeleteTopic === 'function') {
-        await onDeleteTopic(itemToDelete, parentSubject);
+      // Add debug logging
+      console.log(`[FlashcardList] Attempting to delete ${itemType}. Handlers available:`, {
+        deleteSubject: typeof onDeleteSubject === 'function' ? 'Available' : 'Not available',
+        deleteTopic: typeof onDeleteTopic === 'function' ? 'Available' : 'Not available',
+        itemToDelete,
+        parentSubject
+      });
+      
+      if (itemType === "topic") {
+        if (typeof onDeleteTopic === 'function') {
+          // Use the prop if provided
+          console.log(`[FlashcardList] Calling onDeleteTopic(${itemToDelete}, ${parentSubject})`);
+          await onDeleteTopic(itemToDelete, parentSubject);
+        } else {
+          // Fall back to direct handler
+          console.log(`[FlashcardList] Using direct deleteTopic(${itemToDelete}, ${parentSubject})`);
+          await deleteTopic(itemToDelete, parentSubject);
+        }
         console.log(`Topic deleted: ${parentSubject} - ${itemToDelete}`);
-      } else if (itemType === "subject" && typeof onDeleteSubject === 'function') {
-        await onDeleteSubject(itemToDelete);
+      } else if (itemType === "subject") {
+        if (typeof onDeleteSubject === 'function') {
+          // Use the prop if provided
+          console.log(`[FlashcardList] Calling onDeleteSubject(${itemToDelete})`);
+          await onDeleteSubject(itemToDelete);
+        } else {
+          // Fall back to direct handler
+          console.log(`[FlashcardList] Using direct deleteSubject(${itemToDelete})`);
+          await deleteSubject(itemToDelete);
+        }
         console.log(`Subject deleted: ${itemToDelete}`);
       } else {
         throw new Error("No handler available");
