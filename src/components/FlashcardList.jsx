@@ -172,7 +172,7 @@ const FlashcardModal = ({ card, onClose, onUpdateCard, onDeleteCard }) => {
   // Handle potential missing card prop
   if (!card) {
     return (
-      <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-overlay" onClick={onClose}>
         <div className="modal-content flashcard-modal-content" onClick={(e) => e.stopPropagation()}>
           <button className="close-button" onClick={onClose}>&times;</button>
           <p>Error: Card data is missing.</p>
@@ -182,8 +182,8 @@ const FlashcardModal = ({ card, onClose, onUpdateCard, onDeleteCard }) => {
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-content flashcard-modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content flashcard-modal-content centered-modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-button" onClick={onClose}>&times;</button>
         <h3>Edit Flashcard</h3>
         {isEditing ? (
@@ -215,7 +215,7 @@ const SlideshowModal = ({ cards, title, onClose }) => {
   // Handle empty cards array
   if (!cards || cards.length === 0) {
     return (
-      <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-overlay" onClick={onClose}>
         <div className="modal-content slideshow-modal-content" onClick={(e) => e.stopPropagation()}>
           <button className="close-button" onClick={onClose}>&times;</button>
           <h2>{title}</h2>
@@ -242,8 +242,8 @@ const SlideshowModal = ({ cards, title, onClose }) => {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-content slideshow-modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content slideshow-modal-content centered-modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-button" onClick={onClose}>&times;</button>
         <h2>{title} ({currentIndex + 1}/{cards.length})</h2>
         {currentCard && (

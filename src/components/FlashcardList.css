@@ -1134,3 +1134,148 @@ html {
 .topic-container {
   /* overflow: visible; /* Reset if previously set */
 }
+
+/* Modal Styling - Improved for centered overlay */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: auto;
+  padding: 25px;
+  box-sizing: border-box;
+}
+
+.slideshow-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.centered-modal {
+  transform: translateY(0); /* Ensures it's centered */
+  margin: 0 auto; /* Centers horizontally */
+}
+
+.slideshow-card {
+  margin: 20px 0;
+  padding: 30px;
+  width: 100%;
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.slideshow-card pre {
+  font-family: inherit;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 100%;
+  margin: 0;
+}
+
+.slideshow-controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  width: 100%;
+  justify-content: center;
+}
+
+.slideshow-controls button {
+  padding: 10px 15px;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 100px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.slideshow-controls button:hover:not(:disabled) {
+  background-color: #3367d6;
+}
+
+.slideshow-controls button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #333;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile improvements */
+@media (max-width: 768px) {
+  .modal-content {
+    padding: 20px 15px;
+    max-width: 90%;
+  }
+  
+  .slideshow-card {
+    padding: 20px;
+    min-height: 200px;
+  }
+  
+  .slideshow-controls button {
+    padding: 8px 12px;
+    min-width: 80px;
+    font-size: 0.9rem;
+  }
+  
+  .slideshow-card pre {
+    font-size: 1rem;
+  }
+}
