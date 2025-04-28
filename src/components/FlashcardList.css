@@ -1095,6 +1095,8 @@ html {
 
 /* Styles for the container holding the list of topics within an expanded subject */
 .subject-container .topics-container {
+  max-height: 400px; /* Re-added: Set a max height before scrolling starts */
+  overflow-y: auto;  /* Re-added: Enable vertical scrolling when needed */
   padding: 5px; /* Add some padding */
   border-top: 1px solid #eee; /* Optional: visual separator */
   margin-left: 15px; /* Indent the topic list slightly */
