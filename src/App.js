@@ -2676,22 +2676,6 @@ useEffect(() => {
       // }
   }, [loadCombinedData]); // Ensure dependencies are correct, only run once ideally
 
-  // Show loading state
-  if (loading) {
-    return <LoadingSpinner message={loadingMessage} />;
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <div className="app error">
-        <h2>Error</h2>
-        <p>{error}</p>
-        <button onClick={() => window.location.reload()}>Refresh</button>
-      </div>
-    );
-  }
-
   const getCardCounts = useCallback(() => {
     // Calculate total subjects (excluding General/default)
     const validSubjects = allCards.filter(card => card.subject && card.subject !== "General");
@@ -2713,6 +2697,24 @@ useEffect(() => {
     };
   }, [allCards]);
 
+
+  // Show loading state
+  if (loading) {
+    return <LoadingSpinner message={loadingMessage} />;
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="app error">
+        <h2>Error</h2>
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()}>Refresh</button>
+      </div>
+    );
+  }
+
+  
   return (
     <WebSocketProvider> {/* Wrap the entire app content */}
     <div className="app-container">
