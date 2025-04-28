@@ -33,6 +33,7 @@ const TopicHub = ({
   const [, setError] = useState(null);
   const [newTopicInput, setNewTopicInput] = useState({ mainTopic: '', subtopic: '' });
   const [useExistingMainTopic, setUseExistingMainTopic] = useState(true);
+  const [showAddTopicForm, setShowAddTopicForm] = useState(false);
   
   // State for error modal
   const [showErrorModal, setShowErrorModal] = useState(false);
