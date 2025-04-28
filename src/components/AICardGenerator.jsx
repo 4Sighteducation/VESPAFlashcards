@@ -134,6 +134,26 @@ const AICardGenerator = ({
   const [savedCount, setSavedCount] = useState(0);
   const [showSuccessModal, setShowSuccessModal] = useState(false); // Duplicate? Consolidate with successModal state
 
+  // Add this state for content guidance from storage
+  const [contentGuidanceFromStorage, setContentGuidanceFromStorage] = useState("");
+
+  // Add this effect to load content guidance when initialTopic changes
+  useEffect(() => {
+    if (skipMetadataSteps && initialTopic) {
+      // Try to find topic ID from available topics
+      const topicObj = availableTopics.find(t => 
+        t.topic === initialTopic || t.subtopic === initialTopic
+      );
+      
+      if (topicObj?.id) {
+        const storedGuidance = localStorage.getItem(`contentGuidance_${topicObj.id}`);
+        if (storedGuidance) {
+          console.log(`Loaded content guidance from storage for topic ${initialTopic}`);
+          setContentGuidanceFromStorage(storedGuidance);
+        }
+      }
+    }
+  }, [skipMetadataSteps, initialTopic, availableTopics]);
 
 // Initialize availableTopics state when initialTopicsProp changes
 useEffect(() => {
@@ -226,7 +246,7 @@ useEffect(() => {
               const finalExamType = formData.examType || examType || "General";
               const finalExamBoard = formData.examBoard || examBoard || "General";
               const finalQuestionType = formData.questionType || "short_answer";
-              const cardColor = formData.subjectColor || BRIGHT_COLORS[0]; // Get current color from form state
+              const cardColor = formData.subjectColor || topicColor || BRIGHT_COLORS[0]; // Get current color from form state or use topicColor
 
               const processedCards = (message.cards || []).map((card, index) => {
                   const id = `card_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`; // Unique frontend ID
@@ -586,71 +606,44 @@ useEffect(() => {
 
   // Rewritten generateCards function to use WebSocket - MOVED EARLIER
   const generateCards = useCallback(async () => {
-    // Prevent generation if already generating or WebSocket isn't ready
-    if (isGenerating) {
-        console.log("generateCards: Already generating.");
-        return;
+    if (!isWsConnected) {
+      console.error("generateCards: WebSocket not connected.");
+      setError("Not connected to generation service. Please wait or refresh.");
+      setIsGenerating(false);
+      setLoadingStatus('');
+      return;
     }
-     if (!isWsConnected) {
-         console.error("generateCards: WebSocket not connected.");
-         setError("Not connected to generation service. Please wait or refresh.");
-         setIsGenerating(false);
-         setLoadingStatus('');
-         return;
-     }
-
-    // Clear previous results and errors
-    setGeneratedCards([]);
+    
+    // Get the values from form data, with fallbacks to props
+    const genExamBoard = formData.examBoard || examBoard || "General";
+    const genExamType = formData.examType || examType || "General";
+    const genSubject = formData.subject || formData.newSubject || initialSubject || "General";
+    const genTopic = formData.topic || formData.newTopic || initialTopic || "General";
+    const genQuestionType = formData.questionType || "multiple_choice";
+    const genNumCards = formData.numCards || 5;
+    const genContentGuidance = skipMetadataSteps ? contentGuidanceFromStorage : ""; // Try to use stored guidance if in skipMetadataSteps mode
+    
+    console.log(`Requesting card generation via WebSocket: ${genQuestionType} cards for ${genSubject}/${genTopic} (${genExamBoard} ${genExamType})`);
     setError(null);
+    setGeneratedCards([]); // Clear previous cards before new request
     setIsGenerating(true);
-    setLoadingStatus('Requesting card generation...');
-
-    // Capture stable values from formData at the time of the request
-    const finalExamBoard = formData.examBoard || examBoard || "General";
-    const finalExamType = formData.examType || examType || "Course";
-    const finalSubject = formData.subject || formData.newSubject || initialSubject || "General";
-    // Use selected topic object's topic name, fallback to form input, fallback to initial prop
-    const finalTopic = selectedTopic?.topic || formData.topic || formData.newTopic || initialTopic || "General";
-    const numCardsValue = formData.numCards || 5;
-    const questionTypeValue = formData.questionType || "short_answer";
-
-    // Basic validation before sending
-    if (!finalSubject || !finalTopic) {
-        console.error("generateCards: Missing subject or topic.");
-        setError("Please ensure a subject and topic are selected or entered.");
-        setIsGenerating(false);
-        setLoadingStatus('');
-        return;
-    }
-
-    // Assign color if needed (Should ideally be set when subject is chosen)
-    let cardColor = formData.subjectColor;
-    if (!cardColor) {
-         // Simple random assignment if no color exists in state
-         cardColor = BRIGHT_COLORS[Math.floor(Math.random() * BRIGHT_COLORS.length)];
-         setFormData(prev => ({ ...prev, subjectColor: cardColor })); // Update state
-         console.log(`Assigned random color ${cardColor} for subject ${finalSubject}`);
-    }
-
-
-    const payload = {
-          examBoard: finalExamBoard,
-      examType: finalExamType,
-          subject: finalSubject,
-          topic: finalTopic,
-      numCards: numCardsValue,
-      questionType: questionTypeValue
-    };
-
-    debugLog("Sending generateCards request via WebSocket", payload);
-
+    setLoadingStatus('Requesting AI-generated flashcards...');
+    
     sendMessage(JSON.stringify({
       action: 'generateCards',
-      data: payload
+      data: {
+        examBoard: genExamBoard,
+        examType: genExamType,
+        subject: genSubject,
+        topic: genTopic,
+        questionType: genQuestionType,
+        numCards: genNumCards,
+        contentGuidance: genContentGuidance,
+        skipMetadataSteps: skipMetadataSteps // Pass this flag to the backend
+      }
     }));
-    // Response handled by useEffect watching lastMessage
-
-  }, [formData, examBoard, examType, initialSubject, initialTopic, subjects, selectedTopic, sendMessage, isWsConnected, isGenerating]); // Added dependencies
+    // Response will be handled by useEffect watching lastMessage
+  }, [formData, examBoard, examType, initialSubject, initialTopic, isWsConnected, sendMessage, skipMetadataSteps, contentGuidanceFromStorage]);
 
 
   // Effect to generate cards on step entry (Step 5) - MODIFIED for WS

@@ -42,9 +42,19 @@ export const getContrastColor = (hexColor) => {
     // L = 0.2126 * R + 0.7152 * G + 0.0722 * B
     const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
     
-    // Return white for dark backgrounds, black for light backgrounds
-    // Using a lower threshold (0.5) to ensure more text is white on medium-dark colors
-    return luminance > 0.5 ? '#000000' : '#ffffff';
+    // Calculate contrast with white and black
+    const contrastWithWhite = (luminance + 0.05) / 0.05;
+    const contrastWithBlack = (1.05) / (luminance + 0.05);
+    
+    // Choose color with better contrast (higher contrast ratio)
+    const chosenColor = contrastWithWhite > contrastWithBlack ? '#ffffff' : '#000000';
+    
+    // Log the values for debugging (can be removed later)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[getContrastColor] Lum: ${luminance.toFixed(3)}, Contrast White: ${contrastWithWhite.toFixed(2)}, Contrast Black: ${contrastWithBlack.toFixed(2)}, Chosen: ${chosenColor}`);
+    }
+    
+    return chosenColor;
   } catch (error) {
     console.error('Error in getContrastColor:', error, { inputColor: hexColor });
     return '#000000'; // Default to black on error
@@ -286,24 +296,50 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   const hasAdditionalInfo = card.additionalInfo || card.detailedAnswer;
   
   // Special class for modal view and fullscreen
-  const cardClass = `flashcard ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''} ${preview ? 'preview-card' : ''} ${isInModal ? 'modal-card' : ''} ${isFullscreen ? 'fullscreen' : ''}`;
+  const cardClass = `flashcard flashcard-${card.id || 'unknown'} ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''} ${preview ? 'preview-card' : ''} ${isInModal ? 'modal-card' : ''} ${isFullscreen ? 'fullscreen' : ''}`;
   
   // In the component, add a useEffect to set CSS variables based on card colors
   useEffect(() => {
-    if (card.cardColor) {
-      // Set CSS variables for use in styling options and other elements
-      document.documentElement.style.setProperty('--card-bg-color', card.cardColor);
+    if (!card || !card.cardColor) return;
+    
+    try {
+      // Create a style element for this specific card instance
+      const styleId = `card-style-${card.id || Math.random().toString(36).substring(7)}`;
+      let styleEl = document.getElementById(styleId);
+      
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = styleId;
+        document.head.appendChild(styleEl);
+      }
       
       // Calculate if text should be white or black based on background color brightness
-      const r = parseInt(card.cardColor.slice(1, 3), 16);
-      const g = parseInt(card.cardColor.slice(3, 5), 16);
-      const b = parseInt(card.cardColor.slice(5, 7), 16);
+      const cardColor = card.cardColor;
+      const r = parseInt(cardColor.slice(1, 3), 16) || 0;
+      const g = parseInt(cardColor.slice(3, 5), 16) || 0;
+      const b = parseInt(cardColor.slice(5, 7), 16) || 0;
       const brightness = (r * 299 + g * 587 + b * 114) / 1000;
       
       const textColor = brightness > 125 ? '#000000' : '#ffffff';
-      document.documentElement.style.setProperty('--card-text-color', textColor);
+      
+      // Update the style element with scoped CSS variables
+      styleEl.textContent = `
+        .flashcard-${card.id} {
+          --card-bg-color: ${cardColor};
+          --card-text-color: ${textColor};
+        }
+      `;
+      
+      // Add a cleanup function to remove the style element
+      return () => {
+        if (styleEl && document.head.contains(styleEl)) {
+          document.head.removeChild(styleEl);
+        }
+      };
+    } catch (error) {
+      console.error('Error setting card CSS variables:', error);
     }
-  }, [card.cardColor]);
+  }, [card && card.cardColor, card && card.id]);
   
   // Toggle fullscreen mode
   const toggleFullscreen = (e) => {

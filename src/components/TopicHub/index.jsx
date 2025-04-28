@@ -1138,10 +1138,21 @@ const TopicHub = ({
     // Add content guidance to the topic object when passing to parent
     const topicWithGuidance = {
       ...selectedTopic,
-      contentGuidance: contentGuidance
+      contentGuidance: contentGuidance,
+      // Add additional required metadata
+      subject: subject,
+      examBoard: examBoard,
+      examType: examType,
+      topicColor: selectedTopic.color || null
     };
     
-    onSelectTopic && onSelectTopic(topicWithGuidance);
+    // If onGenerateCards is provided, use it directly instead of onSelectTopic
+    if (onGenerateCards) {
+      onGenerateCards(topicWithGuidance);
+    } else if (onSelectTopic) {
+      onSelectTopic(topicWithGuidance);
+    }
+    
     setShowSelectDialog(false);
   };
   
