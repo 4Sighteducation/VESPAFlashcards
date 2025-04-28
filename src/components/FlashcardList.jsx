@@ -2,7 +2,7 @@ import React, {useState, useEffect, useMemo, useRef, useCallback} from "react";
 import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
 import "./FlashcardList.css";
-import { FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBolt, FaTrash } from 'react-icons/fa';
+import { FaPrint, FaPlay, FaAngleUp, FaAngleDown, FaPalette, FaBolt, FaTrash, FaSlideshow } from 'react-icons/fa';
 import ColorEditor from "./ColorEditor";
 import TopicCreationModal from "./TopicCreationModal";
 
@@ -261,6 +261,24 @@ const SlideshowModal = ({ cards, title, onClose }) => {
   );
 };
 
+// Delete confirmation modal - add this component
+const DeleteConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
+        <h3>{title}</h3>
+        <p>{message}</p>
+        <div className="delete-confirm-actions">
+          <button className="cancel-btn" onClick={onCancel}>Cancel</button>
+          <button className="confirm-btn" onClick={onConfirm}>Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Main FlashcardList Component ---
 
 const FlashcardList = ({
@@ -293,6 +311,15 @@ const FlashcardList = ({
   const [showSlideshow, setShowSlideshow] = useState(false);
   const [groupedCards, setGroupedCards] = useState({});
   const [subjectColorMapping, setSubjectColorMapping] = useState({});
+  // Add new state for delete confirmation
+  const [deleteConfirmState, setDeleteConfirmState] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    itemToDelete: null,
+    itemType: null, // "topic" or "subject"
+    parentSubject: null // only for topics
+  });
 
   // 2. useRef Hooks
   const subjectRefs = useRef({});
@@ -843,6 +870,60 @@ const FlashcardList = ({
     closeColorEditor();
   };
 
+  // Handle delete topic
+  const handleDeleteTopic = async (subject, topic) => {
+    // Open delete confirm modal instead of using window.confirm
+    setDeleteConfirmState({
+      isOpen: true,
+      title: "Delete Topic",
+      message: `Are you sure you want to delete the topic "${topic}" and all its cards? This cannot be undone.`,
+      itemToDelete: topic,
+      itemType: "topic",
+      parentSubject: subject
+    });
+  };
+  
+  // Handle delete subject
+  const handleDeleteSubject = async (subject) => {
+    // Open delete confirm modal instead of using window.confirm
+    setDeleteConfirmState({
+      isOpen: true,
+      title: "Delete Subject",
+      message: `Are you sure you want to delete the subject "${subject}" and ALL its topics and cards? This cannot be undone.`,
+      itemToDelete: subject,
+      itemType: "subject",
+      parentSubject: null
+    });
+  };
+  
+  // Confirm deletion handler
+  const confirmDelete = async () => {
+    const { itemToDelete, itemType, parentSubject } = deleteConfirmState;
+    
+    try {
+      if (itemType === "topic" && typeof onDeleteTopic === 'function') {
+        await onDeleteTopic(itemToDelete, parentSubject);
+        console.log(`Topic deleted: ${parentSubject} - ${itemToDelete}`);
+      } else if (itemType === "subject" && typeof onDeleteSubject === 'function') {
+        await onDeleteSubject(itemToDelete);
+        console.log(`Subject deleted: ${itemToDelete}`);
+      } else {
+        throw new Error("No handler available");
+      }
+    } catch (error) {
+      console.error(`Error deleting ${itemType}:`, error);
+      alert(`Error deleting ${itemType}: ${error.message}`);
+    } finally {
+      // Close the modal regardless of outcome
+      setDeleteConfirmState({ isOpen: false, title: "", message: "", itemToDelete: null, itemType: null, parentSubject: null });
+    }
+  };
+  
+  // Cancel deletion
+  const cancelDelete = () => {
+    setDeleteConfirmState({ isOpen: false, title: "", message: "", itemToDelete: null, itemType: null, parentSubject: null });
+  };
+
   const renderTopic = (subject, topic, items, topicColor) => {
     const topicShell = items.find(item => item.type === 'topic' && item.isShell);
     const actualCards = items.filter(item => item.type !== 'topic');
@@ -851,39 +932,17 @@ const FlashcardList = ({
     const examBoard = topicShell?.examBoard || "General";
     const examType = topicShell?.examType || "Course";
 
-    // Add handlePrintTopic function implementation specific to this scope
-    const handlePrintTopic = (e) => {
+    // Handle topic print click
+    const handlePrintTopicClick = (e) => {
       e.stopPropagation();
       console.log(`Printing ${displayCount} cards for topic: ${topic}`);
-      
-      // Create a formatted title
-      const printTitle = `${subject} - ${topic}`;
-      
-      // Call the openPrintModal function with the filtered cards and title
-      openPrintModal(actualCards, printTitle);
+      openPrintModal(actualCards, `${subject} - ${topic}`);
     };
 
-    // Handle delete topic
-    const handleDeleteTopic = async (e) => {
+    // Handle topic delete click
+    const handleDeleteTopicClick = (e) => {
       e.stopPropagation();
-      if (window.confirm(`Are you sure you want to delete the topic "${topic}" and all its cards?`)) {
-        console.log(`Deleting topic: ${subject} - ${topic}`);
-        
-        // If a specific deletion handler is provided via props, use it
-        if (typeof onDeleteTopic === 'function') {
-          try {
-            await onDeleteTopic(topic, subject);
-            console.log(`Topic deleted: ${subject} - ${topic}`);
-          } catch (error) {
-            console.error(`Error deleting topic: ${error.message}`);
-            alert(`Error deleting topic: ${error.message}`);
-          }
-        } else {
-          // If no handler is provided, show message
-          console.warn("No delete handler available");
-          alert("Delete functionality is not available in this context.");
-        }
-      }
+      handleDeleteTopic(subject, topic);
     };
 
     // Handle regenerating topic
@@ -932,29 +991,28 @@ const FlashcardList = ({
             {topicShell && (
               <button
                 onClick={handleRegenerateTopicClick}
-                className="action-button regenerate-button"
+                className="nav-button regenerate-button"
                 title="Generate/Regenerate topic cards"
               >
-                <FaBolt className="standard-icon" />
+                <FaBolt className="button-icon" />
               </button>
             )}
             {/* Only show print button if there are cards */}
             {displayCount > 0 && (
               <button
-                onClick={handlePrintTopic}
-                className="action-button print-topic-button"
+                onClick={handlePrintTopicClick}
+                className="nav-button print-topic-button"
                 title="Print topic cards"
               >
-                <FaPrint className="standard-icon" />
+                <FaPrint className="button-icon" />
               </button>
             )}
-            {/* Remove color palette button */}
             <button
-              onClick={handleDeleteTopic}
-              className="action-button delete-topic-button"
+              onClick={handleDeleteTopicClick}
+              className="nav-button delete-topic-button"
               title="Delete topic and cards"
             >
-              <FaTrash className="standard-icon" />
+              <FaTrash className="button-icon" />
             </button>
           </div>
         </div>
@@ -990,7 +1048,7 @@ const FlashcardList = ({
         className="create-topic-list-button button-primary floating-create-button"
         title="Create New Topic List"
       >
-        <FaBolt className="standard-icon" /> <span>Create Topics</span>
+        <FaBolt className="button-icon" /> <span>Create Topics</span>
       </button>
       {sortedSubjects.map(({ id: subject, title, cards: topicsData, exam_type, exam_board, color: subjectBaseColor, creationDate }) => {
         const subjectKey = subject;
@@ -1003,8 +1061,15 @@ const FlashcardList = ({
           return count + items.filter(item => item.type !== 'topic').length;
         }, 0);
         
-        // Handle print subject
-        const handlePrintSubject = (e) => {
+        // Handle subject slideshow
+        const handleSlideshowSubject = (e) => {
+          e.stopPropagation();
+          // Start slideshow for the entire subject (all topics)
+          startSlideshow(subject, null, e);
+        };
+        
+        // Handle subject print
+        const handlePrintSubjectClick = (e) => {
           e.stopPropagation();
           const subjectCards = [];
           Object.values(topicsData || {}).forEach(topicCards => {
@@ -1013,24 +1078,10 @@ const FlashcardList = ({
           openPrintModal(subjectCards, subject);
         };
         
-        // Handle delete subject
-        const handleDeleteSubject = async (e) => {
+        // Handle subject delete
+        const handleDeleteSubjectClick = (e) => {
           e.stopPropagation();
-          if (window.confirm(`Are you sure you want to delete the subject "${subject}" and ALL its topics and cards? This cannot be undone.`)) {
-            console.log(`Deleting subject: ${subject}`);
-            if (typeof onDeleteSubject === 'function') {
-              try {
-                await onDeleteSubject(subject);
-                console.log(`Subject deleted: ${subject}`);
-              } catch (error) {
-                console.error(`Error deleting subject: ${error.message}`);
-                alert(`Error deleting subject: ${error.message}`);
-              }
-            } else {
-              console.warn("No delete handler available for subjects");
-              alert("Delete functionality is not available in this context.");
-            }
-          }
+          handleDeleteSubject(subject);
         };
 
         return (
@@ -1055,29 +1106,37 @@ const FlashcardList = ({
               </div>
               <div className="subject-actions">
                 <button
-                  onClick={handlePrintSubject}
-                  className="action-button subject-print-button"
+                  onClick={handleSlideshowSubject}
+                  className="nav-button slideshow-button"
+                  title="Start slideshow with all cards"
+                  disabled={totalCardCount === 0}
+                >
+                  <FaPlay className="button-icon" />
+                </button>
+                <button
+                  onClick={handlePrintSubjectClick}
+                  className="nav-button print-button"
                   title="Print subject cards"
                   disabled={totalCardCount === 0}
                 >
-                  <FaPrint className="standard-icon" />
+                  <FaPrint className="button-icon" />
                 </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     openColorEditor(subject, null, subjectBaseColor, e);
                   }}
-                  className="action-button subject-color-button"
+                  className="nav-button color-button"
                   title="Edit subject color"
                 >
-                  <FaPalette className="standard-icon" />
+                  <FaPalette className="button-icon" />
                 </button>
                 <button
-                  onClick={handleDeleteSubject}
-                  className="action-button subject-delete-button"
+                  onClick={handleDeleteSubjectClick}
+                  className="nav-button delete-button"
                   title="Delete subject"
                 >
-                  <FaTrash className="standard-icon" />
+                  <FaTrash className="button-icon" />
                 </button>
               </div>
             </div>
@@ -1085,6 +1144,16 @@ const FlashcardList = ({
           </div>
         );
       })}
+      
+      {/* Delete confirmation modal */}
+      <DeleteConfirmModal
+        isOpen={deleteConfirmState.isOpen}
+        title={deleteConfirmState.title}
+        message={deleteConfirmState.message}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
+      
       {printModalOpen && (
         <PrintModal
           cards={cardsToPrint}

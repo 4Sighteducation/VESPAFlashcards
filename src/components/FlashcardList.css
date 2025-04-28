@@ -1295,3 +1295,156 @@ html {
   font-weight: 400;
   white-space: nowrap;
 }
+
+/* Update the action buttons to match header style */
+.subject-actions .nav-button,
+.topic-actions .nav-button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  background-color: #079baa;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-bottom: 3px solid #00e5db;
+  text-align: center;
+  min-width: auto;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.subject-actions .nav-button:hover,
+.topic-actions .nav-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.subject-actions .nav-button:disabled,
+.topic-actions .nav-button:disabled {
+  background-color: #cccccc;
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.subject-actions .nav-button.delete-button,
+.topic-actions .nav-button.delete-topic-button {
+  background-color: #d32f2f;
+  border-bottom: 3px solid #b71c1c;
+}
+
+.subject-actions .nav-button.delete-button:hover,
+.topic-actions .nav-button.delete-topic-button:hover {
+  background-color: #b71c1c;
+}
+
+/* Icon styling */
+.subject-actions .button-icon,
+.topic-actions .button-icon {
+  font-size: 16px;
+  color: white;
+}
+
+/* Delete confirmation modal styling */
+.delete-confirm-modal {
+  max-width: 450px;
+  padding: 25px;
+  border-radius: 12px;
+  background-color: white;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.delete-confirm-modal h3 {
+  color: #d32f2f;
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.5rem;
+}
+
+.delete-confirm-modal p {
+  margin-bottom: 20px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #333;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.delete-confirm-actions button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.delete-confirm-actions .cancel-btn {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.delete-confirm-actions .cancel-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.delete-confirm-actions .confirm-btn {
+  background-color: #d32f2f;
+  color: white;
+}
+
+.delete-confirm-actions .confirm-btn:hover {
+  background-color: #b71c1c;
+}
+
+/* Make sure modals appear on top of everything */
+.modal-overlay {
+  z-index: 1100; /* Increased z-index to be above other components */
+}
+
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+  .subject-actions .nav-button,
+  .topic-actions .nav-button {
+    width: 32px;
+    height: 32px;
+    padding: 5px;
+    font-size: 12px;
+  }
+  
+  .subject-actions .button-icon,
+  .topic-actions .button-icon {
+    font-size: 14px;
+  }
+  
+  .subject-actions,
+  .topic-actions {
+    gap: 5px;
+  }
+  
+  .delete-confirm-modal {
+    width: 90%;
+    max-width: 350px;
+    padding: 20px;
+  }
+  
+  .delete-confirm-modal h3 {
+    font-size: 1.3rem;
+  }
+  
+  .delete-confirm-actions button {
+    padding: 8px 16px;
+  }
+}
