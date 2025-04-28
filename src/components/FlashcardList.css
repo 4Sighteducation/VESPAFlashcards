@@ -152,19 +152,88 @@
 
 /* Topics container styling */
 .topics-container {
+  background-color: white;
+  transition: all 0.3s ease-out;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: white;
-  padding: 10px 0;
-  visibility: visible !important; /* Keep visibility if needed */
-  /* max-height: none !important; /* Remove height limit to fix visibility */
-  /* overflow: visible !important; /* Changed to visible to ensure content is displayed */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+  
+  /* Make container scrollable */
+  max-height: 400px; /* Limit height so scrolling happens */
+  overflow-y: auto; /* Enable vertical scrolling */
+  
+  /* Critical fix: Let clicks pass through the container itself */
+  pointer-events: none;
+}
+
+/* Make all direct children of topics-container receive clicks */
+.topics-container > * {
+  pointer-events: auto;
+}
+
+/* Ensure topic containers can be clicked */
+.topic-container {
+  margin: 10px 0;
+  border-radius: 6px;
+  overflow: visible !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: block !important;
+  min-height: 50px;
+  visibility: visible !important;
   position: relative;
-  min-height: 200px;
+  z-index: 3;
   height: auto !important;
-  z-index: 1;
+  
+  /* Ensure clickable */
+  pointer-events: auto;
+}
+
+/* Ensure topic headers can be clicked */
+.topic-header {
+  padding: 12px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  visibility: visible !important;
+  min-height: 24px;
+  position: relative;
+  z-index: 4;
+  
+  /* Ensure clickable */
+  pointer-events: auto;
+}
+
+/* Keep cards scrollable within an expanded topic */
+.topic-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease-out;
+  flex: 1;
+  overflow-y: auto; /* Enable scrolling within the expanded card list */
+  max-height: 400px; /* Set a max-height for the card list */
+  min-height: 200px; /* Optional: Ensure it has some base height */
+}
+
+/* Also update the specific subject-container topics-container rule */
+.subject-container .topics-container {
+  padding: 5px;
+  border-top: 1px solid #eee;
+  margin-left: 15px;
+  margin-right: 5px;
+  
+  /* Consistent with the topics-container rule above */
+  max-height: 400px;
+  overflow-y: auto;
+  pointer-events: none;
 }
 
 /* Styling for webkit scrollbars (Chrome, Safari, Edge) */
@@ -191,32 +260,6 @@
   height: auto !important;
   position: relative;
   z-index: 2;
-}
-
-.topic-container {
-  margin: 10px 0;
-  border-radius: 6px;
-  overflow: visible !important; /* Changed from hidden to ensure content is visible */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  display: block !important; /* Ensure containers are displayed */
-  min-height: 50px; /* Minimum height to ensure visibility */
-  visibility: visible !important;
-  position: relative; /* Establish stacking context */
-  z-index: 3; /* Ensure it's not hidden behind other elements */
-  height: auto !important;
-}
-
-.topic-header {
-  padding: 12px 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  visibility: visible !important;
-  min-height: 24px;
-  position: relative;
-  z-index: 4;
 }
 
 .topic-header:hover {
