@@ -65,27 +65,63 @@ const FlashcardGeneratorBridge = ({
       console.log("[FlashcardGeneratorBridge] Generating cards with:", requestData);
       
       // Call the AI service to generate cards
+      console.log("[FlashcardGeneratorBridge] Calling AI service with:", requestData);
       const results = await AICardGeneratorService.generateCards(requestData);
       
-      if (!results || !Array.isArray(results)) {
-        throw new Error("Invalid response from AI service");
+      console.log("[FlashcardGeneratorBridge] AI service response:", results);
+      
+      if (!results) {
+        throw new Error("Empty response from AI service");
+      }
+      
+      if (!Array.isArray(results)) {
+        console.error("[FlashcardGeneratorBridge] Response is not an array:", results);
+        throw new Error("Invalid response format from AI service (expected array but got " + typeof results + ")");
       }
       
       // Process the generated cards
-      const cards = results.map(card => ({
-        ...card,
-        // Ensure the cards have the correct metadata
-        subject: topic.subject,
-        topic: topic.topic || topic.name,
-        examBoard: topic.examBoard || 'General',
-        examType: topic.examType || 'General',
-        // Generate a unique ID for each card
-        id: `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        // Set the card color from the topic if available
-        cardColor: topic.color || topic.topicColor || '#3cb44b',
-        // Add creation timestamp
-        createdAt: new Date().toISOString()
-      }));
+      const cards = results.map(card => {
+        // Special processing for acronym cards which have a different structure
+        if (cardType === 'acronym' && card.acronym && card.explanation) {
+          return {
+            ...card,
+            // Add missing fields expected by the card system
+            question: `What does the acronym "${card.acronym}" stand for?`,
+            answer: card.explanation,
+            front: `What does the acronym "${card.acronym}" stand for?`,
+            back: card.explanation,
+            type: 'acronym',
+            questionType: 'acronym',
+            // Ensure the cards have the correct metadata
+            subject: topic.subject,
+            topic: topic.topic || topic.name,
+            examBoard: topic.examBoard || 'General',
+            examType: topic.examType || 'General',
+            // Generate a unique ID for each card
+            id: `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            // Set the card color from the topic if available
+            cardColor: topic.color || topic.topicColor || '#3cb44b',
+            // Add creation timestamp
+            createdAt: new Date().toISOString()
+          };
+        }
+        
+        // Regular card processing for other card types
+        return {
+          ...card,
+          // Ensure the cards have the correct metadata
+          subject: topic.subject,
+          topic: topic.topic || topic.name,
+          examBoard: topic.examBoard || 'General',
+          examType: topic.examType || 'General',
+          // Generate a unique ID for each card
+          id: `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          // Set the card color from the topic if available
+          cardColor: topic.color || topic.topicColor || '#3cb44b',
+          // Add creation timestamp
+          createdAt: new Date().toISOString()
+        };
+      });
       
       console.log("[FlashcardGeneratorBridge] Cards generated:", cards);
       

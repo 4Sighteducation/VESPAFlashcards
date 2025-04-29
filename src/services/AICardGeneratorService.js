@@ -72,17 +72,38 @@ export const generateCards = async (params) => {
     const data = await response.json();
     
     // Extract cards from the response structure
-    // The backend wraps the cards array in an object with a "cards" property
-    if (data.cards) {
-      debugLog('Successfully generated cards', { count: data.cards.length || 0 });
-      return data.cards;
-    } else if (Array.isArray(data)) {
-      // Fallback for backward compatibility
-      debugLog('Successfully generated cards (array format)', { count: data.length || 0 });
-      return data;
-    } else {
+    try {
+      // CASE 1: Response has 'cards' property that is a string containing JSON
+      if (data.cards && typeof data.cards === 'string') {
+        debugLog('Received cards as JSON string, parsing...', { stringLength: data.cards.length });
+        const parsedCards = JSON.parse(data.cards);
+        
+        if (Array.isArray(parsedCards)) {
+          debugLog('Successfully parsed cards string into array', { count: parsedCards.length });
+          return parsedCards;
+        } else {
+          throw new Error('Parsed cards is not an array');
+        }
+      }
+      
+      // CASE 2: Response has 'cards' property that is already an array
+      else if (data.cards && Array.isArray(data.cards)) {
+        debugLog('Received cards as array directly', { count: data.cards.length });
+        return data.cards;
+      }
+      
+      // CASE 3: Response is an array directly
+      else if (Array.isArray(data)) {
+        debugLog('Received response as direct array', { count: data.length });
+        return data;
+      }
+      
+      // No valid card data found
       debugLog('Unexpected response format', data);
-      throw new Error('Unexpected response format from API');
+      throw new Error('Unexpected response format from API: ' + JSON.stringify(data).substring(0, 100));
+    } catch (parseError) {
+      debugLog('Error parsing card data', { error: parseError.message, data: typeof data.cards === 'string' ? data.cards.substring(0, 100) + '...' : 'not a string' });
+      throw new Error(`Failed to parse card data: ${parseError.message}`);
     }
   } catch (error) {
     console.error('[AICardGeneratorService] Card generation failed:', error);
