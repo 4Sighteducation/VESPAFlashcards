@@ -901,20 +901,7 @@ useEffect(() => {
     }
   };
 
-  // Helper for contrast color on success modal items
-  const getContrastColor = (hexColor) => {
-     if (!hexColor) return '#000000'; // Default to black if no color
-     try {
-        const r = parseInt(hexColor.slice(1, 3), 16);
-        const g = parseInt(hexColor.slice(3, 5), 16);
-        const b = parseInt(hexColor.slice(5, 7), 16);
-        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-        return luminance > 0.5 ? '#000000' : '#FFFFFF'; // Black text on light, White text on dark
-     } catch (e) {
-        console.error("Error calculating contrast color:", e);
-        return '#000000';
-     }
-  };
+  // Use the imported getContrastColor function from ColorUtils.js
 
   // Reset state after card operations (e.g., adding all)
   const resetAfterCardOperation = () => {
