@@ -9,6 +9,7 @@ import SpacedRepetition from "./components/SpacedRepetition";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Header from "./components/Header";
 import AICardGenerator from './components/AICardGenerator';
+import CardGeneratorConnector from './components/CardGeneratorConnector';
 import PrintModal from './components/PrintModal';
 import TopicListSyncManager from './components/TopicListSyncManager';
 import TopicCreationModal from './components/TopicCreationModal';
@@ -2878,7 +2879,7 @@ useEffect(() => {
           )}
 
           {view === "aiGenerator" && (
-            <AICardGenerator
+            <CardGeneratorConnector
               onAddCard={addCard}
               onClose={() => setView("cardBank")}
               subjects={getSubjects()}

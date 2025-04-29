@@ -1,0 +1,333 @@
+.simple-card-generator-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow-y: auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+.simple-card-generator-modal .modal-content {
+  background-color: white;
+  border-radius: 8px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.simple-card-generator-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.simple-card-generator-modal .modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.simple-card-generator-modal .close-button {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  cursor: pointer;
+  color: #999;
+}
+
+.simple-card-generator-modal .close-button:hover {
+  color: #333;
+}
+
+.simple-card-generator-modal .modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.simple-card-generator-modal .modal-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Options step */
+.simple-card-generator-modal .metadata-summary {
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.simple-card-generator-modal .metadata-item {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.simple-card-generator-modal .metadata-item label {
+  font-weight: bold;
+  margin-right: 10px;
+  min-width: 100px;
+}
+
+.simple-card-generator-modal .options-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.simple-card-generator-modal .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.simple-card-generator-modal .form-group label {
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.simple-card-generator-modal .select-input,
+.simple-card-generator-modal .number-input,
+.simple-card-generator-modal .textarea-input {
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+.simple-card-generator-modal .textarea-input {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.simple-card-generator-modal .char-count {
+  font-size: 0.8rem;
+  color: #777;
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* Review step */
+.simple-card-generator-modal .loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 0;
+}
+
+.simple-card-generator-modal .spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #3498db;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.simple-card-generator-modal .loading-message {
+  font-size: 1rem;
+  color: #666;
+}
+
+.simple-card-generator-modal .error-message {
+  background-color: #fee;
+  color: #c00;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.simple-card-generator-modal .success-message {
+  background-color: #e6ffe6;
+  color: #006600;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.simple-card-generator-modal .no-cards-message {
+  text-align: center;
+  padding: 30px;
+  color: #777;
+}
+
+.simple-card-generator-modal .cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.simple-card-generator-modal .card-preview-container {
+  border: 1px solid #eee;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.simple-card-generator-modal .card-preview {
+  background-color: white;
+}
+
+.simple-card-generator-modal .card-preview-header {
+  background-color: #f5f5f5;
+  padding: 8px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+}
+
+.simple-card-generator-modal .card-type {
+  text-transform: capitalize;
+  font-weight: 500;
+  color: #666;
+}
+
+.simple-card-generator-modal .card-preview-content {
+  padding: 15px;
+}
+
+.simple-card-generator-modal .question {
+  margin-bottom: 15px;
+}
+
+.simple-card-generator-modal .options-list {
+  margin: 15px 0;
+}
+
+.simple-card-generator-modal .options-list ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.simple-card-generator-modal .options-list li {
+  padding: 5px 0;
+}
+
+.simple-card-generator-modal .answer {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed #eee;
+}
+
+.simple-card-generator-modal .bulk-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+/* Buttons */
+.simple-card-generator-modal .primary-button,
+.simple-card-generator-modal .secondary-button,
+.simple-card-generator-modal .add-card-button,
+.simple-card-generator-modal .add-all-button,
+.simple-card-generator-modal .regenerate-button {
+  padding: 8px 15px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.simple-card-generator-modal .primary-button {
+  background-color: #3498db;
+  color: white;
+}
+
+.simple-card-generator-modal .primary-button:hover {
+  background-color: #2980b9;
+}
+
+.simple-card-generator-modal .secondary-button {
+  background-color: #f1f1f1;
+  color: #333;
+}
+
+.simple-card-generator-modal .secondary-button:hover {
+  background-color: #e1e1e1;
+}
+
+.simple-card-generator-modal .add-card-button {
+  background-color: #27ae60;
+  color: white;
+}
+
+.simple-card-generator-modal .add-card-button:hover {
+  background-color: #219955;
+}
+
+.simple-card-generator-modal .add-all-button {
+  background-color: #27ae60;
+  color: white;
+  flex: 1;
+  margin-right: 10px;
+}
+
+.simple-card-generator-modal .add-all-button:hover {
+  background-color: #219955;
+}
+
+.simple-card-generator-modal .regenerate-button {
+  background-color: #f39c12;
+  color: white;
+  flex: 1;
+  margin-left: 10px;
+}
+
+.simple-card-generator-modal .regenerate-button:hover {
+  background-color: #e67e22;
+}
+
+.simple-card-generator-modal button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 768px) {
+  .simple-card-generator-modal .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .simple-card-generator-modal .metadata-item {
+    flex-direction: column;
+  }
+  
+  .simple-card-generator-modal .metadata-item label {
+    margin-bottom: 4px;
+  }
+  
+  .simple-card-generator-modal .bulk-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .simple-card-generator-modal .add-all-button,
+  .simple-card-generator-modal .regenerate-button {
+    margin: 0;
+  }
+}
