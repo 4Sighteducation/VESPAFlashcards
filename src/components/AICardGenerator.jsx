@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
 // import { generateTopicPrompt } from '../prompts/topicListPrompt'; // REMOVED - Backend handles prompts
@@ -56,30 +56,26 @@ const debugLog = (title, data) => {
 // Helper function for delays
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// This component should be named AICardGenerator to match the export
 const AICardGenerator = (props) => {
-  // Defensive: Check for required props when skipping metadata steps
-  if (props.skipMetadataSteps && (!props.initialSubject || !props.initialTopic)) {
-    console.error("AICardGenerator: Missing required metadata props when skipMetadataSteps is true", { initialSubject: props.initialSubject, initialTopic: props.initialTopic });
-    return <div style={{ color: "red", padding: 20, background: '#fff0f0', border: '2px solid #d32f2f', borderRadius: 8 }}>
-      <h2>Error: Missing required metadata for card generation.</h2>
-      <p>Required props: <b>initialSubject</b> and <b>initialTopic</b> must be provided when <b>skipMetadataSteps</b> is true.</p>
-      <pre>{JSON.stringify({ initialSubject: props.initialSubject, initialTopic: props.initialTopic }, null, 2)}</pre>
-    </div>;
-  }
-
-  // Now destructure props and call hooks
+  // First, destructure props
   const {
     onAddCard, onClose, subjects = [], auth, userId,
     initialSubject = "", initialTopic = "", examBoard = "AQA", examType = "A-Level",
     recordId, initialTopicsProp, onFinalizeTopics, skipMetadataSteps = false, topicColor = null
   } = props;
 
-  // All hooks must be called first!
+  // ALL hooks need to be declared unconditionally at the top level
   const { sendMessage, lastMessage, readyState } = useWebSocket();
   const isWsConnected = readyState === WebSocket.OPEN;
   const [currentStep, setCurrentStep] = useState(skipMetadataSteps ? 4 : 1);
   const totalSteps = 5;
-  const [formData, setFormData] = useState({
+  
+  // Check for missing required props
+  const missingRequiredProps = skipMetadataSteps && (!initialSubject || !initialTopic);
+  
+  // Use useMemo to stabilize the initial form data to prevent render loops
+  const initialFormData = useMemo(() => ({
     examBoard: examBoard,
     examType: examType,
     subject: initialSubject,
@@ -89,7 +85,9 @@ const AICardGenerator = (props) => {
     numCards: 5,
     questionType: "multiple_choice",
     subjectColor: topicColor || BRIGHT_COLORS[0],
-  });
+  }), [examBoard, examType, initialSubject, initialTopic, topicColor]); // Explicit dependencies
+  
+  const [formData, setFormData] = useState(initialFormData);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [loadingStatus, setLoadingStatus] = useState('');
@@ -186,144 +184,182 @@ useEffect(() => {
   }, [formData.examType, subjects]);
 
 
-  // --- WebSocket Message Handling --- ADDED ---
+  // Memoize the metadata extraction from form data to prevent excess re-renders
+  const currentMetadata = useMemo(() => ({
+    finalSubject: formData.subject || formData.newSubject || initialSubject || "General",
+    finalTopic: formData.topic || formData.newTopic || initialTopic || "General",
+    finalExamType: formData.examType || examType || "General",
+    finalExamBoard: formData.examBoard || examBoard || "General",
+    finalQuestionType: formData.questionType || "short_answer",
+    cardColor: formData.subjectColor || topicColor || BRIGHT_COLORS[0]
+  }), [
+    formData.subject, 
+    formData.newSubject, 
+    formData.topic, 
+    formData.newTopic, 
+    formData.examType, 
+    formData.examBoard, 
+    formData.questionType, 
+    formData.subjectColor,
+    initialSubject, 
+    initialTopic, 
+    examBoard, 
+    examType, 
+    topicColor
+  ]);
+
+  // --- WebSocket Message Processing Function, Memoized ---
+  const processWebSocketMessage = useCallback((message) => {
+    try {
+      debugLog('AICardGenerator received WS message:', message);
+
+      switch (message.type) {
+        case 'topicResults':
+          if (message.action === 'generateTopics') {
+            console.log(`Received ${message.topics?.length || 0} topics from WebSocket.`);
+            // Ensure topics have unique IDs if needed (backend should ideally provide them)
+            const topicsWithIds = (message.topics || []).map((topic, index) => ({
+              ...topic,
+              id: topic.id || `ws_topic_${Date.now()}_${index}` // Generate unique frontend ID if missing
+            }));
+            setAvailableTopics(topicsWithIds);
+            setHierarchicalTopics(topicsWithIds); // Also update hierarchical topics if used for display
+            setIsGenerating(false);
+            setLoadingStatus('Topic list generated.');
+            setError(null);
+          }
+          break;
+
+        case 'cardResults':
+          if (message.action === 'generateCards') {
+            console.log(`Received ${message.cards?.length || 0} cards from WebSocket.`);
+
+            // Use memoized metadata values
+            const { 
+              finalSubject, 
+              finalTopic, 
+              finalExamType, 
+              finalExamBoard, 
+              finalQuestionType, 
+              cardColor 
+            } = currentMetadata;
+
+            const processedCards = (message.cards || []).map((card, index) => {
+                const id = `card_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`; // Unique frontend ID
+                const ensuredCardColor = cardColor || "#3cb44b"; // Ensure color exists
+
+                // Determine front/back based on card structure from backend
+                let front = card.question || card.acronym || 'Question Not Available';
+                let back = card.detailedAnswer || card.explanation || 'Answer Not Available';
+                if (card.questionType === 'multiple_choice' && card.options && card.correctAnswer) {
+                    const correctOptionText = card.correctAnswer;
+                    // Try to find index robustly
+                    let correctIndex = card.options.findIndex(opt => opt && opt.trim() === correctOptionText.trim());
+                     if (correctIndex === -1) { // Fallback: case-insensitive match
+                          correctIndex = card.options.findIndex(opt => opt && opt.trim().toLowerCase() === correctOptionText.trim().toLowerCase());
+                     }
+                     if (correctIndex === -1) { // Fallback: default to first option if still not found
+                         console.warn(`Could not match correctAnswer "${correctOptionText}" to options: ${JSON.stringify(card.options)}. Defaulting to option A.`);
+                         correctIndex = 0;
+                     }
+                    const letter = correctIndex !== -1 ? String.fromCharCode(97 + correctIndex) : '?';
+                    back = `Correct Answer: ${letter}) ${card.options[correctIndex]}`; // Use the actual option text
+                }
+
+                // Add/overwrite necessary frontend fields
+                return {
+                    ...card, // Spread the card data from backend first
+                    id, // Frontend unique ID
+                    subject: card.subject || finalSubject, // Use backend value or fallback
+                    topic: card.topic || finalTopic,       // Use backend value or fallback
+                    examType: card.examType || finalExamType, // Use backend value or fallback
+                    examBoard: card.examBoard || finalExamBoard, // Use backend value or fallback
+                    questionType: card.questionType || finalQuestionType, // Use backend value or fallback
+                    cardColor: ensuredCardColor, // Add color based on form state
+                    baseColor: ensuredCardColor, // Add baseColor
+                    timestamp: new Date().toISOString(),
+                    boxNum: 1, // Start in box 1
+                    front: front, // Set calculated front
+                    back: back,   // Set calculated back
+                     // Add savedOptions backup for multiple choice if needed
+                    ...(card.questionType === 'multiple_choice' && card.options && { savedOptions: [...card.options] }),
+                };
+            });
+
+            debugLog("PROCESSED CARDS FROM WEBSOCKET", processedCards.map(c => ({ id: c.id, subject: c.subject, topic: c.topic, type: c.questionType })));
+            setGeneratedCards(processedCards);
+            setIsGenerating(false);
+            setLoadingStatus(`${processedCards.length} Cards generated.`);
+            setError(null);
+          }
+          break;
+
+        case 'status':
+           // Update UI based on status message
+          if (message.action === 'generateTopics' || message.action === 'generateCards') {
+               setLoadingStatus(message.message || 'Processing...');
+               // Ensure loading state is active only if status implies ongoing generation
+               const lowerCaseMsg = message.message?.toLowerCase() || '';
+               if (lowerCaseMsg && !lowerCaseMsg.includes('completed') && !lowerCaseMsg.includes('error') && !lowerCaseMsg.includes('generated') && !lowerCaseMsg.includes('received')) {
+                   setIsGenerating(true);
+               } else {
+                   // If status seems final, ensure loading state is off (belt and suspenders)
+                   setIsGenerating(false);
+               }
+          }
+          break;
+
+        case 'error':
+           // Handle errors from the WebSocket server
+          if (message.action === 'generateTopics' || message.action === 'generateCards') {
+               console.error(`WebSocket Error (${message.action}):`, message.message);
+               setError(`AI Generation Error: ${message.message || 'Unknown server error'}`);
+               setIsGenerating(false);
+               setLoadingStatus('Error occurred.');
+               // Clear results on error
+               if (message.action === 'generateTopics') { setAvailableTopics([]); setHierarchicalTopics([]); }
+               if (message.action === 'generateCards') setGeneratedCards([]);
+          } else {
+              // Handle other potential WS errors if needed
+              console.error(`General WebSocket Error:`, message.message);
+              setError(`Server Error: ${message.message || 'Unknown communication error'}`);
+              setIsGenerating(false); // Stop any loading indicators
+              setLoadingStatus('Error occurred.');
+          }
+          break;
+
+        case 'info':
+           // Handle general info messages (e.g., 'Connected')
+           console.log('WebSocket Info:', message.message);
+           if (message.message?.toLowerCase().includes('connected')) {
+               setError(null); // Clear connection errors if we reconnect
+           }
+           break;
+        default:
+          console.warn('Received unknown WebSocket message type:', message.type);
+      }
+    } catch (e) {
+      console.error('Failed to parse WebSocket message:', e, 'Raw data:', message);
+      setError('Error processing server message.'); // Set a generic error for parsing failures
+      setIsGenerating(false);
+      setLoadingStatus('Error occurred.');
+    }
+  }, [currentMetadata]); // Only depends on the memoized metadata object
+
+  // --- WebSocket Message Handling, simplified with memoized processor ---
   useEffect(() => {
     if (lastMessage !== null) {
       try {
         const message = JSON.parse(lastMessage.data);
-        debugLog('AICardGenerator received WS message:', message);
-
-        switch (message.type) {
-          case 'topicResults':
-            if (message.action === 'generateTopics') {
-              console.log(`Received ${message.topics?.length || 0} topics from WebSocket.`);
-              // Ensure topics have unique IDs if needed (backend should ideally provide them)
-              const topicsWithIds = (message.topics || []).map((topic, index) => ({
-                ...topic,
-                id: topic.id || `ws_topic_${Date.now()}_${index}` // Generate unique frontend ID if missing
-              }));
-              setAvailableTopics(topicsWithIds);
-              setHierarchicalTopics(topicsWithIds); // Also update hierarchical topics if used for display
-              setIsGenerating(false);
-              setLoadingStatus('Topic list generated.');
-              setError(null);
-            }
-            break;
-
-          case 'cardResults':
-            if (message.action === 'generateCards') {
-              console.log(`Received ${message.cards?.length || 0} cards from WebSocket.`);
-
-              // Process cards: Add frontend-specific metadata like unique ID and color
-              const finalSubject = formData.subject || formData.newSubject || initialSubject || "General";
-              const finalTopic = formData.topic || formData.newTopic || initialTopic || "General";
-              const finalExamType = formData.examType || examType || "General";
-              const finalExamBoard = formData.examBoard || examBoard || "General";
-              const finalQuestionType = formData.questionType || "short_answer";
-              const cardColor = formData.subjectColor || topicColor || BRIGHT_COLORS[0]; // Get current color from form state or use topicColor
-
-              const processedCards = (message.cards || []).map((card, index) => {
-                  const id = `card_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`; // Unique frontend ID
-                  const ensuredCardColor = cardColor || "#3cb44b"; // Ensure color exists
-
-                  // Determine front/back based on card structure from backend
-                  let front = card.question || card.acronym || 'Question Not Available';
-                  let back = card.detailedAnswer || card.explanation || 'Answer Not Available';
-                  if (card.questionType === 'multiple_choice' && card.options && card.correctAnswer) {
-                      const correctOptionText = card.correctAnswer;
-                      // Try to find index robustly
-                      let correctIndex = card.options.findIndex(opt => opt && opt.trim() === correctOptionText.trim());
-                       if (correctIndex === -1) { // Fallback: case-insensitive match
-                            correctIndex = card.options.findIndex(opt => opt && opt.trim().toLowerCase() === correctOptionText.trim().toLowerCase());
-                       }
-                       if (correctIndex === -1) { // Fallback: default to first option if still not found
-                           console.warn(`Could not match correctAnswer "${correctOptionText}" to options: ${JSON.stringify(card.options)}. Defaulting to option A.`);
-                           correctIndex = 0;
-                       }
-                      const letter = correctIndex !== -1 ? String.fromCharCode(97 + correctIndex) : '?';
-                      back = `Correct Answer: ${letter}) ${card.options[correctIndex]}`; // Use the actual option text
-                  }
-
-                  // Add/overwrite necessary frontend fields
-                  return {
-                      ...card, // Spread the card data from backend first
-                      id, // Frontend unique ID
-                      subject: card.subject || finalSubject, // Use backend value or fallback
-                      topic: card.topic || finalTopic,       // Use backend value or fallback
-                      examType: card.examType || finalExamType, // Use backend value or fallback
-                      examBoard: card.examBoard || finalExamBoard, // Use backend value or fallback
-                      questionType: card.questionType || finalQuestionType, // Use backend value or fallback
-                      cardColor: ensuredCardColor, // Add color based on form state
-                      baseColor: ensuredCardColor, // Add baseColor
-                      timestamp: new Date().toISOString(),
-                      boxNum: 1, // Start in box 1
-                      front: front, // Set calculated front
-                      back: back,   // Set calculated back
-                       // Add savedOptions backup for multiple choice if needed
-                      ...(card.questionType === 'multiple_choice' && card.options && { savedOptions: [...card.options] }),
-                  };
-              });
-
-              debugLog("PROCESSED CARDS FROM WEBSOCKET", processedCards.map(c => ({ id: c.id, subject: c.subject, topic: c.topic, type: c.questionType })));
-              setGeneratedCards(processedCards);
-              setIsGenerating(false);
-              setLoadingStatus(`${processedCards.length} Cards generated.`);
-              setError(null);
-            }
-            break;
-
-          case 'status':
-             // Update UI based on status message
-            if (message.action === 'generateTopics' || message.action === 'generateCards') {
-                 setLoadingStatus(message.message || 'Processing...');
-                 // Ensure loading state is active only if status implies ongoing generation
-                 const lowerCaseMsg = message.message?.toLowerCase() || '';
-                 if (lowerCaseMsg && !lowerCaseMsg.includes('completed') && !lowerCaseMsg.includes('error') && !lowerCaseMsg.includes('generated') && !lowerCaseMsg.includes('received')) {
-                     setIsGenerating(true);
-                 } else {
-                     // If status seems final, ensure loading state is off (belt and suspenders)
-                     setIsGenerating(false);
-                 }
-            }
-            break;
-
-          case 'error':
-             // Handle errors from the WebSocket server
-            if (message.action === 'generateTopics' || message.action === 'generateCards') {
-                 console.error(`WebSocket Error (${message.action}):`, message.message);
-                 setError(`AI Generation Error: ${message.message || 'Unknown server error'}`);
-                 setIsGenerating(false);
-                 setLoadingStatus('Error occurred.');
-                 // Clear results on error
-                 if (message.action === 'generateTopics') { setAvailableTopics([]); setHierarchicalTopics([]); }
-                 if (message.action === 'generateCards') setGeneratedCards([]);
-            } else {
-                // Handle other potential WS errors if needed
-                console.error(`General WebSocket Error:`, message.message);
-                setError(`Server Error: ${message.message || 'Unknown communication error'}`);
-                setIsGenerating(false); // Stop any loading indicators
-                setLoadingStatus('Error occurred.');
-            }
-            break;
-
-          case 'info':
-             // Handle general info messages (e.g., 'Connected')
-             console.log('WebSocket Info:', message.message);
-             if (message.message?.toLowerCase().includes('connected')) {
-                 setError(null); // Clear connection errors if we reconnect
-             }
-             break;
-          default:
-            console.warn('Received unknown WebSocket message type:', message.type);
-        }
+        processWebSocketMessage(message);
       } catch (e) {
-        console.error('Failed to parse WebSocket message:', e, 'Raw data:', lastMessage?.data);
+        console.error('Failed to parse WebSocket message JSON:', e, 'Raw data:', lastMessage?.data);
         setError('Error processing server message.'); // Set a generic error for parsing failures
         setIsGenerating(false);
         setLoadingStatus('Error occurred.');
       }
     }
-  }, [lastMessage, formData.subjectColor, formData.subject, formData.newSubject, formData.topic, formData.newTopic, formData.examType, formData.examBoard, formData.questionType, initialSubject, initialTopic, examBoard, examType]); // Added dependencies to ensure correct metadata processing
+  }, [lastMessage, processWebSocketMessage]); // Drastically simplified dependencies
 
 
    // Rewritten generateTopics function to use WebSocket - MOVED EARLIER
@@ -636,10 +672,12 @@ useEffect(() => {
      // Generate cards when entering step 5 IF cards aren't already generated/generating
      if (currentStep === 5 && generatedCards.length === 0 && !isGenerating && isWsConnected) {
        console.log("AICardGenerator: Triggering card generation on step 5 entry via WS");
-       // Use generateCards directly without including it in the dependency array
+       // We need to call generateCards here, but NOT include it in the dependency array
+       // eslint-disable-next-line react-hooks/exhaustive-deps
        generateCards(); // Call the WebSocket-based function
      }
-   }, [currentStep, generatedCards.length, isGenerating, isWsConnected]); // Remove generateCards from dependency array
+   }, [currentStep, generatedCards.length, isGenerating, isWsConnected]); 
+   // Note: We intentionally excluded generateCards from the dependency array and added the eslint disable comment
 
 
   // REMOVED: cleanOpenAIResponse function
