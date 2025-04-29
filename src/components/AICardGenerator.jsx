@@ -400,6 +400,7 @@ useEffect(() => {
        // const alreadyGenerated = availableTopics.length > 0 && availableTopics[0]?.subject === subjectToGenerate && ...;
        // if (!alreadyGenerated) {
           console.log(`AICardGenerator: Requesting topics via WS for: ${subjectToGenerate} (${formData.examBoard} ${formData.examType})`);
+          // Use generateTopics directly without including it in the dependency array
           generateTopics(formData.examBoard, formData.examType, subjectToGenerate);
        // }
      }
@@ -408,7 +409,7 @@ useEffect(() => {
          setAvailableTopics([]);
          setHierarchicalTopics([]);
      }
-   }, [currentStep, formData.subject, formData.newSubject, formData.examBoard, formData.examType, isGenerating, isWsConnected, generateTopics]); // Dependencies include generateTopics
+   }, [currentStep, formData.subject, formData.newSubject, formData.examBoard, formData.examType, isGenerating, isWsConnected]); // Remove generateTopics from the dependency array
 
 
   // REMOVED: getFallbackTopics function
@@ -643,7 +644,17 @@ useEffect(() => {
       }
     }));
     // Response will be handled by useEffect watching lastMessage
-  }, [formData, examBoard, examType, initialSubject, initialTopic, isWsConnected, sendMessage, skipMetadataSteps, contentGuidanceFromStorage]);
+  }, [
+    formData, 
+    examBoard, 
+    examType, 
+    initialSubject, 
+    initialTopic, 
+    isWsConnected, 
+    sendMessage, 
+    skipMetadataSteps, 
+    contentGuidanceFromStorage
+  ]); // Minimal dependencies, avoid circular references
 
 
   // Effect to generate cards on step entry (Step 5) - MODIFIED for WS
@@ -651,9 +662,10 @@ useEffect(() => {
      // Generate cards when entering step 5 IF cards aren't already generated/generating
      if (currentStep === 5 && generatedCards.length === 0 && !isGenerating && isWsConnected) {
        console.log("AICardGenerator: Triggering card generation on step 5 entry via WS");
+       // Use generateCards directly without including it in the dependency array
        generateCards(); // Call the WebSocket-based function
      }
-   }, [currentStep, generatedCards.length, isGenerating, isWsConnected, generateCards]); // Added isWsConnected
+   }, [currentStep, generatedCards.length, isGenerating, isWsConnected]); // Remove generateCards from dependency array
 
 
   // REMOVED: cleanOpenAIResponse function

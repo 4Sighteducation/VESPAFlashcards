@@ -369,6 +369,7 @@
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 4;
+  line-clamp: 4;
   -webkit-box-orient: vertical;
   text-overflow: ellipsis;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -1204,6 +1205,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
 .success-more {
@@ -1391,6 +1396,10 @@
   text-align: left;
   position: relative;
   overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .topic-item:hover {
@@ -1804,6 +1813,11 @@
   margin-bottom: 15px;
   border-left: 4px solid #06206e;
   transition: all 0.2s ease;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
 }
 
 .options-list li:hover {
