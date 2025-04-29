@@ -6,6 +6,7 @@ import ColorEditor from "./ColorEditor";
 import TopicCreationModal from "./TopicCreationModal";
 import { deleteSubject, deleteTopic } from "./FlashcardTopicHandler";
 import AICardGenerator from './AICardGenerator';
+import ErrorBoundary from './ErrorBoundary';
 import { BRIGHT_COLORS, getContrastColor, generateShade } from '../utils/ColorUtils';
 
 // ScrollManager component - Only needs expandedSubjects now
@@ -1175,20 +1176,22 @@ const FlashcardList = ({
         />
       )}
       {showCardGenerator && generatorTopic && (
-        <AICardGenerator
-          initialSubject={generatorTopic.subject}
-          initialTopic={generatorTopic.topic || generatorTopic.name}
-          examBoard={generatorTopic.examBoard || "AQA"}
-          examType={generatorTopic.examType || "A-Level"}
-          skipMetadataSteps={true}
-          topicColor={generatorTopic.color || generatorTopic.cardColor}
-          recordId={recordId || null}
-          userId={userId || localUserId || null}
-          onClose={() => {
-            setShowCardGenerator(false);
-            setGeneratorTopic(null);
-          }}
-        />
+        <ErrorBoundary>
+          <AICardGenerator
+            initialSubject={generatorTopic.subject}
+            initialTopic={generatorTopic.topic || generatorTopic.name}
+            examBoard={generatorTopic.examBoard || "AQA"}
+            examType={generatorTopic.examType || "A-Level"}
+            skipMetadataSteps={true}
+            topicColor={generatorTopic.color || generatorTopic.cardColor}
+            recordId={recordId || null}
+            userId={userId || localUserId || null}
+            onClose={() => {
+              setShowCardGenerator(false);
+              setGeneratorTopic(null);
+            }}
+          />
+        </ErrorBoundary>
       )}
     </div>
   );

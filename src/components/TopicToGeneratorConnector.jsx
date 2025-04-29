@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import AICardGenerator from './AICardGenerator';
+import ErrorBoundary from './ErrorBoundary';
 import './TopicToGeneratorConnector.css';
 
 /**
@@ -45,17 +46,19 @@ const TopicToGeneratorConnector = ({
       </button>
       
       {showGenerator && (
-        <AICardGenerator
-          initialSubject={subject}
-          initialTopic={topicName}
-          examBoard={examBoard}
-          examType={examType}
-          skipMetadataSteps={true}
-          topicColor={topicColor}
-          recordId={recordId}
-          userId={userId}
-          onClose={handleGeneratorClose}
-        />
+        <ErrorBoundary>
+          <AICardGenerator
+            initialSubject={subject}
+            initialTopic={topicName}
+            examBoard={examBoard}
+            examType={examType}
+            skipMetadataSteps={true}
+            topicColor={topicColor}
+            recordId={recordId}
+            userId={userId}
+            onClose={handleGeneratorClose}
+          />
+        </ErrorBoundary>
       )}
     </div>
   );

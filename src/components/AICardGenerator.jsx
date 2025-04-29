@@ -1101,32 +1101,52 @@ useEffect(() => {
                         {isGenerating && loadingStatus && <div>{loadingStatus}... <div className="spinner"></div></div>}
                         {error && <div className="error-message">{error}</div>}
             <div className="generated-cards-container">
-                            {generatedCards.length > 0 && !isGenerating ? (
-                                generatedCards.map((card, index) => (
-                                    <div key={card.id || index} className="generated-card-review-item">
-                                         {/* Basic card preview - could use Flashcard component */}
-                                         <div className="card-preview" style={{ borderLeft: `5px solid ${card.cardColor}` }}>
-                                            <strong>Q:</strong> {card.front?.substring(0, 100)}{card.front?.length > 100 ? '...' : ''} <br />
-                                             <strong>A:</strong> {card.back?.substring(0, 100)}{card.back?.length > 100 ? '...' : ''}
-                  </div>
-                                         <button onClick={() => handleAddCard(card)} disabled={pendingOperations.addToBank || card.processing}>
-                                             {card.processing ? 'Adding...' : 'Add This Card'}
-              </button>
-                                         {/* Add edit/delete buttons if needed */}
+                {(() => {
+                    if (!Array.isArray(generatedCards)) {
+                        console.error("generatedCards is not an array", generatedCards);
+                        return <div>Error: generatedCards is not an array.</div>;
+                    }
+                    if (generatedCards.length > 0 && !isGenerating) {
+                        console.log("Rendering generatedCards:", generatedCards);
+                        return generatedCards.map((card, index) => {
+                            if (!card) {
+                                console.error("Null/undefined card at index", index, generatedCards);
+                                return <div key={index} style={{ color: 'red' }}>Error: Card is undefined/null at index {index}.</div>;
+                            }
+                            if (!card.id || !card.front) {
+                                console.error("Invalid card object at index", index, card);
+                                return <div key={index} style={{ color: 'red' }}>Error: Card missing id or front at index {index}.</div>;
+                            }
+                            return (
+                                <div key={card.id || index} className="generated-card-review-item">
+                                    {/* Basic card preview - could use Flashcard component */}
+                                    <div className="card-preview" style={{ borderLeft: `5px solid ${card.cardColor}` }}>
+                                        <strong>Q:</strong> {card.front?.substring(0, 100)}{card.front?.length > 100 ? '...' : ''} <br />
+                                        <strong>A:</strong> {card.back?.substring(0, 100)}{card.back?.length > 100 ? '...' : ''}
+                                    </div>
+                                    <button onClick={() => handleAddCard(card)} disabled={pendingOperations.addToBank || card.processing}>
+                                        {card.processing ? 'Adding...' : 'Add This Card'}
+                                    </button>
+                                    {/* Add edit/delete buttons if needed */}
+                                </div>
+                            );
+                        });
+                    } else {
+                        if (!isGenerating) {
+                            return <div>No cards generated yet.</div>;
+                        }
+                        return null;
+                    }
+                })()}
             </div>
-                                ))
-                            ) : (
-                                !isGenerating && <div>No cards generated yet.</div>
-        )}
-      </div>
                         {generatedCards.length > 0 && !isGenerating && (
                              <div className="card-actions">
                                  <button onClick={handleAddAllCards} disabled={pendingOperations.addToBank || isGenerating}>
                                      Add All {generatedCards.length} Cards
-            </button>
+                                </button>
                                  <button onClick={handleRegenerateCards} disabled={pendingOperations.addToBank || isGenerating || !isWsConnected}>
                                      Regenerate Cards
-            </button>
+                                </button>
                       </div>
                     )}
                          {savedCount > 0 && <div className="saved-count-indicator">{savedCount} card(s) added.</div>}
