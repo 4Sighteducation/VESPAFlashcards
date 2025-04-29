@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
 import TopicHub from '../components/TopicHub'; // Keep for potential future use or topic display
@@ -63,21 +63,6 @@ const AICardGenerator = (props) => {
   const [currentStep, setCurrentStep] = useState(skipMetadataSteps ? 4 : 1);
   const totalSteps = 5;
   
-// Add this after all your state declarations
-const isMounted = useRef(true);
-
-// Add this useEffect at the top of your other effects
-useEffect(() => {
-  // Set mounted flag to true when component mounts
-  isMounted.current = true;
-  
-  // Cleanup function to run when component unmounts
-  return () => {
-    isMounted.current = false;
-    console.log("AICardGenerator unmounting, cleaning up state updates");
-  };
-}, []); // Empty dependency array = only on mount/unmount
-
   // Check for missing required props
   const missingRequiredProps = skipMetadataSteps && (!initialSubject || !initialTopic);
   
@@ -233,26 +218,22 @@ useEffect(() => {
       
       // For now, generate some placeholder topics based on the subject
       setTimeout(() => {
-        if (isMounted.current) {
-          const mockTopics = [
-            { id: `topic_${Date.now()}_1`, topic: `${genSubject} Fundamentals`, subtopic: null },
-            { id: `topic_${Date.now()}_2`, topic: `${genSubject} Advanced Concepts`, subtopic: null },
-            { id: `topic_${Date.now()}_3`, topic: `${genSubject} Applications`, subtopic: null }
-          ];
-          
-          setAvailableTopics(mockTopics);
-          setHierarchicalTopics(mockTopics);
-          setIsGenerating(false);
-          setLoadingStatus('Topic list generated.');
-        }
+        const mockTopics = [
+          { id: `topic_${Date.now()}_1`, topic: `${genSubject} Fundamentals`, subtopic: null },
+          { id: `topic_${Date.now()}_2`, topic: `${genSubject} Advanced Concepts`, subtopic: null },
+          { id: `topic_${Date.now()}_3`, topic: `${genSubject} Applications`, subtopic: null }
+        ];
+        
+        setAvailableTopics(mockTopics);
+        setHierarchicalTopics(mockTopics);
+        setIsGenerating(false);
+        setLoadingStatus('Topic list generated.');
       }, 1000);
     } catch (error) {
       console.error("Error generating topics:", error);
-      if (isMounted.current) {
       setError(`Failed to generate topics: ${error.message}`);
       setIsGenerating(false);
       setLoadingStatus('Error occurred.');
-    }
     }
   }, []);
 
@@ -322,20 +303,16 @@ useEffect(() => {
         type: c.questionType 
       })));
       
-      if (isMounted.current) {
-        setGeneratedCards(processedCards);
-        setIsGenerating(false);
-        setLoadingStatus(`${processedCards.length} Cards generated.`);
-        setError(null);
-      }
+      setGeneratedCards(processedCards);
+      setIsGenerating(false);
+      setLoadingStatus(`${processedCards.length} Cards generated.`);
+      setError(null);
     } catch (error) {
       console.error("Card generation failed:", error);
-      if (isMounted.current) {
-        setError(`AI Generation Error: ${error.message || 'Unknown error'}`);
-        setIsGenerating(false);
-        setLoadingStatus('Error occurred.');
-        setGeneratedCards([]);
-      }
+      setError(`AI Generation Error: ${error.message || 'Unknown error'}`);
+      setIsGenerating(false);
+      setLoadingStatus('Error occurred.');
+      setGeneratedCards([]);
     }
   }, [
     formData, 
@@ -634,38 +611,28 @@ useEffect(() => {
       .then(() => {
         console.log(`Card ${enrichedCard.id} added to save queue.`);
         // Update UI optimistically or based on service feedback
-        if (isMounted.current) {
-          setSuccessModal({ show: true, addedCards: [enrichedCard] }); // Show success
-          setTimeout(() => {
-            if (isMounted.current) {
-              setSuccessModal(prev => ({ ...prev, show: false }));
-            }
-          }, 3000);
-      
-          // Remove the card from the generated list after successful queuing
-          setGeneratedCards(prev => prev.filter(c => c.id !== card.id));
-          setSavedCount(prev => prev + 1); // Increment saved counter
-        }
+        setSuccessModal({ show: true, addedCards: [enrichedCard] }); // Show success
+        setTimeout(() => setSuccessModal(prev => ({ ...prev, show: false })), 3000);
+
+        // Remove the card from the generated list after successful queuing
+        setGeneratedCards(prev => prev.filter(c => c.id !== card.id));
+        setSavedCount(prev => prev + 1); // Increment saved counter
       })
       .catch(queueError => {
         console.error("Error adding card to save queue:", queueError);
-        if (isMounted.current) {
-          setError(`Failed to queue card for saving: ${queueError.message}`);
-          // Revert processing state on the card in UI
-          setGeneratedCards(prev => prev.map(c => 
-            c.id === card.id ? {...c, processing: false } : c
-          ));
-        }
+        setError(`Failed to queue card for saving: ${queueError.message}`);
+        // Revert processing state on the card in UI
+        setGeneratedCards(prev => prev.map(c => 
+          c.id === card.id ? {...c, processing: false } : c
+        ));
       })
       .finally(() => {
-        if (isMounted.current) {
-          // Always reset the pending operation flag
-          setPendingOperations(prev => ({ ...prev, addToBank: false }));
-          // Reset card-specific processing flag just in case
-          setGeneratedCards(prev => prev.map(c => 
-            c.id === card.id ? {...c, processing: false } : c
-          ));
-        }
+        // Always reset the pending operation flag
+        setPendingOperations(prev => ({ ...prev, addToBank: false }));
+        // Reset card-specific processing flag just in case
+        setGeneratedCards(prev => prev.map(c => 
+          c.id === card.id ? {...c, processing: false } : c
+        ));
       });
 
     } catch (error) {
@@ -704,444 +671,4 @@ useEffect(() => {
     // Get color from topic or form data
     const cardColor = topicColor || formData.subjectColor || BRIGHT_COLORS[0];
     
-    const recordIdToUse = recordId || window.recordId || '';
-    const userIdToUse = userId || window.VESPA_USER_ID || "current_user";
-
-    debugLog("Starting add all cards with stable metadata", {
-      examType: localExamType, examBoard: localExamBoard, subject: localSubject, topic: localTopic,
-      cardCount: generatedCards.length, recordId: recordIdToUse, userId: userIdToUse,
-      cardColor // Log the color being used
-    });
-    
-    try {
-      // Enrich all cards consistently before sending
-      const cardsToAdd = generatedCards.map(card => {
-        const enrichedCard = {
-          ...card, // Spread original card data (already processed by service)
-          examBoard: localExamBoard,
-          subject: localSubject,
-          topic: localTopic,
-          examType: localExamType,
-          topicId: topicId,
-          cardColor: cardColor, // Set consistent card color
-          subjectColor: cardColor, // Set subject color for consistency
-          textColor: getContrastColor(cardColor), // Calculate appropriate text color
-          created: new Date().toISOString(),
-          updated: new Date().toISOString(),
-          lastReviewed: new Date().toISOString(), 
-          nextReviewDate: new Date().toISOString(),
-          boxNum: card.boxNum || 1,
-          ...(card.questionType === 'multiple_choice' && {
-            options: card.options || card.savedOptions || [],
-            savedOptions: card.savedOptions || card.options || [],
-            correctAnswer: card.correctAnswer || (card.options ? card.options[0] : null)
-          }),
-        };
-        delete enrichedCard.processing; // Remove temp flag
-        return enrichedCard;
-      });
-
-      // Use Save Queue Service for batch add
-      console.log(`Adding batch of ${cardsToAdd.length} cards via Save Queue Service`);
-      saveQueueService.add("ADD_CARDS_BATCH", { // Use a specific batch action type
-        recordId: recordIdToUse,
-        userId: userIdToUse,
-        cards: cardsToAdd // Send the array of enriched cards
-      })
-      .then(() => {
-        console.log(`${cardsToAdd.length} cards added to save queue.`);
-        if (isMounted.current) {
-          setSuccessModal({ show: true, addedCards: cardsToAdd });
-          setTimeout(() => {
-            if (isMounted.current) {
-              setSuccessModal(prev => ({ ...prev, show: false }));
-            }
-          }, 3000);
-      
-          setSavedCount(prev => prev + cardsToAdd.length);
-          setGeneratedCards([]); // Clear the list after successful queuing
-        }
-      })
-      .catch(queueError => {
-        console.error("Error adding card batch to save queue:", queueError);
-        if (isMounted.current) {
-          setError(`Failed to queue cards for saving: ${queueError.message}`);
-          // Revert processing state on UI
-          setGeneratedCards(prev => prev.map(c => ({...c, processing: false })));
-        }
-      })
-      .finally(() => {
-        if (isMounted.current) {
-          setPendingOperations(prev => ({ ...prev, addToBank: false }));
-          // Ensure processing flags are cleared even if some remain
-          setGeneratedCards(prev => prev.map(c => ({...c, processing: false })));
-        }
-      });
-    } catch (error) {
-      console.error("Error in handleAddAllCards:", error);
-      setError(`Error preparing to add cards: ${error.message}`);
-      setGeneratedCards(prev => prev.map(c => ({...c, processing: false }))); // Reset processing state
-      setPendingOperations(prev => ({ ...prev, addToBank: false }));
-    }
-  };
-  // Modal to show successfully added cards
-  const renderSuccessModal = () => {
-    if (!successModal.show) return null;
-    const count = successModal.addedCards.length;
-    
-    return (
-      <div className="success-modal-overlay">
-        <div className="success-modal">
-          <div className="success-icon">✓</div>
-          <h3>{count} {count === 1 ? 'Card' : 'Cards'} Added!</h3>
-          <div className="success-cards">
-            {successModal.addedCards.slice(0, 5).map(card => (
-              <div key={card.id} className="success-card-item" style={{backgroundColor: card.cardColor || '#ddd'}}>
-                <span style={{color: getContrastColor(card.cardColor || '#ddd')}}>{(card.front || card.question || '').substring(0, 40)}...</span>
-              </div>
-            ))}
-            {count > 5 && (
-              <div className="success-more">+{count - 5} more</div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Regenerate cards using HTTP API
-  const handleRegenerateCards = () => {
-    console.log("Regenerating cards via HTTP API...");
-    if (!isGenerating) {
-      generateCards(); // Call the HTTP function
-    } else {
-      console.log("Already generating, regenerate request ignored.");
-    }
-  };
-
-  // Reset state after card operations
-  const resetAfterCardOperation = () => {
-    console.log("Resetting state after card operation.");
-    setSavedCount(0);
-    setOperationSuccess(false);
-  };
-
-  // Main function to render content based on currentStep
-  const renderStepContent = () => {
-    if (skipMetadataSteps) {
-      if (currentStep === 4) {
-        return (
-          <div>
-            <h4>Card Options</h4>
-            <label>Number of Cards:</label>
-            <input 
-              type="number" 
-              name="numCards" 
-              value={formData.numCards} 
-              onChange={handleChange}
-              min="1" 
-              max="20"
-            />
-            <label>Question Type:</label>
-            <select name="questionType" value={formData.questionType} onChange={handleChange}>
-              {QUESTION_TYPES.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
-            </select>
-          </div>
-        );
-      }
-      if (currentStep === 5) {
-        return (
-          <div>
-            <h4>Review & Add Cards</h4>
-            {isGenerating && loadingStatus && <div>{loadingStatus}... <div className="spinner"></div></div>}
-            {error && <div className="error-message">{error}</div>}
-            <div className="generated-cards-container">
-              {(() => {
-                if (!Array.isArray(generatedCards)) {
-                  console.error("generatedCards is not an array", generatedCards);
-                  return <div>Error: generatedCards is not an array.</div>;
-                }
-                if (generatedCards.length > 0 && !isGenerating) {
-                  console.log("Rendering generatedCards:", generatedCards);
-                  return generatedCards.map((card, index) => {
-                    if (!card) {
-                      console.error("Null/undefined card at index", index, generatedCards);
-                      return <div key={index} style={{ color: 'red' }}>Error: Card is undefined/null at index {index}.</div>;
-                    }
-                    if (!card.id || !card.front) {
-                      console.error("Invalid card object at index", index, card);
-                      return <div key={index} style={{ color: 'red' }}>Error: Card missing id or front at index {index}.</div>;
-                    }
-                    return (
-                      <div key={card.id || index} className="generated-card-review-item">
-                        {/* Basic card preview - could use Flashcard component */}
-                        <div className="card-preview" style={{ borderLeft: `5px solid ${card.cardColor}` }}>
-                          <strong>Q:</strong> {card.front?.substring(0, 100)}{card.front?.length > 100 ? '...' : ''} <br />
-                          <strong>A:</strong> {card.back?.substring(0, 100)}{card.back?.length > 100 ? '...' : ''}
-                        </div>
-                        <button onClick={() => handleAddCard(card)} disabled={pendingOperations.addToBank || card.processing}>
-                          {card.processing ? 'Adding...' : 'Add This Card'}
-                        </button>
-                      </div>
-                    );
-                  });
-                } else {
-                  if (!isGenerating) {
-                    return <div>No cards generated yet.</div>;
-                  }
-                  return null;
-                }
-              })()}
-            </div>
-            {generatedCards.length > 0 && !isGenerating && (
-              <div className="card-actions">
-                <button onClick={handleAddAllCards} disabled={pendingOperations.addToBank || isGenerating}>
-                  Add All {generatedCards.length} Cards
-                </button>
-                <button onClick={handleRegenerateCards} disabled={pendingOperations.addToBank || isGenerating}>
-                  Regenerate Cards
-                </button>
-              </div>
-            )}
-            {savedCount > 0 && <div className="saved-count-indicator">{savedCount} card(s) added.</div>}
-          </div>
-        );
-      }
-      return null;
-    }
-    switch (currentStep) {
-      case 1: // Exam Details
-        return (
-          <div>
-            <h4>Step 1: Exam Details</h4>
-            {/* Exam Board Dropdown */}
-            <label>Exam Board:</label>
-            <select name="examBoard" value={formData.examBoard} onChange={handleChange}>
-              <option value="">Select Board</option>
-              {EXAM_BOARDS.map(board => <option key={board.value} value={board.value}>{board.label}</option>)}
-            </select>
-            {/* Exam Type Dropdown */}
-            <label>Exam Type:</label>
-            <select name="examType" value={formData.examType} onChange={handleChange}>
-              <option value="">Select Type</option>
-              {EXAM_TYPES.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
-            </select>
-          </div>
-        );
-      case 2: // Subject Selection
-        return (
-          <div>
-            <h4>Step 2: Subject</h4>
-            {/* Subject Dropdown */}
-            <label>Subject:</label>
-            <select name="subject" value={formData.subject} onChange={handleChange}>
-              <option value="">Select Subject</option>
-              {availableSubjects.map(sub => <option key={sub} value={sub}>{sub}</option>)}
-            </select>
-            {/* OR New Subject Input */}
-            <label>Or Add New Subject:</label>
-            <input
-              type="text"
-              name="newSubject"
-              value={formData.newSubject}
-              onChange={handleChange}
-              placeholder="e.g., Astrophysics"
-            />
-          </div>
-        );
-      case 3: // Topic Selection/Generation
-        return (
-          <div>
-            <h4>Step 3: Topic</h4>
-            {isGenerating && loadingStatus && <div>{loadingStatus}... <div className="spinner"></div></div>}
-            {error && <div className="error-message">{error}</div>}
-            {availableTopics.length > 0 && !isGenerating && (
-              <>
-                {/* Topic Dropdown */}
-                <label>Select Topic:</label>
-                <select name="topic" value={formData.topic} onChange={handleChange}>
-                  <option value="">Select Topic</option>
-                  {availableTopics.map(t => (
-                    <option key={t.id || t.topic} value={t.id || t.topic}>
-                      {t.topic} {t.subtopic ? `(${t.subtopic})` : ''}
-                    </option>
-                  ))}
-                </select>
-                {/* OR New Topic Input */}
-                <label>Or Add New Topic:</label>
-                <input
-                  type="text"
-                  name="newTopic"
-                  value={formData.newTopic}
-                  onChange={handleChange}
-                  placeholder="e.g., Black Holes"
-                />
-                {/* Optionally, button to regenerate topics */}
-                <button onClick={() => generateTopics(formData.examBoard, formData.examType, formData.subject || formData.newSubject)} disabled={isGenerating}>
-                  Regenerate Topics
-                </button>
-              </>
-            )}
-            {/* Show if topics haven't loaded and not currently generating */}
-            {!isGenerating && availableTopics.length === 0 && !error && (
-              <div>No topics generated yet. Check Subject/Exam details or try regenerating.</div>
-            )}
-            {/* Button to trigger generation if not auto-triggered */}
-            {!isGenerating && availableTopics.length === 0 && !error && (
-              <button onClick={() => generateTopics(formData.examBoard, formData.examType, formData.subject || formData.newSubject)} disabled={!(formData.subject || formData.newSubject)}>
-                Generate Topics Now
-              </button>
-            )}
-          </div>
-        );
-      case 4: // Card Options
-        return (
-          <div>
-            <h4>Step 4: Card Options</h4>
-            {/* Display selected metadata if skipping steps */}
-            {skipMetadataSteps && (
-              <div className="metadata-summary">
-                <p><strong>Subject:</strong> {formData.subject}</p>
-                <p><strong>Topic:</strong> {formData.topic}</p>
-              </div>
-            )}
-            {/* Number of Cards Input */}
-            <label>Number of Cards:</label>
-            <input 
-              type="number" 
-              name="numCards" 
-              value={formData.numCards} 
-              onChange={handleChange}
-              min="1" 
-              max="20" // Set a reasonable max
-            />
-            {/* Question Type Dropdown */}
-            <label>Question Type:</label>
-            <select name="questionType" value={formData.questionType} onChange={handleChange}>
-              {QUESTION_TYPES.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
-            </select>
-          </div>
-        );
-      case 5: // Review Generated Cards
-        return (
-          <div>
-            <h4>Step 5: Review & Add Cards</h4>
-            {isGenerating && loadingStatus && <div>{loadingStatus}... <div className="spinner"></div></div>}
-            {error && <div className="error-message">{error}</div>}
-            <div className="generated-cards-container">
-              {(() => {
-                if (!Array.isArray(generatedCards)) {
-                  console.error("generatedCards is not an array", generatedCards);
-                  return <div>Error: generatedCards is not an array.</div>;
-                }
-                if (generatedCards.length > 0 && !isGenerating) {
-                  console.log("Rendering generatedCards:", generatedCards);
-                  return generatedCards.map((card, index) => {
-                    if (!card) {
-                      console.error("Null/undefined card at index", index, generatedCards);
-                      return <div key={index} style={{ color: 'red' }}>Error: Card is undefined/null at index {index}.</div>;
-                    }
-                    if (!card.id || !card.front) {
-                      console.error("Invalid card object at index", index, card);
-                      return <div key={index} style={{ color: 'red' }}>Error: Card missing id or front at index {index}.</div>;
-                    }
-                    return (
-                      <div key={card.id || index} className="generated-card-review-item">
-                        {/* Basic card preview - could use Flashcard component */}
-                        <div className="card-preview" style={{ borderLeft: `5px solid ${card.cardColor}` }}>
-                          <strong>Q:</strong> {card.front?.substring(0, 100)}{card.front?.length > 100 ? '...' : ''} <br />
-                          <strong>A:</strong> {card.back?.substring(0, 100)}{card.back?.length > 100 ? '...' : ''}
-                        </div>
-                        <button onClick={() => handleAddCard(card)} disabled={pendingOperations.addToBank || card.processing}>
-                          {card.processing ? 'Adding...' : 'Add This Card'}
-                        </button>
-                      </div>
-                    );
-                  });
-                } else {
-                  if (!isGenerating) {
-                    return <div>No cards generated yet.</div>;
-                  }
-                  return null;
-                }
-              })()}
-            </div>
-            {generatedCards.length > 0 && !isGenerating && (
-              <div className="card-actions">
-                <button onClick={handleAddAllCards} disabled={pendingOperations.addToBank || isGenerating}>
-                  Add All {generatedCards.length} Cards
-                </button>
-                <button onClick={handleRegenerateCards} disabled={pendingOperations.addToBank || isGenerating}>
-                  Regenerate Cards
-                </button>
-              </div>
-            )}
-            {savedCount > 0 && <div className="saved-count-indicator">{savedCount} card(s) added.</div>}
-          </div>
-        );
-      default:
-        return <div>Unknown step</div>;
-    }
-  };
-
-  // Close handler
-  const handleClose = () => {
-    console.log("AICardGenerator closing.");
-    // Reset state
-    setGeneratedCards([]);
-    setAvailableTopics([]);
-    setError(null);
-    setIsGenerating(false);
-    setLoadingStatus('');
-    // Call the onClose prop if provided
-    if (typeof onClose === 'function') {
-      onClose();
-    }
-  };
-
-  // Log props for debugging
-  console.log("AICardGenerator props", props);
-
-  return (
-    <div className="ai-card-generator-modal">
-      {renderSuccessModal()} {/* Render success modal */}
-      <div className="modal-content">
-        <button className="close-button" onClick={handleClose}>×</button>
-        <h2>AI Flashcard Generator</h2>
-
-        {/* Progress Indicator - hide if skipMetadataSteps */}
-        {!skipMetadataSteps && (
-          <div className="progress-indicator">
-            Step {currentStep} of {totalSteps}
-            <div className="progress-bar-container">
-              <div className="progress-bar" style={{ width: `${(currentStep / totalSteps) * 100}%` }}></div>
-            </div>
-          </div>
-        )}
-    
-        {/* Render content for the current step */}
-        <div className="step-content">
-          {renderStepContent()}
-        </div>
-    
-        {/* Display general errors */}
-        {error && currentStep !== 5 && <div className="error-message general-error">{error}</div>}
-
-        {/* Navigation Buttons - modify for skipMetadataSteps */}
-        <div className="navigation-buttons">
-          {/* Only show Previous button if not skipping metadata or if on review step */}
-          {(!skipMetadataSteps || currentStep === 5) && (
-            <button onClick={handlePrevStep} disabled={currentStep === 1 || (skipMetadataSteps && currentStep === 4)}>
-              Previous
-            </button>
-          )}
-          <button onClick={handleNextStep} disabled={currentStep === totalSteps || isGenerating || !canProceed()}>
-            {currentStep === totalSteps -1 ? 'Generate & Review Cards' : 'Next'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default AICardGenerator;
+    const recordI
