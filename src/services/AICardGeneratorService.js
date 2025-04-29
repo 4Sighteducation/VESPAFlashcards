@@ -70,8 +70,20 @@ export const generateCards = async (params) => {
 
     // Parse and return response data
     const data = await response.json();
-    debugLog('Successfully generated cards', { count: data?.length || 0 });
-    return data;
+    
+    // Extract cards from the response structure
+    // The backend wraps the cards array in an object with a "cards" property
+    if (data.cards) {
+      debugLog('Successfully generated cards', { count: data.cards.length || 0 });
+      return data.cards;
+    } else if (Array.isArray(data)) {
+      // Fallback for backward compatibility
+      debugLog('Successfully generated cards (array format)', { count: data.length || 0 });
+      return data;
+    } else {
+      debugLog('Unexpected response format', data);
+      throw new Error('Unexpected response format from API');
+    }
   } catch (error) {
     console.error('[AICardGeneratorService] Card generation failed:', error);
     throw error;

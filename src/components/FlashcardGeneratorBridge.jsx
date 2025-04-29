@@ -21,6 +21,7 @@ const FlashcardGeneratorBridge = ({
   // Track generation and UI state
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
+  const [errorDetails, setErrorDetails] = useState(null);
   const [generatedCards, setGeneratedCards] = useState([]);
   const [step, setStep] = useState(1); // 1: Options selection, 2: Review cards
   const [loadingMessage, setLoadingMessage] = useState("");
@@ -36,10 +37,18 @@ const FlashcardGeneratorBridge = ({
     setLoadingMessage("Generating flashcards with AI...");
     
     try {
+      console.log("[FlashcardGeneratorBridge] Starting card generation process...");
       // Make sure we have all the required metadata
       if (!topic || !topic.subject) {
         throw new Error("Missing required topic information");
       }
+      
+      console.log("[FlashcardGeneratorBridge] Topic metadata:", {
+        subject: topic.subject,
+        topic: topic.topic || topic.name,
+        examBoard: topic.examBoard,
+        examType: topic.examType
+      });
       
       // Prepare the request data
       const requestData = {
@@ -86,6 +95,15 @@ const FlashcardGeneratorBridge = ({
     } catch (err) {
       console.error("[FlashcardGeneratorBridge] Error generating cards:", err);
       setError(err.message || "Failed to generate cards. Please try again.");
+      setErrorDetails(err.stack || "No detailed error information available");
+      
+      // Log detailed debugging information
+      console.log("[FlashcardGeneratorBridge] Error context:", {
+        error: err,
+        topicInfo: topic,
+        cardType,
+        cardCount
+      });
     } finally {
       setIsGenerating(false);
       setLoadingMessage("");
@@ -272,19 +290,28 @@ const FlashcardGeneratorBridge = ({
             <LoadingSpinner message={loadingMessage || "Generating..."} />
           </div>
         ) : error ? (
-          <div className="error-message">
-            <h3>Error</h3>
-            <p>{error}</p>
-            <button 
-              className="try-again-button" 
-              onClick={() => {
-                setError(null);
-                setStep(1);
-              }}
-            >
-              Try Again
-            </button>
-          </div>
+        <div className="error-message">
+          <h3>Error occurred from AI service</h3>
+          <p>{error}</p>
+          {errorDetails && (
+            <div className="error-details">
+              <p><strong>Technical details:</strong></p>
+              <pre style={{ maxHeight: '150px', overflow: 'auto', background: '#f5f5f5', padding: '10px', fontSize: '12px' }}>
+                {errorDetails}
+              </pre>
+            </div>
+          )}
+          <button 
+            className="try-again-button" 
+            onClick={() => {
+              setError(null);
+              setErrorDetails(null);
+              setStep(1);
+            }}
+          >
+            Try Again
+          </button>
+        </div>
         ) : step === 1 ? (
           renderOptionsStep()
         ) : (
