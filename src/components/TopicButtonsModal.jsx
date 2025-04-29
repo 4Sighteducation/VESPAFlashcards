@@ -87,11 +87,11 @@ const TopicButtonsModal = ({
 
   const organizedTopics = organizeTopics(topics);
 
-  // Updated handle generate cards to include all topic metadata
+  // Updated handle generate cards to use FlashcardGeneratorBridge instead of AICardGenerator
   const handleGenerateCards = useCallback(async (topic) => {
     setIsGenerating(true);
     try {
-      // Get the topic data to pass to the card generator
+      // Get the topic data to pass to the bridge
       const topicData = {
         ...topic,
         subject,
@@ -103,8 +103,13 @@ const TopicButtonsModal = ({
       
       console.log("Generating cards with topic data:", topicData);
       
-      // Pass to the onGenerateCards function which should open the AICardGenerator at stage 5
-      await onGenerateCards(topicData);
+      // Instead of using onGenerateCards directly, dispatch a custom event
+      // that App.js will listen for to show the FlashcardGeneratorBridge
+      window.dispatchEvent(
+        new CustomEvent('openFlashcardBridge', { 
+          detail: { topic: topicData }
+        })
+      );
       
       // Close the topic modal
       onClose();
@@ -113,7 +118,7 @@ const TopicButtonsModal = ({
     } finally {
       setIsGenerating(false);
     }
-  }, [onGenerateCards, subject, examBoard, examType, onClose]);
+  }, [subject, examBoard, examType, onClose]);
 
   // State for delete topic list confirmation
   const [showDeleteListConfirmation, setShowDeleteListConfirmation] = useState(false);

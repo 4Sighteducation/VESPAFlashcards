@@ -10,6 +10,7 @@ import LoadingSpinner from "./components/LoadingSpinner";
 import Header from "./components/Header";
 import AICardGenerator from './components/AICardGenerator';
 import CardGeneratorConnector from './components/CardGeneratorConnector';
+import FlashcardGeneratorBridge from './components/FlashcardGeneratorBridge';
 import PrintModal from './components/PrintModal';
 import TopicListSyncManager from './components/TopicListSyncManager';
 import TopicCreationModal from './components/TopicCreationModal';
@@ -79,6 +80,10 @@ function App() {
 
   // ** NEW STATE for Topic Creation Modal **
   const [isTopicCreationModalOpen, setIsTopicCreationModalOpen] = useState(false);
+  
+  // ** NEW STATE for direct flashcard generation **
+  const [showFlashcardBridge, setShowFlashcardBridge] = useState(false);
+  const [bridgeTopicData, setBridgeTopicData] = useState(null);
 
   // Spaced repetition state
   const [currentBox, setCurrentBox] = useState(1);
@@ -2233,6 +2238,31 @@ useEffect(() => {
     };
   }, [showStatus, loadFromLocalStorage, recordId]); // recordId is included, view is not needed
 
+  // Listen for the FlashcardGeneratorBridge trigger event
+  useEffect(() => {
+    const handleOpenFlashcardBridge = (event) => {
+      console.log("[FlashcardBridge] Received openFlashcardBridge event", event.detail);
+      
+      if (event.detail && event.detail.topic) {
+        // Set the bridge topic data state
+        setBridgeTopicData(event.detail.topic);
+        
+        // Show the bridge
+        setShowFlashcardBridge(true);
+        
+        console.log("[FlashcardBridge] Opening bridge with topic:", event.detail.topic);
+      }
+    };
+    
+    // Add the event listener
+    window.addEventListener('openFlashcardBridge', handleOpenFlashcardBridge);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('openFlashcardBridge', handleOpenFlashcardBridge);
+    };
+  }, []);  // Empty dependency array since we don't use any external variables
+
   // Filter allCards to get topic shells for the selected subject when modal is open
   const topicsForModal = (topicListModalOpen && topicListSubject) 
     ? allCards.filter(item => 
@@ -2903,6 +2933,20 @@ useEffect(() => {
               onSelectBox={setCurrentBox}
               onMoveCard={moveCardToBox}
               onReturnToBank={() => setView("cardBank")}
+            />
+          )}
+
+          {/* Render the FlashcardGeneratorBridge when needed */}
+          {showFlashcardBridge && bridgeTopicData && (
+            <FlashcardGeneratorBridge
+              topic={bridgeTopicData}
+              onClose={() => {
+                setShowFlashcardBridge(false);
+                setBridgeTopicData(null);
+              }}
+              onAddCards={addCard}
+              userId={auth?.id}
+              recordId={recordId}
             />
           )}
         </>

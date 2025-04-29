@@ -1,333 +1,259 @@
-.simple-card-generator-modal {
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
-  overflow-y: auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
-.simple-card-generator-modal .modal-content {
-  background-color: white;
+.simple-card-generator-modal {
+  background-color: #ffffff;
   border-radius: 8px;
-  max-width: 800px;
   width: 90%;
+  max-width: 800px;
   max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
+  overflow-y: auto;
+  position: relative;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.simple-card-generator-modal .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.simple-card-generator-modal .modal-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  color: #333;
-}
-
-.simple-card-generator-modal .close-button {
+.close-modal-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
   background: none;
   border: none;
-  font-size: 1.75rem;
+  font-size: 20px;
   cursor: pointer;
-  color: #999;
-}
-
-.simple-card-generator-modal .close-button:hover {
   color: #333;
-}
-
-.simple-card-generator-modal .modal-body {
-  padding: 20px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.simple-card-generator-modal .modal-footer {
-  padding: 16px 20px;
-  border-top: 1px solid #eee;
+  padding: 5px;
   display: flex;
-  justify-content: flex-end;
-}
-
-/* Options step */
-.simple-card-generator-modal .metadata-summary {
-  background-color: #f9f9f9;
-  border-radius: 6px;
-  padding: 15px;
-  margin-bottom: 20px;
-}
-
-.simple-card-generator-modal .metadata-item {
-  display: flex;
-  margin-bottom: 8px;
-}
-
-.simple-card-generator-modal .metadata-item label {
-  font-weight: bold;
-  margin-right: 10px;
-  min-width: 100px;
-}
-
-.simple-card-generator-modal .options-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.simple-card-generator-modal .form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.simple-card-generator-modal .form-group label {
-  margin-bottom: 6px;
-  font-weight: 500;
-}
-
-.simple-card-generator-modal .select-input,
-.simple-card-generator-modal .number-input,
-.simple-card-generator-modal .textarea-input {
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  font-size: 1rem;
-}
-
-.simple-card-generator-modal .textarea-input {
-  min-height: 100px;
-  resize: vertical;
-}
-
-.simple-card-generator-modal .char-count {
-  font-size: 0.8rem;
-  color: #777;
-  text-align: right;
-  margin-top: 4px;
-}
-
-/* Review step */
-.simple-card-generator-modal .loading-container {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 40px 0;
-}
-
-.simple-card-generator-modal .spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
+  justify-content: center;
   border-radius: 50%;
-  border-top: 4px solid #3498db;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.close-modal-button:hover {
+  background-color: #f0f0f0;
 }
 
-.simple-card-generator-modal .loading-message {
-  font-size: 1rem;
-  color: #666;
-}
-
-.simple-card-generator-modal .error-message {
-  background-color: #fee;
-  color: #c00;
-  padding: 10px 15px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-}
-
-.simple-card-generator-modal .success-message {
-  background-color: #e6ffe6;
-  color: #006600;
-  padding: 10px 15px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.simple-card-generator-modal .no-cards-message {
-  text-align: center;
-  padding: 30px;
-  color: #777;
-}
-
-.simple-card-generator-modal .cards-container {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  max-height: 60vh;
-  overflow-y: auto;
-  padding-right: 10px;
-}
-
-.simple-card-generator-modal .card-preview-container {
-  border: 1px solid #eee;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.simple-card-generator-modal .card-preview {
-  background-color: white;
-}
-
-.simple-card-generator-modal .card-preview-header {
-  background-color: #f5f5f5;
-  padding: 8px 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #eee;
-}
-
-.simple-card-generator-modal .card-type {
-  text-transform: capitalize;
-  font-weight: 500;
-  color: #666;
-}
-
-.simple-card-generator-modal .card-preview-content {
-  padding: 15px;
-}
-
-.simple-card-generator-modal .question {
-  margin-bottom: 15px;
-}
-
-.simple-card-generator-modal .options-list {
-  margin: 15px 0;
-}
-
-.simple-card-generator-modal .options-list ul {
-  list-style-type: none;
-  padding-left: 0;
-}
-
-.simple-card-generator-modal .options-list li {
-  padding: 5px 0;
-}
-
-.simple-card-generator-modal .answer {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px dashed #eee;
-}
-
-.simple-card-generator-modal .bulk-actions {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-}
-
-/* Buttons */
-.simple-card-generator-modal .primary-button,
-.simple-card-generator-modal .secondary-button,
-.simple-card-generator-modal .add-card-button,
-.simple-card-generator-modal .add-all-button,
-.simple-card-generator-modal .regenerate-button {
-  padding: 8px 15px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s;
-}
-
-.simple-card-generator-modal .primary-button {
-  background-color: #3498db;
-  color: white;
-}
-
-.simple-card-generator-modal .primary-button:hover {
-  background-color: #2980b9;
-}
-
-.simple-card-generator-modal .secondary-button {
-  background-color: #f1f1f1;
+/* Options step styling */
+.card-generator-options h3 {
+  margin-top: 0;
+  margin-bottom: 25px;
   color: #333;
+  text-align: center;
 }
 
-.simple-card-generator-modal .secondary-button:hover {
-  background-color: #e1e1e1;
+.option-section {
+  margin-bottom: 20px;
 }
 
-.simple-card-generator-modal .add-card-button {
-  background-color: #27ae60;
-  color: white;
+.option-section label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #444;
 }
 
-.simple-card-generator-modal .add-card-button:hover {
-  background-color: #219955;
+.option-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.simple-card-generator-modal .add-all-button {
-  background-color: #27ae60;
-  color: white;
+.option-button {
+  padding: 10px 15px;
+  border: 2px solid #e0e0e0;
+  background-color: #f8f8f8;
+  border-radius: 6px;
+  cursor: pointer;
   flex: 1;
-  margin-right: 10px;
+  min-width: 100px;
+  text-align: center;
+  transition: all 0.2s ease;
 }
 
-.simple-card-generator-modal .add-all-button:hover {
-  background-color: #219955;
+.option-button:hover {
+  background-color: #f0f0f0;
+  border-color: #d0d0d0;
 }
 
-.simple-card-generator-modal .regenerate-button {
-  background-color: #f39c12;
+.option-button.selected {
+  border-color: #4CAF50;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.options-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+}
+
+.cancel-button {
+  padding: 10px 20px;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.generate-button, .save-button {
+  padding: 10px 20px;
+  background-color: #4CAF50;
   color: white;
-  flex: 1;
-  margin-left: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.simple-card-generator-modal .regenerate-button:hover {
-  background-color: #e67e22;
-}
-
-.simple-card-generator-modal button:disabled {
-  background-color: #ccc;
+.generate-button:disabled {
+  background-color: #a5d6a7;
   cursor: not-allowed;
 }
 
-/* Mobile Responsive Adjustments */
-@media (max-width: 768px) {
-  .simple-card-generator-modal .modal-content {
+/* Review step styling */
+.card-generator-review h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+}
+
+.card-preview-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.card-preview {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background-color: #fff;
+}
+
+.card-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.card-preview-header h4 {
+  margin: 0;
+  color: #333;
+}
+
+.card-type-badge {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.card-preview-content {
+  display: grid;
+  gap: 15px;
+}
+
+.card-preview-question, .card-preview-answer {
+  background-color: #f9f9f9;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.card-preview-question strong, .card-preview-answer strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #444;
+}
+
+.card-preview-options {
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
+.card-preview-options strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #444;
+}
+
+.card-preview-options ul {
+  list-style-type: none;
+  padding-left: 5px;
+  margin: 0;
+}
+
+.card-preview-options li {
+  padding: 5px;
+  margin-bottom: 3px;
+  border-radius: 4px;
+}
+
+.card-preview-options li.correct-option {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+/* Loading state */
+.generating-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+/* Error state */
+.error-message {
+  text-align: center;
+  padding: 20px;
+  color: #d32f2f;
+}
+
+.error-message h3 {
+  margin-top: 0;
+}
+
+.try-again-button {
+  padding: 10px 20px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+@media (max-width: 600px) {
+  .simple-card-generator-modal {
     width: 95%;
-    max-height: 95vh;
+    padding: 15px;
   }
   
-  .simple-card-generator-modal .metadata-item {
+  .option-buttons {
     flex-direction: column;
   }
   
-  .simple-card-generator-modal .metadata-item label {
-    margin-bottom: 4px;
-  }
-  
-  .simple-card-generator-modal .bulk-actions {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .simple-card-generator-modal .add-all-button,
-  .simple-card-generator-modal .regenerate-button {
-    margin: 0;
+  .option-button {
+    width: 100%;
   }
 }

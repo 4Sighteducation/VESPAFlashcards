@@ -17,7 +17,7 @@ const debugLog = (title, data) => {
 
 /**
  * Generate flashcards via HTTP request to the backend
- * @param {Object} params - Generation parameters (subject, topic, examType, examBoard, questionType, numCards)
+ * @param {Object} params - Generation parameters
  * @returns {Promise<Array>} - Generated cards
  */
 export const generateCards = async (params) => {
@@ -30,24 +30,34 @@ export const generateCards = async (params) => {
       topic = 'General',
       examType = 'General',
       examBoard = 'General',
-      questionType = 'multiple_choice',
-      numCards = 5,
-      contentGuidance = ''
+      cardType = 'multiple_choice', // Using cardType as the main param name
+      questionType, // For backward compatibility
+      count = 1, // Using count as the main param name
+      numCards, // For backward compatibility
+      contentGuidance = '',
+      userId = null,
+      recordId = null
     } = params;
+
+    // Map our simplified types to backend types if needed
+    const mappedQuestionType = questionType || cardType;
+    const mappedNumCards = numCards || count;
 
     // Make the API request
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-User-ID': userId || 'anonymous', // Add user ID if available
+        'X-Record-ID': recordId || '' // Add record ID if available
       },
       body: JSON.stringify({
         subject,
         topic,
         examType,
         examBoard,
-        questionType,
-        numCards,
+        questionType: mappedQuestionType,
+        numCards: mappedNumCards,
         contentGuidance
       })
     });
@@ -129,13 +139,14 @@ export const processCards = (cards, metadata) => {
     }
     
     // Create card object matching the expected schema
-    return {
+    const processedCard = {
       id,
       subject: card.subject || subject,
       topic: card.topic || topic,
       examType: card.examType || examType,
       examBoard: card.examBoard || examBoard,
-      questionType: card.questionType || 'short_answer',
+      type: card.questionType || card.type || 'short_answer', // Standardize on "type"
+      questionType: card.questionType || card.type || 'short_answer', // Keep for backward compatibility
       question: front,
       answer: back,
       front, // Duplicate for compatibility
@@ -152,10 +163,23 @@ export const processCards = (cards, metadata) => {
       lastReviewed: new Date().toISOString(),
       nextReviewDate: new Date().toISOString(),
       boxNum: 1, // Start in box 1 for spaced repetition
-      options: card.options || [],
-      savedOptions: card.options || [], // Backup for multiple choice options
-      correctAnswer: card.correctAnswer || ''
+      isShell: false, // Not a topic shell
+      isEmpty: false // Has content
     };
+    
+    // Handle multiple choice options
+    if (card.options && Array.isArray(card.options)) {
+      processedCard.options = card.options;
+      processedCard.savedOptions = [...card.options]; // Backup for multiple choice options
+      processedCard.correctAnswer = card.correctAnswer || '';
+    } else {
+      processedCard.options = [];
+      processedCard.savedOptions = [];
+      processedCard.correctAnswer = '';
+    }
+    
+    // Return the standardized card
+    return processedCard;
   }).filter(Boolean); // Remove any null entries
 };
 
