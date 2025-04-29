@@ -5,6 +5,7 @@ import Flashcard from './Flashcard';
 import TopicHub from '../components/TopicHub'; // Keep for potential future use or topic display
 import saveQueueService from '../services/SaveQueueService';
 import { useWebSocket } from '../hooks/useWebSocket'; // ADDED
+import { BRIGHT_COLORS, getContrastColor } from '../utils/ColorUtils';
 
 // Constants for question types and exam boards
 const QUESTION_TYPES = [
@@ -40,14 +41,7 @@ const boardsForType = (examType) => {
   return EXAM_BOARDS.map(board => board.value);
 };
 
-// Color palette for cards
-const BRIGHT_COLORS = [
-  "#e6194b", "#3cb44b", "#ffe119", "#0082c8", "#f58231",
-  "#911eb4", "#46f0f0", "#f032e6", "#d2f53c", "#fabebe",
-  "#008080", "#e6beff", "#aa6e28", "#fffac8", "#800000",
-  "#aaffc3", "#808000", "#ffd8b1", "#000080", "#808080",
-  "#FF69B4", "#8B4513", "#00CED1", "#ADFF2F", "#DC143C"
-];
+// Note: Using imported BRIGHT_COLORS from ColorUtils.js
 
 // API keys - REMOVED - Handled by backend
 // const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";

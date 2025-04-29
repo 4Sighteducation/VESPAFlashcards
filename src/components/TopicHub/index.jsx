@@ -1135,6 +1135,13 @@ const TopicHub = ({
       localStorage.setItem(`contentGuidance_${selectedTopic.id}`, contentGuidance);
     }
     
+    // Find the actual topic color, fallback through different sources
+    const topicColor = selectedTopic.color || 
+                      selectedTopic.cardColor || 
+                      (mainTopics.some(mt => mt.name === selectedTopic.mainTopic) ? 
+                        mainTopics.find(mt => mt.name === selectedTopic.mainTopic)?.color || '#3cb44b' : 
+                        '#3cb44b');
+    
     // Add content guidance to the topic object when passing to parent
     const topicWithGuidance = {
       ...selectedTopic,
@@ -1143,8 +1150,17 @@ const TopicHub = ({
       subject: subject,
       examBoard: examBoard,
       examType: examType,
-      topicColor: selectedTopic.color || null
+      topicColor: topicColor
     };
+    
+    console.log("[TopicHub] Generating cards for topic with metadata:", {
+      subject: subject,
+      topic: selectedTopic.topic || selectedTopic.subtopic || selectedTopic.name,
+      examBoard: examBoard,
+      examType: examType,
+      topicColor: topicColor,
+      skipMetadataSteps: true
+    });
     
     // If onGenerateCards is provided, use it directly instead of onSelectTopic
     if (onGenerateCards) {

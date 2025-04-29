@@ -3,63 +3,7 @@ import ReactDOM from 'react-dom';
 import './Flashcard.css';
 import ScaledText from './ScaledText';
 import MultipleChoiceOptions from './MultipleChoiceOptions';
-
-// Helper function for determining text color based on background color
-export const getContrastColor = (hexColor) => {
-  // Default to black if no color provided
-  if (!hexColor || typeof hexColor !== 'string') {
-    console.warn('Invalid color provided to getContrastColor:', hexColor);
-    return '#000000';
-  }
-  
-  try {
-    // Remove # if present
-    hexColor = hexColor.replace('#', '');
-    
-    // Handle 3-character hex
-    if (hexColor.length === 3) {
-      hexColor = hexColor[0] + hexColor[0] + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2];
-    }
-    
-    // Validate hex format
-    if (!/^[0-9A-F]{6}$/i.test(hexColor)) {
-      console.warn('Invalid hex color format:', hexColor);
-      return '#000000';
-    }
-    
-    // Convert to RGB
-    const r = parseInt(hexColor.substring(0, 2), 16);
-    const g = parseInt(hexColor.substring(2, 4), 16);
-    const b = parseInt(hexColor.substring(4, 6), 16);
-    
-    // Handle NaN values that might occur with invalid hex colors
-    if (isNaN(r) || isNaN(g) || isNaN(b)) {
-      console.warn('Invalid RGB conversion in getContrastColor:', { r, g, b, hexColor });
-      return '#000000';
-    }
-    
-    // Use WCAG luminance formula for better contrast perception
-    // L = 0.2126 * R + 0.7152 * G + 0.0722 * B
-    const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-    
-    // Calculate contrast with white and black
-    const contrastWithWhite = (luminance + 0.05) / 0.05;
-    const contrastWithBlack = (1.05) / (luminance + 0.05);
-    
-    // Choose color with better contrast (higher contrast ratio)
-    const chosenColor = contrastWithWhite > contrastWithBlack ? '#ffffff' : '#000000';
-    
-    // Log the values for debugging (can be removed later)
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`[getContrastColor] Lum: ${luminance.toFixed(3)}, Contrast White: ${contrastWithWhite.toFixed(2)}, Contrast Black: ${contrastWithBlack.toFixed(2)}, Chosen: ${chosenColor}`);
-    }
-    
-    return chosenColor;
-  } catch (error) {
-    console.error('Error in getContrastColor:', error, { inputColor: hexColor });
-    return '#000000'; // Default to black on error
-  }
-};
+import { getContrastColor } from '../utils/ColorUtils';
 
 // Removed unused commented-out function: getAppropriateQuestionSize
 
