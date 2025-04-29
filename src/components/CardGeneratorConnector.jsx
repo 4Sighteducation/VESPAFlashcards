@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import AICardGenerator from './AICardGenerator';
+import FlashcardGeneratorBridge from './FlashcardGeneratorBridge';
 import LoadingSpinner from './LoadingSpinner';
 
 /**
- * CardGeneratorConnector - A component that connects the Topic UI with the AICardGenerator
+ * CardGeneratorConnector - A component that connects the Topic UI with flashcard generation
  * 
- * This component is a simpler wrapper around AICardGenerator to provide a cleaner integration
- * with the Topic UI. It handles passing metadata from topics to AICardGenerator.
+ * This component provides a clean integration between the Topic UI and our
+ * FlashcardGeneratorBridge component. It handles passing metadata from topics to the generator.
  */
 const CardGeneratorConnector = ({
   onAddCard,
@@ -22,22 +22,19 @@ const CardGeneratorConnector = ({
   recordId,
   onFinalizeTopics
 }) => {
-  // Forward the props to AICardGenerator
+  // Forward the props to FlashcardGeneratorBridge in a cleaner format
   return (
-    <AICardGenerator
-      onAddCard={onAddCard}
-      onClose={onClose}
-      subjects={subjects}
-      auth={auth}
-      userId={userId}
-      initialSubject={initialSubject}
-      initialTopic={initialTopic}
-      initialTopicsProp={initialTopicsProp}
-      examBoard={examBoard}
-      examType={examType}
+    <FlashcardGeneratorBridge
+      topic={{
+        subject: initialSubject,
+        topic: initialTopic,
+        examBoard: examBoard,
+        examType: examType
+      }}
       recordId={recordId}
-      onFinalizeTopics={onFinalizeTopics}
-      skipMetadataSteps={initialSubject && initialTopic} // Skip metadata steps if we already have subject and topic
+      userId={userId}
+      onClose={onClose}
+      onAddCards={onAddCard}
     />
   );
 };

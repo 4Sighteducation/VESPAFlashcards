@@ -5,7 +5,7 @@ import "./FlashcardList.css";
 import ColorEditor from "./ColorEditor";
 import TopicCreationModal from "./TopicCreationModal";
 import { deleteSubject, deleteTopic } from "./FlashcardTopicHandler";
-import AICardGenerator from './AICardGenerator';
+import FlashcardGeneratorBridge from './FlashcardGeneratorBridge';
 import ErrorBoundary from './ErrorBoundary';
 import { BRIGHT_COLORS, getContrastColor, generateShade } from '../utils/ColorUtils';
 
@@ -1177,18 +1177,28 @@ const FlashcardList = ({
       )}
       {showCardGenerator && generatorTopic && (
         <ErrorBoundary>
-          <AICardGenerator
-            initialSubject={generatorTopic.subject}
-            initialTopic={generatorTopic.topic || generatorTopic.name}
-            examBoard={generatorTopic.examBoard || "AQA"}
-            examType={generatorTopic.examType || "A-Level"}
-            skipMetadataSteps={true}
-            topicColor={generatorTopic.color || generatorTopic.cardColor}
+          <FlashcardGeneratorBridge
+            topic={{
+              subject: generatorTopic.subject,
+              topic: generatorTopic.topic || generatorTopic.name,
+              examBoard: generatorTopic.examBoard || "AQA",
+              examType: generatorTopic.examType || "A-Level",
+              color: generatorTopic.color || generatorTopic.cardColor,
+              ...generatorTopic
+            }}
             recordId={recordId || null}
             userId={userId || localUserId || null}
             onClose={() => {
               setShowCardGenerator(false);
               setGeneratorTopic(null);
+            }}
+            onAddCards={(card) => {
+              // Check if the onAddCard prop exists from parent component
+              if (typeof onAddCard === 'function') {
+                onAddCard(card);
+              } else {
+                console.warn("No onAddCard handler provided to FlashcardList");
+              }
             }}
           />
         </ErrorBoundary>

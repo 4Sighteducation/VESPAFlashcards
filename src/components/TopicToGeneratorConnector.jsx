@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AICardGenerator from './AICardGenerator';
+import FlashcardGeneratorBridge from './FlashcardGeneratorBridge';
 import ErrorBoundary from './ErrorBoundary';
 import './TopicToGeneratorConnector.css';
 
@@ -47,13 +47,14 @@ const TopicToGeneratorConnector = ({
       
       {showGenerator && (
         <ErrorBoundary>
-          <AICardGenerator
-            initialSubject={subject}
-            initialTopic={topicName}
-            examBoard={examBoard}
-            examType={examType}
-            skipMetadataSteps={true}
-            topicColor={topicColor}
+          <FlashcardGeneratorBridge
+            topic={{
+              subject: subject,
+              topic: topicName,
+              examBoard: examBoard,
+              examType: examType,
+              color: topicColor
+            }}
             recordId={recordId}
             userId={userId}
             onClose={handleGeneratorClose}
@@ -64,4 +65,4 @@ const TopicToGeneratorConnector = ({
   );
 };
 
-export default TopicToGeneratorConnector; 
+export default TopicToGeneratorConnector;
