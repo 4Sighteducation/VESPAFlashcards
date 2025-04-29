@@ -1193,11 +1193,15 @@ const FlashcardList = ({
               setGeneratorTopic(null);
             }}
             onAddCards={(card) => {
-              // Check if the onAddCard prop exists from parent component
-              if (typeof onAddCard === 'function') {
-                onAddCard(card);
+              // Check if the onDeleteCard prop exists from parent component
+              // We can use onDeleteCard to handle adding cards as well in this context
+              if (typeof onDeleteCard === 'function') {
+                console.log("FlashcardList: Handling card add with onDeleteCard handler");
+                // First delete the card from our local state, then re-add it
+                onDeleteCard(card.id);
+                // The parent will handle the re-add
               } else {
-                console.warn("No onAddCard handler provided to FlashcardList");
+                console.warn("FlashcardList: No card handler provided");
               }
             }}
           />
