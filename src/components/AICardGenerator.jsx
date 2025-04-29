@@ -57,6 +57,16 @@ const debugLog = (title, data) => {
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const AICardGenerator = (props) => {
+  // Defensive: Check for required props when skipping metadata steps
+  if (props.skipMetadataSteps && (!props.initialSubject || !props.initialTopic)) {
+    console.error("AICardGenerator: Missing required metadata props when skipMetadataSteps is true", { initialSubject: props.initialSubject, initialTopic: props.initialTopic });
+    return <div style={{ color: "red", padding: 20, background: '#fff0f0', border: '2px solid #d32f2f', borderRadius: 8 }}>
+      <h2>Error: Missing required metadata for card generation.</h2>
+      <p>Required props: <b>initialSubject</b> and <b>initialTopic</b> must be provided when <b>skipMetadataSteps</b> is true.</p>
+      <pre>{JSON.stringify({ initialSubject: props.initialSubject, initialTopic: props.initialTopic }, null, 2)}</pre>
+    </div>;
+  }
+
   // Destructure props for easier use
   const {
     onAddCard, onClose, subjects = [], auth, userId,
@@ -1166,16 +1176,6 @@ useEffect(() => {
 
   // Defensive: Log all props
   console.log("AICardGenerator props", props);
-
-  // Defensive: Check for required props when skipping metadata steps
-  if (skipMetadataSteps && (!initialSubject || !initialTopic)) {
-    console.error("AICardGenerator: Missing required metadata props when skipMetadataSteps is true", { initialSubject, initialTopic });
-    return <div style={{ color: "red", padding: 20, background: '#fff0f0', border: '2px solid #d32f2f', borderRadius: 8 }}>
-      <h2>Error: Missing required metadata for card generation.</h2>
-      <p>Required props: <b>initialSubject</b> and <b>initialTopic</b> must be provided when <b>skipMetadataSteps</b> is true.</p>
-      <pre>{JSON.stringify({ initialSubject, initialTopic }, null, 2)}</pre>
-    </div>;
-  }
 
   return (
       <div className="ai-card-generator-modal">
