@@ -970,19 +970,87 @@ useEffect(() => {
 
   // Main function to render content based on currentStep
   const renderStepContent = () => {
-    // If skipMetadataSteps is true and we're at step < 4, show a message
-    if (skipMetadataSteps && currentStep < 4) {
-      return (
-        <div className="skipped-steps-message">
-          <p>Using metadata from selected topic:</p>
-          <ul>
-            <li><strong>Subject:</strong> {formData.subject}</li>
-            <li><strong>Topic:</strong> {formData.topic}</li>
-            <li><strong>Exam Board:</strong> {formData.examBoard}</li>
-            <li><strong>Exam Type:</strong> {formData.examType}</li>
-          </ul>
-        </div>
-      );
+    if (skipMetadataSteps) {
+      if (currentStep === 4) {
+        return (
+          <div>
+            <h4>Card Options</h4>
+            <label>Number of Cards:</label>
+            <input 
+              type="number" 
+              name="numCards" 
+              value={formData.numCards} 
+              onChange={handleChange}
+              min="1" 
+              max="20"
+            />
+            <label>Question Type:</label>
+            <select name="questionType" value={formData.questionType} onChange={handleChange}>
+              {QUESTION_TYPES.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
+            </select>
+          </div>
+        );
+      }
+      if (currentStep === 5) {
+        return (
+          <div>
+            <h4>Step 5: Review & Add Cards</h4>
+            {isGenerating && loadingStatus && <div>{loadingStatus}... <div className="spinner"></div></div>}
+            {error && <div className="error-message">{error}</div>}
+            <div className="generated-cards-container">
+                {(() => {
+                    if (!Array.isArray(generatedCards)) {
+                        console.error("generatedCards is not an array", generatedCards);
+                        return <div>Error: generatedCards is not an array.</div>;
+                    }
+                    if (generatedCards.length > 0 && !isGenerating) {
+                        console.log("Rendering generatedCards:", generatedCards);
+                        return generatedCards.map((card, index) => {
+                            if (!card) {
+                                console.error("Null/undefined card at index", index, generatedCards);
+                                return <div key={index} style={{ color: 'red' }}>Error: Card is undefined/null at index {index}.</div>;
+                            }
+                            if (!card.id || !card.front) {
+                                console.error("Invalid card object at index", index, card);
+                                return <div key={index} style={{ color: 'red' }}>Error: Card missing id or front at index {index}.</div>;
+                            }
+                            return (
+                                <div key={card.id || index} className="generated-card-review-item">
+                                    {/* Basic card preview - could use Flashcard component */}
+                                    <div className="card-preview" style={{ borderLeft: `5px solid ${card.cardColor}` }}>
+                                        <strong>Q:</strong> {card.front?.substring(0, 100)}{card.front?.length > 100 ? '...' : ''} <br />
+                                        <strong>A:</strong> {card.back?.substring(0, 100)}{card.back?.length > 100 ? '...' : ''}
+                                    </div>
+                                    <button onClick={() => handleAddCard(card)} disabled={pendingOperations.addToBank || card.processing}>
+                                        {card.processing ? 'Adding...' : 'Add This Card'}
+                                    </button>
+                                    {/* Add edit/delete buttons if needed */}
+                                </div>
+                            );
+                        });
+                    } else {
+                        if (!isGenerating) {
+                            return <div>No cards generated yet.</div>;
+                        }
+                        return null;
+                    }
+                })()}
+            </div>
+            {generatedCards.length > 0 && !isGenerating && (
+                 <div className="card-actions">
+                     <button onClick={handleAddAllCards} disabled={pendingOperations.addToBank || isGenerating}>
+                         Add All {generatedCards.length} Cards
+                    </button>
+                     <button onClick={handleRegenerateCards} disabled={pendingOperations.addToBank || isGenerating || !isWsConnected}>
+                         Regenerate Cards
+                    </button>
+          </div>
+        )}
+             {savedCount > 0 && <div className="saved-count-indicator">{savedCount} card(s) added.</div>}
+          </div>
+        );
+      }
+      return null;
     }
 
     switch (currentStep) {

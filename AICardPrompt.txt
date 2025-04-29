@@ -1,0 +1,295 @@
+// Generate cards using OpenAI API
+  const generateCards = async () => {
+    // Get subject value, ensuring it's a string not an object
+    const subjectValue = formData.subject || formData.newSubject;
+    const subjectName = typeof subjectValue === 'object' && subjectValue.name 
+      ? subjectValue.name 
+      : subjectValue;
+    
+    console.log("Generate cards function called with state:", { 
+      isGenerating, 
+      currentStep,
+      formData: { 
+        examType: formData.examType,
+        examBoard: formData.examBoard,
+        subject: subjectName,
+        topic: formData.topic || formData.newTopic,
+        questionType: formData.questionType
+      }
+    });
+    
+    setIsGenerating(true);
+    setError(null);
+    
+    try {
+      // Determine final subject and topic (use new values if provided)
+      const finalSubject = formData.newSubject || subjectName;
+      const finalTopic = formData.newTopic || formData.topic;
+      const finalExamType = formData.examType;
+      const finalExamBoard = formData.examBoard;
+      
+      // Log explicit metadata that will be used
+      console.log("Explicit metadata for cards:", {
+        finalSubject,
+        finalTopic,
+        finalExamType,
+        finalExamBoard
+      });
+      
+      // Automatically select a color if not already set
+      // This can happen if we're coming from a previous step
+      let cardColor = formData.subjectColor;
+      
+      // Get existing subject colors from parent component's subjects if available
+      const existingSubjects = subjects || [];
+      const existingColors = existingSubjects
+        .filter(sub => sub.subjectColor && typeof sub.subjectColor === 'string') // Only consider subjects with colors that are strings
+        .map(sub => sub.subjectColor.toLowerCase()); // Normalize color format
+      
+      // If this is a new subject that matches an existing one, use that color
+      const matchingSubject = existingSubjects.find(sub => {
+        const subName = typeof sub === 'object' && sub.subject ? sub.subject : 
+                       typeof sub === 'object' && sub.name ? sub.name : sub;
+        return subName && (subName.toLowerCase() === finalSubject.toLowerCase());
+      });
+      
+      if (matchingSubject && matchingSubject.subjectColor) {
+        // Use the existing subject color
+        cardColor = matchingSubject.subjectColor;
+        console.log(`Using existing color ${cardColor} for subject ${finalSubject}`);
+      } else {
+        // Find a color not already in use
+        const availableColors = BRIGHT_COLORS.filter(color => 
+          !existingColors.includes(color.toLowerCase())
+        );
+        
+        if (availableColors.length > 0) {
+          // Use a color that's not already used by another subject
+          cardColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+          console.log(`Selected new color ${cardColor} for subject ${finalSubject}`);
+        } else {
+          // If all colors are used, just pick a random one
+          cardColor = BRIGHT_COLORS[Math.floor(Math.random() * BRIGHT_COLORS.length)];
+          console.log(`All colors in use, randomly selected ${cardColor} for subject ${finalSubject}`);
+        }
+      }
+      
+      // Update the form data with the selected color
+      setFormData(prev => ({ ...prev, subjectColor: cardColor }));
+      
+      // Create prompt based on question type and other parameters
+      let prompt;
+      
+      if (formData.questionType === "acronym") {
+        let topicInfo = finalTopic ? ` with focus on ${finalTopic}` : "";
+        prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). Generate ${formData.numCards} exam-style flashcards for ${formData.examBoard} ${formData.examType} ${finalSubject}${topicInfo}. Create a useful acronym from some essential course knowledge. Be creative and playful. Format exactly as: [{"acronym": "Your acronym", "explanation": "Detailed explanation here"}]`;
+      } else {
+        // Determine complexity based on exam type
+        let complexityInstruction;
+        if (formData.examType === "A-Level") {
+          complexityInstruction = "Make these appropriate for A-Level students (age 16-18). Questions should be challenging and involve deeper thinking. Include sufficient detail in answers and use appropriate technical language.";
+        } else { // GCSE
+          complexityInstruction = "Make these appropriate for GCSE students (age 14-16). Questions should be clear but still challenging. Explanations should be thorough but accessible.";
+        }
+        
+        // Base prompt
+        prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). 
+Generate ${formData.numCards} high-quality ${formData.examBoard} ${formData.examType} ${finalSubject} flashcards for the specific topic "${finalTopic}".
+${complexityInstruction}
+
+Before generating questions, scrape the latest ${formData.examBoard} ${formData.examType} ${finalSubject} specification to ensure the content matches the current curriculum exactly.
+
+Use this format for different question types:
+`;
+        
+        // Add format based on question type
+        if (formData.questionType === "multiple_choice") {
+          prompt += `[
+  {
+    "subject": "${finalSubject}",
+    "topic": "${finalTopic}",
+    "questionType": "multiple_choice",
+    "question": "Clear, focused question based on the curriculum",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+    "correctAnswer": "The correct option exactly as written in options array",
+    "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
+  }
+]`;
+        } else if (formData.questionType === "short_answer") {
+          prompt += `[
+  {
+    "subject": "${finalSubject}",
+    "topic": "${finalTopic}",
+    "questionType": "short_answer",
+    "question": "Clear, focused question from the curriculum",
+    "keyPoints": ["Key point 1", "Key point 2", "Key point 3"],
+    "detailedAnswer": "Complete and thorough explanation with all necessary information"
+  }
+]`;
+        } else if (formData.questionType === "essay") {
+          prompt += `[
+  {
+    "subject": "${finalSubject}",
+    "topic": "${finalTopic}",
+    "questionType": "essay",
+    "question": "Thought-provoking essay question matching the curriculum",
+    "keyPoints": ["Important point 1", "Important point 2", "Important point 3", "Important point 4"],
+    "detailedAnswer": "Structured essay plan with introduction, key arguments, and conclusion guidance"
+  }
+]`;
+        }
+      }
+      
+      console.log("Generating cards with prompt:", prompt);
+      
+      // Make the API call to OpenAI
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 2000,
+          temperature: 0.7
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error?.message || "Error calling OpenAI API");
+      }
+      
+      // Parse the response
+      const content = data.choices[0].message.content;
+      console.log("Raw AI response:", content);
+      
+      const cleanedContent = cleanOpenAIResponse(content);
+      
+      let cards;
+      try {
+        cards = JSON.parse(cleanedContent);
+      } catch (e) {
+        console.error("Error parsing AI response:", e);
+        throw new Error("Failed to parse AI response. Please try again.");
+      }
+      
+      if (!Array.isArray(cards) || cards.length === 0) {
+        throw new Error("Invalid response format from AI. Please try again.");
+      }
+      
+      // Process the generated cards
+      const processedCards = cards.map((card, index) => {
+        // Generate a unique ID
+        const id = `card_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Log metadata for debugging
+        console.log(`Generating card #${index + 1} with metadata:`, {
+          subject: finalSubject,
+          topic: finalTopic,
+          examType: finalExamType,
+          examBoard: finalExamBoard,
+          color: cardColor
+        });
+        
+        // Ensure card color is valid - use a default if no color is available
+        const ensuredCardColor = cardColor || "#3cb44b";
+        
+        // Add standard fields
+        const baseCard = {
+          id,
+          subject: finalSubject,
+          topic: finalTopic,
+          examType: finalExamType,
+          examBoard: finalExamBoard,
+          questionType: formData.questionType,
+          cardColor: ensuredCardColor,
+          baseColor: ensuredCardColor,
+          timestamp: new Date().toISOString(),
+          boxNum: 1, // Start in box 1
+        };
+        
+        // Process specific question types
+        if (formData.questionType === "acronym") {
+          return {
+            ...baseCard,
+            acronym: card.acronym,
+            explanation: card.explanation,
+            front: `Acronym: ${card.acronym}`,
+            back: `Explanation: ${card.explanation}`
+          };
+        } else if (formData.questionType === "multiple_choice") {
+          // Clean all options and correct answer of any existing prefixes
+          const cleanedOptions = card.options.map(option => 
+            option.replace(/^[a-d]\)\s*/i, '').trim()
+          );
+          
+          let correctAnswer = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
+          
+          // Find the index of the correct answer in the options
+          let correctIndex = cleanedOptions.findIndex(option => 
+            option.toLowerCase() === correctAnswer.toLowerCase()
+          );
+          
+          // If match not found, try a more flexible comparison
+          if (correctIndex === -1) {
+            correctIndex = cleanedOptions.findIndex(option => 
+              option.toLowerCase().includes(correctAnswer.toLowerCase()) || 
+              correctAnswer.toLowerCase().includes(option.toLowerCase())
+            );
+          }
+          
+          // If still not found, default to the first option
+          if (correctIndex === -1) {
+            console.warn("Could not match correct answer to an option, defaulting to first option");
+            correctIndex = 0;
+            correctAnswer = cleanedOptions[0];
+          }
+          
+          // Get the letter for this index (a, b, c, d)
+          const letter = String.fromCharCode(97 + correctIndex);
+          
+          return {
+            ...baseCard,
+            question: card.question,
+            options: cleanedOptions, // Use the cleaned options
+            correctAnswer: correctAnswer, // Use the cleaned correct answer
+            correctIndex: correctIndex, // Store the index for future reference
+            detailedAnswer: card.detailedAnswer,
+            additionalInfo: card.detailedAnswer, // Add to additionalInfo field for info modal
+            front: card.question,
+            back: `Correct Answer: ${letter}) ${correctAnswer}` // Format with letter prefix
+          };
+        } else if (formData.questionType === "short_answer" || formData.questionType === "essay") {
+          // Create key points as bullet points if they exist
+          const keyPointsHtml = card.keyPoints && card.keyPoints.length > 0
+            ? card.keyPoints.map(point => `• ${point}`).join('\n')
+            : "";
+          
+          return {
+            ...baseCard,
+            keyPoints: keyPointsHtml,
+            front: card.question,
+            back: card.detailedAnswer
+          };
+        }
+      });
+      
+      setGeneratedCards(processedCards);
+    } catch (error) {
+      console.error("Error generating cards:", error);
+      setError("Failed to generate cards. Please try again later.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="AICardGenerator">
+      {/* Render your component content here */}
+    </div>
+  );
+};

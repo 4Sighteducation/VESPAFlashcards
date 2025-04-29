@@ -20,17 +20,30 @@ Use this format for different question types:
 `;
 
     if (questionType === "multiple_choice") {
-      prompt += `[
+      prompt += `Each object should have:
+- subject
+- topic
+- questionType
+- question
+- options (an array of 4 strings)
+- correctAnswer (must match one of the options exactly)
+- detailedAnswer
+
+For each question, randomly assign the correct answer to any of the four options. Do not always use the same position for the correct answer. The correctAnswer field must exactly match one of the options.
+
+Example:
+[
   {
     "subject": "${subject}",
     "topic": "${topic}",
     "questionType": "multiple_choice",
-    "question": "Clear, focused question based on the curriculum",
-    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-    "correctAnswer": "The correct option exactly as written in options array",
-    "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
+    "question": "What is the main pigment in photosynthesis?",
+    "options": ["Chlorophyll", "Hemoglobin", "Keratin", "Melanin"],
+    "correctAnswer": "Chlorophyll",
+    "detailedAnswer": "Chlorophyll is the main pigment that absorbs light for photosynthesis."
   }
-]`;
+]
+Generate ${numCards} such objects.`;
     } else if (questionType === "short_answer") {
       prompt += `[
   {
