@@ -67,7 +67,7 @@ const AICardGenerator = (props) => {
     </div>;
   }
 
-  // Destructure props for easier use
+  // Now destructure props and call hooks
   const {
     onAddCard, onClose, subjects = [], auth, userId,
     initialSubject = "", initialTopic = "", examBoard = "AQA", examType = "A-Level",
