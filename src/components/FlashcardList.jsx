@@ -265,6 +265,8 @@ const FlashcardList = ({
   const [expandedTopics, setExpandedTopics] = useState(new Set()); // State for expanded topics
   // Add state to track if we need to get userId from localStorage if not provided
   const [localUserId, setLocalUserId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   // 2. useRef Hooks
   const subjectRefs = useRef({});
@@ -720,33 +722,96 @@ const FlashcardList = ({
 
   // --- Modify handleAddGeneratedCards ---
   const handleAddGeneratedCards = useCallback((generatedCards) => {
-      console.log("[FlashcardList] handleAddGeneratedCards called with:", generatedCards);
-      if (!recordId) {
-          console.error("[FlashcardList] Cannot add generated cards: Missing recordId.");
-          alert("Error: Cannot save cards, record ID is missing.");
-          return;
-      }
-      if (!Array.isArray(generatedCards) || generatedCards.length === 0) {
-          console.warn("[FlashcardList] No valid cards received to add.");
-          return;
-      }
+    console.log("[FlashcardList] handleAddGeneratedCards called with:", generatedCards);
+    if (!recordId) {
+      console.error("[FlashcardList] Cannot add generated cards: Missing recordId.");
+      alert("Error: Cannot save cards, record ID is missing.");
+      return;
+    }
+    if (!Array.isArray(generatedCards) || generatedCards.length === 0) {
+      console.warn("[FlashcardList] No valid cards received to add.");
+      return;
+    }
 
+    // Show saving indicator
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
       // --- Use the prop function instead of finding iframe directly ---
       if (typeof propagateSaveToBridge === 'function') {
-          console.log("[FlashcardList] Calling propagateSaveToBridge for ADD_TO_BANK");
-          propagateSaveToBridge({
-              type: 'ADD_TO_BANK',
-              recordId: recordId,
-              cards: generatedCards // Send the array of card objects
-          });
-      } else {
-          console.error("[FlashcardList] propagateSaveToBridge function is not available.");
-          alert("Error: Could not communicate with the saving mechanism (prop missing).");
-      }
-      // ---------------------------------------------------------------
+        console.log("[FlashcardList] Calling propagateSaveToBridge for ADD_TO_BANK");
+        
+        // Call the save bridge method
+        propagateSaveToBridge({
+          type: 'ADD_TO_BANK',
+          recordId: recordId,
+          cards: generatedCards // Send the array of card objects
+        });
 
+        // Set a timeout to auto-refresh the page if we don't get a response
+        const timeoutId = setTimeout(() => {
+          console.log("[FlashcardList] Save operation timeout - refreshing page");
+          setIsSaving(false);
+          window.location.reload();
+        }, 10000); // 10 second timeout
+
+        // Listen for the save result message from the parent
+        const handleSaveResult = (event) => {
+          if (event.data && event.data.type === 'SAVE_RESULT') {
+            clearTimeout(timeoutId);
+            window.removeEventListener('message', handleSaveResult);
+            setIsSaving(false);
+            
+            if (event.data.success) {
+              console.log("[FlashcardList] Save operation successful");
+            } else {
+              console.error("[FlashcardList] Save operation failed:", event.data.message);
+              setSaveError(event.data.message || "Failed to save cards");
+            }
+          }
+        };
+
+        window.addEventListener('message', handleSaveResult);
+      } else {
+        setIsSaving(false);
+        console.error("[FlashcardList] propagateSaveToBridge function is not available.");
+        alert("Error: Could not communicate with the saving mechanism (prop missing).");
+      }
+    } catch (error) {
+      setIsSaving(false);
+      setSaveError(error.message || "An error occurred while saving cards");
+      console.error("[FlashcardList] Error in handleAddGeneratedCards:", error);
+    }
   }, [recordId, propagateSaveToBridge]); // Add propagateSaveToBridge dependency
   // -------------------------------------------
+
+  // Loading overlay component for save operation
+  const SaveLoadingOverlay = () => {
+    if (!isSaving) return null;
+    
+    return (
+      <div className="save-loading-overlay">
+        <div className="save-loading-content">
+          <div className="save-spinner"></div>
+          <p>Saving cards to your collection...</p>
+          <p className="save-tip">This may take a few seconds. Please don't close this window.</p>
+        </div>
+      </div>
+    );
+  };
+
+  // Error message component for save operation
+  const SaveErrorMessage = () => {
+    if (!saveError) return null;
+    
+    return (
+      <div className="save-error-message">
+        <p>Error saving cards: {saveError}</p>
+        <button onClick={() => setSaveError(null)}>Dismiss</button>
+      </div>
+    );
+  };
 
   // --- END: HOOK DEFINITIONS ---
 
@@ -1299,6 +1364,8 @@ const FlashcardList = ({
           />
         </ErrorBoundary>
       )}
+      <SaveLoadingOverlay />
+      <SaveErrorMessage />
     </div>
   );
 };

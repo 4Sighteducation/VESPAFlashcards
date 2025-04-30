@@ -91,8 +91,9 @@ const FlippableCard = ({
   
   // Find correct answer index for multiple choice cards
   const getCorrectAnswerIndex = () => {
-    if (!card || !card.questionType || card.questionType !== 'multiple_choice' || !card.options) {
-      return -1;
+    if (!card || !card.options || !Array.isArray(card.options) || card.options.length === 0) {
+      console.warn(`[FlippableCard] Cannot determine correct answer index: invalid options array for card ${card?.id}`);
+      return 0; // Default to first option
     }
     
     // Try to find correct answer based on multiple matching strategies
@@ -101,19 +102,43 @@ const FlippableCard = ({
     if (card.correctAnswer) {
       // Handle if correctAnswer is a full option text
       const correctAnswerText = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
-      return card.options.findIndex(option => {
+      
+      // First try exact match
+      let correctIndex = card.options.findIndex(option => {
         const optionText = typeof option === 'string' 
           ? option.replace(/^[a-d]\)\s*/i, '').trim() 
           : (option?.text || '').replace(/^[a-d]\)\s*/i, '').trim();
         return optionText === correctAnswerText;
       });
+      
+      // If exact match fails, try case-insensitive match
+      if (correctIndex === -1) {
+        correctIndex = card.options.findIndex(option => {
+          const optionText = typeof option === 'string' 
+            ? option.replace(/^[a-d]\)\s*/i, '').trim() 
+            : (option?.text || '').replace(/^[a-d]\)\s*/i, '').trim();
+          return optionText.toLowerCase() === correctAnswerText.toLowerCase();
+        });
+      }
+      
+      // If match found, return it
+      if (correctIndex !== -1) {
+        console.log(`[FlippableCard] Found correct answer by matching correctAnswer: ${correctAnswerText}, index: ${correctIndex}`);
+        return correctIndex;
+      }
+      
+      // Log failure to find matching option
+      console.warn(`[FlippableCard] Card has correctAnswer "${correctAnswerText}" but it doesn't match any option`);
     }
     
     // Strategy 2: Look for option with isCorrect flag
     const correctOptionIndex = card.options.findIndex(option => 
       option && typeof option === 'object' && option.isCorrect === true
     );
-    if (correctOptionIndex >= 0) return correctOptionIndex;
+    if (correctOptionIndex >= 0) {
+      console.log(`[FlippableCard] Found correct answer via isCorrect flag at index: ${correctOptionIndex}`);
+      return correctOptionIndex;
+    }
     
     // Strategy 3: Parse the answer/back text if it contains "Correct Answer: [letter])"
     const answerString = card.answer || card.back || '';
@@ -121,7 +146,11 @@ const FlippableCard = ({
       const correctAnswerMatch = answerString.match(/Correct Answer:\s*([a-d])\)/i);
       if (correctAnswerMatch) {
         const letter = correctAnswerMatch[1].toLowerCase();
-        return letter.charCodeAt(0) - 97; // 'a' => 0, 'b' => 1, etc.
+        const index = letter.charCodeAt(0) - 97; // 'a' => 0, 'b' => 1, etc.
+        if (index >= 0 && index < card.options.length) {
+          console.log(`[FlippableCard] Found correct answer by parsing answer string: ${letter}, index: ${index}`);
+          return index;
+        }
       }
     }
     

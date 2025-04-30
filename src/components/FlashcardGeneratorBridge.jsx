@@ -120,40 +120,38 @@ const FlashcardGeneratorBridge = ({
               baseCard.front = baseCard.question; // Set front/back for FlippableCard
               baseCard.back = baseCard.explanation;
           } else if (baseCard.questionType === 'multiple_choice') {
-              // Ensure 'options' exists and is an array
-              baseCard.options = Array.isArray(baseCard.options) ? baseCard.options : [];
-              
-              // Standardize options to { text: string, isCorrect: boolean } format
-              // This might require adjusting based on exact AI response structure
-              const correctAnswerText = String(baseCard.correctAnswer || '').trim();
-              baseCard.options = baseCard.options.map(opt => {
-                 const optionText = String(opt || '').trim(); // Handle cases where options might be just strings
-                 const isCorrect = optionText.toLowerCase() === correctAnswerText.toLowerCase();
-                 return { text: optionText, isCorrect: isCorrect };
-              });
-              
-              // Ensure at least one option is marked correct if possible
-              if (correctAnswerText && !baseCard.options.some(opt => opt.isCorrect)) {
-                  const correctIndex = baseCard.options.findIndex(opt => opt.text.toLowerCase() === correctAnswerText.toLowerCase());
-                  if (correctIndex !== -1) {
-                     baseCard.options[correctIndex].isCorrect = true;
-                  } else {
-                     // Fallback: mark the first option? Or handle error?
-                     console.warn("MC Card generated, but correct answer doesn't match any option text:", correctAnswerText, baseCard.options);
-                     // If no options exist after processing, add the correctAnswer as the first option.
-                     if (baseCard.options.length === 0 && correctAnswerText) {
-                          baseCard.options.push({ text: correctAnswerText, isCorrect: true });
-                          console.log("Added correctAnswer as the only option.");
-                     } else if (baseCard.options.length > 0) {
-                           // Or mark the first one if we have options but none match
-                           // baseCard.options[0].isCorrect = true; 
-                     }
+              // Ensure options are properly set
+              if (!baseCard.options || !Array.isArray(baseCard.options) || baseCard.options.length === 0) {
+                  if (baseCard.savedOptions && Array.isArray(baseCard.savedOptions) && baseCard.savedOptions.length > 0) {
+                      baseCard.options = [...baseCard.savedOptions]; // Restore from savedOptions
                   }
               }
-               // Ensure front/back are set
-               baseCard.front = baseCard.question || "Multiple Choice Question";
-               baseCard.back = `Correct Answer: ${correctAnswerText}<br/>Explanation: ${baseCard.detailedAnswer || baseCard.answer || 'No explanation provided.'}`; // Combine answer/explanation
-
+              
+              // Ensure savedOptions exists as a backup
+              if (!baseCard.savedOptions || !Array.isArray(baseCard.savedOptions)) {
+                  baseCard.savedOptions = [...(baseCard.options || [])];
+              }
+              
+              // Ensure a valid correctAnswer is set
+              if (!baseCard.correctAnswer && baseCard.options && baseCard.options.length > 0) {
+                  // Find the option with isCorrect flag or default to first option
+                  const correctOption = baseCard.options.find(opt => 
+                      opt && typeof opt === 'object' && opt.isCorrect === true
+                  );
+                  
+                  if (correctOption) {
+                      baseCard.correctAnswer = typeof correctOption === 'object' ? correctOption.text : correctOption;
+                  } else {
+                      // Default to first option if no correct one is marked
+                      baseCard.correctAnswer = typeof baseCard.options[0] === 'object' ? 
+                          baseCard.options[0].text : baseCard.options[0];
+                  }
+              }
+              
+              // Set front/back fields for compatibility with FlippableCard
+              baseCard.front = baseCard.question;
+              baseCard.back = baseCard.detailedAnswer || baseCard.answer || 
+                  `Correct Answer: a) ${baseCard.correctAnswer || 'Option A'}`;
           } else { // short_answer or essay
               baseCard.front = baseCard.question;
               baseCard.back = baseCard.detailedAnswer || baseCard.answer || (Array.isArray(baseCard.keyPoints) ? baseCard.keyPoints.join('\n') : '');
@@ -221,6 +219,37 @@ const FlashcardGeneratorBridge = ({
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1); // Set to tomorrow
         
+        // Ensure options and savedOptions are preserved
+        let cardOptions = [];
+        let savedOptions = [];
+        
+        if (card.questionType === 'multiple_choice') {
+            // Ensure we have options
+            if (card.options && Array.isArray(card.options) && card.options.length > 0) {
+                cardOptions = [...card.options];
+            } else if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+                cardOptions = [...card.savedOptions];
+            }
+            
+            // Always keep a backup
+            savedOptions = [...cardOptions];
+            
+            // Make sure correctAnswer is set
+            if (!card.correctAnswer && cardOptions.length > 0) {
+                // Find the option with isCorrect flag or default to first option
+                const correctOption = cardOptions.find(opt => 
+                    opt && typeof opt === 'object' && opt.isCorrect === true
+                );
+                
+                if (correctOption) {
+                    card.correctAnswer = typeof correctOption === 'object' ? correctOption.text : correctOption;
+                } else {
+                    // Default to first option
+                    card.correctAnswer = typeof cardOptions[0] === 'object' ? cardOptions[0].text : cardOptions[0];
+                }
+            }
+        }
+        
         return {
           ...card,
           id: card.id.startsWith('temp_') ? `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` : card.id, // Ensure permanent ID
@@ -235,7 +264,11 @@ const FlashcardGeneratorBridge = ({
           examBoard: topic.examBoard || card.examBoard || "General",
           examType: topic.examType || card.examType || "Course",
           createdAt: card.createdAt || now.toISOString(),
-          updatedAt: now.toISOString()
+          updatedAt: now.toISOString(),
+          // Preserve Multiple Choice specific data
+          options: cardOptions,
+          savedOptions: savedOptions,
+          correctAnswer: card.correctAnswer || ''
         };
       });
       
@@ -346,7 +379,10 @@ const FlashcardGeneratorBridge = ({
       </div>
       
       <div className="option-section options-actions">
-        <button className="cancel-button" onClick={onClose}>
+        <button 
+          className="cancel-button" 
+          onClick={onClose}
+        >
           Cancel
         </button>
         <button 
@@ -354,13 +390,13 @@ const FlashcardGeneratorBridge = ({
           onClick={generateCards}
           disabled={isGenerating}
         >
-          {isGenerating ? 'Generating...' : 'Generate Cards'}
+          {isGenerating ? 'Generating...' : 'Generate'}
         </button>
       </div>
     </div>
   );
   
-  // --- UPDATED: Render the step for reviewing generated cards using FlippableCard ---
+  // Render the step for reviewing generated cards
   const renderReviewStep = () => (
       <div className="card-generator-review">
         <h3>Review Generated Flashcards</h3>
@@ -410,51 +446,45 @@ const FlashcardGeneratorBridge = ({
   // ----------------------------------------------------------------------------
   
   // Main render function
-  const modalContent = (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
-      <div className="simple-card-generator-modal" onClick={e => e.stopPropagation()}>
-        <button className="close-modal-button" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <button className="close-button" onClick={onClose}>
           <FaTimes />
         </button>
         
-        {isGenerating ? (
-          <div className="generating-overlay">
-            <LoadingSpinner message={loadingMessage || "Generating..."} />
+        {/* Error Display */}
+        {error && (
+          <div className="error-message">
+            <strong>Error:</strong> {error}
+            {errorDetails && (
+              <details>
+                <summary>Technical Details</summary>
+                <pre>{errorDetails}</pre>
+              </details>
+            )}
           </div>
-        ) : error ? (
-        <div className="error-message">
-          <h3>Error occurred from AI service</h3>
-          <p>{error}</p>
-          {errorDetails && (
-            <div className="error-details">
-              <p><strong>Technical details:</strong></p>
-              <pre style={{ maxHeight: '150px', overflow: 'auto', background: '#f5f5f5', padding: '10px', fontSize: '12px' }}>
-                {errorDetails}
-              </pre>
-            </div>
-          )}
-          <button 
-            className="try-again-button" 
-            onClick={() => {
-              setError(null);
-              setErrorDetails(null);
-              setStep(1);
-            }}
-          >
-            Try Again
-          </button>
-        </div>
-        ) : step === 1 ? (
-          renderOptionsStep()
-        ) : (
-          renderReviewStep()
+        )}
+        
+        {/* Loading Indicator */}
+        {isGenerating && (
+          <div className="loading-container">
+            <LoadingSpinner />
+            <p>{loadingMessage || "Loading..."}</p>
+          </div>
+        )}
+        
+        {/* Main Content */}
+        {!isGenerating && (
+          <div className="card-generator-body">
+            {/* Render the current step */}
+            {step === 1 ? renderOptionsStep() : renderReviewStep()}
+          </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
-  
-  // Use portal to render the modal on top of everything else
-  return createPortal(modalContent, document.body);
 };
 
 export default FlashcardGeneratorBridge;
