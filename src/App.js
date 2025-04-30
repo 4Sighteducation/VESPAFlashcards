@@ -2780,18 +2780,32 @@ useEffect(() => {
   // --- Add function to handle propagating saves ---
   const propagateSaveToBridge = useCallback((messagePayload) => {
     console.log("[App] propagateSaveToBridge called with payload:", messagePayload);
-    // --- Use the global window reference ---
-    const iframeWindow = window.flashcardAppIframeWindow;
-    // ------------------------------------
+    
+    // IMPROVED APPROACH: Get iframe element directly by ID
+    const iframeElement = document.getElementById('flashcard-app-iframe');
+    let iframeWindow = iframeElement ? iframeElement.contentWindow : null;
+    
+    // Fallback 1: Try global reference if direct access fails
+    if (!iframeWindow && window.flashcardAppIframeWindow) {
+      console.log("[App] Using fallback global reference for iframe");
+      iframeWindow = window.flashcardAppIframeWindow;
+    }
 
-    if (iframeWindow) { // Check if the global reference exists
-      console.log(`[App] Posting message type ${messagePayload.type} to Knack script via global reference`);
+    if (iframeWindow) {
+      console.log(`[App] Posting message type ${messagePayload.type} to Knack script`);
       iframeWindow.postMessage(messagePayload, '*');
     } else {
-      console.error("[App] Cannot send message to bridge: Global iframe reference (window.flashcardAppIframeWindow) not found.");
-      showStatus("Error: Could not communicate with the saving mechanism.", 5000);
+      console.error("[App] Cannot send message to bridge: Iframe element or contentWindow not found.");
+      
+      // Fallback 2: Try parent window as last resort
+      if (window.parent !== window) {
+        console.log("[App] Attempting to send message via parent window as fallback");
+        window.parent.postMessage(messagePayload, '*');
+      } else {
+        showStatus("Error: Could not communicate with the saving mechanism.", 5000);
+      }
     }
-  }, [showStatus]); // showStatus is the only dependency now
+  }, [showStatus]); // showStatus is the only dependency
 
   // ... rest of useEffect hooks ...
 
