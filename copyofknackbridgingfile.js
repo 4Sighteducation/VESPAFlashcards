@@ -1161,7 +1161,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
            }
   
            // Standardize the NEW cards received from the React app
-           const newCardsStandardized = standardizeCards(data.cards); // <<< CORRECTED: Pass data.cards
+           const newCardsStandardized = standardizeCards(data.cards);
            const newCardCount = newCardsStandardized.length;
            if (newCardCount === 0) {
                console.log("[Knack Script] No valid new cards to add.");
@@ -1169,6 +1169,15 @@ function safeParseJSON(jsonString, defaultVal = null) {
                return; // Nothing to do
            }
   
+           // Log standardized cards to debug any issues
+           console.log("[Knack Script] Standardized cards to add:", newCardsStandardized.map(card => ({
+               id: card.id,
+               type: card.type,
+               subject: card.subject,
+               topic: card.topic,
+               topicId: card.topicId,
+               boxNum: card.boxNum
+           })));
   
            // Parse existing card bank
            let existingItems = [];
@@ -1188,6 +1197,15 @@ function safeParseJSON(jsonString, defaultVal = null) {
            // Split existing into shells and cards
            const { topics: existingTopicShells, cards: existingCards } = splitByType(existingItems);
   
+           // Log topic shells to verify they exist
+           console.log("[Knack Script] Existing topic shells:", existingTopicShells.map(shell => ({
+               id: shell.id,
+               type: shell.type,
+               subject: shell.subject,
+               topic: shell.topic || shell.name,
+               isEmpty: shell.isEmpty
+           })));
+  
            // Deduplicate: Ensure new cards aren't already in existing cards
            const existingCardIds = new Set(existingCards.map(c => c.id));
            const cardsToAdd = newCardsStandardized.filter(nc => !existingCardIds.has(nc.id));
@@ -1200,11 +1218,26 @@ function safeParseJSON(jsonString, defaultVal = null) {
                   if (iframeWindow) iframeWindow.postMessage({ type: 'ADD_TO_BANK_RESULT', success: true, shouldReload: false, message: "All submitted cards already exist." }, '*');
                   return; // Nothing to add
             }
-  
+
+           // Update topic shells' isEmpty flag if they now have cards
+           const updatedTopicShells = existingTopicShells.map(shell => {
+               // Check if any new cards belong to this shell
+               const hasNewCards = cardsToAdd.some(card => card.topicId === shell.id);
+               
+               // If shell was empty but now has cards, update isEmpty flag
+               if (shell.isEmpty && hasNewCards) {
+                   return {
+                       ...shell,
+                       isEmpty: false,
+                       updatedAt: new Date().toISOString()
+                   };
+               }
+               return shell;
+           });
   
            // Combine existing shells/cards with the NEW, deduplicated cards
-           const finalBankData = [...existingTopicShells, ...existingCards, ...cardsToAdd];
-           console.log(`[Knack Script] Merged ${cardsToAdd.length} new cards with ${existingCards.length} existing cards and ${existingTopicShells.length} shells.`);
+           const finalBankData = [...updatedTopicShells, ...existingCards, ...cardsToAdd];
+           console.log(`[Knack Script] Merged ${cardsToAdd.length} new cards with ${existingCards.length} existing cards and ${updatedTopicShells.length} shells.`);
   
            // --- Prepare Box 1 Update ---
             let box1Data = [];
@@ -1221,15 +1254,27 @@ function safeParseJSON(jsonString, defaultVal = null) {
                }
             }
   
-            const now = new Date().toISOString();
+            // Calculate tomorrow's date for next review
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(now.getDate() + 1);
+            
+            const nowISO = now.toISOString();
+            const tomorrowISO = tomorrow.toISOString();
+            
             const existingBox1Map = new Map(box1Data.map(entry => [entry.cardId, true]));
+            
             // Add ONLY the newly added cards to Box 1
             const newBox1Entries = cardsToAdd
               .filter(card => card.id && !existingBox1Map.has(card.id))
-              .map(card => ({ cardId: card.id, lastReviewed: now, nextReviewDate: now }));
+              .map(card => ({ 
+                cardId: card.id, 
+                lastReviewed: nowISO, 
+                nextReviewDate: tomorrowISO // Schedule for tomorrow
+              }));
   
             const updatedBox1 = [...box1Data, ...newBox1Entries];
-            console.log(`[Knack Script] Added ${newBox1Entries.length} new entries to Box 1.`);
+            console.log(`[Knack Script] Added ${newBox1Entries.length} new entries to Box 1 with nextReviewDate: ${tomorrowISO}`);
   
            // --- Queue a 'full' save operation with merged data ---
            const fullSaveData = {

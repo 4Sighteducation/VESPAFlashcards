@@ -202,10 +202,10 @@ const FlashcardGeneratorBridge = ({
       
       console.log(`[FlashcardGeneratorBridge] Saving ${generatedCards.length} cards`);
       
-      // Check if we have topic info
-      if (!topic || !topic.subject || !(topic.topic || topic.name)) { // Check both topic/name
-        console.error("[FlashcardGeneratorBridge] Missing topic information for saving cards");
-        setError("Missing topic information for saving cards");
+      // Check if we have topic info and recordId
+      if (!topic || !topic.subject || !(topic.topic || topic.name) || !recordId) {
+        console.error("[FlashcardGeneratorBridge] Missing topic information or recordId for saving cards");
+        setError("Missing topic information or record ID for saving cards");
         return;
       }
       
@@ -214,16 +214,28 @@ const FlashcardGeneratorBridge = ({
       const topicId = topic.id || `topic_${topic.subject}_${topicIdentifier}`; 
       
       // Process cards with topic information and ID before saving
-      const processedCards = generatedCards.map(card => ({
-        ...card,
-        id: card.id.startsWith('temp_') ? `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` : card.id, // Ensure permanent ID
-        topicId: topicId,
-        // Ensure subject/topic match the parent topic
-        subject: topic.subject,
-        topic: topicIdentifier, // Use the determined topic name
-        examBoard: topic.examBoard || card.examBoard || "General",
-        examType: topic.examType || card.examType || "Course"
-      }));
+      const processedCards = generatedCards.map(card => {
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1); // Set to tomorrow
+        
+        return {
+          ...card,
+          id: card.id.startsWith('temp_') ? `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` : card.id, // Ensure permanent ID
+          topicId: topicId, // CRITICAL: Link to the topic shell
+          type: 'card', // Explicitly set type to 'card', not 'topic'
+          boxNum: 1, // CRITICAL: Set initial box for Leitner system
+          lastReviewed: now.toISOString(), // Set initial review date
+          nextReviewDate: tomorrow.toISOString(), // CRITICAL: Set next review date for Leitner system
+          // Ensure subject/topic match the parent topic
+          subject: topic.subject,
+          topic: topicIdentifier, // Use the determined topic name
+          examBoard: topic.examBoard || card.examBoard || "General",
+          examType: topic.examType || card.examType || "Course",
+          createdAt: card.createdAt || now.toISOString(),
+          updatedAt: now.toISOString()
+        };
+      });
       
       // Log the processed cards with their topic IDs
       console.log(`[FlashcardGeneratorBridge] Processed cards with topic ID: ${topicId}`, processedCards);
