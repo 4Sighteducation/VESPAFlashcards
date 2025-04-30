@@ -112,10 +112,6 @@ function App() {
   const [printTitle, setPrintTitle] = useState("");
   const [cardCreationModalOpen, setCardCreationModalOpen] = useState(false);
 
-  const iframeRef = useRef(null); // Add a ref for the iframe
-
-  
-
   // User information - enhanced with additional student data
   const getUserInfo = useCallback(() => {
     return {
@@ -2784,50 +2780,18 @@ useEffect(() => {
   // --- Add function to handle propagating saves ---
   const propagateSaveToBridge = useCallback((messagePayload) => {
     console.log("[App] propagateSaveToBridge called with payload:", messagePayload);
-    // Use the ref if available, otherwise fallback to getElementById
-    const iframeElement = iframeRef.current || document.getElementById('flashcard-app-iframe');
+    // --- Use the global window reference ---
+    const iframeWindow = window.flashcardAppIframeWindow;
+    // ------------------------------------
 
-    if (iframeElement && iframeElement.contentWindow) {
-      console.log(`[App] Posting message type ${messagePayload.type} to Knack script`);
-      iframeElement.contentWindow.postMessage(messagePayload, '*');
+    if (iframeWindow) { // Check if the global reference exists
+      console.log(`[App] Posting message type ${messagePayload.type} to Knack script via global reference`);
+      iframeWindow.postMessage(messagePayload, '*');
     } else {
-      console.error("[App] Cannot send message to bridge: iframe not found or not ready.");
-      // Show error to user, maybe use the existing showStatus
+      console.error("[App] Cannot send message to bridge: Global iframe reference (window.flashcardAppIframeWindow) not found.");
       showStatus("Error: Could not communicate with the saving mechanism.", 5000);
     }
-  }, [showStatus]); // Add showStatus dependency
-
-  // --- Modify useEffect where iframe is potentially referenced/created ---
-  // We can't directly create the iframe here as it's done by the bridge script.
-  // But we can try to *find* it and store it in the ref once the app is ready.
-  // Add this useEffect:
-  useEffect(() => {
-    // Function to find and store the iframe reference
-    const findAndStoreIframe = () => {
-      const iframeElement = document.getElementById('flashcard-app-iframe');
-      if (iframeElement) {
-        iframeRef.current = iframeElement;
-        console.log("[App] Found and stored iframe reference.");
-      } else {
-        // Retry finding it shortly after, in case it loads later
-        // Only retry if component is still mounted
-        if (isMounted.current) { // Assuming you have an isMounted ref like in AICardGenerator
-           setTimeout(findAndStoreIframe, 500);
-           console.log("[App] Retrying to find iframe...");
-        }
-      }
-    };
-
-    // Need an isMounted ref, similar to AICardGenerator
-    const isMounted = { current: true }; // Simple mount tracking
-
-    // Start finding the iframe once the initial loading is likely done
-    if (!loading) {
-       findAndStoreIframe();
-    }
-
-    return () => { isMounted.current = false; }; // Cleanup mount status
-  }, [loading]); // Run when loading state changes
+  }, [showStatus]); // showStatus is the only dependency now
 
   // ... rest of useEffect hooks ...
 

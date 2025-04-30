@@ -560,15 +560,6 @@ function safeParseJSON(jsonString, defaultVal = null) {
       }
   
   
-      // Prepares the payload specifically for a 'full' save operation based on the input 'data' object
-       // --- REMOVING prepareFullSaveData helper as logic is now in prepareSaveData case 'full' --- 
-       /*
-       prepareFullSaveData(data) {
-           // ... existing implementation ...
-       }
-       */
-  
-  
       // Performs the actual Knack API PUT request
       async performSave(updateData, recordId) {
          console.log(`[SaveQueue] Performing API save for record ${recordId}`);
@@ -957,6 +948,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
   
               // Handle APP_READY separately to send initial data
                if (messageType === 'APP_READY') { // Use messageType
+                window.flashcardAppIframeWindow = iframe.contentWindow; // Store reference globally
                    console.log("Flashcard app: React app reported APP_READY.");
                     // Double check if user object is ready
                     if (!window.currentKnackUser || !window.currentKnackUser.id) {
@@ -2438,7 +2430,7 @@ function loadFlashcardUserData(userId, callback) {
                        examType: examType,
                        cardColor: topicColor, // Assign topic color variation
                        subjectColor: subjectColor, // Assign base subject color
-                       topicColor: topicColor, // Store topic-specific color explicitly
+                       topicColor: topicColor, // Store topic-specific color
                        isShell: true,
                        createdAt: now, // Add creation timestamp
                        updatedAt: now
