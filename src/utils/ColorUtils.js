@@ -3,42 +3,88 @@
  * Contains functions for contrast calculation, shade generation, and other color operations
  */
 
+// --- HSL to RGB Conversion Helper ---
+function hslToRgb(h, s, l) {
+  let r, g, b;
+
+  if (s === 0) {
+    r = g = b = l; // achromatic
+  } else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
 /**
  * Calculate appropriate text color (black or white) based on background color brightness
  * Uses WCAG luminance formula for accurate contrast perception
- * @param {string} hexColor - Hex color code (e.g., "#ff0000")
+ * Handles both HEX and HSL color formats.
+ * @param {string} colorInput - Hex color code (e.g., "#ff0000") or HSL string (e.g., "hsl(120, 100%, 50%)")
  * @returns {string} - Either "#000000" (black) or "#ffffff" (white) for best contrast
  */
-export const getContrastColor = (hexColor) => {
-  // Default to black if no color provided
-  if (!hexColor || typeof hexColor !== 'string') {
-    console.warn('Invalid color provided to getContrastColor:', hexColor);
+export const getContrastColor = (colorInput) => {
+  // Default to black if no color provided or not a string
+  if (!colorInput || typeof colorInput !== 'string') {
+    console.warn('Invalid color provided to getContrastColor:', colorInput);
     return '#000000';
   }
-  
+
+  let r, g, b;
+
   try {
-    // Remove # if present
-    hexColor = hexColor.replace('#', '');
-    
-    // Handle 3-character hex
-    if (hexColor.length === 3) {
-      hexColor = hexColor[0] + hexColor[0] + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2];
+    // Check if input is HSL
+    if (colorInput.trim().toLowerCase().startsWith('hsl')) {
+      // Extract H, S, L values
+      const match = colorInput.match(/hsl\(\s*(\d+)\s*,\s*(\d+)%?\s*,\s*(\d+)%?\s*\)/i);
+      if (match) {
+        const h = parseInt(match[1], 10) / 360;
+        const s = parseInt(match[2], 10) / 100;
+        const l = parseInt(match[3], 10) / 100;
+        // Convert HSL to RGB
+        [r, g, b] = hslToRgb(h, s, l);
+      } else {
+        console.warn('Invalid HSL color format:', colorInput);
+        return '#000000'; // Fallback for invalid HSL
+      }
+    } 
+    // Assume HEX format otherwise
+    else {
+      let hexColor = colorInput.replace('#', '');
+      
+      // Handle 3-character hex
+      if (hexColor.length === 3) {
+        hexColor = hexColor[0] + hexColor[0] + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2];
+      }
+      
+      // Validate hex format
+      if (!/^[0-9A-F]{6}$/i.test(hexColor)) {
+        console.warn('Invalid hex color format:', colorInput);
+        return '#000000';
+      }
+      
+      // Convert HEX to RGB
+      r = parseInt(hexColor.substring(0, 2), 16);
+      g = parseInt(hexColor.substring(2, 4), 16);
+      b = parseInt(hexColor.substring(4, 6), 16);
     }
     
-    // Validate hex format
-    if (!/^[0-9A-F]{6}$/i.test(hexColor)) {
-      console.warn('Invalid hex color format:', hexColor);
-      return '#000000';
-    }
-    
-    // Convert to RGB
-    const r = parseInt(hexColor.substring(0, 2), 16);
-    const g = parseInt(hexColor.substring(2, 4), 16);
-    const b = parseInt(hexColor.substring(4, 6), 16);
-    
-    // Handle NaN values that might occur with invalid hex colors
+    // Handle NaN values that might occur with invalid conversions
     if (isNaN(r) || isNaN(g) || isNaN(b)) {
-      console.warn('Invalid RGB conversion in getContrastColor:', { r, g, b, hexColor });
+      console.warn('Invalid RGB conversion in getContrastColor:', { r, g, b, colorInput });
       return '#000000';
     }
     
@@ -46,21 +92,19 @@ export const getContrastColor = (hexColor) => {
     // L = 0.2126 * R + 0.7152 * G + 0.0722 * B
     const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
     
-    // Calculate contrast with white and black
-    const contrastWithWhite = (luminance + 0.05) / 0.05;
-    const contrastWithBlack = (1.05) / (luminance + 0.05);
-    
-    // Choose color with better contrast (higher contrast ratio)
-    const chosenColor = contrastWithWhite > contrastWithBlack ? '#ffffff' : '#000000';
+    // Choose text color based on luminance threshold (WCAG AA requires 4.5:1 contrast)
+    // Threshold of 0.5 is a common heuristic, but 0.179 is closer to the WCAG boundary
+    const chosenColor = luminance > 0.179 ? '#000000' : '#ffffff'; 
     
     // For debugging only - log only in non-production
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`[getContrastColor] Lum: ${luminance.toFixed(3)}, Contrast White: ${contrastWithWhite.toFixed(2)}, Contrast Black: ${contrastWithBlack.toFixed(2)}, Chosen: ${chosenColor}`);
+      console.log(`[getContrastColor] Input: ${colorInput}, RGB: ${r},${g},${b}, Lum: ${luminance.toFixed(3)}, Chosen: ${chosenColor}`);
     }
     
     return chosenColor;
+
   } catch (error) {
-    console.error('Error in getContrastColor:', error, { inputColor: hexColor });
+    console.error('Error in getContrastColor:', error, { inputColor: colorInput });
     return '#000000'; // Default to black on error
   }
 };

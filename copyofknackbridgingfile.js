@@ -1155,14 +1155,19 @@ function safeParseJSON(jsonString, defaultVal = null) {
            console.log(`[Knack Script] Fetching existing data before ADD_TO_BANK for record ${data.recordId}`);
            const existingData = await saveQueue.getExistingData(data.recordId); // Use SaveQueue's fetcher
   
-            // Standardize the NEW cards first
-           const newCardsStandardized = standardizeCards(data.cards || []);
+           // Ensure existingData is valid before proceeding
+           if (!existingData || !existingData.id) {
+                throw new Error(`Failed to fetch existing data for record ${data.recordId} during ADD_TO_BANK.`);
+           }
+  
+           // Standardize the NEW cards received from the React app
+           const newCardsStandardized = standardizeCards(data.cards); // <<< CORRECTED: Pass data.cards
            const newCardCount = newCardsStandardized.length;
-            if (newCardCount === 0) {
-                 console.log("[Knack Script] No valid new cards to add.");
-                  if (iframeWindow) iframeWindow.postMessage({ type: 'ADD_TO_BANK_RESULT', success: true, shouldReload: false, message: "No new cards to add." }, '*');
-                  return; // Nothing to do
-            }
+           if (newCardCount === 0) {
+               console.log("[Knack Script] No valid new cards to add.");
+               if (iframeWindow) iframeWindow.postMessage({ type: 'ADD_TO_BANK_RESULT', success: true, shouldReload: false, message: "No new cards to add." }, '*');
+               return; // Nothing to do
+           }
   
   
            // Parse existing card bank
