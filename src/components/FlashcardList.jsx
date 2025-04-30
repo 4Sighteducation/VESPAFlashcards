@@ -1,5 +1,6 @@
 import React, {useState, useEffect, useMemo, useRef, useCallback} from "react";
 import Flashcard from "./Flashcard";
+import FlippableCard from "./FlippableCard"; // Add import for FlippableCard
 import PrintModal from "./PrintModal";
 import "./FlashcardList.css";
 import ColorEditor from "./ColorEditor";
