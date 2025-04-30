@@ -149,14 +149,49 @@ const FlashcardGeneratorBridge = ({
   // Handle saving the cards to the main app
   const handleSaveCards = useCallback(() => {
     try {
-      // Add each card to the app's state
-      generatedCards.forEach(card => {
+      if (!generatedCards || generatedCards.length === 0) {
+        console.error("[FlashcardGeneratorBridge] No cards to save");
+        setError("No cards to save. Please generate cards first.");
+        return;
+      }
+      
+      console.log(`[FlashcardGeneratorBridge] Saving ${generatedCards.length} cards`);
+      
+      // Check if we have topic info
+      if (!topic || !topic.subject || !topic.topic) {
+        console.error("[FlashcardGeneratorBridge] Missing topic information for saving cards");
+        setError("Missing topic information for saving cards");
+        return;
+      }
+      
+      // Important: Add the topic ID to each card to ensure it's saved to the correct topic
+      const topicId = topic.id || `topic_${topic.subject}_${topic.topic}`; 
+      
+      // Process cards with topic information and ID before saving
+      const processedCards = generatedCards.map(card => ({
+        ...card,
+        topicId: topicId,
+        // Ensure subject/topic match the parent topic
+        subject: topic.subject,
+        topic: topic.topic,
+        examBoard: topic.examBoard || card.examBoard || "General",
+        examType: topic.examType || card.examType || "Course"
+      }));
+      
+      // Log the processed cards with their topic IDs
+      console.log(`[FlashcardGeneratorBridge] Processed cards with topic ID: ${topicId}`, processedCards);
+      
+      // Add each card to the app's state one by one to ensure they're added properly
+      processedCards.forEach(card => {
         if (onAddCards) {
+          console.log(`[FlashcardGeneratorBridge] Adding card to app state: ${card.id}`, card);
           onAddCards(card);
+        } else {
+          console.warn("[FlashcardGeneratorBridge] No onAddCards handler provided");
         }
       });
       
-      console.log(`[FlashcardGeneratorBridge] Saved ${generatedCards.length} cards`);
+      console.log(`[FlashcardGeneratorBridge] Saved ${processedCards.length} cards`);
       
       // Close the modal
       if (onClose) {
@@ -166,7 +201,7 @@ const FlashcardGeneratorBridge = ({
       console.error("[FlashcardGeneratorBridge] Error saving cards:", err);
       setError(err.message || "Failed to save cards. Please try again.");
     }
-  }, [generatedCards, onAddCards, onClose]);
+  }, [generatedCards, onAddCards, onClose, topic]);
   
   // Render the step for selecting card options
   const renderOptionsStep = () => (

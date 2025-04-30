@@ -1005,40 +1005,91 @@ function App() {
   // Removed unused loadData useCallback
 
   // Functions for card operations - defined after their dependencies
-  // Add a new card
+  // Add a new card - improved to work with both topics and cards
   const addCard = useCallback(
     (card) => {
-      // Ensure the card has a boxNum of 1 for spaced repetition
-      const cardWithSpacedRep = {
-        ...card,
-        boxNum: 1,
-        nextReviewDate: new Date().toISOString() // Set to today so it's immediately reviewable
-      };
-
-      setAllCards((prevCards) => {
-        const newCards = [...prevCards, cardWithSpacedRep];
-        return newCards;
-      });
+      console.log("[App.addCard] Adding card:", { id: card.id, type: card.type, subject: card.subject, topic: card.topic });
       
-      // Update spaced repetition data separately to ensure it's added to box1
-      setSpacedRepetitionData((prevData) => {
-        const newData = { ...prevData };
-        // Add the card to box1
-        newData.box1.push({
-          cardId: cardWithSpacedRep.id,
-          lastReviewed: new Date().toISOString(),
-          nextReviewDate: new Date().toISOString() // Reviewable immediately
+      if (!card || !card.id) {
+        console.error("[App.addCard] Invalid card object:", card);
+        showStatus("Error: Invalid card data");
+        return;
+      }
+      
+      // Special handling for topic shells vs actual cards
+      if (card.type === 'topic' && card.isShell) {
+        console.log("[App.addCard] Adding topic shell:", card.name);
+        // Check for duplicate topic shells with the same ID
+        setAllCards((prevCards) => {
+          // First remove any existing shell with the same ID
+          const filteredCards = prevCards.filter(existingCard => 
+            !(existingCard.type === 'topic' && existingCard.isShell && existingCard.id === card.id)
+          );
+          
+          // Then add the new shell
+          return [...filteredCards, {...card}];
         });
-        return newData;
-      });
-      
-      // Update color mapping if needed
-      if (card.subject && card.cardColor) {
-        updateColorMapping(card.subject, card.topic, card.cardColor);
+      } else {
+        // This is a regular flashcard, not a topic shell
+        console.log("[App.addCard] Adding flashcard to topic:", card.topic);
+        
+        // Ensure the card has a boxNum of 1 for spaced repetition
+        const cardWithSpacedRep = {
+          ...card,
+          boxNum: 1,
+          nextReviewDate: new Date().toISOString(), // Set to today so it's immediately reviewable
+          type: card.type || 'flashcard' // Ensure it has a type
+        };
+        
+        // Update topic shell isEmpty flag if this card belongs to a topic
+        setAllCards((prevCards) => {
+          // Create a new array to avoid mutation
+          const newCards = [...prevCards];
+          
+          // Check if we have a matching topic shell
+          if (card.topicId) {
+            // Find the topic shell with this ID
+            const topicShellIndex = newCards.findIndex(c => 
+              c.type === 'topic' && c.isShell && c.id === card.topicId
+            );
+            
+            if (topicShellIndex >= 0) {
+              // Update the topic shell to mark it as not empty
+              newCards[topicShellIndex] = {
+                ...newCards[topicShellIndex],
+                isEmpty: false,
+                updatedAt: new Date().toISOString()
+              };
+              console.log(`[App.addCard] Updated topic shell (${card.topicId}) isEmpty=false`);
+            } else {
+              console.warn(`[App.addCard] No topic shell found with ID: ${card.topicId}`);
+            }
+          }
+          
+          // Add the new card to the array
+          return [...newCards, cardWithSpacedRep];
+        });
+        
+        // Update spaced repetition data separately to ensure it's added to box1
+        setSpacedRepetitionData((prevData) => {
+          const newData = { ...prevData };
+          // Add the card to box1
+          newData.box1.push({
+            cardId: cardWithSpacedRep.id,
+            lastReviewed: new Date().toISOString(),
+            nextReviewDate: new Date().toISOString() // Reviewable immediately
+          });
+          return newData;
+        });
+        
+        // Update color mapping if needed
+        if (card.subject && card.cardColor) {
+          updateColorMapping(card.subject, card.topic, card.cardColor);
+        }
       }
       
       // Save the changes after state updates have completed
-      setTimeout(() => saveData(), 100);
+      setTimeout(() => saveData(), 300); // Increased timeout to ensure all state updates complete
       showStatus("Card added successfully!");
     },
     [updateColorMapping, saveData, showStatus]

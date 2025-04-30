@@ -16,7 +16,8 @@ const TopicToGeneratorConnector = ({
   examType = "A-Level", // Default exam type
   recordId, // Record ID for saving cards
   userId, // User ID for attribution
-  onComplete // Callback after cards are added
+  onComplete, // Callback after cards are added
+  onAddCard // Callback to add cards to the data store
 }) => {
   const [showGenerator, setShowGenerator] = useState(false);
   
@@ -58,6 +59,7 @@ const TopicToGeneratorConnector = ({
             recordId={recordId}
             userId={userId}
             onClose={handleGeneratorClose}
+            onAddCards={onAddCard}
           />
         </ErrorBoundary>
       )}
