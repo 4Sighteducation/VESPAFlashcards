@@ -170,14 +170,18 @@
 .topic-container {
   border: none;
   margin-bottom: 0;
-  background-color: #ba7e33; /* Default color, will be overridden by inline style */
+  background-color: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 15px;
   overflow: hidden;
+  transition: box-shadow .2s ease;
   cursor: pointer;
-  transition: background-color 0.2s ease;
 }
 
 .topic-container:hover {
   filter: brightness(1.05);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 /* Topic header styling - Match exact UI from screenshot */
@@ -189,10 +193,19 @@
   transition: background-color 0.2s;
   border: none;
   margin: 0;
+  cursor: pointer;
+  position: relative;
+  z-index: 4;
 }
 
 .topic-header.empty-shell {
   opacity: 0.85;
+}
+
+.topic-content, .topic-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
 }
 
 .topic-info {
@@ -230,9 +243,11 @@
   border-top: 1px solid #eee;
   margin-left: 0;
   margin-right: 0;
-  max-height: 400px;
-  overflow-y: auto;
+  max-height: 400px !important; /* Force max-height */
+  overflow-y: auto !important; /* Force scrolling */
   scrollbar-width: thin;
+  height: auto !important; /* Let content dictate height up to max-height */
+  min-height: 200px; /* Add minimum height to ensure scrollability */
 }
 
 /* Ensure scrollbars are consistent and styled like in the screenshot */
@@ -1110,10 +1125,18 @@ html {
   
   .subjects-accordion {
     min-height: calc(100vh - 150px);
+    overflow-y: auto !important;
   }
   
   .topic-cards {
     min-height: 400px;
+  }
+  
+  /* Ensure topic container is scrollable on mobile */
+  .subject-container .topics-container {
+    max-height: 60vh !important; /* Taller on mobile for better visibility */
+    min-height: 200px !important; /* Minimum height on mobile */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   }
 }
 
