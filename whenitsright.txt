@@ -1,0 +1,263 @@
+When its right - topics-container:
+
+element.style {
+}
+.subject-container .topics-container {
+    border-top: 1px solid #eee;
+    margin-left: 15px;
+    margin-right: 5px;
+    padding: 5px;
+}
+.subject-container .topics-container {
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.topics-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px #0000000d;
+    padding: 24px;
+}
+.topics-container {
+    display: flex
+;
+    flex: 1 1;
+    flex-direction: column;
+    padding-bottom: 5px;
+    padding-top: 5px;
+    transition: all .3s ease-out;
+}
+.topics-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 5px 0;
+    scrollbar-color: #0000004d #0000;
+    scrollbar-width: thin;
+}
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+user agent stylesheet
+div {
+    display: block;
+    unicode-bidi: isolate;
+}
+body {
+    background-color: #f5f5f5;
+    color: #333;
+    font-family: Lato, sans-serif;
+    line-height: 1.6;
+}
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f4f5f8;
+    background-color: var(--background-color);
+    box-sizing: border-box;
+    color: var(--text-color);
+    font-family: Lato, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue, sans-serif;
+    font-family: var(--font-family);
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding: 0;
+}
+:root {
+    --primary-color: #06206e;
+    --secondary-color: #3cb44b;
+    --tertiary-color: #f58231;
+    --background-color: #f4f5f8;
+    --text-color: #333;
+    --border-radius: 8px;
+    --box-shadow: 0 2px 5px #0000001a;
+    --transition: all 0.2s ease;
+    --font-family: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+.subject-container .topics-container::-webkit-scrollbar {
+    width: 8px;
+}
+.topics-container::-webkit-scrollbar {
+    width: 8px;
+}
+.subject-container .topics-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+.topics-container::-webkit-scrollbar-thumb {
+    background-color: #0000004d;
+    border-radius: 4px;
+}
+.subject-container .topics-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+.topics-container::-webkit-scrollbar-track {
+    background: #0000;
+}
+
+topic-header empty-shell
+
+element.style {
+    background-color: rgb(220, 255, 63);
+    color: rgb(0, 0, 0);
+}
+.topic-content, .topic-header {
+    align-items: center;
+    display: flex
+;
+    justify-content: space-between;
+}
+.topic-header {
+    cursor: pointer;
+    padding: 10px 15px;
+    transition: background-color .2s;
+}
+.topic-header {
+    padding: 12px 15px;
+    position: relative;
+    transition: background-color .3s ease;
+    z-index: 4;
+}
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+user agent stylesheet
+div {
+    display: block;
+    unicode-bidi: isolate;
+}
+.topics-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 5px 0;
+    scrollbar-color: #0000004d #0000;
+    scrollbar-width: thin;
+}
+body {
+    background-color: #f5f5f5;
+    color: #333;
+    font-family: Lato, sans-serif;
+    line-height: 1.6;
+}
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f4f5f8;
+    background-color: var(--background-color);
+    box-sizing: border-box;
+    color: var(--text-color);
+    font-family: Lato, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue, sans-serif;
+    font-family: var(--font-family);
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding: 0;
+}
+:root {
+    --primary-color: #06206e;
+    --secondary-color: #3cb44b;
+    --tertiary-color: #f58231;
+    --background-color: #f4f5f8;
+    --text-color: #333;
+    --border-radius: 8px;
+    --box-shadow: 0 2px 5px #0000001a;
+    --transition: all 0.2s ease;
+    --font-family: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+modal-content.slideshow-modal-content
+
+element.style {
+}
+.modal-content {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px #0000004d;
+    max-width: 450px;
+    padding: 25px;
+    position: relative;
+    width: 90%;
+}
+
+.centered-modal {
+    margin: 0 auto;
+    transform: translateY(0);
+}
+.slideshow-modal-content {
+    align-items: center;
+    display: flex
+;
+    flex-direction: column;
+    text-align: center;
+}
+.modal-content {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 5px 25px #0000004d;
+    max-height: 90vh;
+    max-width: 600px;
+    overflow: auto;
+}
+.modal-content, .modal-overlay {
+    box-sizing: border-box;
+    width: 100%;
+}
+.modal-content {
+    animation: slideIn .3s ease;
+    max-width: 500px;
+    padding: 30px;
+}
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+user agent stylesheet
+div {
+    display: block;
+    unicode-bidi: isolate;
+}
+body {
+    background-color: #f5f5f5;
+    color: #333;
+    font-family: Lato, sans-serif;
+    line-height: 1.6;
+}
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f4f5f8;
+    background-color: var(--background-color);
+    box-sizing: border-box;
+    color: var(--text-color);
+    font-family: Lato, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue, sans-serif;
+    font-family: var(--font-family);
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding: 0;
+}
+:root {
+    --primary-color: #06206e;
+    --secondary-color: #3cb44b;
+    --tertiary-color: #f58231;
+    --background-color: #f4f5f8;
+    --text-color: #333;
+    --border-radius: 8px;
+    --box-shadow: 0 2px 5px #0000001a;
+    --transition: all 0.2s ease;
+    --font-family: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+0% {
+    opacity: 0;
+    transform: translateY(-30px);
+}
+100% {
+    opacity: 1;
+    transform: translateY(0);
+}

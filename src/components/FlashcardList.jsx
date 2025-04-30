@@ -134,7 +134,7 @@ const SlideshowModal = ({ cards, title, onClose }) => {
   if (!cards || cards.length === 0) {
     return (
       <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content slideshow-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-content slideshow-modal-content centered-modal" onClick={(e) => e.stopPropagation()}>
           <button className="close-button" onClick={onClose}>&times;</button>
           <h2>{title}</h2>
           <p>No cards to display in slideshow.</p>
@@ -189,9 +189,9 @@ const SlideshowModal = ({ cards, title, onClose }) => {
           />
         </div>
         <div className="slideshow-controls">
-          <button onClick={goToPrev}>Previous</button>
-          <button onClick={flipCard}>Flip</button>
-          <button onClick={goToNext}>Next</button>
+          <button onClick={goToPrev} className="nav-button">Previous</button>
+          <button onClick={flipCard} className="nav-button">Flip</button>
+          <button onClick={goToNext} className="nav-button">Next</button>
         </div>
       </div>
     </div>
@@ -977,7 +977,6 @@ const FlashcardList = ({
     const examBoard = topicShell?.examBoard || "General";
     const examType = topicShell?.examType || "Course";
     const topicKey = `${subject}-${topic}`; // Unique key for state/refs
-    const isTopicExpanded = expandedTopics.has(topicKey);
 
     // Handle topic print click
     const handlePrintTopicClick = (e) => {
@@ -996,66 +995,59 @@ const FlashcardList = ({
     const handleRegenerateTopicClick = async (e) => {
       e.stopPropagation();
       // Find the shell - crucial for metadata
-       const topicShell = validItems.find(item => item.type === 'topic' && item.isShell);
+      const topicShell = validItems.find(item => item.type === 'topic' && item.isShell);
 
       if (!topicShell && validItems.length > 0) {
-          // Fallback: If no shell, try to use metadata from the first actual card
-          const firstCard = validItems.find(item => item.type === 'card');
-           console.warn(`No topic shell found for regeneration of '${topic}'. Using first card's metadata as fallback.`);
-           setGeneratorTopic({
-             subject: subject,
-             topic: topic,
-             name: topic, // Keep name consistent with topic
-             color: topicColor,
-             cardColor: topicColor,
-             examBoard: firstCard?.examBoard || "AQA", // Use card's or default
-             examType: firstCard?.examType || "A-Level", // Use card's or default
-             id: `topic_${subject}_${topic}` // Generate a temporary ID if shell ID is missing
-           });
+        // Fallback: If no shell, try to use metadata from the first actual card
+        const firstCard = validItems.find(item => item.type === 'card');
+        console.warn(`No topic shell found for regeneration of '${topic}'. Using first card's metadata as fallback.`);
+        setGeneratorTopic({
+          subject: subject,
+          topic: topic,
+          name: topic, // Keep name consistent with topic
+          color: topicColor,
+          cardColor: topicColor,
+          examBoard: firstCard?.examBoard || "AQA", // Use card's or default
+          examType: firstCard?.examType || "A-Level", // Use card's or default
+          id: `topic_${subject}_${topic}` // Generate a temporary ID if shell ID is missing
+        });
       } else if (topicShell) {
-           setGeneratorTopic({
-             subject: subject,
-             topic: topic,
-             name: topicShell.name || topic, // Use shell name or topic name
-             color: topicColor,
-             cardColor: topicColor,
-             examBoard: topicShell.examBoard || "AQA",
-             examType: topicShell.examType || "A-Level",
-             id: topicShell.id, // Use the shell's ID
-             ...topicShell // Include all other topic shell properties
-           });
+        setGeneratorTopic({
+          subject: subject,
+          topic: topic,
+          name: topicShell.name || topic, // Use shell name or topic name
+          color: topicColor,
+          cardColor: topicColor,
+          examBoard: topicShell.examBoard || "AQA",
+          examType: topicShell.examType || "A-Level",
+          id: topicShell.id, // Use the shell's ID
+          ...topicShell // Include all other topic shell properties
+        });
       } else {
-           console.error('No topic shell or cards found to derive metadata for regeneration');
-           alert('Cannot generate cards: Topic information is missing.');
-           return;
+        console.error('No topic shell or cards found to derive metadata for regeneration');
+        alert('Cannot generate cards: Topic information is missing.');
+        return;
       }
-
 
       setShowCardGenerator(true);
     };
 
-    // Add slidehsow functionality for topic
+    // Handle slideshow functionality for topic - this will now be the primary action when clicking the topic
     const handleSlideshowTopicClick = (e) => {
       e.stopPropagation();
       startSlideshow(subject, topic, e);
     };
 
-    // Handle topic header click - now toggles expansion
-    const handleTopicHeaderClick = (e) => {
-       e.stopPropagation(); 
-       toggleTopic(topicKey);
-    };
-
     return (
       <div 
         key={topicKey} 
-        className={`topic-container ${isTopicExpanded ? 'topic-expanded' : ''}`}
-        ref={el => topicRefs.current[topicKey] = el} // Add ref
+        className="topic-container"
+        ref={el => topicRefs.current[topicKey] = el}
+        onClick={handleSlideshowTopicClick} // Open slideshow on click of entire topic
       >
         <div
           className={`topic-header ${displayCount === 0 ? 'empty-shell' : ''}`}
           style={{ backgroundColor: topicColor, color: textColor }}
-          onClick={handleTopicHeaderClick} // Toggle expansion on click
         >
           <div className="topic-info">
             <h3>{topic}</h3>
@@ -1068,11 +1060,11 @@ const FlashcardList = ({
           <div className="topic-actions">
             {/* Add the regenerate button - Always show if logic allows */}
             <button
-                onClick={handleRegenerateTopicClick}
-                className="nav-button regenerate-button"
-                title="Generate topic cards" // Updated title
+              onClick={handleRegenerateTopicClick}
+              className="nav-button regenerate-button"
+              title="Generate topic cards"
             >
-               <span className="button-icon">⚡</span>
+              <span className="button-icon">⚡</span>
             </button>
             {/* Add slideshow button */}
             <button
@@ -1101,25 +1093,6 @@ const FlashcardList = ({
             </button>
           </div>
         </div>
-        {/* Render cards if topic is expanded */}      
-        {isTopicExpanded && (
-          <div className="topic-card-list">
-            {actualCards.length > 0 ? (
-              actualCards.map(card => (
-                <FlippableCard 
-                  key={card.id} 
-                  card={card} 
-                  disableFlipOnClick={true} // Don't flip in list
-                  showDeleteButton={true}   // Show delete
-                  onDeleteRequest={handleCardDeleteInList} // Handler for delete
-                  isInModal={false} // Indicate it's not in a modal (for styling)
-                />
-              ))
-            ) : (
-              <div className="no-cards-in-topic-message">No cards in this topic.</div>
-            )}
-          </div>
-        )}
       </div>
     );
   };

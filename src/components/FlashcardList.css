@@ -150,68 +150,55 @@
   display: none;
 }
 
-/* Topics container styling - SIMPLIFY */
+/* Topics container styling - Match exact UI from screenshot */
 .topics-container {
   background-color: white;
   transition: all 0.3s ease-out;
-  padding: 5px 0;
+  padding: 0;
+  margin: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
-  
-  /* Just basic scrolling without pointer-events tricks */
   max-height: 400px; 
   overflow-y: auto;
-  scrollbar-width: thin; /* For Firefox */
+  scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+  border-top: 1px solid #eee;
 }
 
-/* Styling for webkit scrollbars (Chrome, Safari, Edge) */
-.topics-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.topics-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.topics-container::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
-}
-
-/* Topic container */
+/* Topic container styling - Match exact UI from screenshot */
 .topic-container {
-  border: 1px solid #eee;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  background-color: #fff;
-  overflow: hidden; /* Clip content within container */
-  transition: box-shadow 0.2s ease;
-}
-
-.topic-container:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-/* Topic header - simplify CSS */
-.topic-header {
-  padding: 10px 15px;
+  border: none;
+  margin-bottom: 0;
+  background-color: #ba7e33; /* Default color, will be overridden by inline style */
+  overflow: hidden;
   cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   transition: background-color 0.2s ease;
 }
 
+.topic-container:hover {
+  filter: brightness(1.05);
+}
+
+/* Topic header styling - Match exact UI from screenshot */
+.topic-header {
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s;
+  border: none;
+  margin: 0;
+}
+
 .topic-header.empty-shell {
-  opacity: 0.7;
+  opacity: 0.85;
 }
 
 .topic-info {
   flex-grow: 1;
   margin-right: 10px;
-  overflow: hidden; /* Prevent long text from breaking layout */
+  overflow: hidden;
 }
 
 .topic-info h3 {
@@ -234,18 +221,33 @@
 .topic-actions {
   display: flex;
   gap: 8px;
-  flex-shrink: 0; /* Prevent buttons from wrapping */
+  flex-shrink: 0;
 }
 
 /* Override any specific .subject-container .topics-container rules */
 .subject-container .topics-container {
-  padding: 5px;
+  padding: 0;
   border-top: 1px solid #eee;
-  margin-left: 15px;
-  margin-right: 5px;
+  margin-left: 0;
+  margin-right: 0;
   max-height: 400px;
   overflow-y: auto;
   scrollbar-width: thin;
+}
+
+/* Ensure scrollbars are consistent and styled like in the screenshot */
+.subject-container .topics-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.subject-container .topics-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.subject-container .topics-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
 }
 
 /* Keep cards scrollable within an expanded topic */
@@ -1197,10 +1199,30 @@ html {
 }
 
 .slideshow-modal-content {
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
   text-align: center;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+  max-height: 90vh;
+  max-width: 600px;
+  overflow: auto;
+  width: 100%;
+  padding: 30px;
+  animation: slideIn .3s ease;
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .centered-modal {
@@ -1552,3 +1574,76 @@ html {
 }
 
 /* --- Add Media Queries if needed for smaller screens --- */
+
+/* Slideshow card container */
+.slideshow-card-container {
+  width: 100%;
+  height: 350px;
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.slideshow-card-container .flashcard {
+  width: 100%;
+  max-width: 450px;
+  height: 100%;
+  margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.slideshow-card-container .flashcard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+}
+
+.slideshow-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  width: 100%;
+  justify-content: center;
+}
+
+.slideshow-controls .nav-button {
+  padding: 10px 16px;
+  background-color: #0275d8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: 100px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.slideshow-controls .nav-button:hover:not(:disabled) {
+  background-color: #0069c0;
+}
+
+.slideshow-controls .nav-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Improve mobile slideshow experience */
+@media (max-width: 768px) {
+  .slideshow-card-container {
+    height: 300px;
+  }
+  
+  .slideshow-card-container .flashcard {
+    max-width: 100%;
+  }
+  
+  .slideshow-controls .nav-button {
+    min-width: 80px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+}

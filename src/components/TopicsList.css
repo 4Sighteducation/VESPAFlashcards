@@ -74,6 +74,28 @@
   flex-direction: column;
   gap: 8px;
   height: auto;
+  max-height: 400px; /* Ensure consistent max height */
+  overflow-y: auto; /* Always enable vertical scrolling */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+  padding: 5px 0;
+  margin-left: 15px;
+  margin-right: 5px;
+}
+
+/* Add webkit scrollbar styling for consistency */
+.topics-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.topics-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.topics-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
 }
 
 .topic-button {
@@ -151,29 +173,6 @@
   font-size: 0.95rem;
   padding: 10px 12px;
   min-height: 42px; /* Slightly smaller but still touch-friendly */
-}
-
-/* Scrollbar styling */
-.topics-container::-webkit-scrollbar,
-.topics-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.topics-container::-webkit-scrollbar-track,
-.topics-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.topics-container::-webkit-scrollbar-thumb,
-.topics-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 10px;
-}
-
-.topics-container::-webkit-scrollbar-thumb:hover,
-.topics-list::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
 }
 
 /* Mobile Responsive Styles - Enhanced for better touch targets */
