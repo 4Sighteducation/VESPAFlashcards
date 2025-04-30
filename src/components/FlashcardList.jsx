@@ -9,8 +9,8 @@ import FlashcardGeneratorBridge from './FlashcardGeneratorBridge';
 import ErrorBoundary from './ErrorBoundary';
 import { BRIGHT_COLORS, getContrastColor, generateShade } from '../utils/ColorUtils';
 
-// ScrollManager component - Only needs expandedSubjects now
-const ScrollManager = ({ expandedSubjects, subjectRefs }) => {
+// ScrollManager component - Now handles subjects AND topics
+const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRefs }) => {
   // Track if the component is mounted
   const isMounted = useRef(true);
   
@@ -28,6 +28,7 @@ const ScrollManager = ({ expandedSubjects, subjectRefs }) => {
     window.scrollTo({ top: targetY, behavior: 'smooth' });
   };
   
+  // Scroll to expanded subjects
   useEffect(() => {
     Object.entries(expandedSubjects).forEach(([subject, isExpanded]) => {
       if (isExpanded) {
@@ -37,7 +38,15 @@ const ScrollManager = ({ expandedSubjects, subjectRefs }) => {
     });
   }, [expandedSubjects, subjectRefs]);
   
-  // No more expandedTopics effect needed
+  // Scroll to expanded topics
+  useEffect(() => {
+    Object.entries(expandedTopics).forEach(([topicKey, isExpanded]) => {
+      if (isExpanded) {
+        const topicEl = topicRefs.current[topicKey];
+        if (topicEl) setTimeout(() => scrollToElement(topicEl, 10), 150); // Scroll slightly below topic header
+      }
+    });
+  }, [expandedTopics, topicRefs]); // Add dependencies
   
   return null;
 };
@@ -233,11 +242,13 @@ const FlashcardList = ({
   });
   const [showCardGenerator, setShowCardGenerator] = useState(false);
   const [generatorTopic, setGeneratorTopic] = useState(null);
+  const [expandedTopics, setExpandedTopics] = useState(new Set()); // State for expanded topics
   // Add state to track if we need to get userId from localStorage if not provided
   const [localUserId, setLocalUserId] = useState(null);
 
   // 2. useRef Hooks
   const subjectRefs = useRef({});
+  const topicRefs = useRef({}); // Refs for topic elements
 
   // Try to get userId from localStorage if not provided as prop
   useEffect(() => {
@@ -287,6 +298,19 @@ const FlashcardList = ({
       onSubjectClick(subject);
     }
   }, [onSubjectClick]);
+
+  // Toggle topic expansion
+  const toggleTopic = useCallback((topicKey) => {
+    setExpandedTopics(prev => {
+      const newState = new Set(prev);
+      if (newState.has(topicKey)) {
+        newState.delete(topicKey);
+      } else {
+        newState.add(topicKey);
+      }
+      return newState;
+    });
+  }, []);
 
   // Regroup cards whenever the 'cards' prop changes
   useEffect(() => {
@@ -911,6 +935,17 @@ const FlashcardList = ({
     setDeleteConfirmState({ isOpen: false, title: "", message: "", itemToDelete: null, itemType: null, parentSubject: null });
   };
 
+  // --- Handle Card Deletion from List View ---
+  const handleCardDeleteInList = useCallback((cardId) => {
+    if (typeof onDeleteCard === 'function') {
+      // Confirmation might be desired here as well, but for now, directly call onDeleteCard prop
+      console.log(`[FlashcardList] Deleting card ${cardId} from list view.`);
+      onDeleteCard(cardId); 
+    } else {
+      console.error("[FlashcardList] onDeleteCard prop is not available.");
+    }
+  }, [onDeleteCard]);
+
   const renderTopic = (subject, topic, items, topicColor) => {
     // --- Ensure items is an array ---
     const validItems = Array.isArray(items) ? items : [];
@@ -921,6 +956,8 @@ const FlashcardList = ({
     const textColor = getContrastColor(topicColor);
     const examBoard = topicShell?.examBoard || "General";
     const examType = topicShell?.examType || "Course";
+    const topicKey = `${subject}-${topic}`; // Unique key for state/refs
+    const isTopicExpanded = expandedTopics.has(topicKey);
 
     // Handle topic print click
     const handlePrintTopicClick = (e) => {
@@ -983,12 +1020,22 @@ const FlashcardList = ({
       startSlideshow(subject, topic, e);
     };
 
+    // Handle topic header click - now toggles expansion
+    const handleTopicHeaderClick = (e) => {
+       e.stopPropagation(); 
+       toggleTopic(topicKey);
+    };
+
     return (
-      <div key={`${subject}-${topic}`} className="topic-container">
+      <div 
+        key={topicKey} 
+        className={`topic-container ${isTopicExpanded ? 'topic-expanded' : ''}`}
+        ref={el => topicRefs.current[topicKey] = el} // Add ref
+      >
         <div
           className={`topic-header ${displayCount === 0 ? 'empty-shell' : ''}`}
           style={{ backgroundColor: topicColor, color: textColor }}
-          onClick={(e) => startSlideshow(subject, topic, e)} // Allow clicking header to start slideshow
+          onClick={handleTopicHeaderClick} // Toggle expansion on click
         >
           <div className="topic-info">
             <h3>{topic}</h3>
@@ -1034,6 +1081,25 @@ const FlashcardList = ({
             </button>
           </div>
         </div>
+        {/* Render cards if topic is expanded */}      
+        {isTopicExpanded && (
+          <div className="topic-card-list">
+            {actualCards.length > 0 ? (
+              actualCards.map(card => (
+                <FlippableCard 
+                  key={card.id} 
+                  card={card} 
+                  disableFlipOnClick={true} // Don't flip in list
+                  showDeleteButton={true}   // Show delete
+                  onDeleteRequest={handleCardDeleteInList} // Handler for delete
+                  isInModal={false} // Indicate it's not in a modal (for styling)
+                />
+              ))
+            ) : (
+              <div className="no-cards-in-topic-message">No cards in this topic.</div>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -1059,7 +1125,9 @@ const FlashcardList = ({
     <div className="flashcard-list">
       <ScrollManager
         expandedSubjects={expandedSubjects}
-        subjectRefs={subjectRefs}
+        expandedTopics={expandedTopics} // Pass topic state
+        subjectRefs={subjectRefs} 
+        topicRefs={topicRefs}       // Pass topic refs
       />
       <button
         onClick={() => setShowTopicCreationModal(true)}

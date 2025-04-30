@@ -182,26 +182,59 @@
 
 /* Topic container */
 .topic-container {
-  margin: 10px 0;
-  border-radius: 6px;
-  overflow: visible;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  display: block;
-  min-height: 50px;
-  position: relative;
-  z-index: 3;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  background-color: #fff;
+  overflow: hidden; /* Clip content within container */
+  transition: box-shadow 0.2s ease;
+}
+
+.topic-container:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Topic header - simplify CSS */
 .topic-header {
-  padding: 12px 15px;
+  padding: 10px 15px;
+  cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  position: relative;
-  z-index: 4;
+  transition: background-color 0.2s ease;
+}
+
+.topic-header.empty-shell {
+  opacity: 0.7;
+}
+
+.topic-info {
+  flex-grow: 1;
+  margin-right: 10px;
+  overflow: hidden; /* Prevent long text from breaking layout */
+}
+
+.topic-info h3 {
+  margin: 0 0 3px 0;
+  font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topic-meta {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.topic-meta span {
+  margin-right: 8px;
+}
+
+.topic-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0; /* Prevent buttons from wrapping */
 }
 
 /* Override any specific .subject-container .topics-container rules */
@@ -1443,3 +1476,79 @@ html {
     padding: 8px 16px;
   }
 }
+
+/* Styling for the expanded list of cards */
+.topic-card-list {
+  padding: 10px;
+  background-color: #f9f9f9; /* Slightly different background for the list */
+  border-top: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Space between cards */
+}
+
+.no-cards-in-topic-message {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  padding: 15px 0;
+}
+
+/* Adjust FlippableCard when shown in the list */
+.topic-card-list .flashcard {
+  margin: 0; /* Remove auto margin */
+  width: 100%; /* Take full width */
+  max-width: none; /* Override max-width */
+  min-height: 150px; /* Smaller min-height */
+  aspect-ratio: auto; /* Allow flexible aspect ratio */
+  cursor: default; /* Change cursor as flip is disabled */
+}
+
+.topic-card-list .flashcard:hover {
+   transform: none; /* Disable hover transform */
+   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Keep original shadow */
+}
+
+.topic-card-list .flashcard-face {
+   padding: 10px; /* Slightly less padding */
+}
+
+.topic-card-list .card-question-area {
+   font-size: clamp(0.9em, 2.5vw, 1.1em); /* Smaller question font */
+   max-height: 50%; /* Adjust max height if needed */
+}
+
+.topic-card-list .option-item {
+    font-size: clamp(0.75em, 1.8vw, 0.9em); /* Smaller option font */
+    padding: 3px 8px;
+}
+
+.topic-card-list .answer-text {
+    font-size: clamp(0.9em, 2.5vw, 1.1em); /* Smaller answer font */
+}
+
+.topic-card-list .info-button {
+   width: 20px;
+   height: 20px;
+   font-size: 12px;
+   line-height: 20px;
+}
+
+.topic-card-list .flashcard-buttons {
+  top: 3px;
+  right: 3px;
+}
+
+.topic-card-list .flashcard-buttons button {
+   width: 22px;
+   height: 22px;
+   font-size: 14px;
+}
+
+.topic-card-list .box-indicator {
+    bottom: 3px;
+    right: 5px;
+    font-size: 0.7em;
+}
+
+/* --- Add Media Queries if needed for smaller screens --- */

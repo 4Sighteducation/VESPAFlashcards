@@ -25,6 +25,7 @@ const FlashcardGeneratorBridge = ({
   const [error, setError] = useState(null);
   const [errorDetails, setErrorDetails] = useState(null);
   const [generatedCards, setGeneratedCards] = useState([]);
+  const [cardsInReview, setCardsInReview] = useState([]); // State for cards currently in review
   const [step, setStep] = useState(1); // 1: Options selection, 2: Review cards
   const [loadingMessage, setLoadingMessage] = useState("");
   
@@ -172,6 +173,7 @@ const FlashcardGeneratorBridge = ({
       
       // Store the generated cards and move to review step
       setGeneratedCards(processedCards);
+      setCardsInReview(processedCards);
       setStep(2);
     } catch (err) {
       console.error("[FlashcardGeneratorBridge] Error generating cards:", err);
@@ -194,13 +196,13 @@ const FlashcardGeneratorBridge = ({
   // Handle saving the cards to the main app
   const handleSaveCards = useCallback(() => {
     try {
-      if (!generatedCards || generatedCards.length === 0) {
+      if (!cardsInReview || cardsInReview.length === 0) {
         console.error("[FlashcardGeneratorBridge] No cards to save");
         setError("No cards to save. Please generate cards first.");
         return;
       }
       
-      console.log(`[FlashcardGeneratorBridge] Saving ${generatedCards.length} cards`);
+      console.log(`[FlashcardGeneratorBridge] Saving ${cardsInReview.length} cards`);
       
       // Check if we have topic info and recordId
       if (!topic || !topic.subject || !(topic.topic || topic.name) || !recordId) {
@@ -214,7 +216,7 @@ const FlashcardGeneratorBridge = ({
       const topicId = topic.id || `topic_${topic.subject}_${topicIdentifier}`; 
       
       // Process cards with topic information and ID before saving
-      const processedCards = generatedCards.map(card => {
+      const processedCards = cardsInReview.map(card => {
         const now = new Date();
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1); // Set to tomorrow
@@ -260,7 +262,7 @@ const FlashcardGeneratorBridge = ({
       console.error("[FlashcardGeneratorBridge] Error saving cards:", err);
       setError(err.message || "Failed to save cards. Please try again.");
     }
-  }, [generatedCards, onAddCards, onClose, topic]);
+  }, [cardsInReview, onAddCards, onClose, topic, recordId]);
 
   // --- NEW: Handler for flipping a specific card in review ---
   const handleReviewFlip = useCallback((cardId) => {
@@ -268,6 +270,13 @@ const FlashcardGeneratorBridge = ({
           ...prev,
           [cardId]: !prev[cardId] // Toggle flipped state
       }));
+  }, []);
+  // ---------------------------------------------------------
+  
+  // --- NEW: Handler for deleting a card from the review list ---
+  const handleDeleteFromReview = useCallback((cardIdToDelete) => {
+    setCardsInReview(prevCards => prevCards.filter(card => card.id !== cardIdToDelete));
+    console.log(`[FlashcardGeneratorBridge] Removed card ${cardIdToDelete} from review list.`);
   }, []);
   // ---------------------------------------------------------
   
@@ -356,24 +365,30 @@ const FlashcardGeneratorBridge = ({
       <div className="card-generator-review">
         <h3>Review Generated Flashcards</h3>
         
-        <div className="card-preview-list"> 
-            {generatedCards.map((card, index) => (
-                <div key={card.id || index} className="card-review-item"> 
-                    {/* Use FlippableCard for rendering */}
-                    <FlippableCard 
-                        card={card} 
-                        // Use state for flipped status, default to false
-                        isFlipped={!!reviewFlippedStates[card.id]} 
-                        // Pass the flip handler
-                        onFlip={() => handleReviewFlip(card.id)} 
-                         // Disable answer logic in review mode for now
-                        onAnswer={() => {}}
-                        isInModal={false} // Adjust styling if needed
-                    />
-                    <div className="card-review-info">Card {index + 1} - Type: {card.questionType}</div>
-                </div>
-            ))}
-        </div>
+        {cardsInReview.length === 0 ? (
+          <div className="no-cards-to-review">All generated cards have been deleted. Go back to generate more.</div>
+        ) : (
+          <div className="card-preview-list"> 
+              {cardsInReview.map((card, index) => (
+                  <div key={card.id || index} className="card-review-item"> 
+                      {/* Use FlippableCard for rendering */}
+                      <FlippableCard 
+                          card={card} 
+                          // Use state for flipped status, default to false
+                          isFlipped={!!reviewFlippedStates[card.id]} 
+                          // Pass the flip handler
+                          onFlip={() => handleReviewFlip(card.id)} 
+                          // Disable answer logic in review mode
+                          onAnswer={() => {}}
+                          isInModal={false} // Adjust styling if needed
+                          showDeleteButton={true} // Show delete button
+                          onDeleteRequest={handleDeleteFromReview} // Pass delete handler
+                      />
+                      <div className="card-review-info">Card {index + 1} - Type: {card.questionType}</div>
+                  </div>
+              ))}
+          </div>
+        )}
         
         <div className="option-section options-actions">
           <button 
@@ -385,8 +400,9 @@ const FlashcardGeneratorBridge = ({
           <button 
             className="save-button" 
             onClick={handleSaveCards}
+            disabled={cardsInReview.length === 0} // Disable save if no cards left
           >
-            Save All Cards
+            Save {cardsInReview.length} Card(s)
           </button>
         </div>
       </div>

@@ -6,8 +6,8 @@
   cursor: pointer;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   font-family: 'Lato', sans-serif;
   background-color: white;
   aspect-ratio: 3/2;
@@ -19,8 +19,8 @@
 }
 
 .flashcard:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
 .flashcard.mastered {
@@ -29,1964 +29,290 @@
 }
 
 .flashcard-inner {
+  position: relative;
   width: 100%;
   height: 100%;
-  flex-grow: 1;
-  position: relative;
-  transform-style: preserve-3d;
   transition: transform 0.6s;
-  background-color: white;
-  display: flex;
-  flex-direction: column;
+  transform-style: preserve-3d;
 }
 
 .flashcard.flipped .flashcard-inner {
   transform: rotateY(180deg);
 }
 
-.flashcard-front,
-.flashcard-back {
+.flashcard-face {
   position: absolute;
   width: 100%;
   height: 100%;
   backface-visibility: hidden;
-  padding: clamp(10px, 3.5%, 15px);
+  -webkit-backface-visibility: hidden;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  padding: 15px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .flashcard-front {
   z-index: 2;
-  border-radius: 10px;
+  justify-content: space-between;
 }
 
 .flashcard-back {
   transform: rotateY(180deg);
-}
-
-/* Container for the main content (question/answer) */
-.card-content-area {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
+  color: #333;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
-  width: 100%;
+  position: relative;
 }
 
-/* Styling for ScaledText component */
-.scaled-text {
-  width: 100%;
-  text-align: center;
-  height: auto;
-  max-height: 100%;
-  overflow: hidden;
-}
-
-.scaled-text > div {
-  width: 100%;
-}
-
-/* Style adjustments for very small text */
-.very-small-text {
-  letter-spacing: 0.01em;
-  line-height: 1.1;
-  word-spacing: -0.05em;
-}
-
-.small-text {
-  letter-spacing: 0.02em;
-  line-height: 1.2;
-}
-
-/* More compact styles for multiple choice options with small text */
-.small-font-options li {
-  padding: 4px 2px;
-  margin: 2px 0;
-  line-height: 1.2;
-}
-
-.very-small-font-options li {
-  padding: 3px 2px;
-  margin: 1px 0;
-  letter-spacing: 0.01em;
-  line-height: 1.1;
-  word-spacing: -0.05em;
-}
-
-.tiny-font-options li {
-  padding: 1px 2px;
-  margin: 0;
-  letter-spacing: 0;
-  line-height: 1;
-  word-spacing: -0.1em;
-}
-
-/* Question title styling - make it much larger and more prominent */
-.question-title {
-  width: 100%;
-  overflow-y: visible;
-  margin-bottom: 10px;
-  padding: 5px 8px;
-  box-sizing: border-box;
-  text-align: center;
-}
-
-.question-title .scaled-text {
-  font-weight: bold;
-  min-height: 0;
-  width: 100%;
-  text-align: center;
+.empty-card {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  font-style: italic;
+  color: #888;
 }
 
-/* Scale questions based on content length */
-.question-title.very-long {
-  font-size: 16px;
-}
-
-.question-title.extremely-long {
-  font-size: 14px;
-}
-
-/* For modal view, ensure larger text in questions */
-.modal-card .question-title {
-  font-size: 20px;
-  max-height: 40%;
-}
-
-.modal-card .question-title .scaled-text {
-  font-size: 1.4rem;
-  line-height: 1.4;
-  font-weight: 600;
-  padding: 0;
-}
-
-/* Make options smaller to accommodate larger question */
-.modal-card .options-container {
-  max-height: 50%;
-}
-
-.modal-card .options-container li {
-  font-size: 16px;
-  padding: 6px 8px;
-  margin-bottom: 6px;
-}
-
-/* Options container for multiple choice */
-.options-container {
-  width: 100%;
-  overflow-y: visible;
-  box-sizing: border-box;
-  margin-top: 10px;
-  background-color: rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-}
-
-.options-container ol {
-  margin: 0;
-  padding-left: 22px;
-  list-style-type: none;
-}
-
-.options-container li {
-  margin-bottom: 8px;
-  padding: 8px 10px;
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  position: relative;
-  display: flex !important;
-  visibility: visible !important;
-}
-
-.option-letter {
-  font-weight: bold;
-  margin-right: 6px;
-  display: inline-block;
-}
-
-.option-text {
-  flex: 1;
-}
-
-/* For cards in the bank view, add contrast to ensure readability */
-.flashcard .options-container li {
-  /* Use the card's background color with transparency for options */
-  background-color: rgba(0, 0, 0, 0.15) !important; /* Dark background with transparency */
-  color: inherit !important; /* Inherit text color from the card */
-  font-weight: 500 !important; /* Slightly bolder for better readability */
-  border-radius: 4px !important;
-  text-shadow: 0 0 1px rgba(0, 0, 0, 0.2) !important; /* Add subtle text shadow for better contrast */
-  margin-bottom: 6px !important;
-  position: relative;
-  z-index: 1;
-}
-
-/* Create a hover effect for options in the card bank */
-.flashcard .options-container li:hover {
-  background-color: rgba(0, 0, 0, 0.25) !important;
-}
-
-/* Ensure option letters stand out */
-.flashcard .options-container .option-letter {
-  font-weight: 700 !important;
-  margin-right: 6px !important;
-  display: inline-block !important;
-  min-width: 18px !important;
-}
-
-/* Style the card topic indicator for better visibility */
 .card-topic-indicator {
-  position: absolute;
-  top: 5px;
-  left: 10px;
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.25);
-  max-width: 80%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  z-index: 2;
-  line-height: 1.2;
-  font-weight: 500;
-  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  font-size: 0.8em;
+  font-weight: bold;
+  text-align: center;
+  opacity: 0.8;
+  margin-bottom: 5px;
+  flex-shrink: 0;
 }
 
 .back-topic {
-  color: #333 !important;
-  background-color: rgba(0, 0, 0, 0.1) !important;
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #aaa;
 }
 
-.options-container.small-font-options li {
-  padding: 5px 8px;
-  margin-bottom: 4px;
-}
-
-.options-container li:hover {
-  background-color: rgba(255, 255, 255, 0.9); /* Higher contrast on hover */
-}
-
-/* Special handling for slideshow/modal mode */
-.modal-card .options-container {
-  display: block !important;
-  visibility: visible !important;
-  margin-top: auto;
-  margin-bottom: 5px;
-}
-
-.modal-card .options-container li {
-  background-color: rgba(0, 0, 0, 0.15);
+.card-question-area {
+  flex: 0 1 auto;
   margin-bottom: 10px;
-  padding: 10px 12px;
-}
-
-/* Make sure content is always visible in the modal */
-.modal-card .question-title,
-.modal-card .options-container {
-  width: 100%;
-  box-sizing: border-box;
   overflow-y: auto;
+  max-height: 40%;
+  font-size: clamp(1em, 3vw, 1.3em);
+  font-weight: bold;
+  word-wrap: break-word;
 }
 
-.modal-card-container .flashcard {
-  width: 100%;
-  max-width: 580px;
-  height: 460px;
-  margin: 0 auto;
-  background-color: white;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+.card-options-area {
+  flex: 1 1 auto;
   overflow: hidden;
+  display: flex;
+  min-height: 0;
 }
 
-.modal-card-container .flashcard .flashcard-front,
-.modal-card-container .flashcard .flashcard-back {
-  position: relative !important;
+.options-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  overflow-y: auto !important;
-  width: 100%;
-  height: auto;
-  min-height: 200px;
-  padding: 15px;
-  box-sizing: border-box;
-}
-
-.modal-card-container .flashcard .text-container {
-  width: 100%;
+  justify-content: space-around;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden !important;
-}
-
-.modal-card-container .flashcard .scaled-text {
-  width: 100%;
-  text-align: center;
-  overflow: hidden;
-}
-
-/* Multiple choice options in spaced repetition mode */
-.multiple-choice-options li {
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  background-color: rgba(255, 255, 255, 0.1);
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
-}
-
-.multiple-choice-options li:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-}
-
-.multiple-choice-options li.selected-option {
-  background-color: rgba(21, 58, 163, 0.2);
-  border-color: #153aa3;
-}
-
-.multiple-choice-options li.correct-option {
-  background-color: rgba(76, 175, 80, 0.2);
-  border-color: #4CAF50;
-}
-
-/* Box indicator */
-.box-indicator {
-  position: absolute;
-  bottom: 5px;
-  right: 5px;
-  font-size: 0.7rem;
-  padding: 2px 5px;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 10px;
-  color: #333;
-}
-
-/* Remove the button container class and position buttons individually */
-.button-container {
-  /* No longer needed as we'll position each button individually */
-  display: none;
-}
-
-/* Position buttons in corners */
-.delete-btn {
-  position: absolute;
-  bottom: 5px;
-  right: 5px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.85);
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s;
-  padding: 0;
-  z-index: 100;
-  color: #e74c3c;
-}
-
-.color-btn {
-  position: absolute;
-  bottom: 5px;
-  left: 5px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.85);
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s;
-  padding: 0;
-  z-index: 100;
-  color: #3498db;
-}
-
-.info-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0,0,0,0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
-  padding: 0;
-  z-index: 10;
-  color: inherit;
-}
-
-.delete-btn:hover, 
-.color-btn:hover,
-.info-btn:hover {
-  transform: scale(1.1);
-  background-color: rgba(255, 255, 255, 0.9);
-}
-
-/* Position the color picker properly */
-.color-picker-container {
-  position: absolute;
-  bottom: 35px;
-  left: 5px;
-  background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  padding: 8px;
-  z-index: 110;
-}
-
-.color-options {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 5px;
-}
-
-.color-option {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.color-option:hover {
-  transform: scale(1.2);
-}
-
-/* Lists within cards */
-.scaled-text ul,
-.scaled-text ol {
-  text-align: left;
-  padding-left: 20px;
-  margin: 5px 0;
-}
-
-.scaled-text li {
-  margin-bottom: 2px;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .flashcard {
-    aspect-ratio: 4/3;
-  }
-}
-
-/* Add styles for the info button */
-.info-btn {
-  background-color: rgba(0, 100, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 2px 8px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-
-.card-controls .info-btn {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  padding: 0;
-  margin-left: 5px;
-}
-
-.card-front-info {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-}
-
-.card-back-info {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-}
-
-.info-btn:hover {
-  background-color: rgba(0, 100, 255, 0.4);
-  transform: scale(1.1);
-}
-
-/* Info modal styles */
-.info-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999; /* Higher z-index to ensure it's on top */
-  animation: fadeIn 0.2s ease-out;
-}
-
-.info-modal {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  max-width: 90%;
-  width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  margin: auto; /* Center in the overlay */
-}
-
-.info-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.info-modal-header h3 {
-  margin: 0;
-  color: #333;
-  font-size: 1.2rem;
-}
-
-.close-modal-btn {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  color: #777;
-  transition: color 0.2s;
-}
-
-.close-modal-btn:hover {
-  color: #333;
-}
-
-.info-modal-content {
-  padding: 20px;
-  overflow-y: auto;
-  line-height: 1.5;
-  color: #333;
-  font-size: 1rem;
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideIn {
-  from { transform: translateY(-20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.additional-info {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px dashed rgba(0, 0, 0, 0.2);
-  font-size: 0.9em;
-}
-
-.additional-info h4 {
-  margin-bottom: 5px;
-  font-weight: 600;
-  font-size: 0.9em;
-}
-
-/* Add or update these styles for preview cards */
-
-.preview-card {
-  transform-style: preserve-3d;
-  transition: transform 0.6s;
-  box-shadow: none !important;
-  height: 100%;
-  margin: 0;
-}
-
-.preview-card .flashcard-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transition: transform 0.6s;
-  transform-style: preserve-3d;
-}
-
-.preview-card .flashcard-front,
-.preview-card .flashcard-back {
-  height: 100%;
-  overflow-y: auto;
-  padding: 0.75rem;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  backface-visibility: hidden;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-}
-
-.preview-card .flashcard-front::-webkit-scrollbar,
-.preview-card .flashcard-back::-webkit-scrollbar {
-  display: none;
-}
-
-.preview-card.flipped .flashcard-inner {
-  transform: rotateY(180deg);
-}
-
-.preview-card .flashcard-back {
-  transform: rotateY(180deg);
-}
-
-/* Make options look cleaner in preview mode */
-.preview-card .options-container {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.preview-card .options-container ol {
-  padding-left: 20px;
-}
-
-.preview-card .options-container li {
-  margin-bottom: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 3px;
-  background-color: rgba(255, 255, 255, 0.15);
-  font-weight: normal;
-}
-
-.delete-confirm {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 4px 8px;
-  border-radius: 4px;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
-  z-index: 120;
-}
-
-.confirm-btn,
-.cancel-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 3px 7px;
-  border-radius: 3px;
-  font-size: 0.75rem;
-  font-weight: bold;
-}
-
-.confirm-btn {
-  background-color: #e74c3c;
-  color: white;
-}
-
-.confirm-btn:hover {
-  background-color: #c0392b;
-}
-
-.cancel-btn {
-  background-color: #ecf0f1;
-  color: #333;
-}
-
-.cancel-btn:hover {
-  background-color: #bdc3c7;
-}
-
-/* Multiple choice enhancements */
-.multiple-choice-options {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  display: block;
 }
 
 .option-item {
-  display: flex !important;
+  margin: 3px 0;
+  padding: 5px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+  display: flex;
   align-items: center;
-  padding: 8px 10px;
-  margin-bottom: 8px;
-  background-color: rgba(255, 255, 255, 0.25);
-  border-radius: 4px;
-  overflow-wrap: break-word;
-  word-break: break-word;
+  font-size: clamp(0.8em, 2vw, 1em);
+  background-color: transparent !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.3;
+}
+
+.option-item:hover {
+  border-color: rgba(0, 0, 0, 0.3);
 }
 
 .option-letter {
   font-weight: bold;
   margin-right: 8px;
-  min-width: 15px;
+  flex-shrink: 0;
 }
 
 .option-text {
-  flex: 1;
+  flex-grow: 1;
 }
 
-/* Ensure mobile formatting for modals is good */
-@media (max-width: 768px) {
-  .info-modal {
-    width: 95%;
-    padding: 15px;
-    margin: 0 auto;
-  }
-  
-  .multiple-choice-options {
-    gap: 6px;
-  }
-  
-  .option-item {
-    padding: 6px 8px;
-    margin-bottom: 5px;
-  }
+.option-item.selected {
+  border-width: 2px;
+  border-color: #4a90e2;
+  font-weight: bold;
 }
 
-/* Modal overlay style */
+.option-item.correct {
+  border-color: #4CAF50;
+  color: #4CAF50 !important;
+  font-weight: bold;
+}
+
+.option-item.incorrect {
+  border-color: #F44336;
+  color: #F44336 !important;
+  font-weight: bold;
+  text-decoration: line-through;
+}
+
+.option-item.reveal-correct {
+  border-color: #4CAF50;
+}
+
+.answer-feedback {
+  margin-top: 8px;
+  font-size: 0.9em;
+  font-weight: bold;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.correct-feedback-text {
+  color: #4CAF50;
+}
+
+.incorrect-feedback-text {
+  color: #F44336;
+}
+
+.box-indicator {
+  position: absolute;
+  bottom: 5px;
+  right: 10px;
+  font-size: 0.75em;
+  color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.flashcard-back .box-indicator {
+  color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(220, 220, 220, 0.7);
+}
+
+.card-content-area {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.answer-text {
+  font-size: clamp(1em, 3vw, 1.4em);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  text-align: left;
+  width: 100%;
+}
+
+.info-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #333;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  z-index: 5;
+}
+
+.info-button:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.detailed-answer-modal {
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.detailed-answer-modal h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.detailed-answer-modal pre {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 0.95em;
+  color: #444;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 9998;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* Card modal styling */
-.card-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  overflow: hidden;
-  overscroll-behavior: contain;
-  touch-action: none;
 }
 
-.card-modal-content {
+.modal-content {
   background-color: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 580px;
-  height: auto;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  overscroll-behavior: contain;
-}
-
-.close-modal-button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: rgba(0, 0, 0, 0.2);
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 20px;
-  cursor: pointer;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  transition: all 0.2s ease;
-}
-
-.close-modal-button:hover {
-  background: rgba(0, 0, 0, 0.4);
-  transform: scale(1.1);
-}
-
-.card-modal-card-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  width: 100%;
-  box-sizing: border-box;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-
-.card-modal-actions {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  padding: 15px 20px;
-  box-sizing: border-box;
-  background-color: #f5f5f5;
-  border-top: 1px solid #e0e0e0;
-}
-
-.nav-buttons {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.card-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 5px;
-}
-
-.card-counter {
-  font-size: 16px;
-  font-weight: 500;
-  color: #444;
-  margin-bottom: 5px;
-}
-
-.topic-info {
-  font-size: clamp(0.75rem, 2vw, 0.9rem);
-  color: #666;
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-  padding: 0 5px;
-}
-
-/* Responsive fixes for modal at various screen sizes */
-@media (max-width: 1024px) {
-  .card-modal-content {
-    width: 95%;
-    max-width: 540px;
-  }
-  
-  .card-modal-card-container {
-    padding: 15px;
-  }
-  
-  .card-modal-actions {
-    padding: 12px 15px;
-  }
-  
-  .topic-info {
-    font-size: 13px;
-    max-width: 100%;
-  }
-}
-
-@media (max-width: 840px) {
-  .card-modal-content {
-    max-width: 500px;
-  }
-  
-  .card-modal-card-container {
-    padding: 12px;
-  }
-  
-  .nav-buttons {
-    margin-bottom: 8px;
-  }
-  
-  .card-counter {
-    font-size: 15px;
-  }
-  
-  .topic-info {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 640px) {
-  .card-modal-content {
-    width: 97%;
-    max-width: 440px;
-    border-radius: 10px;
-  }
-  
-  .card-modal-card-container {
-    padding: 10px;
-  }
-  
-  .card-modal-actions {
-    padding: 10px;
-  }
-  
-  .nav-button {
-    padding: 8px 15px;
-    font-size: 14px;
-    min-width: 80px;
-  }
-  
-  .close-modal-button {
-    width: 28px;
-    height: 28px;
-    font-size: 18px;
-    top: 10px;
-    right: 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  .card-modal-content {
-    width: 98%;
-    max-width: 360px;
-    border-radius: 8px;
-  }
-  
-  .card-modal-card-container {
-    padding: 8px;
-  }
-  
-  .card-modal-actions {
-    padding: 8px;
-  }
-  
-  .nav-button {
-    padding: 6px 12px;
-    font-size: 13px;
-    min-width: 70px;
-  }
-  
-  .card-counter {
-    font-size: 14px;
-  }
-  
-  .topic-info {
-    font-size: 11px;
-  }
-  
-  .close-modal-button {
-    width: 24px;
-    height: 24px;
-    font-size: 16px;
-    top: 8px;
-    right: 8px;
-  }
-}
-
-/* Portrait mode for mobile - enhanced option display */
-@media (max-width: 480px) and (orientation: portrait) {
-  .options-container li,
-  .card-modal-card-container .options-container li,
-  .modal-card .options-container li {
-    padding: 3px 5px;
-    margin-bottom: 3px;
-    font-size: 11px !important;
-    line-height: 1.2;
-    overflow: visible;
-    white-space: normal;
-    display: block;
-    word-wrap: break-word;
-    hyphens: auto;
-    -webkit-line-clamp: unset;
-    line-clamp: unset;
-    -webkit-box-orient: unset;
-  }
-  
-  .option-letter {
-    font-size: 11px;
-    min-width: 12px;
-    margin-right: 3px;
-    display: inline-block;
-    vertical-align: top;
-  }
-  
-  .modal-card .question-title {
-    min-height: 50px;
-    padding: 5px;
-    overflow: visible;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 13px !important;
-  }
-  
-  .card-modal-card-container .flashcard .flashcard-front,
-  .card-modal-card-container .flashcard .flashcard-back {
-    overflow-y: auto !important;
-  }
-}
-
-/* Topic indicator on cards */
-.card-topic-indicator {
-  font-size: 10px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  padding: 2px 5px;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  opacity: 0.9;
-}
-
-.modal-card .card-topic-indicator {
-  font-size: 12px;
-  margin-bottom: 10px;
-}
-
-/* Add specific mid-size device handling for tablets and smaller desktops */
-@media (max-width: 1024px) {
-  .modal-card-container .flashcard {
-    height: 400px;
-    min-height: 400px;
-    max-width: 90%;
-  }
-  
-  .modal-card-container .flashcard .flashcard-front,
-  .modal-card-container .flashcard .flashcard-back {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    padding: 15px;
-  }
-  
-  .modal-card-container .flashcard .scaled-text {
-    font-size: 16px !important;
-    min-height: 0;
-    height: auto;
-    width: 100%;
-    padding: 5px;
-  }
-  
-  .modal-card .question-title {
-    height: auto;
-    min-height: 80px;
-    margin-bottom: 10px;
-  }
-  
-  .modal-card .options-container {
-    height: auto;
-    flex: 1;
-  }
-}
-
-/* Medium tablet sizes */
-@media (max-width: 840px) {
-  .modal-card-container .flashcard {
-    height: 380px;
-    min-height: 380px;
-  }
-  
-  .modal-card-container .flashcard .scaled-text {
-    font-size: 15px !important;
-  }
-  
-  .modal-options.options-container li {
-    font-size: 13px !important;
-    padding: 4px 6px;
-    margin: 3px 0;
-  }
-}
-
-/* Smaller tablets */
-@media (max-width: 640px) {
-  .modal-card-container .flashcard {
-    height: 350px;
-    min-height: 350px;
-  }
-  
-  .modal-card-container .flashcard .scaled-text {
-    font-size: 14px !important;
-  }
-}
-
-/* Mobile devices - maintain existing rules but ensure consistency */
-@media (max-width: 480px) {
-  .modal-card-container .flashcard {
-    min-height: 280px;
-    border-radius: 6px;
-    height: auto;
-  }
-  
-  .modal-card-container .flashcard .flashcard-front,
-  .modal-card-container .flashcard .flashcard-back {
-    padding: 10px;
-    position: relative;
-  }
-  
-  .modal-card .question-title {
-    padding: 3px;
-    margin-bottom: 3px;
-    min-height: 60px;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 12px !important;
-  }
-}
-
-/* Card modal flashcard styling */
-.card-modal-card-container .flashcard {
-  width: 100%;
-  max-width: 800px;
-  height: auto;
-  min-height: 450px;
-  margin: 0 auto;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  overflow: hidden;
-  transform: none !important;
-  transition: none;
-}
-
-.card-modal-card-container .flashcard .flashcard-front,
-.card-modal-card-container .flashcard .flashcard-back {
-  padding: 20px;
-  height: auto;
-  min-height: 450px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Increase question size in modal view */
-.card-modal-card-container .flashcard .question-title {
-  font-size: clamp(1.4rem, 5vw, 2rem);
-  line-height: 1.4;
-  margin-bottom: clamp(10px, 3vh, 20px);
-  padding: clamp(8px, 2vw, 12px);
-  background-color: rgba(0, 0, 0, 0.05);
-  border: none;
+  padding: 25px;
   border-radius: 8px;
-  text-align: center;
-  width: 100%;
-  box-shadow: none;
-}
-
-.card-modal-card-container .flashcard .question-title .scaled-text {
-  font-size: 1.6rem !important;
-  line-height: 1.4;
-  font-weight: 600;
-}
-
-/* Mobile adjustments */
-@media (max-width: 768px) {
-  .card-modal-card-container .flashcard .question-title {
-    font-size: 1.5rem;
-    padding: 12px;
-  }
-  
-  .card-modal-card-container .flashcard .question-title .scaled-text {
-    font-size: 1.4rem !important;
-  }
-  
-  .card-modal-card-container .options-container li {
-    font-size: 0.9rem;
-    padding: 8px;
-  }
-}
-
-/* Improved styling for the modal multiple choice options */
-.card-modal-card-container .options-container {
-  margin-top: 15px;
-  width: 100%;
-  max-width: 450px;
-}
-
-.card-modal-card-container .options-container ol {
-  padding-left: 0;
-  list-style-position: inside;
-}
-
-.card-modal-card-container .options-container li {
-  background-color: rgba(255, 255, 255, 0.9);
-  margin: 8px 0;
-  padding: 8px 12px;
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-}
-
-/* Responsive adjustments for modal flashcards - ENHANCED */
-@media (max-width: 1024px) {
-  .card-modal-content {
-    width: 95%;
-    max-width: 800px;
-  }
-  
-  .card-modal-card-container .flashcard {
-    height: 380px;
-  }
-  
-  /* Add intermediate breakpoint styling */
-  .modal-card .options-container li {
-    padding: 6px 8px;
-    font-size: 14px;
-    margin-bottom: 5px;
-  }
-}
-
-/* New intermediate breakpoint for better transition */
-@media (max-width: 900px) {
-  .card-modal-card-container .flashcard {
-    height: 360px;
-    max-width: 95%;
-  }
-  
-  .modal-card .options-container li {
-    padding: 5px 8px;
-    font-size: 13px;
-    line-height: 1.3;
-  }
-  
-  .modal-card .question-title {
-    min-height: 50px;
-    margin-bottom: 10px;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 15px !important;
-  }
-}
-
-/* Another intermediate breakpoint */
-@media (max-width: 768px) {
-  .card-modal-content {
-    width: 98%;
-    max-height: 90vh;
-  }
-  
-  .card-modal-card-container .flashcard {
-    height: 350px;
-  }
-  
-  .card-modal-card-container .options-container li {
-    padding: 5px 8px;
-    font-size: 13px;
-    line-height: 1.2;
-  }
-  
-  .modal-card .options-container {
-    max-height: 60%;
-  }
-}
-
-/* Small tablets and large phones */
-@media (max-width: 650px) {
-  .card-modal-card-container .flashcard {
-    height: 320px;
-  }
-  
-  .card-modal-card-container .options-container li {
-    padding: 4px 6px;
-    font-size: 12px;
-    margin-bottom: 3px;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 14px !important;
-  }
-  
-  /* Force small font options */
-  .modal-card .options-container {
-    max-height: 58%;
-  }
-  
-  .options-container {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .card-modal-card-container .flashcard {
-    height: 300px;
-  }
-  
-  .card-modal-card-container .options-container li {
-    padding: 4px 6px;
-    font-size: 11px;
-    margin-bottom: 3px;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 13px !important;
-  }
-}
-
-/* Landscape mode adjustments - ENHANCED */
-@media (max-height: 600px) and (orientation: landscape) {
-  .card-modal-content {
-    max-height: 98vh;
-    display: flex;
-    flex-direction: column;
-    padding: 5px;
-  }
-  
-  .card-modal-card-container {
-    padding: 5px;
-    max-height: 75vh;
-    overflow-y: auto;
-  }
-  
-  .card-modal-card-container .flashcard {
-    height: auto;
-    min-height: 230px;
-    max-height: 70vh;
-    width: 100%;
-    max-width: 95%;
-    margin: 0 auto;
-  }
-  
-  .card-modal-card-container .flashcard .flashcard-front,
-  .card-modal-card-container .flashcard .flashcard-back {
-    position: relative;
-    padding: 8px;
-    height: auto;
-    min-height: 230px;
-  }
-  
-  .card-modal-actions {
-    padding: 5px;
-  }
-  
-  /* Make options container shorter in landscape to fit screen */
-  .modal-card .options-container {
-    max-height: none;
-    overflow-y: visible;
-    margin-top: 5px;
-    padding-bottom: 5px;
-  }
-  
-  .modal-card .options-container li {
-    padding: 2px 4px;
-    margin-bottom: 2px;
-    font-size: 10px;
-    line-height: 1.1;
-  }
-  
-  .modal-card .question-title {
-    min-height: 0;
-    margin-bottom: 5px;
-    padding: 3px;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 11px !important;
-    padding: 3px;
-    min-height: 0;
-  }
-}
-
-/* Extra small screens in landscape - even more aggressive */
-@media (max-height: 450px) and (orientation: landscape) {
-  .card-modal-card-container .flashcard {
-    min-height: 200px;
-    max-height: 65vh;
-  }
-  
-  .card-modal-card-container .flashcard .flashcard-front,
-  .card-modal-card-container .flashcard .flashcard-back {
-    min-height: 200px;
-    padding: 5px;
-  }
-  
-  .modal-card .options-container li {
-    padding: 1px 3px;
-    margin-bottom: 1px;
-    font-size: 9px;
-    line-height: 1;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 10px !important;
-    padding: 2px;
-  }
-  
-  .option-letter {
-    font-size: 9px;
-    min-width: 8px;
-    margin-right: 1px;
-  }
-}
-
-/* iPhone X/XR specific fix for landscape mode */
-@media (max-width: 896px) and (max-height: 414px) and (orientation: landscape) {
-  .card-modal-content {
-    width: 98%;
-    max-height: 98vh;
-    padding: 3px;
-  }
-  
-  .card-modal-card-container {
-    padding: 3px;
-    max-height: 75vh;
-  }
-  
-  .card-modal-card-container .flashcard {
-    min-height: 180px;
-    height: auto;
-    max-height: 60vh;
-  }
-  
-  .card-modal-card-container .flashcard .flashcard-front,
-  .card-modal-card-container .flashcard .flashcard-back {
-    min-height: 180px;
-    height: auto;
-    padding: 5px;
-  }
-  
-  .modal-card .question-title {
-    margin-bottom: 3px;
-    padding: 2px;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 10px !important;
-    padding: 2px;
-  }
-  
-  .modal-card .options-container {
-    margin-top: 3px;
-  }
-  
-  .modal-card .options-container li {
-    padding: 1px 2px;
-    margin-bottom: 1px;
-    font-size: 8px;
-    line-height: 1;
-    border-radius: 2px;
-  }
-  
-  .option-letter {
-    font-size: 8px;
-    min-width: 6px;
-    margin-right: 1px;
-  }
-  
-  .card-modal-actions {
-    padding: 3px;
-  }
-  
-  .nav-button {
-    padding: 3px 6px;
-    font-size: 11px;
-  }
-  
-  .card-counter {
-    font-size: 10px;
-  }
-  
-  .topic-info {
-    font-size: 9px;
-  }
-}
-
-/* Wide screens - improved text and content scaling */
-@media (min-width: 1025px) and (max-width: 1600px) {
-  .card-modal-content {
-    max-width: 900px;
-    width: 85%;
-  }
-  
-  .card-modal-card-container .flashcard {
-    max-width: 600px;
-    height: 450px;
-  }
-  
-  .card-modal-card-container .flashcard .scaled-text {
-    font-size: 20px !important;
-  }
-  
-  .card-modal-card-container .options-container li {
-    padding: 10px 14px;
-    margin: 6px 0;
-    font-size: 16px;
-  }
-  
-  .card-modal-content .card-counter {
-    font-size: 18px;
-  }
-  
-  .card-modal-content .topic-info {
-    font-size: 16px;
-    max-width: 100%;
-  }
-}
-
-/* Very wide screens */
-@media (min-width: 1601px) {
-  .card-modal-content {
-    max-width: 1200px;
-    width: 75%;
-  }
-  
-  .card-modal-card-container .flashcard {
-    max-width: 700px;
-    height: 500px;
-  }
-  
-  .card-modal-card-container .flashcard .scaled-text {
-    font-size: 22px !important;
-  }
-  
-  .card-modal-card-container .options-container li {
-    padding: 12px 16px;
-    margin: 8px 0;
-    font-size: 18px;
-  }
-  
-  .card-modal-content .nav-button {
-    font-size: 1.2rem;
-    padding: 8px 16px;
-  }
-  
-  .card-modal-content .card-counter {
-    font-size: 20px;
-  }
-  
-  .card-modal-content .topic-info {
-    font-size: 18px;
-  }
-}
-
-/* Ultimate small screen fix for very narrow devices */
-@media (max-width: 360px), (max-height: 360px) {
-  .modal-card .options-container li {
-    padding: 2px 3px;
-    margin-bottom: 2px;
-    font-size: 9px;
-    line-height: 1.1;
-  }
-  
-  .modal-card .question-title .scaled-text {
-    font-size: 11px !important;
-  }
-  
-  .option-letter {
-    font-size: 9px;
-    min-width: 10px;
-    margin-right: 2px;
-  }
-}
-
-/* Fix for iPad Mini and similar tablets in landscape mode */
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
-  .card-modal-content {
-    width: 95%;
-    max-width: 900px;
-    max-height: 90vh;
-  }
-  
-  .card-modal-card-container {
-    padding: 10px;
-    max-height: 75vh;
-    overflow-y: auto;
-  }
-  
-  .card-modal-card-container .flashcard {
-    height: auto;
-    min-height: 250px;
-    max-height: 65vh;
-  }
-  
-  .card-modal-card-container .flashcard .flashcard-front,
-  .card-modal-card-container .flashcard .flashcard-back {
-    position: relative;
-    height: auto;
-    min-height: 250px;
-    padding: 15px;
-  }
-  
-  .modal-card .question-title {
-    min-height: 40px;
-    margin-bottom: 10px;
-  }
-  
-  .modal-card .options-container {
-    height: auto;
-    max-height: none;
-    overflow-y: visible;
-  }
-  
-  .modal-card .options-container li {
-    padding: 5px 8px;
-    margin-bottom: 4px;
-    font-size: 13px;
-    line-height: 1.2;
-    display: block;
-    overflow: visible;
-    white-space: normal;
-    -webkit-line-clamp: 4;
-    line-clamp: 4;
-    -webkit-box-orient: vertical;
-  }
-}
-
-/* Fix for transition around 635px - ensure content is visible from 635px-768px */
-@media (min-width: 635px) and (max-width: 767px) {
-  .card-modal-card-container .flashcard {
-    height: auto;
-    min-height: 300px;
-  }
-  
-  .card-modal-card-container .flashcard .flashcard-front,
-  .card-modal-card-container .flashcard .flashcard-back {
-    position: relative;
-    height: auto;
-    min-height: 300px;
-    padding: 12px;
-  }
-  
-  .modal-card .options-container {
-    height: auto;
-    overflow-y: visible;
-  }
-  
-  .modal-card .options-container li {
-    display: block;
-    overflow: visible;
-    white-space: normal;
-    -webkit-line-clamp: 4;
-    line-clamp: 4;
-    -webkit-box-orient: vertical;
-    font-size: 12px;
-    padding: 4px 6px;
-  }
-}
-
-/* Ensure modal-card-container position is always relative for all screen sizes */
-.modal-card-container {
-  position: relative;
-}
-
-/* Override the absolute positioning for all screen sizes */
-.modal-card-container .flashcard .flashcard-front,
-.modal-card-container .flashcard .flashcard-back {
-  position: relative;
-  height: auto;
-  min-height: 200px;
-  overflow-y: auto !important;
-}
-
-/* Ensure options inherit background color from card */
-.card-modal-card-container .options-container li,
-.modal-card .options-container li {
-  font-size: 1.2rem !important; /* Significantly larger font for options */
-  padding: 12px 15px !important; /* More padding for better visibility */
-  margin-bottom: 10px !important; /* More spacing between options */
-  background-color: inherit !important; /* Inherit from parent */
-  color: inherit !important; /* Inherit text color */
-  border-radius: 8px !important;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
-  position: relative;
-  /* Use the background from card-topic-indicator */
-  background-color: var(--card-bg-color, #880000) !important;
-  color: var(--card-text-color, white) !important;
-}
-
-/* Apply same style to the option letter to make it stand out */
-.card-modal-card-container .options-container .option-letter,
-.modal-card .options-container .option-letter {
-  font-weight: bold;
-  margin-right: 8px;
-  display: inline-block;
-  min-width: 20px;
-}
-
-/* Adjust the options container in modal view */
-.modal-card .options-container {
-  padding: 10px !important;
-  margin-top: 15px !important;
-  width: 100% !important;
-}
-
-/* Script to dynamically set CSS variables based on card color */
-.flashcard-inner::before {
-  content: '';
-  display: none;
-}
-
-/* Make sure the card topic indicator styling is captured */
-.modal-card .card-topic-indicator {
-  background-color: var(--card-bg-color, #880000);
-  color: var(--card-text-color, white);
-}
-
-/* Ensure metadata text is readable on all backgrounds */
-.card-metadata {
-  background-color: rgba(0, 0, 0, 0.35) !important;
-  color: white !important;
-  padding: 4px 8px !important;
-  border-radius: 4px !important;
-  margin: 0 0 6px 0 !important;
-  font-size: 0.85rem !important;
-  font-weight: 500 !important;
-  display: inline-block !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* Style for Box indicator */
-.box-indicator {
-  position: absolute !important;
-  bottom: 8px !important;
-  right: 8px !important;
-  background-color: rgba(0, 0, 0, 0.3) !important;
-  color: white !important;
-  padding: 2px 6px !important;
-  border-radius: 4px !important;
-  font-size: 0.75rem !important;
-  font-weight: bold !important;
-}
-
-/* Slideshow modal specific styles for better responsiveness */
-.card-modal-card-container .flashcard {
-  max-width: 95vw;
-  width: 95%;
-  max-height: 80vh;
-  height: auto;
-  aspect-ratio: auto; /* Allow natural sizing in modal */
-  margin: 0 auto;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
+  position: relative;
 }
 
-.card-modal-card-container .flashcard-front,
-.card-modal-card-container .flashcard-back {
-  padding: clamp(15px, 5vw, 25px);
-  display: flex;
-  flex-direction: column;
-}
-
-/* Question in modal view - even larger */
-.card-modal-card-container .question-title {
-  font-size: clamp(1.4rem, 5vw, 2rem);
-  line-height: 1.4;
-  margin-bottom: clamp(10px, 3vh, 20px);
-  padding: clamp(8px, 2vw, 12px);
-  background-color: rgba(0, 0, 0, 0.05);
-  border: none;
-  border-radius: 8px;
-  text-align: center;
-  width: 100%;
-  box-shadow: none;
-}
-
-/* Responsive options in modal */
-.card-modal-card-container .options-container {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  width: 100%;
-  margin-top: clamp(10px, 3vh, 20px);
-}
-
-.card-modal-card-container .options-container li {
-  font-size: clamp(1rem, 3.5vw, 1.2rem);
-  padding: clamp(8px, 2.5vw, 12px) clamp(10px, 3vw, 15px);
-  margin-bottom: clamp(8px, 2vh, 10px);
-  border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s;
-  display: flex;
-  align-items: center;
-}
-
-/* Add a fullscreen toggle button for mobile */
-.fullscreen-toggle {
+.close-button {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
+  background: none;
   border: none;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
+  font-size: 1.8rem;
   cursor: pointer;
+  color: #888;
 }
 
-/* Fullscreen mode */
-.flashcard.fullscreen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  max-width: none;
-  margin: 0;
-  z-index: 9999;
-  border-radius: 0;
-  aspect-ratio: auto;
+.close-button:hover {
+  color: #333;
 }
 
-/* Media queries for different device sizes */
-@media (max-width: 768px) {
-  .card-modal-overlay {
-    padding: 0; /* Full screen on mobile */
-  }
-  
-  .card-modal-content {
-    width: 100%;
-    height: 100%;
-    max-height: none;
-    border-radius: 0;
-    overflow: auto; /* Allow scrolling if needed */
-  }
-  
-  .card-modal-card-container .flashcard {
-    min-height: 400px; /* Larger minimum height on mobile */
-    max-height: none; /* No maximum height */
-    height: auto; /* Auto height */
-  }
-  
-  .card-info {
-    padding: 10px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border-radius: 5px;
-    margin: 5px 0;
-  }
-}
-
-/* Landscape mode adjustments */
-@media (max-width: 896px) and (orientation: landscape) {
-  .flashcard {
-    aspect-ratio: 2/1; /* Wider in landscape */
-  }
-  
-  .card-modal-content {
-    display: flex;
-    flex-direction: row;
-  }
-  
-  .card-modal-card-container {
-    flex: 2;
-  }
-  
-  .card-modal-actions {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-}
-
-/* CRITICAL FIX: Ensure options are ALWAYS visible in all views */
-.options-container,
-.flashcard .options-container,
-.flashcard-front .options-container {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  position: relative !important;
-  overflow: visible !important;
-  margin-top: 10px !important;
-  margin-bottom: 5px !important;
-  padding: 5px !important;
-  border-radius: 5px !important;
-  background-color: rgba(255, 255, 255, 0.2) !important;
-  width: 100% !important;
-  max-height: none !important;
-  z-index: 5 !important;
-}
-
-/* Force options to be visible */
-.options-container ol,
-.options-container li,
-.multiple-choice-options,
-.option-item {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  position: relative !important;
-}
-
-/* Card Bank specific option styling */
-.flashcard:not(.modal-card) .options-container {
-  margin-top: 15px !important;
-  overflow-y: auto !important;
-  max-height: 60% !important;
-  background-color: rgba(255, 255, 255, 0.25) !important;
-}
-
-.flashcard:not(.modal-card) .options-container li {
-  background-color: rgba(0, 0, 0, 0.1) !important;
-  padding: 5px 8px !important;
-  margin-bottom: 5px !important;
-  border-radius: 4px !important;
-  font-size: 0.85rem !important;
-  line-height: 1.2 !important;
-}
-
-/* Force questions to be legible */
-.question-title,
-.flashcard .question-title,
-.modal-card .question-title {
-  font-size: 18px !important;
-  min-height: 20px !important;
-  margin-bottom: 10px !important;
-  padding: 5px !important;
-  max-height: 40% !important;
-  overflow-y: auto !important;
-}
-
-/* Enhanced styling for front of card */
 .flashcard-front {
   border-radius: 10px;
 }
 
-/* Enhanced styling for buttons */
 .flashcard-buttons {
   position: absolute;
   top: 5px;
@@ -2014,12 +340,15 @@
   background-color: rgba(255, 255, 255, 0.4);
 }
 
+.delete-btn {
+  color: #dc3545; /* Red color for delete */
+}
+
 .delete-btn:hover {
   background-color: rgba(220, 53, 69, 0.8) !important;
   color: white !important;
 }
 
-/* Improved styles for multiple choice interaction */
 .selected-option {
   background-color: rgba(0, 0, 0, 0.25) !important;
   border-left: 3px solid rgba(255, 255, 255, 0.7) !important;
@@ -2065,7 +394,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Make options more clickable with cursor change */
 .options-container li {
   cursor: pointer;
   position: relative;
