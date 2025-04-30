@@ -51,7 +51,6 @@ const cleanHtmlTags = (str) => {
 };
 
 function App() {
-function App() {
   // Authentication and user state
   const [auth, setAuth] = useState(null);
   const [loading, setLoading] = useState(true);
