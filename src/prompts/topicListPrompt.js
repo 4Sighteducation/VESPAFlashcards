@@ -126,6 +126,36 @@ If extracting topics for Music, Literature, Drama, Art, or History:
 5. For Literature, include author name and text title (e.g., "Shakespeare: Hamlet - Themes and motifs")
 6. When a practical component must be included, prefix with "[Practical]" (e.g., "[Practical] Performance: Solo dance technique")
 
+SPECIAL HANDLING FOR IB SUBJECTS:
+For International Baccalaureate subjects, follow these specific guidelines based on subject groups:
+
+1. For {ibGroup} subjects like {subject}:
+   - Structure topics following IB's approach with Core/Options organization
+   - Include both Standard Level (SL) and Higher Level (HL) content when applicable
+   - Distinguish between SL and HL content by prefixing HL-only topics with "[HL]"
+   - Ensure assessment objectives are covered (Knowledge, Understanding, Application, Analysis, Evaluation, Synthesis)
+   - Avoid including Internal Assessment (IA) or Extended Essay topics
+   - Focus on exam-based assessments (Papers 1, 2, and 3)
+
+2. Specific considerations for each IB group:
+   - Language & Literature: Include literary analysis, textual commentary, comparative study topics
+   - Language Acquisition: Include vocabulary, grammar, text types, receptive/productive skills
+   - Individuals & Societies: Include case studies, theories, methodologies, evaluation frameworks
+   - Sciences: Include experimental techniques, theories, applications, data analysis
+   - Mathematics: Include pure math, applications, mathematical modeling, statistics
+   - The Arts: Include theoretical frameworks, analysis methods, historical contexts
+
+3. IB Topic Structure Examples:
+   - Core topics: Essential content all students must study
+   - Options topics: Content that might be selected by teachers/students
+   - Standard Level (SL) topics: Required for all students
+   - Higher Level (HL) topics: Additional depth required only for HL students
+
+4. Assessment Structure Examples:
+   - Paper 1 topics: Usually testing [specific skills]
+   - Paper 2 topics: Usually testing [specific skills]
+   - Paper 3 topics: [HL only] Usually testing [specific skills]
+
 RULES:
 1. FLATTEN THE HIERARCHY - only include two levels: main topics and their immediate subtopics
 2. NORMALIZE TERMINOLOGY - use "main topics" and "subtopics" regardless of the exam board's specific terminology
@@ -160,25 +190,25 @@ Example (partial) for AQA A Level Physics:
   }
 ]
 
-Example (partial) for AQA A Level Dance:
+Example (partial) for IB Biology:
 [
   {
     "id": "1.1",
-    "topic": "Critical engagement: Features of genre - historical context",
-    "mainTopic": "Critical engagement",
-    "subtopic": "Features of genre - historical context"
+    "topic": "Cell Biology: Cell theory and cell ultrastructure",
+    "mainTopic": "Cell Biology",
+    "subtopic": "Cell theory and cell ultrastructure"
   },
   {
     "id": "1.2",
-    "topic": "Critical engagement: Analysis of set work - Rooster by Christopher Bruce",
-    "mainTopic": "Critical engagement",
-    "subtopic": "Analysis of set work - Rooster by Christopher Bruce"
+    "topic": "Cell Biology: Membrane structure and function",
+    "mainTopic": "Cell Biology",
+    "subtopic": "Membrane structure and function"
   },
   {
-    "id": "3.1",
-    "topic": "Dance theory: Elements of dance - space, dynamics, and relationships",
-    "mainTopic": "Dance theory",
-    "subtopic": "Elements of dance - space, dynamics, and relationships"
+    "id": "4.1",
+    "topic": "[HL] Nucleic Acids: DNA replication, transcription and translation",
+    "mainTopic": "[HL] Nucleic Acids",
+    "subtopic": "DNA replication, transcription and translation"
   }
 ]
 
@@ -187,6 +217,7 @@ FINAL VERIFICATION: Before returning your response, verify that:
 2. The total topic count DOES NOT EXCEED 30 topics
 3. You have EXCLUDED coursework and practical assessment topics unless explicitly examined
 4. Only written exam content is prioritized
+5. For IB subjects, you've considered the specific IB subject group ({ibGroup}) requirements
 
 REMEMBER: You must provide a comprehensive topic list in almost all cases. Returning an error should be extremely rare.`;
 
@@ -195,14 +226,16 @@ REMEMBER: You must provide a comprehensive topic list in almost all cases. Retur
  * @param {string} examBoard - The exam board (AQA, Edexcel, OCR, WJEC/Eduqas, SQA)
  * @param {string} examType - The exam type (GCSE, A Level, etc.)
  * @param {string} subject - The subject name
+ * @param {string} ibGroup - The IB subject group (for IB subjects only)
  * @param {string} academicYear - The academic year (e.g., "2024-2025")
  * @returns {string} The formatted prompt
  */
-function generateTopicPrompt(examBoard, examType, subject, academicYear = "2024-2025") {
+function generateTopicPrompt(examBoard, examType, subject, ibGroup = "", academicYear = "2024-2025") {
   return SIMPLIFIED_TOPIC_EXTRACTION_PROMPT
     .replace(/{examBoard}/g, examBoard)
     .replace(/{examType}/g, examType)
     .replace(/{subject}/g, subject)
+    .replace(/{ibGroup}/g, ibGroup)
     .replace(/{academicYear}/g, academicYear);
 }
 

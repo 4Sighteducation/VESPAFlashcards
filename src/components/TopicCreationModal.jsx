@@ -10,11 +10,32 @@ import { fetchExamBoards, fetchSubjects, fetchTopics } from "../services/KnackTo
 const MAX_TOPICS_GENERATED = 25; // Increased limit as discussed
 const MAX_TOPICS_DISPLAYED = 25;
 
+// IB subject groups for structured generation
+const ibSubjectGroups = {
+  "Language & Literature": ["English Literature", "Language A Literature", "Language A Language and Literature"],
+  "Language Acquisition": ["English B", "French B", "Spanish B", "German B", "Mandarin B", "Language ab initio"],
+  "Individuals & Societies": ["History", "Geography", "Economics", "Psychology", "Business Management", "Global Politics"],
+  "Sciences": ["Biology", "Chemistry", "Physics", "Computer Science", "Design Technology", "Environmental Systems and Societies"],
+  "Mathematics": ["Mathematics: Analysis and Approaches", "Mathematics: Applications and Interpretation"],
+  "The Arts": ["Visual Arts", "Theatre", "Music", "Film", "Dance"]
+};
+
+// Helper function to get available IB subjects
+function getIBSubjects(group) {
+  return ibSubjectGroups[group] || [];
+}
+
+// Helper function to get all IB subject groups
+function getIBSubjectGroups() {
+  return Object.keys(ibSubjectGroups);
+}
+
 // Helper function to get default form data (only topic metadata)
 const getDefaultFormData = () => ({
   examType: "",
   examBoard: "",
   subject: "",
+  ibGroup: "", // Add field for IB subject group
 });
 
 // Define the new component
@@ -41,7 +62,8 @@ const TopicCreationModal = ({
 
   // ** NEW State to track if user is adding a new subject **
   const [isAddingNewSubject, setIsAddingNewSubject] = useState(false);
-
+  const [isIBSelected, setIsIBSelected] = useState(false); // Track if IB is selected
+  
   // Workflow: 1: Type, 2: Board, 3: Subject, 4: TopicHub
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
@@ -103,6 +125,20 @@ const TopicCreationModal = ({
   // Fetch subjects when exam type and board change
   useEffect(() => {
     if (formData.examType && formData.examBoard) {
+      // Skip API call if IB is selected - we'll use local data instead
+      if (formData.examType === "IB") {
+        // If IB Group is selected, populate subjects from that group
+        if (formData.ibGroup) {
+          const ibSubjects = getIBSubjects(formData.ibGroup);
+          console.log(`[TopicCreationModal] Using IB subjects for group ${formData.ibGroup}:`, ibSubjects);
+          setAvailableSubjects(ibSubjects);
+        } else {
+          // If no IB group is selected yet, show empty subjects list
+          setAvailableSubjects([]);
+        }
+        return;
+      }
+      
       const loadSubjects = async () => {
         setIsLoadingSubjects(true);
         try {
@@ -123,7 +159,7 @@ const TopicCreationModal = ({
       
       loadSubjects();
     }
-  }, [formData.examType, formData.examBoard]);
+  }, [formData.examType, formData.examBoard, formData.ibGroup]);
 
   // Clear error when changing steps
   useEffect(() => {
@@ -204,12 +240,42 @@ useEffect(() => {
         setIsAddingNewSubject(false);
         setFormData(prev => ({ ...prev, subject: value }));
       }
+    } else if (name === 'examType') {
+      // Handle exam type change - set isIBSelected flag if IB is selected
+      const isIB = value === 'IB';
+      setIsIBSelected(isIB);
+      
+      // Clear exam board if switching to/from IB
+      if (isIB) {
+        setFormData(prev => ({ 
+          ...prev, 
+          examType: value,
+          examBoard: 'IB', // Set default board for IB
+          ibGroup: '',     // Reset IB group
+          subject: ''      // Reset subject
+        }));
+      } else {
+        setFormData(prev => ({ 
+          ...prev, 
+          examType: value,
+          examBoard: '',  // Reset board for non-IB
+          ibGroup: '',    // Reset IB group
+          subject: ''     // Reset subject
+        }));
+      }
+    } else if (name === 'ibGroup') {
+      // Handle IB group selection
+      setFormData(prev => ({ 
+        ...prev, 
+        ibGroup: value,
+        subject: '' // Reset subject when group changes
+      }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
 
     // Reset generated topics if metadata changes before reaching TopicHub
-    if (currentStep < 4 && (name === 'examType' || name === 'examBoard' || name === 'subject' || name === 'subject-select' || name === 'subject-new')) {
+    if (currentStep < 4 && (name === 'examType' || name === 'examBoard' || name === 'subject' || name === 'subject-select' || name === 'subject-new' || name === 'ibGroup')) {
         setGeneratedTopics([]);
         setTopicGenerationComplete(false);
     }
@@ -226,10 +292,18 @@ useEffect(() => {
       setError("Please select an Exam Type.");
       return;
     }
-    if (currentStep === 2 && !formData.examBoard) {
-      console.log("[TopicCreationModal] Validation failed: Exam Board missing.");
-      setError("Please select an Exam Board.");
-      return;
+    if (currentStep === 2) {
+      if (!formData.examBoard) {
+        console.log("[TopicCreationModal] Validation failed: Exam Board missing.");
+        setError("Please select an Exam Board.");
+        return;
+      }
+      // For IB, also check if subject group is selected
+      if (isIBSelected && !formData.ibGroup) {
+        console.log("[TopicCreationModal] Validation failed: IB Subject Group missing.");
+        setError("Please select an IB Subject Group.");
+        return;
+      }
     }
     if (currentStep === 3 && !formData.subject) {
       console.log(`[TopicCreationModal] Validation failed: Subject missing or empty. Value: '${formData.subject}'`);
@@ -265,7 +339,7 @@ useEffect(() => {
 
   // Update the triggerTopicGeneration function
   const triggerTopicGeneration = useCallback(async () => {
-    const { examType, examBoard, subject } = formData;
+    const { examType, examBoard, subject, ibGroup } = formData;
 
     if (!examType || !examBoard || !subject) {
       setError("Missing required fields: Exam Type, Exam Board, or Subject.");
@@ -295,7 +369,8 @@ useEffect(() => {
         data: {
           examType,
           examBoard,
-          subject
+          subject,
+          ibGroup // Include IB group for IB subjects
         }
       }));
     } catch (error) {
@@ -347,6 +422,7 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
       type: 'topic', // Ensure type is set correctly
       isShell: true, // Mark as a shell
       timestamp: new Date().toISOString(), // Add creation timestamp
+      ...(formData.ibGroup ? { ibGroup: formData.ibGroup } : {}) // Add IB group if applicable
     };
   });
 
@@ -439,24 +515,46 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
       case 2: // Exam Board
         return (
           <div className="step-content">
-            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>Select Exam Board</h2>
+            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>
+              {isIBSelected ? 'Select IB Subject Group' : 'Select Exam Board'}
+            </h2>
             <div className="form-group">
-              <select
-                name="examBoard"
-                value={formData.examBoard}
-                onChange={handleChange}
-                required
-                className="form-control"
-                disabled={isLoadingSubjects}
-              >
-                <option value="">Select Board...</option>
-                {availableExamBoards.map(board => (
-                  <option key={board} value={board}>
-                    {board}
-                  </option>
-                ))}
-                <option value="Other">Other</option>
-              </select>
+              {isIBSelected ? (
+                // Render IB Subject Groups selector
+                <select
+                  name="ibGroup"
+                  value={formData.ibGroup}
+                  onChange={handleChange}
+                  required
+                  className="form-control"
+                  disabled={isLoadingSubjects}
+                >
+                  <option value="">Select IB Subject Group...</option>
+                  {getIBSubjectGroups().map(group => (
+                    <option key={group} value={group}>
+                      {group}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                // Render standard exam boards
+                <select
+                  name="examBoard"
+                  value={formData.examBoard}
+                  onChange={handleChange}
+                  required
+                  className="form-control"
+                  disabled={isLoadingSubjects}
+                >
+                  <option value="">Select Board...</option>
+                  {availableExamBoards.map(board => (
+                    <option key={board} value={board}>
+                      {board}
+                    </option>
+                  ))}
+                  <option value="Other">Other</option>
+                </select>
+              )}
               {isLoadingSubjects && <div className="loading-indicator"><LoadingSpinner size="small" /></div>}
             </div>
           </div>
@@ -469,7 +567,7 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
               {isLoadingSubjects ? (
                 <div className="loading-container">
                   <LoadingSpinner />
-                  <p>Loading subjects for {formData.examType} {formData.examBoard}...</p>
+                  <p>Loading subjects for {formData.examType} {isIBSelected ? formData.ibGroup : formData.examBoard}...</p>
                 </div>
               ) : !isAddingNewSubject ? (
                 <>
@@ -487,13 +585,17 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
                         <option key={subject} value={subject}>{subject}</option>
                       ))
                     ) : (
-                      <option value="" disabled>No subjects found for {formData.examType} {formData.examBoard}</option>
+                      <option value="" disabled>
+                        {isIBSelected 
+                          ? `No subjects found for ${formData.ibGroup}` 
+                          : `No subjects found for ${formData.examType} ${formData.examBoard}`}
+                      </option>
                     )}
                     <option value="--addNew--">+ Add New Subject</option>
                   </select>
                   {availableSubjects.length === 0 && (
                     <div className="info-message" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
-                      No subjects found in database. Add a new subject or try a different exam type/board.
+                      No subjects found in database. Add a new subject or try a different {isIBSelected ? 'subject group' : 'exam type/board'}.
                     </div>
                   )}
                 </>
@@ -529,6 +631,7 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
               examType={formData.examType}
               examBoard={formData.examBoard}
               subject={formData.subject}
+              ibGroup={formData.ibGroup} // Pass IB group if applicable
               generatedTopics={generatedTopics}
               isLoading={isLoading}
               error={error}
@@ -655,6 +758,7 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
               disabled={isLoading ||
                 (currentStep === 1 && !formData.examType) ||
                 (currentStep === 2 && !formData.examBoard) ||
+                (currentStep === 2 && isIBSelected && !formData.ibGroup) ||
                 (currentStep === 3 && !formData.subject)
               }
               className="button-primary" // Use consistent button classes
