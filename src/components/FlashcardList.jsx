@@ -673,6 +673,46 @@ const FlashcardList = ({
       // Dependencies: cards array itself, regroup function, and the updateColorMapping function
   }, [cards, regroupCards, updateColorMapping, expandedSubjects.size, subjectColorMapping]);
 
+  // --- NEW: Handler for adding generated cards ---
+  const handleAddGeneratedCards = useCallback((generatedCards) => {
+      console.log("[FlashcardList] handleAddGeneratedCards called with:", generatedCards);
+      if (!recordId) {
+          console.error("[FlashcardList] Cannot add generated cards: Missing recordId.");
+          // Optionally show an error to the user
+          alert("Error: Cannot save cards, record ID is missing.");
+          return;
+      }
+      if (!Array.isArray(generatedCards) || generatedCards.length === 0) {
+          console.warn("[FlashcardList] No valid cards received to add.");
+          return;
+      }
+
+      // Post message to the Knack bridge script to handle adding to bank
+      const iframe = document.getElementById('flashcard-app-iframe');
+      if (iframe && iframe.contentWindow) {
+          console.log("[FlashcardList] Posting ADD_TO_BANK message to Knack script");
+          iframe.contentWindow.postMessage({
+              type: 'ADD_TO_BANK',
+              recordId: recordId,
+              cards: generatedCards // Send the array of card objects
+          }, '*');
+      } else {
+          console.error("[FlashcardList] Cannot send ADD_TO_BANK message: iframe not found.");
+          alert("Error: Could not communicate with the saving mechanism.");
+      }
+
+      // Optional: Close the generator modal here if it's still open
+      // setShowCardGenerator(false);
+      // setGeneratorTopic(null);
+
+      // Note: We don't update the local 'cards' state directly here.
+      // We rely on the Knack script saving the data and then potentially
+      // triggering a data reload message ('KNACK_DATA' or similar)
+      // which will update the 'cards' prop passed into this component.
+
+  }, [recordId]); // Depend on recordId
+  // -------------------------------------------
+
   // --- END: HOOK DEFINITIONS ---
 
   // --- START: EVENT HANDLERS & HELPER FUNCTIONS ---
@@ -881,8 +921,11 @@ const FlashcardList = ({
   };
 
   const renderTopic = (subject, topic, items, topicColor) => {
-    const topicShell = items.find(item => item.type === 'topic' && item.isShell);
-    const actualCards = items.filter(item => item.type !== 'topic');
+    // --- Ensure items is an array ---
+    const validItems = Array.isArray(items) ? items : [];
+    // --------------------------------
+    const topicShell = validItems.find(item => item.type === 'topic' && item.isShell);
+    const actualCards = validItems.filter(item => item.type !== 'topic');
     const displayCount = actualCards.length;
     const textColor = getContrastColor(topicColor);
     const examBoard = topicShell?.examBoard || "General";
@@ -901,29 +944,45 @@ const FlashcardList = ({
       handleDeleteTopic(subject, topic);
     };
 
-    // Handle regenerating topic
+    // Handle regenerating topic / opening generator
     const handleRegenerateTopicClick = async (e) => {
       e.stopPropagation();
-      if (!topicShell) {
-        console.error('No topic shell found for regeneration');
-        alert('Cannot regenerate: Topic information is missing.');
-        return;
+      // Find the shell - crucial for metadata
+       const topicShell = validItems.find(item => item.type === 'topic' && item.isShell);
+
+      if (!topicShell && validItems.length > 0) {
+          // Fallback: If no shell, try to use metadata from the first actual card
+          const firstCard = validItems.find(item => item.type === 'card');
+           console.warn(`No topic shell found for regeneration of '${topic}'. Using first card's metadata as fallback.`);
+           setGeneratorTopic({
+             subject: subject,
+             topic: topic,
+             name: topic, // Keep name consistent with topic
+             color: topicColor,
+             cardColor: topicColor,
+             examBoard: firstCard?.examBoard || "AQA", // Use card's or default
+             examType: firstCard?.examType || "A-Level", // Use card's or default
+             id: `topic_${subject}_${topic}` // Generate a temporary ID if shell ID is missing
+           });
+      } else if (topicShell) {
+           setGeneratorTopic({
+             subject: subject,
+             topic: topic,
+             name: topicShell.name || topic, // Use shell name or topic name
+             color: topicColor,
+             cardColor: topicColor,
+             examBoard: topicShell.examBoard || "AQA",
+             examType: topicShell.examType || "A-Level",
+             id: topicShell.id, // Use the shell's ID
+             ...topicShell // Include all other topic shell properties
+           });
+      } else {
+           console.error('No topic shell or cards found to derive metadata for regeneration');
+           alert('Cannot generate cards: Topic information is missing.');
+           return;
       }
 
-      // NOTE: Despite the name, this function doesn't actually "regenerate" the topic.
-      // It opens the AICardGenerator to create new flashcards for this topic,
-      // passing the topic's metadata to the generator.
-      // The name is kept for backward compatibility.
-      setGeneratorTopic({
-        subject: subject,
-        topic: topic,
-        name: topic,
-        color: topicColor,
-        cardColor: topicColor,
-        examBoard: examBoard,
-        examType: examType,
-        ...topicShell // Include all other topic shell properties
-      });
+
       setShowCardGenerator(true);
     };
 
@@ -938,7 +997,7 @@ const FlashcardList = ({
         <div
           className={`topic-header ${displayCount === 0 ? 'empty-shell' : ''}`}
           style={{ backgroundColor: topicColor, color: textColor }}
-          onClick={(e) => startSlideshow(subject, topic, e)}
+          onClick={(e) => startSlideshow(subject, topic, e)} // Allow clicking header to start slideshow
         >
           <div className="topic-info">
             <h3>{topic}</h3>
@@ -949,15 +1008,14 @@ const FlashcardList = ({
             </div>
           </div>
           <div className="topic-actions">
-            {topicShell && (
-              <button
+            {/* Add the regenerate button - Always show if logic allows */}
+            <button
                 onClick={handleRegenerateTopicClick}
                 className="nav-button regenerate-button"
-                title="Generate/Regenerate topic cards"
-              >
-                <span className="button-icon">⚡</span>
-              </button>
-            )}
+                title="Generate topic cards" // Updated title
+            >
+               <span className="button-icon">⚡</span>
+            </button>
             {/* Add slideshow button */}
             <button
               onClick={handleSlideshowTopicClick}
@@ -1178,32 +1236,16 @@ const FlashcardList = ({
       {showCardGenerator && generatorTopic && (
         <ErrorBoundary>
           <FlashcardGeneratorBridge
-            topic={{
-              subject: generatorTopic.subject,
-              topic: generatorTopic.topic || generatorTopic.name,
-              examBoard: generatorTopic.examBoard || "AQA",
-              examType: generatorTopic.examType || "A-Level",
-              color: generatorTopic.color || generatorTopic.cardColor,
-              ...generatorTopic
-            }}
+            topic={generatorTopic} // Pass the full topic object set in state
             recordId={recordId || null}
             userId={userId || localUserId || null}
             onClose={() => {
               setShowCardGenerator(false);
               setGeneratorTopic(null);
             }}
-            onAddCards={(card) => {
-              // Check if the onDeleteCard prop exists from parent component
-              // We can use onDeleteCard to handle adding cards as well in this context
-              if (typeof onDeleteCard === 'function') {
-                console.log("FlashcardList: Handling card add with onDeleteCard handler");
-                // First delete the card from our local state, then re-add it
-                onDeleteCard(card.id);
-                // The parent will handle the re-add
-              } else {
-                console.warn("FlashcardList: No card handler provided");
-              }
-            }}
+            // --- Pass the new handler function ---
+            onAddCards={handleAddGeneratedCards}
+            // ------------------------------------
           />
         </ErrorBoundary>
       )}

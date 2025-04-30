@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom';
 import { FaTimes } from 'react-icons/fa';
 import AICardGeneratorService from '../services/AICardGeneratorService';
 import LoadingSpinner from './LoadingSpinner';
+import FlippableCard from './FlippableCard';
 import './SimpleCardGeneratorModal.css';
+import './Flashcard.css';
 
 /**
  * FlashcardGeneratorBridge - A simplified flashcard generator modal
@@ -26,6 +28,10 @@ const FlashcardGeneratorBridge = ({
   const [step, setStep] = useState(1); // 1: Options selection, 2: Review cards
   const [loadingMessage, setLoadingMessage] = useState("");
   
+  // --- NEW: State for flipped status of cards in review ---
+  const [reviewFlippedStates, setReviewFlippedStates] = useState({}); 
+  // ---------------------------------------------------------
+
   // Card generation options
   const [cardType, setCardType] = useState('multiple_choice');
   const [cardCount, setCardCount] = useState(1);
@@ -35,6 +41,9 @@ const FlashcardGeneratorBridge = ({
     setIsGenerating(true);
     setError(null);
     setLoadingMessage("Generating flashcards with AI...");
+    // --- Reset flipped states when regenerating ---
+    setReviewFlippedStates({}); 
+    // ---------------------------------------------
     
     try {
       console.log("[FlashcardGeneratorBridge] Starting card generation process...");
@@ -79,54 +88,90 @@ const FlashcardGeneratorBridge = ({
         throw new Error("Invalid response format from AI service (expected array but got " + typeof results + ")");
       }
       
-      // Process the generated cards
-      const cards = results.map(card => {
-        // Special processing for acronym cards which have a different structure
-        if (cardType === 'acronym' && card.acronym && card.explanation) {
-          return {
-            ...card,
-            // Add missing fields expected by the card system
-            question: `What does the acronym "${card.acronym}" stand for?`,
-            answer: card.explanation,
-            front: `What does the acronym "${card.acronym}" stand for?`,
-            back: card.explanation,
-            type: 'acronym',
-            questionType: 'acronym',
-            // Ensure the cards have the correct metadata
-            subject: topic.subject,
-            topic: topic.topic || topic.name,
-            examBoard: topic.examBoard || 'General',
-            examType: topic.examType || 'General',
-            // Generate a unique ID for each card
-            id: `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-            // Set the card color from the topic if available
-            cardColor: topic.color || topic.topicColor || '#3cb44b',
-            // Add creation timestamp
-            createdAt: new Date().toISOString()
+      // --- ENHANCED CARD PROCESSING ---
+      const processedCards = results.map((card, index) => {
+          let baseCard = {
+              id: `temp_card_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 9)}`,
+              subject: topic.subject,
+              topic: topic.topic || topic.name,
+              examBoard: topic.examBoard || 'General',
+              examType: topic.examType || 'General',
+              cardColor: topic.color || topic.topicColor || '#3cb44b',
+              questionType: cardType, // Use the selected cardType
+              createdAt: new Date().toISOString(),
+              // Add default fields expected by FlippableCard/saving
+              boxNum: 1,
+              lastReviewed: null,
+              nextReviewDate: null, 
+              options: [], // Initialize options
+              savedOptions: [], // Initialize savedOptions
+              keyPoints: [], // Initialize keyPoints
+              detailedAnswer: '', // Initialize detailedAnswer
           };
-        }
-        
-        // Regular card processing for other card types
-        return {
-          ...card,
-          // Ensure the cards have the correct metadata
-          subject: topic.subject,
-          topic: topic.topic || topic.name,
-          examBoard: topic.examBoard || 'General',
-          examType: topic.examType || 'General',
-          // Generate a unique ID for each card
-          id: `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          // Set the card color from the topic if available
-          cardColor: topic.color || topic.topicColor || '#3cb44b',
-          // Add creation timestamp
-          createdAt: new Date().toISOString()
-        };
+          
+          // Merge AI response data into the base card
+          baseCard = { ...baseCard, ...card };
+          
+          // --- Specific processing based on actual cardType ---
+          if (baseCard.questionType === 'acronym') {
+              baseCard.question = baseCard.question || `What does the acronym "${baseCard.acronym}" stand for?`;
+              baseCard.answer = baseCard.explanation; // Map explanation to answer
+              baseCard.front = baseCard.question; // Set front/back for FlippableCard
+              baseCard.back = baseCard.explanation;
+          } else if (baseCard.questionType === 'multiple_choice') {
+              // Ensure 'options' exists and is an array
+              baseCard.options = Array.isArray(baseCard.options) ? baseCard.options : [];
+              
+              // Standardize options to { text: string, isCorrect: boolean } format
+              // This might require adjusting based on exact AI response structure
+              const correctAnswerText = String(baseCard.correctAnswer || '').trim();
+              baseCard.options = baseCard.options.map(opt => {
+                 const optionText = String(opt || '').trim(); // Handle cases where options might be just strings
+                 const isCorrect = optionText.toLowerCase() === correctAnswerText.toLowerCase();
+                 return { text: optionText, isCorrect: isCorrect };
+              });
+              
+              // Ensure at least one option is marked correct if possible
+              if (correctAnswerText && !baseCard.options.some(opt => opt.isCorrect)) {
+                  const correctIndex = baseCard.options.findIndex(opt => opt.text.toLowerCase() === correctAnswerText.toLowerCase());
+                  if (correctIndex !== -1) {
+                     baseCard.options[correctIndex].isCorrect = true;
+                  } else {
+                     // Fallback: mark the first option? Or handle error?
+                     console.warn("MC Card generated, but correct answer doesn't match any option text:", correctAnswerText, baseCard.options);
+                     // If no options exist after processing, add the correctAnswer as the first option.
+                     if (baseCard.options.length === 0 && correctAnswerText) {
+                          baseCard.options.push({ text: correctAnswerText, isCorrect: true });
+                          console.log("Added correctAnswer as the only option.");
+                     } else if (baseCard.options.length > 0) {
+                           // Or mark the first one if we have options but none match
+                           // baseCard.options[0].isCorrect = true; 
+                     }
+                  }
+              }
+               // Ensure front/back are set
+               baseCard.front = baseCard.question || "Multiple Choice Question";
+               baseCard.back = `Correct Answer: ${correctAnswerText}<br/>Explanation: ${baseCard.detailedAnswer || baseCard.answer || 'No explanation provided.'}`; // Combine answer/explanation
+
+          } else { // short_answer or essay
+              baseCard.front = baseCard.question;
+              baseCard.back = baseCard.detailedAnswer || baseCard.answer || (Array.isArray(baseCard.keyPoints) ? baseCard.keyPoints.join('\n') : '');
+          }
+          
+          // --- Final Standardization Step ---
+          // Use the standardizeCards function for robustness if available, otherwise basic standardization
+          // Assuming standardizeCards is not directly importable here, we apply basic checks:
+          baseCard.id = baseCard.id || `temp_card_${Date.now()}_${index}_fallback`;
+          baseCard.type = 'card'; // Ensure type is 'card'
+          
+          return baseCard;
       });
+      // --- END ENHANCED CARD PROCESSING ---
       
-      console.log("[FlashcardGeneratorBridge] Cards generated:", cards);
+      console.log("[FlashcardGeneratorBridge] Cards generated and processed:", processedCards);
       
       // Store the generated cards and move to review step
-      setGeneratedCards(cards);
+      setGeneratedCards(processedCards);
       setStep(2);
     } catch (err) {
       console.error("[FlashcardGeneratorBridge] Error generating cards:", err);
@@ -158,22 +203,24 @@ const FlashcardGeneratorBridge = ({
       console.log(`[FlashcardGeneratorBridge] Saving ${generatedCards.length} cards`);
       
       // Check if we have topic info
-      if (!topic || !topic.subject || !topic.topic) {
+      if (!topic || !topic.subject || !(topic.topic || topic.name)) { // Check both topic/name
         console.error("[FlashcardGeneratorBridge] Missing topic information for saving cards");
         setError("Missing topic information for saving cards");
         return;
       }
       
       // Important: Add the topic ID to each card to ensure it's saved to the correct topic
-      const topicId = topic.id || `topic_${topic.subject}_${topic.topic}`; 
+      const topicIdentifier = topic.topic || topic.name; // Use name as fallback
+      const topicId = topic.id || `topic_${topic.subject}_${topicIdentifier}`; 
       
       // Process cards with topic information and ID before saving
       const processedCards = generatedCards.map(card => ({
         ...card,
+        id: card.id.startsWith('temp_') ? `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` : card.id, // Ensure permanent ID
         topicId: topicId,
         // Ensure subject/topic match the parent topic
         subject: topic.subject,
-        topic: topic.topic,
+        topic: topicIdentifier, // Use the determined topic name
         examBoard: topic.examBoard || card.examBoard || "General",
         examType: topic.examType || card.examType || "Course"
       }));
@@ -181,17 +228,17 @@ const FlashcardGeneratorBridge = ({
       // Log the processed cards with their topic IDs
       console.log(`[FlashcardGeneratorBridge] Processed cards with topic ID: ${topicId}`, processedCards);
       
-      // Add each card to the app's state one by one to ensure they're added properly
-      processedCards.forEach(card => {
-        if (onAddCards) {
-          console.log(`[FlashcardGeneratorBridge] Adding card to app state: ${card.id}`, card);
-          onAddCards(card);
-        } else {
-          console.warn("[FlashcardGeneratorBridge] No onAddCards handler provided");
-        }
-      });
+      // Call the onAddCards handler passed from parent (FlashcardList)
+      if (onAddCards) {
+          console.log(`[FlashcardGeneratorBridge] Calling onAddCards handler with ${processedCards.length} cards`);
+          onAddCards(processedCards); // Pass the array of cards
+      } else {
+          console.warn("[FlashcardGeneratorBridge] No onAddCards handler provided. Cannot save cards to main app state.");
+          setError("Save functionality not configured correctly.");
+          return; // Stop if handler is missing
+      }
       
-      console.log(`[FlashcardGeneratorBridge] Saved ${processedCards.length} cards`);
+      console.log(`[FlashcardGeneratorBridge] Triggered save for ${processedCards.length} cards`);
       
       // Close the modal
       if (onClose) {
@@ -202,6 +249,15 @@ const FlashcardGeneratorBridge = ({
       setError(err.message || "Failed to save cards. Please try again.");
     }
   }, [generatedCards, onAddCards, onClose, topic]);
+
+  // --- NEW: Handler for flipping a specific card in review ---
+  const handleReviewFlip = useCallback((cardId) => {
+      setReviewFlippedStates(prev => ({
+          ...prev,
+          [cardId]: !prev[cardId] // Toggle flipped state
+      }));
+  }, []);
+  // ---------------------------------------------------------
   
   // Render the step for selecting card options
   const renderOptionsStep = () => (
@@ -283,70 +339,47 @@ const FlashcardGeneratorBridge = ({
     </div>
   );
   
-  // Render the step for reviewing generated cards
+  // --- UPDATED: Render the step for reviewing generated cards using FlippableCard ---
   const renderReviewStep = () => (
-    <div className="card-generator-review">
-      <h3>Review Generated Flashcards</h3>
-      
-      <div className="card-preview-list">
-        {generatedCards.map((card, index) => (
-          <div key={card.id || index} className="card-preview">
-            <div className="card-preview-header">
-              <h4>Card {index + 1}</h4>
-              <span className="card-type-badge">
-                {card.type === 'multiple_choice' ? 'Multiple Choice' : 
-                 card.type === 'short_answer' ? 'Short Answer' :
-                 card.type === 'essay' ? 'Essay Style' : 'Acronym'}
-              </span>
-            </div>
-            
-            <div className="card-preview-content">
-              <div className="card-preview-question">
-                <strong>Question:</strong>
-                <div>{card.question}</div>
-              </div>
-              
-              <div className="card-preview-answer">
-                <strong>Answer:</strong>
-                <div>{card.answer}</div>
-              </div>
-              
-              {card.type === 'multiple_choice' && card.options && card.options.length > 0 && (
-                <div className="card-preview-options">
-                  <strong>Options:</strong>
-                  <ul>
-                    {card.options.map((option, optIndex) => (
-                      <li 
-                        key={optIndex} 
-                        className={option === card.answer ? 'correct-option' : ''}
-                      >
-                        {option}
-                      </li>
-                    ))}
-                  </ul>
+      <div className="card-generator-review">
+        <h3>Review Generated Flashcards</h3>
+        
+        <div className="card-preview-list"> 
+            {generatedCards.map((card, index) => (
+                <div key={card.id || index} className="card-review-item"> 
+                    {/* Use FlippableCard for rendering */}
+                    <FlippableCard 
+                        card={card} 
+                        // Use state for flipped status, default to false
+                        isFlipped={!!reviewFlippedStates[card.id]} 
+                        // Pass the flip handler
+                        onFlip={() => handleReviewFlip(card.id)} 
+                         // Disable answer logic in review mode for now
+                        onAnswer={() => {}}
+                        isInModal={false} // Adjust styling if needed
+                    />
+                    <div className="card-review-info">Card {index + 1} - Type: {card.questionType}</div>
                 </div>
-              )}
-            </div>
-          </div>
-        ))}
+            ))}
+        </div>
+        
+        <div className="option-section options-actions">
+          <button 
+            className="cancel-button" 
+            onClick={() => setStep(1)}
+          >
+            Back
+          </button>
+          <button 
+            className="save-button" 
+            onClick={handleSaveCards}
+          >
+            Save All Cards
+          </button>
+        </div>
       </div>
-      
-      <div className="option-section options-actions">
-        <button 
-          className="cancel-button" 
-          onClick={() => setStep(1)}
-        >
-          Back
-        </button>
-        <button 
-          className="save-button" 
-          onClick={handleSaveCards}
-        >
-          Save All Cards
-        </button>
-      </div>
-    </div>
   );
+  // ----------------------------------------------------------------------------
   
   // Main render function
   const modalContent = (
