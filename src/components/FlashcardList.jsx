@@ -128,7 +128,7 @@ const FlashcardModal = ({ card, onClose, onUpdateCard, onDeleteCard }) => {
 
 const SlideshowModal = ({ cards, title, onClose }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showFront, setShowFront] = useState(true);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   // Handle empty cards array
   if (!cards || cards.length === 0) {
@@ -145,18 +145,34 @@ const SlideshowModal = ({ cards, title, onClose }) => {
 
   const currentCard = cards[currentIndex];
 
+  // Extract topic color from card or use default
+  const topicColor = currentCard?.cardColor || currentCard?.topicColor || currentCard?.subjectColor || '#3cb44b';
+  
+  // Reset flip state when changing cards
   const goToNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % cards.length);
-    setShowFront(true); // Show front of next card
+    if (currentIndex < cards.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setIsFlipped(false);
+    } else {
+      // Loop back to beginning
+      setCurrentIndex(0);
+      setIsFlipped(false);
+    }
   };
 
   const goToPrev = () => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + cards.length) % cards.length);
-    setShowFront(true); // Show front of previous card
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      setIsFlipped(false);
+    } else {
+      // Loop to end
+      setCurrentIndex(cards.length - 1);
+      setIsFlipped(false);
+    }
   };
 
   const flipCard = () => {
-    setShowFront(!showFront);
+    setIsFlipped(!isFlipped);
   };
 
   return (
@@ -164,15 +180,18 @@ const SlideshowModal = ({ cards, title, onClose }) => {
       <div className="modal-content slideshow-modal-content centered-modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-button" onClick={onClose}>&times;</button>
         <h2>{title} ({currentIndex + 1}/{cards.length})</h2>
-        {currentCard && (
-          <div className="slideshow-card" onClick={flipCard}>
-            <pre>{showFront ? currentCard.front : currentCard.back}</pre>
-          </div>
-        )}
+        <div className="slideshow-card-container" style={{ width: '100%', height: '300px', margin: '20px 0' }}>
+          <FlippableCard
+            card={currentCard}
+            isFlipped={isFlipped}
+            onFlip={flipCard}
+            isInModal={true}
+          />
+        </div>
         <div className="slideshow-controls">
-          <button onClick={goToPrev} disabled={cards.length <= 1}>Previous</button>
+          <button onClick={goToPrev}>Previous</button>
           <button onClick={flipCard}>Flip</button>
-          <button onClick={goToNext} disabled={cards.length <= 1}>Next</button>
+          <button onClick={goToNext}>Next</button>
         </div>
       </div>
     </div>
