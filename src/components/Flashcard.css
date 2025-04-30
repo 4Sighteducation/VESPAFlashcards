@@ -405,3 +405,48 @@
   background-color: rgba(0, 0, 0, 0.18) !important;
 }
 
+/* New option styling for FlippableCard component */
+.dynamic-options-container .option-item {
+  background-color: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+
+.dynamic-options-container .option-item:hover {
+  transform: translateX(3px);
+  border-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.dynamic-options-container .option-item.selected {
+  border-left-width: 3px !important;
+  border-left-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.dynamic-options-container .option-item.correct {
+  border-color: #4CAF50 !important;
+  border-left-width: 3px !important;
+}
+
+.dynamic-options-container .option-item.incorrect {
+  border-color: #F44336 !important;
+  border-left-width: 3px !important;
+}
+
+/* Improve detailed answer modal */
+.detailed-answer-modal {
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.detailed-content {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  padding: 15px;
+  border-radius: 4px;
+  font-size: 0.95em;
+  color: #444;
+  max-height: 60vh;
+  overflow-y: auto;
+  line-height: 1.5;
+}

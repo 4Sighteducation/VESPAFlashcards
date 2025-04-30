@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getContrastColor } from '../utils/ColorUtils';
 import './Flashcard.css'; // Reuse existing CSS
+import ScaledText from './ScaledText'; // Import ScaledText for dynamic text sizing
 
 // --- Detailed Answer Modal --- (Define before FlippableCard)
 const DetailedAnswerModal = ({ isOpen, onClose, title, content }) => {
@@ -11,7 +12,13 @@ const DetailedAnswerModal = ({ isOpen, onClose, title, content }) => {
       <div className="modal-content detailed-answer-modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-button" onClick={onClose}>&times;</button>
         <h3>{title}</h3>
-        <pre>{content}</pre>
+        <div className="detailed-content">
+          {typeof content === 'string' ? (
+            <div dangerouslySetInnerHTML={{ __html: content }} />
+          ) : (
+            <div>{content || "No detailed answer available."}</div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -158,49 +165,103 @@ const FlippableCard = ({
               className="delete-btn" 
               onClick={handleDeleteClick} 
               title="Delete Card"
+              style={{ color: textColor }}
             >
               🗑️
             </button>
           </div>
         )}
         
-        {/* --- Question Area --- */}
-        <div className="card-question-area">
-          {typeof question === 'string' ? (
-            <div dangerouslySetInnerHTML={{ __html: question || "No question available" }} />
-          ) : (
-            <div>No question available</div>
-          )}
+        {/* --- Question Area with fixed positioning --- */}
+        <div className="card-question-area" style={{
+          maxHeight: isMultipleChoice ? '35%' : '80%',
+          overflow: 'hidden',
+          marginBottom: '10px',
+          width: '100%',
+          textAlign: 'center'
+        }}>
+          <ScaledText 
+            maxFontSize={20} 
+            minFontSize={12}
+            isQuestion={true}
+          >
+            {typeof question === 'string' ? (
+              <div dangerouslySetInnerHTML={{ __html: question || "No question available" }} />
+            ) : (
+              <div>No question available</div>
+            )}
+          </ScaledText>
         </div>
         
-        {/* --- Options Area (Only if MC) --- */}
+        {/* --- Options Area (Only if MC) with dynamic text scaling --- */}
         {isMultipleChoice && (
-          <div className="card-options-area">
-            <ol className="options-list">
+          <div className="card-options-area" style={{
+            flex: 1,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100%'
+          }}>
+            <div className="dynamic-options-container" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              height: '100%',
+              width: '100%'
+            }}>
               {card.options.map((option, index) => {
                 const optionText = typeof option === 'string' ? option : option?.text || '';
                 // Determine option class based on selection state and correct answer
-                const optionClass = `
-                  option-item
-                  ${selectedOption === index ? 'selected' : ''}
-                  ${showAnswer && index === correctAnswerIndex ? 'correct' : ''}
-                  ${showAnswer && selectedOption === index && index !== correctAnswerIndex ? 'incorrect' : ''}
-                  ${showAnswer && index === correctAnswerIndex && selectedOption !== index ? 'reveal-correct' : ''} 
-                `;
+                const baseClass = `option-item`;
+                const stateClasses = [
+                  selectedOption === index ? 'selected' : '',
+                  showAnswer && index === correctAnswerIndex ? 'correct' : '',
+                  showAnswer && selectedOption === index && index !== correctAnswerIndex ? 'incorrect' : '',
+                  showAnswer && index === correctAnswerIndex && selectedOption !== index ? 'reveal-correct' : ''
+                ].filter(Boolean).join(' ');
                 
                 return (
-                  <li 
-                    key={index} 
-                    className={optionClass}
+                  <div 
+                    key={index}
+                    className={`${baseClass} ${stateClasses}`}
                     onClick={(e) => handleOptionSelect(index, e)}
-                    style={{ color: textColor }} // Use contrast text color
+                    style={{
+                      color: textColor,
+                      backgroundColor: 'transparent', // Remove background color
+                      border: '1px solid rgba(255, 255, 255, 0.3)', 
+                      borderRadius: '5px',
+                      margin: '2px 0',
+                      padding: '6px 8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      overflow: 'hidden'
+                    }}
                   >
-                    <span className="option-letter">{String.fromCharCode(97 + index)})</span>
-                    <span className="option-text">{optionText}</span>
-                  </li>
+                    <div className="option-letter" style={{ 
+                      fontWeight: 'bold', 
+                      marginRight: '6px',
+                      minWidth: '15px',
+                      fontSize: '0.9em'
+                    }}>{String.fromCharCode(97 + index)})</div>
+                    <div className="option-text" style={{ 
+                      flex: 1,
+                      fontSize: '0.9em',
+                      lineHeight: '1.2'
+                    }}>
+                      <ScaledText 
+                        maxFontSize={14} 
+                        minFontSize={8}
+                        isOption={true}
+                      >
+                        {optionText}
+                      </ScaledText>
+                    </div>
+                  </div>
                 );
               })}
-            </ol>
+            </div>
           </div>
         )}
 
@@ -232,7 +293,8 @@ const FlippableCard = ({
     
     // Determine the primary answer content, prioritizing card.answer
     const primaryAnswerContent = card.answer || card.back || "No answer available";
-    const detailedAnswerContent = card.detailedAnswer || "";
+    // Use detailedAnswer, additionalInfo or any content that could be shown in the modal
+    const detailedAnswerContent = card.detailedAnswer || card.additionalInfo || "";
 
     const handleInfoClick = (e) => {
       e.stopPropagation(); // Prevent card flip
@@ -247,24 +309,62 @@ const FlippableCard = ({
           </div>
         )}
         
-        {detailedAnswerContent && (
+        {/* Always show delete button on back side if needed */}
+        {showDeleteButton && onDeleteRequest && (
+          <div className="flashcard-buttons" style={{ top: '5px', right: '5px' }}>
+            <button 
+              className="delete-btn" 
+              onClick={handleDeleteClick} 
+              title="Delete Card"
+              style={{ color: '#dc3545' }}
+            >
+              🗑️
+            </button>
+          </div>
+        )}
+        
+        {/* Make info button more prominent */}
+        {(detailedAnswerContent) && (
           <button 
             className="info-button"
             onClick={handleInfoClick}
             title="Show Detailed Answer"
+            style={{
+              position: 'absolute',
+              top: '8px',
+              right: showDeleteButton ? '40px' : '8px',
+              width: '26px',
+              height: '26px',
+              borderRadius: '50%',
+              background: '#f0f0f0',
+              border: '1px solid #ccc',
+              color: '#333',
+              fontWeight: 'bold',
+              fontSize: '16px',
+              cursor: 'pointer',
+              zIndex: 5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
           >
             i
           </button>
         )}
 
         <div className="card-content-area">
-          {/* Display the primary answer content */}
-          <div className="answer-text">
-            {typeof primaryAnswerContent === 'string' ? (
-               <div dangerouslySetInnerHTML={{ __html: primaryAnswerContent }} />
-            ) : (
-               <div>Invalid answer format</div>
-            )}
+          {/* Display the primary answer content with ScaledText */}
+          <div className="answer-text" style={{ width: '100%', height: '100%' }}>
+            <ScaledText 
+              maxFontSize={18} 
+              minFontSize={10}
+            >
+              {typeof primaryAnswerContent === 'string' ? (
+                <div dangerouslySetInnerHTML={{ __html: primaryAnswerContent }} />
+              ) : (
+                <div>Invalid answer format</div>
+              )}
+            </ScaledText>
           </div>
         </div>
 
@@ -283,7 +383,11 @@ const FlippableCard = ({
       <div 
         className={`flashcard ${flipped ? 'flipped' : ''}`}
         onClick={!disableFlipOnClick ? handleFlip : undefined} // Conditionally allow flip
-        // Remove background color setting here, handled by face
+        style={{
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)',
+          transition: 'all 0.3s ease',
+          overflow: 'hidden'
+        }}
       >
         <div className="flashcard-inner">
           {renderFront()}
@@ -296,10 +400,10 @@ const FlippableCard = ({
         isOpen={showDetailedAnswerModal}
         onClose={() => setShowDetailedAnswerModal(false)}
         title="Detailed Answer"
-        content={card?.detailedAnswer || "No detailed answer available."}
+        content={card?.detailedAnswer || card?.additionalInfo || "No detailed answer available."}
       />
     </>
   );
 };
 
-export default FlippableCard; 
+export default FlippableCard;

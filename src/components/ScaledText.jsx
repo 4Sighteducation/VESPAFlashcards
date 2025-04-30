@@ -1,19 +1,21 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 /**
- * ScaledText component that automatically scales text to fit within its container
- * while ensuring minimum readability standards.
+ * Enhanced ScaledText component that aggressively scales text to fit within its container
+ * while ensuring all content is visible without scrolling.
  */
 const ScaledText = ({ 
   children, 
   className = '', 
   maxFontSize = 24, 
-  minFontSize = 14, 
+  minFontSize = 8, // Lower minimum to allow extreme shrinking for long content
   isInModal = false,
-  isQuestion = false 
+  isQuestion = false,
+  isOption = false // New prop to identify if this is an option, which needs special handling
 }) => {
   const containerRef = useRef(null);
   const textRef = useRef(null);
+  const [fontSize, setFontSize] = useState(maxFontSize);
   
   useEffect(() => {
     const adjustFontSize = () => {
@@ -21,103 +23,124 @@ const ScaledText = ({
       
       const container = containerRef.current;
       const textElement = textRef.current;
-      const contentLength = children ? children.toString().length : 0;
+      
+      // Convert children to string for length checking, handling React elements
+      const contentText = React.isValidElement(children) 
+        ? textElement.textContent || ''
+        : children ? children.toString() : '';
+      
+      const contentLength = contentText.length;
       
       // Check device properties
       const isMobile = window.innerWidth <= 768;
       
-      // Start with a more reasonable font size based on context
+      // Determine appropriate starting font size based on context and content length
       let startFontSize = maxFontSize;
       
-      // Questions should be more readable
-      if (isQuestion || className.includes('question')) {
-        // Higher starting size for questions
+      // More aggressive content-based scaling
+      if (isOption) {
+        // Options need to be very small for long content
+        startFontSize = Math.min(maxFontSize, 14); // Always start smaller for options
+        
+        // Scale down progressively based on content length
+        if (contentLength > 50) startFontSize = 12;
+        if (contentLength > 100) startFontSize = 10;
+        if (contentLength > 150) startFontSize = 9;
+        if (contentLength > 200) startFontSize = 8;
+      } else if (isQuestion) {
+        // Questions should remain readable but adapt to length
         startFontSize = isInModal 
-          ? (isMobile ? 20 : 28) // Modal questions
-          : (isMobile ? 18 : 24); // Regular questions
+          ? (isMobile ? 18 : 22) // Modal questions
+          : (isMobile ? 16 : 20); // Regular questions
           
-        // Still adjust based on length, but more conservatively
-        if (contentLength > 300) startFontSize -= 2;
-        if (contentLength > 500) startFontSize -= 2;
-      } else {
-        // Regular text sizing
-        startFontSize = isInModal 
-          ? (isMobile ? 18 : 24) // Modal text
-          : (isMobile ? 16 : 20); // Regular text
-          
-        // More aggressive adjustment for regular text
+        // More aggressive question scaling based on length
+        if (contentLength > 100) startFontSize -= 2;
         if (contentLength > 200) startFontSize -= 2;
-        if (contentLength > 300) startFontSize -= 2;
-        if (contentLength > 400) startFontSize -= 2;
+        if (contentLength > 300) startFontSize -= 3;
+        if (contentLength > 400) startFontSize -= 3;
+      } else {
+        // Regular text (like answers)
+        startFontSize = isInModal 
+          ? (isMobile ? 16 : 20) // Modal text
+          : (isMobile ? 14 : 18); // Regular text
+          
+        // Progressive scaling for answer text
+        if (contentLength > 100) startFontSize -= 2;
+        if (contentLength > 200) startFontSize -= 2;
+        if (contentLength > 300) startFontSize -= 3;
+        if (contentLength > 500) startFontSize -= 3;
       }
-      
-      // Special handling for multiple choice questions
-      if (className.includes('question-title') && 
-          container.closest('.flashcard-front')?.querySelector('.options-container')) {
-        // Leave more room for options, but don't go too small
-        startFontSize = Math.min(startFontSize, isMobile ? 18 : 22);
-      }
-      
-      // For debugging
-      console.log(`ScaledText (${className}) length: ${contentLength}, starting fontSize: ${startFontSize}`);
       
       // Set initial font size
       textElement.style.fontSize = `${startFontSize}px`;
       
-      // Check if text overflows
-      let isOverflowing = (
+      // Binary search for optimal font size
+      const findOptimalSize = (min, max) => {
+        if (max - min <= 1) return min; // Stop when we're within 1px
+        
+        const mid = Math.floor((min + max) / 2);
+        textElement.style.fontSize = `${mid}px`;
+        
+        const isOverflowing = (
+          textElement.scrollHeight > container.clientHeight || 
+          textElement.scrollWidth > container.clientWidth
+        );
+        
+        return isOverflowing ? findOptimalSize(min, mid) : findOptimalSize(mid, max);
+      };
+      
+      // Check if initial size overflows
+      const isInitiallyOverflowing = (
         textElement.scrollHeight > container.clientHeight || 
         textElement.scrollWidth > container.clientWidth
       );
       
-      // If overflowing, reduce size until it fits
-      if (isOverflowing) {
-        let currentSize = startFontSize;
-        
-        while (isOverflowing && currentSize > minFontSize) {
-          currentSize -= 1;
-          textElement.style.fontSize = `${currentSize}px`;
-          
-          isOverflowing = (
-            textElement.scrollHeight > container.clientHeight || 
-            textElement.scrollWidth > container.clientWidth
-          );
-        }
-        
-        console.log(`ScaledText adjusted to fontSize: ${currentSize}px`);
+      if (isInitiallyOverflowing) {
+        // Use binary search to find optimal size more efficiently
+        const optimalSize = findOptimalSize(minFontSize, startFontSize);
+        textElement.style.fontSize = `${optimalSize}px`;
+        setFontSize(optimalSize);
+      } else {
+        setFontSize(startFontSize);
       }
       
-      // Ensure questions meet minimum requirements
-      if (isQuestion || className.includes('question')) {
-        const currentFontSize = parseFloat(textElement.style.fontSize);
-        const enforcedMinimum = isMobile ? 14 : 16;
-        
-        if (currentFontSize < enforcedMinimum) {
-          textElement.style.fontSize = `${enforcedMinimum}px`;
-          console.log(`ScaledText enforced minimum: ${enforcedMinimum}px for question`);
-          
-          // If we're enforcing a minimum that causes overflow, allow scrolling
-          if (textElement.scrollHeight > container.clientHeight) {
-            container.style.overflowY = 'auto';
-          }
-        }
+      // If this is an option, ensure line height is tight for better space usage
+      if (isOption) {
+        textElement.style.lineHeight = '1.1';
       }
     };
     
-    // Initial adjustment
-    adjustFontSize();
+    // Run adjustment after a short delay to ensure DOM has updated
+    const timeoutId = setTimeout(adjustFontSize, 50);
     
-    // Adjust on resize
+    // Also adjust on resize
     window.addEventListener('resize', adjustFontSize);
     
-    return () => window.removeEventListener('resize', adjustFontSize);
-  }, [children, maxFontSize, minFontSize, isInModal, className, isQuestion]);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', adjustFontSize);
+    };
+  }, [children, maxFontSize, minFontSize, isInModal, className, isQuestion, isOption]);
   
   return (
-    <div className={`scaled-text ${className}`} ref={containerRef}>
-      <div ref={textRef}>{children}</div>
+    <div className={`scaled-text ${className || ''}`} ref={containerRef} style={{
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden'
+    }}>
+      <div ref={textRef} style={{
+        width: '100%',
+        wordBreak: 'break-word',
+        overflowWrap: 'break-word',
+        fontSize: `${fontSize}px` // Use the state to ensure consistent rendering
+      }}>
+        {children}
+      </div>
     </div>
   );
 };
 
-export default ScaledText; 
+export default ScaledText;
