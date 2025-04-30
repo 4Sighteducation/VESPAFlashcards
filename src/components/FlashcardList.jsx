@@ -200,6 +200,7 @@ const FlashcardList = ({
   onUpdateCard,
   onUpdateSubjectColor,
   subjectColorMapping: subjectColorMappingFromProps,
+  propagateSaveToBridge,
   handleSaveTopicShells,
   recordId,
   userId
@@ -673,12 +674,11 @@ const FlashcardList = ({
       // Dependencies: cards array itself, regroup function, and the updateColorMapping function
   }, [cards, regroupCards, updateColorMapping, expandedSubjects.size, subjectColorMapping]);
 
-  // --- NEW: Handler for adding generated cards ---
+  // --- Modify handleAddGeneratedCards ---
   const handleAddGeneratedCards = useCallback((generatedCards) => {
       console.log("[FlashcardList] handleAddGeneratedCards called with:", generatedCards);
       if (!recordId) {
           console.error("[FlashcardList] Cannot add generated cards: Missing recordId.");
-          // Optionally show an error to the user
           alert("Error: Cannot save cards, record ID is missing.");
           return;
       }
@@ -687,30 +687,21 @@ const FlashcardList = ({
           return;
       }
 
-      // Post message to the Knack bridge script to handle adding to bank
-      const iframe = document.getElementById('flashcard-app-iframe');
-      if (iframe && iframe.contentWindow) {
-          console.log("[FlashcardList] Posting ADD_TO_BANK message to Knack script");
-          iframe.contentWindow.postMessage({
+      // --- Use the prop function instead of finding iframe directly ---
+      if (typeof propagateSaveToBridge === 'function') {
+          console.log("[FlashcardList] Calling propagateSaveToBridge for ADD_TO_BANK");
+          propagateSaveToBridge({
               type: 'ADD_TO_BANK',
               recordId: recordId,
               cards: generatedCards // Send the array of card objects
-          }, '*');
+          });
       } else {
-          console.error("[FlashcardList] Cannot send ADD_TO_BANK message: iframe not found.");
-          alert("Error: Could not communicate with the saving mechanism.");
+          console.error("[FlashcardList] propagateSaveToBridge function is not available.");
+          alert("Error: Could not communicate with the saving mechanism (prop missing).");
       }
+      // ---------------------------------------------------------------
 
-      // Optional: Close the generator modal here if it's still open
-      // setShowCardGenerator(false);
-      // setGeneratorTopic(null);
-
-      // Note: We don't update the local 'cards' state directly here.
-      // We rely on the Knack script saving the data and then potentially
-      // triggering a data reload message ('KNACK_DATA' or similar)
-      // which will update the 'cards' prop passed into this component.
-
-  }, [recordId]); // Depend on recordId
+  }, [recordId, propagateSaveToBridge]); // Add propagateSaveToBridge dependency
   // -------------------------------------------
 
   // --- END: HOOK DEFINITIONS ---
@@ -1236,16 +1227,14 @@ const FlashcardList = ({
       {showCardGenerator && generatorTopic && (
         <ErrorBoundary>
           <FlashcardGeneratorBridge
-            topic={generatorTopic} // Pass the full topic object set in state
+            topic={generatorTopic}
             recordId={recordId || null}
             userId={userId || localUserId || null}
             onClose={() => {
               setShowCardGenerator(false);
               setGeneratorTopic(null);
             }}
-            // --- Pass the new handler function ---
             onAddCards={handleAddGeneratedCards}
-            // ------------------------------------
           />
         </ErrorBoundary>
       )}

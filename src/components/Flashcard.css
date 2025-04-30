@@ -729,15 +729,6 @@
   background-color: #bdc3c7;
 }
 
-/* Remove old card-controls styles but keep empty to prevent errors */
-.card-controls {
-  position: absolute;
-  top: -9999px;
-  left: -9999px;
-  opacity: 0;
-  pointer-events: none;
-}
-
 /* Multiple choice enhancements */
 .multiple-choice-options {
   list-style-type: none;
@@ -1035,6 +1026,7 @@
     word-wrap: break-word;
     hyphens: auto;
     -webkit-line-clamp: unset;
+    line-clamp: unset;
     -webkit-box-orient: unset;
   }
   
@@ -1666,8 +1658,9 @@
     display: block;
     overflow: visible;
     white-space: normal;
-    -webkit-line-clamp: unset;
-    -webkit-box-orient: unset;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
   }
 }
 
@@ -1695,8 +1688,9 @@
     display: block;
     overflow: visible;
     white-space: normal;
-    -webkit-line-clamp: unset;
-    -webkit-box-orient: unset;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
     font-size: 12px;
     padding: 4px 6px;
   }
