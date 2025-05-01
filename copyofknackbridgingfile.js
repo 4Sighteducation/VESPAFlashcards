@@ -1165,12 +1165,19 @@ function safeParseJSON(jsonString, defaultVal = null) {
        // --- FIX: Parse cards if stringified --- 
        if (data.cards && typeof data.cards === 'string') {
            try {
-               console.log("[Knack Script] Parsing stringified cards data in ADD_TO_BANK");
+               console.log("[Knack Script] Parsing stringified cards data in ADD_TO_BANK (string length:", data.cards.length, ")");
+               // Log sample before parse
+               console.log("[Knack Script] Stringified cards sample BEFORE parse:", data.cards.substring(0, 200));
                data.cards = JSON.parse(data.cards);
+               // Log sample after parse
+               console.log("[Knack Script] Parsed cards successfully. Sample card OPTIONS:", data.cards[0]?.options);
            } catch (e) {
                console.error("[Knack Script] Failed to parse stringified cards data:", e);
                throw new Error("Invalid card data format received."); // Re-throw to be caught below
            }
+       } else if (data.cards) {
+         // Log if cards were already an object (shouldn't happen often now but good to know)
+         console.log("[Knack Script] Cards data received as object in ADD_TO_BANK. Sample card OPTIONS:", data.cards[0]?.options);
        }
        // --------------------------------------
 
@@ -1302,20 +1309,15 @@ function safeParseJSON(jsonString, defaultVal = null) {
   
            // --- Queue a 'full' save operation with merged data ---
            const fullSaveData = {
-               // We are providing the specific fields to update within the 'data' object for the 'full' type
-               cards: finalBankData, // The fully merged card bank
-               spacedRepetition: { // Include the updated Box 1
-                   box1: updatedBox1
-                   // Other boxes will be preserved because preserveFields is true
-               }
-               // Other fields like colorMapping, topicLists will be preserved from existingData
+               cards: finalBankData,
+               spacedRepetition: { box1: updatedBox1 }
            };
   
            await saveQueue.addToQueue({
              type: 'full',
-             data: fullSaveData, // Pass the object containing the fields to update
+             data: fullSaveData, 
              recordId: data.recordId,
-             preserveFields: true // CRITICAL: ensure other fields (colors, topics, other boxes) are preserved
+             preserveFields: true
            });
   
            console.log(`[Knack Script] ADD_TO_BANK for record ${data.recordId} completed successfully.`);

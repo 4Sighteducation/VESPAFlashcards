@@ -2195,7 +2195,7 @@ useEffect(() => {
       return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [showStatus, updateSpacedRepetitionData, loadFromLocalStorage, recordId, view]); // Reverted: Removed propagateSaveToBridge from deps
+  }, [showStatus, updateSpacedRepetitionData, loadFromLocalStorage, recordId, view, propagateSaveToBridge]); // Re-added propagateSaveToBridge to deps
 
   // Function to extract user-specific topics for a subject
   const getUserTopicsForSubject = useCallback(
@@ -2772,17 +2772,22 @@ useEffect(() => {
 
   // --- Add function to handle propagating saves ---
   const propagateSaveToBridge = useCallback((messagePayload) => {
-    console.log("[App] propagateSaveToBridge called with payload:", messagePayload);
+    console.log("[App] propagateSaveToBridge called with payload (before stringify):", messagePayload);
     
-    // --- Attempt to stringify cards array if present --- 
     let payloadToSend = { ...messagePayload };
     if (payloadToSend.cards && typeof payloadToSend.cards === 'object') {
         try {
             console.log("[App] Stringifying cards array before postMessage");
-            payloadToSend.cards = JSON.stringify(payloadToSend.cards);
+            // Log a sample before stringifying
+            if (Array.isArray(payloadToSend.cards) && payloadToSend.cards.length > 0) {
+              console.log("[App] Sample card OPTIONS before stringify:", payloadToSend.cards[0]?.options);
+            }
+            const stringifiedCards = JSON.stringify(payloadToSend.cards);
+            console.log("[App] Stringified cards length:", stringifiedCards.length);
+            payloadToSend.cards = stringifiedCards;
+            console.log("[App] Payload AFTER stringify (sample card field):", payloadToSend.cards?.substring(0, 200)); // Log sample of stringified
         } catch (e) {
             console.error("[App] Failed to stringify cards array:", e);
-            // Proceed without stringifying if error occurs
             payloadToSend = { ...messagePayload }; 
         }
     }
