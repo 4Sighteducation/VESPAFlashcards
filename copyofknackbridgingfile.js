@@ -1096,6 +1096,18 @@ function safeParseJSON(jsonString, defaultVal = null) {
       debugLog("[Knack Script] Data received for SAVE_DATA:", saveDataMessage);
   
       try {
+        // --- FIX: Parse cards if stringified --- 
+        if (saveDataMessage.cards && typeof saveDataMessage.cards === 'string') {
+            try {
+                console.log("[Knack Script] Parsing stringified cards data in SAVE_DATA");
+                saveDataMessage.cards = JSON.parse(saveDataMessage.cards);
+            } catch (e) {
+                console.error("[Knack Script] Failed to parse stringified cards data:", e);
+                throw new Error("Invalid card data format received.");
+            }
+        }
+        // --------------------------------------
+
         // Validate and structure colorMapping before saving
         if (saveDataMessage.colorMapping) {
           console.log("[Knack Script] Validating color mapping structure before save");
@@ -1150,6 +1162,18 @@ function safeParseJSON(jsonString, defaultVal = null) {
        }
        debugLog("[Knack Script] Data received for ADD_TO_BANK:", data);
   
+       // --- FIX: Parse cards if stringified --- 
+       if (data.cards && typeof data.cards === 'string') {
+           try {
+               console.log("[Knack Script] Parsing stringified cards data in ADD_TO_BANK");
+               data.cards = JSON.parse(data.cards);
+           } catch (e) {
+               console.error("[Knack Script] Failed to parse stringified cards data:", e);
+               throw new Error("Invalid card data format received."); // Re-throw to be caught below
+           }
+       }
+       // --------------------------------------
+
        // --- Merge with existing card bank data BEFORE queuing ---
        try {
            console.log(`[Knack Script] Fetching existing data before ADD_TO_BANK for record ${data.recordId}`);
@@ -1383,15 +1407,17 @@ function safeParseJSON(jsonString, defaultVal = null) {
       async function handleDataUpdateRequest(data, iframeWindow) {
           console.log("[Knack Script] Handling REQUEST_UPDATED_DATA request");
           const userId = window.currentKnackUser?.id;
-          const recordId = data?.recordId; // Get recordId from message
-  
+          // --- FIX: Extract recordId robustly --- 
+          const recordId = data?.recordId || data?.data?.recordId; // Check both direct and nested
+          // ---------------------------------------
+
           if (!userId) {
               console.error("[Knack Script] Cannot refresh data - user ID not found.");
                // CORRECTION: Target iframeWindow for response
               if (iframeWindow) iframeWindow.postMessage({ type: 'DATA_REFRESH_ERROR', error: 'User ID not found' }, '*');
               return;
           }
-           if (!recordId) {
+           if (!recordId) { // Check the extracted recordId
                console.error("[Knack Script] Cannot refresh data - missing record ID in request");
                 // CORRECTION: Target iframeWindow for response
                if (iframeWindow) iframeWindow.postMessage({ type: 'DATA_REFRESH_ERROR', error: 'Missing record ID in request' }, '*');

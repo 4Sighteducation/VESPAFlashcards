@@ -1851,7 +1851,6 @@ useEffect(() => {
           case "SAVE_RESULT":
             console.log("[Save Result] Received:", event.data.success);
             
-            // Clear any save timeouts
             if (window.currentSaveTimeout) {
               clearTimeout(window.currentSaveTimeout);
               window.currentSaveTimeout = null;
@@ -1860,6 +1859,17 @@ useEffect(() => {
             setIsSaving(false);
             if (event.data.success) {
               showStatus("Saved successfully!");
+              // --- ADD: Request data refresh after successful general save --- 
+              if (isKnack && propagateSaveToBridge && recordId) { // Check if in Knack & have function/ID
+                  console.log(`[App SAVE_RESULT] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
+                  propagateSaveToBridge({
+                      type: 'REQUEST_UPDATED_DATA',
+                      recordId: recordId // Correct format
+                  });
+              } else if (isKnack) {
+                  console.warn("[App SAVE_RESULT] Cannot request updated data: propagate function or recordId missing.");
+              }
+              // -----------------------------------------------------------
             } else {
               showStatus("Error saving data. Changes saved locally.");
             }
@@ -1921,43 +1931,26 @@ useEffect(() => {
             console.log("[Add To Bank Result] Received:", event.data);
             if (event.data.success) {
               showStatus("Cards added to bank successfully!");
-              
-              // If shouldReload flag is set, request updated data instead of full page reload
               if (event.data.shouldReload) {
                 console.log("[Add To Bank Result] Requesting updated data...");
-                setLoading(true);
-                setLoadingMessage("Refreshing card data...");
-                
-                // Send a message to parent window to request updated data
-                if (window.parent !== window) {
-              window.parent.postMessage({
-                    type: "REQUEST_UPDATED_DATA",
-                    data: { recordId: recordId }
-                  }, "*");
-              
-                  // No fallback timeout - wait for KNACK_DATA message instead
-                  // The data will eventually come through even if it takes longer than 5 seconds
+                // setLoading(true); // Optional: Re-enable if needed
+                // setLoadingMessage("Refreshing card data...");
+                if (isKnack && propagateSaveToBridge && recordId) { // Check if in Knack & have function/ID
+                    console.log(`[App ADD_TO_BANK_RESULT] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
+                    propagateSaveToBridge({
+                        type: 'REQUEST_UPDATED_DATA',
+                        recordId: recordId // Correct format
+                    });
                 } else {
-                  // If we're not in an iframe, just reload from localStorage
-                  loadFromLocalStorage();
-              setLoading(false);
+                   console.warn("[App ADD_TO_BANK_RESULT] Cannot request updated data: propagate function or recordId missing.");
+                   // Fallback: Maybe load from local storage if not in Knack? Or show error.
+                   // loadFromLocalStorage(); 
+                   // setLoading(false);
                 }
               }
             } else {
               showStatus("Error adding cards to bank. Try refreshing the page.");
-              
-              // If there was an error, try to refresh data anyway after a short delay
-              // This can help recover from temporary issues
-              setTimeout(() => {
-                if (window.parent !== window) {
-                  window.parent.postMessage({
-                    type: "REQUEST_UPDATED_DATA",
-                    data: { recordId: recordId }
-                  }, "*");
-                  
-                  console.log("[Add To Bank Result] Requested data refresh after error");
-                }
-              }, 2000);
+              // ... (error handling) ...
             }
             break;
             
@@ -2202,7 +2195,7 @@ useEffect(() => {
       return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [showStatus, updateSpacedRepetitionData, loadFromLocalStorage, recordId, view]);
+  }, [showStatus, updateSpacedRepetitionData, loadFromLocalStorage, recordId, view, propagateSaveToBridge]);
 
   // Function to extract user-specific topics for a subject
   const getUserTopicsForSubject = useCallback(
@@ -2781,19 +2774,34 @@ useEffect(() => {
   const propagateSaveToBridge = useCallback((messagePayload) => {
     console.log("[App] propagateSaveToBridge called with payload:", messagePayload);
     
-    // IMPROVED APPROACH: Get iframe element directly by ID
+    // --- Attempt to stringify cards array if present --- 
+    let payloadToSend = { ...messagePayload };
+    if (payloadToSend.cards && typeof payloadToSend.cards === 'object') {
+        try {
+            console.log("[App] Stringifying cards array before postMessage");
+            payloadToSend.cards = JSON.stringify(payloadToSend.cards);
+        } catch (e) {
+            console.error("[App] Failed to stringify cards array:", e);
+            // Proceed without stringifying if error occurs
+            payloadToSend = { ...messagePayload }; 
+        }
+    }
+    // ---------------------------------------------------
+
     const iframeElement = document.getElementById('flashcard-app-iframe');
-    let iframeWindow = iframeElement ? iframeElement.contentWindow : null;
+    // --- More robust iframe lookup --- 
+    let iframeWindow = iframeElement?.contentWindow || window.flashcardAppIframeWindow || null;
+    // ----------------------------------
     
-    // Fallback 1: Try global reference if direct access fails
+    // Fallback 1: Try global reference if direct access fails (redundant with above but safe)
     if (!iframeWindow && window.flashcardAppIframeWindow) {
       console.log("[App] Using fallback global reference for iframe");
       iframeWindow = window.flashcardAppIframeWindow;
     }
 
     if (iframeWindow) {
-      console.log(`[App] Posting message type ${messagePayload.type} to Knack script`);
-      iframeWindow.postMessage(messagePayload, '*');
+      console.log(`[App] Posting message type ${payloadToSend.type} to Knack script`);
+      iframeWindow.postMessage(payloadToSend, '*'); // Send the modified payload
     } else {
       console.error("[App] Cannot send message to bridge: Iframe element or contentWindow not found.");
       
