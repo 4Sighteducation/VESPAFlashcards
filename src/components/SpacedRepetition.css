@@ -1485,9 +1485,50 @@
   z-index: 1000;
   animation: fadeIn 0.3s ease-out;
   backdrop-filter: blur(3px);
-  overflow: hidden; /* Prevent body scrolling when modal is open */
+  overflow: hidden; 
+  padding: 20px;
 }
 
+/* Force body to not scroll when modal is active */
+body:has(.study-modal-overlay) {
+  overflow: hidden;
+}
+
+/* Modal close button adjustment */
+.study-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  border: none;
+  color: #333;
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.study-modal-close:hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+/* Fix card display in the study modal */
+.study-card {
+  cursor: pointer;
+}
+
+.study-card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+/* Modal enhancements */
 .study-modal {
   background-color: #f5f5f5;
   border-radius: 16px;
@@ -1501,11 +1542,75 @@
   overflow-y: auto;
   padding: 20px;
   position: relative;
-  transform: translateZ(0); /* Force GPU acceleration for smoother scrolling */
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Ensure modal and card content are properly scrollable on mobile */
+/* Fix card display in study modal */
+.study-modal .card-study-area {
+  min-height: unset; /* Remove fixed height constraint */
+  height: auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 20px;
+}
+
+.study-modal .study-card {
+  width: 100%;
+  height: auto;
+  min-height: 420px; /* Reduced from 550px */
+  max-height: unset; /* Remove max-height constraint */
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  margin-bottom: 20px;
+}
+
+.study-card .card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.study-card .card-front,
+.study-card .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  min-height: 420px; /* Match card min-height */
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 25px;
+  border-radius: 12px;
+  background-color: var(--card-color, white);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+.study-card .card-content {
+  flex: 1;
+  width: 100%;
+  font-size: 1.5rem;
+  text-align: center;
+  padding: 15px;
+  margin: 10px 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  overflow-y: auto;
+}
+
+/* Improve mobile responsiveness */
 @media (max-width: 768px) {
   .study-modal {
     width: 95%;
@@ -1515,102 +1620,94 @@
     max-height: 95vh;
   }
   
-  .study-modal-overlay {
-    align-items: center;
-    padding: 0;
+  .study-modal .study-card {
+    min-height: 480px;
+    max-height: 70vh;
   }
   
-  /* Fix for scrolling issues in the modal */
-  .study-modal-overlay {
-    overscroll-behavior: contain;
-  }
-  
-  .study-modal {
-    overscroll-behavior: contain;
-    overflow-y: auto;
-  }
-  
-  /* Prevent content from being hidden under fixed elements */
-  .study-modal .card-study-area {
-    padding-bottom: 70px; /* Space for navigation buttons */
-  }
-  
-  /* Adjust the modal close button for better touchability */
   .study-modal-close {
     top: 10px;
     right: 10px;
     width: 36px;
     height: 36px;
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-size: 1.2rem;
-    z-index: 20;
+  }
+  
+  /* Ensure the flip response appears in a good position on mobile */
+  .flip-response {
+    position: fixed;
+    top: 50%;
+    left: 50%; 
+    transform: translate(-50%, -50%);
+    width: 85%;
+    max-width: 350px;
+    z-index: 1200;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  .flip-response-overlay.active {
+    display: block !important;
   }
 }
 
-/* Portrait mode specific adjustments */
-@media (max-width: 480px) and (orientation: portrait) {
-  .study-card {
-    min-height: 400px; /* Taller cards in portrait */
+/* Portrait mode specific fixes */
+@media (max-width: 480px) {
+  .study-modal .study-card {
+    min-height: 300px;
   }
   
-  .card-front, .card-back {
-    min-height: 400px;
-    padding: 45px 15px 15px; /* Extra padding at top for buttons/info */
+  .study-card .card-front,
+  .study-card .card-back {
+    padding: 15px 10px;
   }
   
-  /* Larger click targets for navigation */
-  .prev-button, .next-button {
-    padding: 12px 20px;
+  .study-card .card-content {
+    padding: 10px 8px;
     font-size: 1rem;
   }
-}
-
-/* Improved empty state for mobile */
-@media (max-width: 768px) {
-  .empty-box {
-    padding: 25px 15px;
+  
+  .multiple-choice-option {
+    padding: 8px 10px;
+    margin: 5px 0;
   }
   
-  .empty-box h3 {
-    font-size: 1.5rem;
-  }
-  
-  .empty-message {
-    font-size: 1.1rem;
-    padding: 15px;
-    margin: 15px auto;
-  }
-  
-  .pro-tip {
+  .option-letter {
     font-size: 0.9rem;
-    margin: 15px 5px 20px;
-    padding: 10px;
-    display: block;
+    min-width: 15px;
   }
   
-  .empty-message::before {
-    left: -12px;
-    width: 24px;
-    height: 24px;
+  .option-text {
+    font-size: 0.9rem;
   }
-  
-  .return-button {
+}
+
+/* Multiple choice specific fixes */
+.study-card .card-front.has-multiple-choice {
+  justify-content: flex-start;
+  padding-top: 20px;
+  overflow-y: auto;
+}
+
+.multiple-choice-options {
+  margin-top: 10px;
+  width: 95%;
+  max-height: unset; /* Remove fixed height constraint */
+  overflow-y: visible;
+  padding-bottom: 15px;
+}
+
+.multiple-choice-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .multiple-choice-options {
     width: 100%;
-    padding: 12px;
-    font-size: 1rem;
-  }
-  
-  /* Completion message adjustments */
-  .completion-message {
-    padding: 25px 15px;
-  }
-  
-  .completion-message h3 {
-    font-size: 1.5rem;
   }
 }
 
@@ -1657,33 +1754,13 @@
   margin-bottom: 10px;
 }
 
-/* Enhanced close button for modal */
-.study-modal-close {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: #333;
-  font-size: 1.5rem;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  z-index: 10;
-}
-
-.study-modal-close:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
-}
-
 /* Mobile responsiveness for study modal */
 @media (max-width: 768px) {
+  .study-modal-overlay {
+    padding: 10px;
+    align-items: center;
+  }
+  
   .study-modal {
     width: 95%;
     padding: 15px 12px;
@@ -1692,39 +1769,28 @@
     max-height: 95vh;
   }
   
-  .study-modal-overlay {
-    align-items: center;
-    padding: 0;
-  }
-  
-  /* Fix for scrolling issues in the modal */
-  .study-modal-overlay {
-    overscroll-behavior: contain;
-  }
-  
-  .study-modal {
-    overscroll-behavior: contain;
-    overflow-y: auto;
-  }
-  
-  /* Prevent content from being hidden under fixed elements */
-  .study-modal .card-study-area {
-    padding-bottom: 70px; /* Space for navigation buttons */
-  }
-  
-  /* Adjust the modal close button for better touchability */
   .study-modal-close {
     top: 10px;
     right: 10px;
     width: 36px;
     height: 36px;
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-size: 1.2rem;
-    z-index: 20;
+  }
+  
+  /* Ensure the flip response appears in a good position on mobile */
+  .flip-response {
+    position: fixed;
+    top: 50%;
+    left: 50%; 
+    transform: translate(-50%, -50%);
+    width: 85%;
+    max-width: 350px;
+    z-index: 1200;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  .flip-response-overlay.active {
+    display: block !important;
   }
 }
 

@@ -2178,6 +2178,12 @@ retryApiCall(findRecordApiCall)
 
                // Multiple Choice Handling (after type is determined)
                 if (standardCard.type === 'card') { // Only apply MC logic to cards
+                    // --- Normalize questionType BEFORE checking ---
+                    if (typeof standardCard.questionType === 'string') {
+                        standardCard.questionType = standardCard.questionType.replace('_', ' ').toLowerCase();
+                    }
+                    // --- End Normalization ---
+                    
                     console.log(`[Standardize PreCheck] Card ID: ${standardCard.id}, questionType: ${standardCard.questionType}, Type: ${typeof standardCard.questionType}`); // Log before call
                     const isMC = isMultipleChoiceCard(standardCard);
                     console.log(`[Standardize PostCheck] Card ID: ${standardCard.id}, isMultipleChoiceCard result: ${isMC}`); // Log result of call

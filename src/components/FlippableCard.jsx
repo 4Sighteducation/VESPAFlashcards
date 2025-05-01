@@ -156,13 +156,20 @@ const FlippableCard = ({
     // Strategy 1: Use the correctAnswer field directly if it exists
     if (card.correctAnswer) {
       // Handle if correctAnswer is a full option text
-      const correctAnswerText = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
+      const correctAnswerText = String(card.correctAnswer).replace(/^[a-d]\)\s*/i, '').trim();
       
       // First try exact match
       let correctIndex = card.options.findIndex(option => {
         const optionText = typeof option === 'string' 
           ? option.replace(/^[a-d]\)\s*/i, '').trim() 
           : (option?.text || '').replace(/^[a-d]\)\s*/i, '').trim();
+        
+        // --- DETAILED LOGGING FOR STRATEGY 1 --- 
+        console.log(`[getCorrectAnswerIndex Strat1 Debug] Comparing: 
+          CorrectAns: '${correctAnswerText}' 
+          Option:     '${optionText}'`);
+        // --- END LOGGING ---
+          
         return optionText === correctAnswerText;
       });
       
@@ -195,7 +202,26 @@ const FlippableCard = ({
       return correctOptionIndex;
     }
     
-    // Strategy 3: Parse the answer/back text if it contains "Correct Answer: [letter])"
+    // --- NEW STRATEGY 3.5: Check if answer text matches an option --- 
+    if (typeof (card.answer || card.back) === 'string') {
+        const answerText = (card.answer || card.back).trim();
+        const matchingOptionIndex = card.options.findIndex(option => {
+            const optionText = typeof option === 'string' 
+                ? option.replace(/^[a-d]\)\s*/i, '').trim()
+                : (option?.text || '').replace(/^[a-d]\)\s*/i, '').trim();
+            // Check for exact match or if the answer *starts with* the option text (case-insensitive)
+            return answerText.toLowerCase() === optionText.toLowerCase() || 
+                   answerText.toLowerCase().startsWith(optionText.toLowerCase());
+        });
+        
+        if (matchingOptionIndex !== -1) {
+            console.log(`[FlippableCard] Found correct answer by matching answer text to option index: ${matchingOptionIndex}`);
+            return matchingOptionIndex;
+        }
+    }
+    // --- END NEW STRATEGY --- 
+    
+    // Strategy 4: Parse the answer/back text if it contains "Correct Answer: [letter])"
     const answerString = card.answer || card.back || '';
     if (typeof answerString === 'string') {
       const correctAnswerMatch = answerString.match(/Correct Answer:\s*([a-d])\)/i);

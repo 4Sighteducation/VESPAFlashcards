@@ -833,7 +833,6 @@ const SpacedRepetition = ({
           className={`study-card ${isFlipped ? "flipped" : ""} ${
             !currentCard.isReviewable ? "not-reviewable" : ""
           }`}
-          onClick={currentCard.questionType === 'multiple_choice' ? null : handleCardFlip}
           style={{
             '--card-color': currentCard.cardColor || '#ffffff'
           }}
@@ -892,6 +891,7 @@ const SpacedRepetition = ({
                       currentCard.question ||
                       "No question"
                   }}
+                  onClick={handleCardFlip}
                 />
               )}
               
@@ -903,7 +903,7 @@ const SpacedRepetition = ({
                 </div>
               )}
             </div>
-            <div className="card-back">
+            <div className="card-back" onClick={handleCardFlip}>
               <div className="card-subject-topic">
                 <span className="card-subject">{currentCard.subject || "General"}</span>
                 <span className="card-topic">{currentCard.topic || ""}</span>

@@ -131,11 +131,11 @@ async function generateCards({ subject, topic, examType, examBoard, questionType
       options: { 
         type: "array", 
         items: { type: "string" },
-        description: "Four distinct answer options for the question"
+        description: "Four distinct answer options for the question, one of which MUST be the correct answer."
       },
       correctAnswer: { 
         type: "string", 
-        description: "The correct answer, must match exactly one of the options"
+        description: "The EXACT correct answer text, matching one of the provided options. This field is MANDATORY."
       },
       detailedAnswer: { 
         type: "string", 
@@ -199,7 +199,7 @@ async function generateCards({ subject, topic, examType, examBoard, questionType
               items: {
                 type: "object",
                 properties: cardProperties,
-                required: Object.keys(cardProperties) // Make all defined properties required
+                required: Object.keys(cardProperties)
               }
             }
           },
