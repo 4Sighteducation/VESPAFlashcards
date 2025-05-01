@@ -56,6 +56,16 @@ const FlippableCard = ({
   const [feedback, setFeedback] = useState({ isVisible: false, message: '', isCorrect: null });
   const feedbackTimeoutRef = useRef(null);
   
+  // <<< ADD LOGGING HERE >>>
+  try {
+    console.log(`[FlippableCard Render] Card Prop Received (ID: ${card?.id}):`, JSON.stringify(card));
+    console.log(`[FlippableCard Render] card.options type: ${typeof card?.options}, isArray: ${Array.isArray(card?.options)}, length: ${card?.options?.length}`);
+  } catch (e) {
+    console.error(`[FlippableCard Render] Error logging card prop for ID: ${card?.id}`, e);
+    console.log(`[FlippableCard Render] Card Prop Received (ID: ${card?.id}) (Direct Log):`, card);
+  }
+  // <<< END LOGGING >>>
+  
   // Determine if we're using internal or external flip state
   const flipped = isFlipped !== undefined ? isFlipped : internalFlipped;
   
