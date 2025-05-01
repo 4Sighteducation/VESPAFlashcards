@@ -2195,7 +2195,7 @@ useEffect(() => {
       return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [showStatus, updateSpacedRepetitionData, loadFromLocalStorage, recordId, view, propagateSaveToBridge]);
+  }, [showStatus, updateSpacedRepetitionData, loadFromLocalStorage, recordId, view]); // Reverted: Removed propagateSaveToBridge from deps
 
   // Function to extract user-specific topics for a subject
   const getUserTopicsForSubject = useCallback(
