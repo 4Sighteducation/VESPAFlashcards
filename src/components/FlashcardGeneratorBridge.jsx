@@ -223,30 +223,19 @@ const FlashcardGeneratorBridge = ({
         tomorrow.setDate(now.getDate() + 1); // Set to tomorrow
 
         // --- FIX: Ensure options and savedOptions are preserved --- 
-        let cardOptions = [];
-        let cardSavedOptions = [];
         let finalCorrectAnswer = card.correctAnswer || '';
 
         if (card.questionType === 'multiple_choice') {
-            if (card.options && Array.isArray(card.options) && card.options.length > 0) {
-                cardOptions = [...card.options];
-            } 
-            else if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
-                console.log(`[handleSaveCards] Restoring options from savedOptions for card ${card.id}`);
-                cardOptions = [...card.savedOptions]; 
-            }
-            
-            cardSavedOptions = [...cardOptions]; 
-            
-            if (!finalCorrectAnswer && cardOptions.length > 0) {
-                const correctOption = cardOptions.find(opt => 
+            // Logic to determine finalCorrectAnswer if necessary
+            if (!finalCorrectAnswer && card.options && card.options.length > 0) {
+                const correctOption = card.options.find(opt => 
                     opt && typeof opt === 'object' && opt.isCorrect === true
                 );
                 
                 if (correctOption) {
                     finalCorrectAnswer = (typeof correctOption === 'object' && correctOption.text !== undefined) ? correctOption.text : ''; 
                 } else {
-                    const firstOption = cardOptions[0];
+                    const firstOption = card.options[0];
                     finalCorrectAnswer = (typeof firstOption === 'object' && firstOption.text !== undefined) ? 
                         firstOption.text : 
                         (typeof firstOption === 'string' ? firstOption : '');
@@ -278,8 +267,9 @@ const FlashcardGeneratorBridge = ({
           nextReviewDate: tomorrow.toISOString(),
           createdAt: card.createdAt || now.toISOString(),
           updatedAt: now.toISOString(),
-          options: cardOptions,         // Use derived options
-          savedOptions: cardSavedOptions, // Use derived savedOptions
+          // --- USE DIRECTLY FROM INPUT card --- 
+          options: Array.isArray(card.options) ? card.options : [],         
+          savedOptions: Array.isArray(card.savedOptions) ? card.savedOptions : (Array.isArray(card.options) ? card.options : []), // Use savedOptions or fallback to options
           correctAnswer: finalCorrectAnswer   // Use derived correct answer
         };
         // --------------------------------------------------------
