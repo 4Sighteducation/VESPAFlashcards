@@ -2063,8 +2063,26 @@ useEffect(() => {
             
             if (event.data.cards && Array.isArray(event.data.cards)) {
               try {
+                // --- Log cards before processing ---
+                console.log(`[KNACK_DATA] Received cards count: ${event.data.cards.length}. Sample options BEFORE processing:`);
+                event.data.cards.slice(0, 5).forEach((card, index) => {
+                    if (card.questionType === 'multiple_choice' || (Array.isArray(card.options) && card.options.length > 0)) {
+                        console.log(`[KNACK_DATA PRE] Card ${index} (ID: ${card.id}) options:`, JSON.stringify(card.options));
+                    }
+                });
+                // --- End log ---
+                
                 // Restore multiple choice options if they exist
                 const restoredCards = restoreMultipleChoiceOptions(event.data.cards);
+                
+                // --- Log cards after processing ---
+                console.log(`[KNACK_DATA] Processed cards count: ${restoredCards.length}. Sample options AFTER processing:`);
+                restoredCards.slice(0, 5).forEach((card, index) => {
+                    if (card.questionType === 'multiple_choice' || (Array.isArray(card.options) && card.options.length > 0)) {
+                        console.log(`[KNACK_DATA POST] Card ${index} (ID: ${card.id}) options:`, JSON.stringify(card.options));
+                    }
+                });
+                // --- End log ---
                 
                 // Update app state with the loaded cards
                 setAllCards(restoredCards);

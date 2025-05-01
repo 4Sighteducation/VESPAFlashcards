@@ -689,18 +689,14 @@ function safeParseJSON(jsonString, defaultVal = null) {
     // Helper to ensure data is serializable (prevents circular references)
     ensureSerializable(data) {
       try {
-        // *** NEW LOG: Log input data ***
-        console.log(`[ensureSerializable] Input data:`, JSON.stringify(data));
         // Test serialization
         JSON.stringify(data);
-        // *** NEW LOG: Log output data (if no error) ***
-        console.log(`[ensureSerializable] Output data (no change):`, JSON.stringify(data));
         return data;
       } catch (e) {
         console.warn('[SaveQueue] Data contains circular references or non-serializable values. Stripping them.', e);
         const cache = new Set();
         try {
-           const strippedData = JSON.parse(JSON.stringify(data, (key, value) => {
+           return JSON.parse(JSON.stringify(data, (key, value) => {
              if (typeof value === 'object' && value !== null) {
                if (cache.has(value)) {
                  // Circular reference found, return undefined to omit key
@@ -711,13 +707,8 @@ function safeParseJSON(jsonString, defaultVal = null) {
              }
              return value;
            }));
-           // *** NEW LOG: Log stripped data ***
-           console.log(`[ensureSerializable] Output data (stripped):`, JSON.stringify(strippedData));
-           return strippedData;
         } catch (parseError) {
            console.error("[SaveQueue] Failed to serialize data even after attempting to strip circular references:", parseError);
-           // *** NEW LOG: Log original data on final failure ***
-           console.log(`[ensureSerializable] Output data (error, returning original):`, JSON.stringify(data));
            return data; // Return original data as a last resort
         }
       }
@@ -1768,10 +1759,6 @@ retryApiCall(findRecordApiCall)
           const rawCardData = record[FIELD_MAPPING.cardBankData];
           if (rawCardData) {
               try {
-                  // --- Log raw card data ---
-                  console.log(`[loadFlashcardUserData DEBUG] Raw cardBankData string (length: ${String(rawCardData).length}):`, String(rawCardData).substring(0, 500)); 
-                  // --- End log ---
-                  
                   // First try to decode if needed
                   let decodedData = rawCardData;
                   if (typeof rawCardData === 'string' && rawCardData.includes('%')) {
@@ -1790,23 +1777,10 @@ retryApiCall(findRecordApiCall)
                       }
                   }
                   
-                  // --- Log decoded data ---
-                  console.log(`[loadFlashcardUserData DEBUG] Decoded card data string (length: ${String(decodedData).length}):`, String(decodedData).substring(0, 500)); 
-                  // --- End log ---
-                  
                   // Parse the JSON safely
                   userData.cards = safeParseJSON(decodedData, []);
                   userData.cards = migrateTypeToQuestionType(userData.cards); // Migrate legacy types
                   userData.cards = standardizeCards(userData.cards); // Standardize structure
-                  
-                  // --- Log parsed cards with options ---
-                  console.log(`[loadFlashcardUserData DEBUG] Parsed userData.cards count: ${userData.cards.length}`);
-                  userData.cards.slice(0, 5).forEach((card, index) => {
-                      if (card.questionType === 'multiple_choice' || (Array.isArray(card.options) && card.options.length > 0)) {
-                          console.log(`[loadFlashcardUserData DEBUG] Card ${index} (ID: ${card.id}) options:`, JSON.stringify(card.options));
-                      }
-                  });
-                  // --- End log ---
               } catch (cardError) {
                   console.error('[Knack Script] Fatal error processing cards:', cardError);
                   userData.cards = []; // Reset to empty array
@@ -2244,24 +2218,38 @@ retryApiCall(findRecordApiCall)
 
    // Detect if a card should be multiple choice
    function isMultipleChoiceCard(card) {
+     // Check object exists and is a card
      if (!card || typeof card !== 'object' || card.type !== 'card') return false;
 
-     const typeToCheck = card.questionType ? String(card.questionType).toLowerCase() : null;
-     const targetLiteral = 'multiple choice'; // <-- CORRECTED: Use space instead of underscore
+     console.log(`[isMultipleChoiceCard Check] Card ID: ${card.id}, Checking questionType: '${card.questionType}', Type: ${typeof card.questionType}`); // Log value being checked
 
-     console.log(`[isMC Check] ID: ${card.id}, Original Type: '${card.questionType}', Lowercase Type: '${typeToCheck}'`);
-
-     // Log character codes for detailed comparison
-     const typeToCheckCodes = typeToCheck ? Array.from(typeToCheck).map(c => c.charCodeAt(0)) : null;
-     const targetLiteralCodes = Array.from(targetLiteral).map(c => c.charCodeAt(0));
-     console.log(`[isMC Check Codes] ID: ${card.id}, typeToCheck: [${typeToCheckCodes}], targetLiteral: [${targetLiteralCodes}]`);
-
-     if (typeToCheck === targetLiteral) { // Compare against the literal with a space
-       console.log(`[isMC Check] ID: ${card.id} - MATCHED '${targetLiteral}'`);
+     // Explicit type check first - THIS IS THE MOST RELIABLE CHECK
+     if (card.questionType === 'multiple_choice') {
+       console.log(`[isMultipleChoiceCard] Identified card ${card.id} as MC based on questionType.`);
        return true; 
      }
 
-     console.log(`[isMC Check] ID: ${card.id} - DID NOT MATCH '${targetLiteral}'`); 
+     // --- REMOVE Redundant/Problematic checks below --- 
+     /*
+     // Presence of valid options array (at least one option)
+     if (Array.isArray(card.options) && card.options.length > 0) {
+        // Optional: Check if options have the expected structure (text, isCorrect)
+         if (card.options.some(opt => opt && typeof opt.text === 'string' && typeof opt.isCorrect === 'boolean')) {
+              console.log(`[isMultipleChoiceCard] Identified card ${card.id} as MC based on options array content.`);
+             return true;
+         }
+     }
+      // Presence of valid savedOptions array (as backup check)
+      if (Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+           if (card.savedOptions.some(opt => opt && typeof opt.text === 'string' && typeof opt.isCorrect === 'boolean')) {
+               console.log(`[isMultipleChoiceCard] Identified card ${card.id} as MC based on savedOptions array content.`);
+              return true;
+          }
+      }
+     */
+
+     // If questionType wasn't set, it's not considered MC by this function
+     console.log(`[isMultipleChoiceCard] Card ${card.id} is NOT MC (questionType is '${card.questionType}').`);
      return false; // Default to false
    }
 

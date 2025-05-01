@@ -59,6 +59,13 @@ const FlippableCard = ({
   // <<< ADD LOGGING HERE >>>
   try {
     console.log(`[FlippableCard Render] Card Prop Received (ID: ${card?.id}):`, JSON.stringify(card));
+    // --- Log card options --- 
+    if (card && (card.questionType === 'multiple_choice' || (Array.isArray(card.options) && card.options.length > 0))) {
+        console.log(`[FlippableCard PROP] Card ${card.id} options:`, JSON.stringify(card.options));
+    } else if (card) {
+        console.log(`[FlippableCard PROP] Card ${card.id} is NOT multiple choice or has no options.`);
+    }
+    // --- End log ---
     console.log(`[FlippableCard Render] card.options type: ${typeof card?.options}, isArray: ${Array.isArray(card?.options)}, length: ${card?.options?.length}`);
   } catch (e) {
     console.error(`[FlippableCard Render] Error logging card prop for ID: ${card?.id}`, e);

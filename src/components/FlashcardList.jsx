@@ -383,6 +383,19 @@ const FlashcardList = ({
 
   // 4. useEffect for Color Initialization and Synchronization with Props
   useEffect(() => {
+    // --- Log cards prop received ---
+    if (Array.isArray(cards)) {
+        console.log(`[FlashcardList useEffect] Received cards prop. Count: ${cards.length}. Sample options:`);
+        cards.slice(0, 5).forEach((card, index) => {
+            if (card && (card.questionType === 'multiple_choice' || (Array.isArray(card.options) && card.options.length > 0))) {
+                console.log(`[FlashcardList PROP] Card ${index} (ID: ${card.id}) options:`, JSON.stringify(card.options));
+            }
+        });
+    } else {
+        console.warn('[FlashcardList useEffect] Received non-array cards prop:', cards);
+    }
+    // --- End log ---
+    
     const colorMappingFromProps = subjectColorMappingFromProps || {};
     console.log("[FlashcardList Color Sync Effect V2] Running. Props received:", colorMappingFromProps);
 
