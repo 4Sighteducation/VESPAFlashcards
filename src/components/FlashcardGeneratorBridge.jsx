@@ -218,69 +218,70 @@ const FlashcardGeneratorBridge = ({
         const now = new Date();
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1); // Set to tomorrow
-        
+
         // --- FIX: Ensure options and savedOptions are preserved --- 
         let cardOptions = [];
-        let cardSavedOptions = []; // Use a different variable name to avoid shadowing
+        let cardSavedOptions = [];
         let finalCorrectAnswer = card.correctAnswer || '';
 
         if (card.questionType === 'multiple_choice') {
-            // Prioritize existing options array from the card object
             if (card.options && Array.isArray(card.options) && card.options.length > 0) {
                 cardOptions = [...card.options];
             } 
-            // Fallback to savedOptions if options is empty/invalid
             else if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
                 console.log(`[handleSaveCards] Restoring options from savedOptions for card ${card.id}`);
-                cardOptions = [...card.savedOptions];
-            } // If both are empty, cardOptions remains []
+                cardOptions = [...card.savedOptions]; 
+            }
             
-            // Always keep a backup in savedOptions
             cardSavedOptions = [...cardOptions]; 
             
-            // Ensure correctAnswer is set if options exist
             if (!finalCorrectAnswer && cardOptions.length > 0) {
-                // Find the option with isCorrect flag or default to first option
                 const correctOption = cardOptions.find(opt => 
                     opt && typeof opt === 'object' && opt.isCorrect === true
                 );
                 
                 if (correctOption) {
-                    // Ensure text property exists before accessing
                     finalCorrectAnswer = (typeof correctOption === 'object' && correctOption.text !== undefined) ? correctOption.text : ''; 
                 } else {
-                    // Default to first option's text if available
                     const firstOption = cardOptions[0];
                     finalCorrectAnswer = (typeof firstOption === 'object' && firstOption.text !== undefined) ? 
                         firstOption.text : 
-                        (typeof firstOption === 'string' ? firstOption : ''); // Handle string options too
+                        (typeof firstOption === 'string' ? firstOption : '');
                 }
                 console.log(`[handleSaveCards] Determined correctAnswer for card ${card.id}: ${finalCorrectAnswer}`);
             }
         }
         // ----------------------------------------------------------
         
-        return {
-          ...card,
-          id: card.id.startsWith('temp_') ? `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` : card.id, // Ensure permanent ID
-          topicId: topicId, // CRITICAL: Link to the topic shell
-          type: 'card', // Explicitly set type to 'card', not 'topic'
-          boxNum: 1, // CRITICAL: Set initial box for Leitner system
-          lastReviewed: now.toISOString(), // Set initial review date
-          nextReviewDate: tomorrow.toISOString(), // CRITICAL: Set next review date for Leitner system
-          // Ensure subject/topic match the parent topic
-          subject: topic.subject,
-          topic: topicIdentifier, // Use the determined topic name
+        // --- FIX: Explicitly construct the final card object --- 
+        const finalCard = {
+          // Fields to keep from original card object
+          id: card.id.startsWith('temp_') ? `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` : card.id,
+          subject: topic.subject, // Use topic subject
+          topic: topicIdentifier, // Use determined topic name
           examBoard: topic.examBoard || card.examBoard || "General",
           examType: topic.examType || card.examType || "Course",
+          questionType: card.questionType, // Keep original questionType
+          question: card.question || card.front || '', // Ensure question/front exists
+          answer: card.answer || card.back || '', // Ensure answer/back exists
+          detailedAnswer: card.detailedAnswer || '',
+          keyPoints: Array.isArray(card.keyPoints) ? card.keyPoints : [],
+          cardColor: card.cardColor || topic.color || '#3cb44b', // Use card color or topic color
+          topicId: topicId, // Add topic link
+          type: 'card', // Ensure type is card
+          // Fields with updated/derived values
+          boxNum: 1, 
+          lastReviewed: now.toISOString(),
+          nextReviewDate: tomorrow.toISOString(),
           createdAt: card.createdAt || now.toISOString(),
           updatedAt: now.toISOString(),
-          // --- FIX: Use the preserved/derived values --- 
-          options: cardOptions, 
-          savedOptions: cardSavedOptions,
-          correctAnswer: finalCorrectAnswer 
-          // ---------------------------------------------
+          options: cardOptions,         // Use derived options
+          savedOptions: cardSavedOptions, // Use derived savedOptions
+          correctAnswer: finalCorrectAnswer   // Use derived correct answer
         };
+        // --------------------------------------------------------
+
+        return finalCard;
       });
       
       // Log the processed cards with their topic IDs
