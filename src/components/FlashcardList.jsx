@@ -751,39 +751,41 @@ const FlashcardList = ({
 
         // Set a timeout to auto-refresh the page if we don't get a response
         const timeoutId = setTimeout(() => {
-          console.log("[FlashcardList] Save operation timeout - refreshing page");
+          console.log("[FlashcardList] Save operation (ADD_TO_BANK) timeout - refreshing page"); // Clarified log
           setIsSaving(false);
-          window.location.reload();
-        }, 10000); // 10 second timeout
+          window.location.reload(); // Consider less drastic fallback? Maybe just show error?
+        }, 15000); // Increased timeout slightly to 15 seconds
 
-        // Listen for the save result message from the parent
-        const handleSaveResult = (event) => {
-          if (event.data && event.data.type === 'SAVE_RESULT') {
+        // Listen for the ADD_TO_BANK_RESULT message from the parent
+        // --- FIX: Listen for ADD_TO_BANK_RESULT specifically --- 
+        const handleAddResult = (event) => {
+          // --- FIX: Check for ADD_TO_BANK_RESULT type --- 
+          if (event.data && event.data.type === 'ADD_TO_BANK_RESULT') {
             clearTimeout(timeoutId); // Clear the timeout
-            window.removeEventListener('message', handleSaveResult); // Clean up listener
+            window.removeEventListener('message', handleAddResult); // Clean up listener
             setIsSaving(false); // Hide saving indicator
             
             if (event.data.success) {
-              console.log("[FlashcardList] Save operation successful. Requesting data refresh.");
-              // --- Request data refresh AFTER successful save --- 
+              console.log("[FlashcardList] ADD_TO_BANK operation successful. Requesting data refresh.");
+              // --- Request data refresh AFTER successful add --- 
               if (propagateSaveToBridge) {
                   console.log(`[FlashcardList] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
                   propagateSaveToBridge({
                       type: 'REQUEST_UPDATED_DATA',
-                      recordId: recordId // Ensure recordId is included here
+                      recordId: recordId // FIX: Ensure recordId is directly on the payload
                   });
               } else {
                   console.warn("[FlashcardList] Cannot request updated data: propagateSaveToBridge is missing.");
               }
               // -------------------------------------------------
             } else {
-              console.error("[FlashcardList] Save operation failed:", event.data.error);
-              setSaveError(event.data.error || "Failed to save cards"); // Use error from message
+              console.error("[FlashcardList] ADD_TO_BANK operation failed:", event.data.error);
+              setSaveError(event.data.error || "Failed to add cards to bank"); // Use error from message
             }
           }
         };
 
-        window.addEventListener('message', handleSaveResult);
+        window.addEventListener('message', handleAddResult); // Use the correct listener name
       } else {
         setIsSaving(false);
         console.error("[FlashcardList] propagateSaveToBridge function is not available.");

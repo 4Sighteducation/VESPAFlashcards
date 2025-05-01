@@ -219,36 +219,46 @@ const FlashcardGeneratorBridge = ({
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1); // Set to tomorrow
         
-        // Ensure options and savedOptions are preserved
+        // --- FIX: Ensure options and savedOptions are preserved --- 
         let cardOptions = [];
-        let savedOptions = [];
-        
+        let cardSavedOptions = []; // Use a different variable name to avoid shadowing
+        let finalCorrectAnswer = card.correctAnswer || '';
+
         if (card.questionType === 'multiple_choice') {
-            // Ensure we have options
+            // Prioritize existing options array from the card object
             if (card.options && Array.isArray(card.options) && card.options.length > 0) {
                 cardOptions = [...card.options];
-            } else if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+            } 
+            // Fallback to savedOptions if options is empty/invalid
+            else if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
+                console.log(`[handleSaveCards] Restoring options from savedOptions for card ${card.id}`);
                 cardOptions = [...card.savedOptions];
-            }
+            } // If both are empty, cardOptions remains []
             
-            // Always keep a backup
-            savedOptions = [...cardOptions];
+            // Always keep a backup in savedOptions
+            cardSavedOptions = [...cardOptions]; 
             
-            // Make sure correctAnswer is set
-            if (!card.correctAnswer && cardOptions.length > 0) {
+            // Ensure correctAnswer is set if options exist
+            if (!finalCorrectAnswer && cardOptions.length > 0) {
                 // Find the option with isCorrect flag or default to first option
                 const correctOption = cardOptions.find(opt => 
                     opt && typeof opt === 'object' && opt.isCorrect === true
                 );
                 
                 if (correctOption) {
-                    card.correctAnswer = typeof correctOption === 'object' ? correctOption.text : correctOption;
+                    // Ensure text property exists before accessing
+                    finalCorrectAnswer = (typeof correctOption === 'object' && correctOption.text !== undefined) ? correctOption.text : ''; 
                 } else {
-                    // Default to first option
-                    card.correctAnswer = typeof cardOptions[0] === 'object' ? cardOptions[0].text : cardOptions[0];
+                    // Default to first option's text if available
+                    const firstOption = cardOptions[0];
+                    finalCorrectAnswer = (typeof firstOption === 'object' && firstOption.text !== undefined) ? 
+                        firstOption.text : 
+                        (typeof firstOption === 'string' ? firstOption : ''); // Handle string options too
                 }
+                console.log(`[handleSaveCards] Determined correctAnswer for card ${card.id}: ${finalCorrectAnswer}`);
             }
         }
+        // ----------------------------------------------------------
         
         return {
           ...card,
@@ -265,10 +275,11 @@ const FlashcardGeneratorBridge = ({
           examType: topic.examType || card.examType || "Course",
           createdAt: card.createdAt || now.toISOString(),
           updatedAt: now.toISOString(),
-          // Preserve Multiple Choice specific data
-          options: cardOptions,
-          savedOptions: savedOptions,
-          correctAnswer: card.correctAnswer || ''
+          // --- FIX: Use the preserved/derived values --- 
+          options: cardOptions, 
+          savedOptions: cardSavedOptions,
+          correctAnswer: finalCorrectAnswer 
+          // ---------------------------------------------
         };
       });
       
