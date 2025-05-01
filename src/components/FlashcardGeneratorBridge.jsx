@@ -201,6 +201,7 @@ const FlashcardGeneratorBridge = ({
       }
       
       console.log(`[FlashcardGeneratorBridge] Saving ${cardsInReview.length} cards`);
+      console.log("[FlashcardGeneratorBridge handleSaveCards] Logging cardsInReview state BEFORE mapping:", JSON.stringify(cardsInReview, null, 2));
       
       // Check if we have topic info and recordId
       if (!topic || !topic.subject || !(topic.topic || topic.name) || !recordId) {
@@ -215,6 +216,8 @@ const FlashcardGeneratorBridge = ({
       
       // Process cards with topic information and ID before saving
       const processedCards = cardsInReview.map(card => {
+        console.log(`[FlashcardGeneratorBridge handleSaveCards] Processing card inside map (ID: ${card?.id}):`, JSON.stringify(card, null, 2));
+
         const now = new Date();
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1); // Set to tomorrow
