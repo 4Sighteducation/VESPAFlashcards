@@ -1534,7 +1534,7 @@ body:has(.study-modal-overlay) {
   border-radius: 16px;
   width: 92%;
   max-width: 900px;
-  max-height: 90vh;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
@@ -1546,9 +1546,9 @@ body:has(.study-modal-overlay) {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Fix card display in study modal */
+/* Improve card display in study modal */
 .study-modal .card-study-area {
-  min-height: unset; /* Remove fixed height constraint */
+  min-height: unset;
   height: auto;
   width: 100%;
   max-width: 100%;
@@ -1563,8 +1563,8 @@ body:has(.study-modal-overlay) {
 .study-modal .study-card {
   width: 100%;
   height: auto;
-  min-height: 420px; /* Reduced from 550px */
-  max-height: unset; /* Remove max-height constraint */
+  min-height: 500px;
+  max-height: unset;
   perspective: 1000px;
   transform-style: preserve-3d;
   margin-bottom: 20px;
@@ -1574,6 +1574,7 @@ body:has(.study-modal-overlay) {
   position: relative;
   width: 100%;
   height: 100%;
+  min-height: 500px;
   transition: transform 0.6s;
   transform-style: preserve-3d;
   border-radius: 12px;
@@ -1585,7 +1586,7 @@ body:has(.study-modal-overlay) {
   position: absolute;
   width: 100%;
   height: 100%;
-  min-height: 420px; /* Match card min-height */
+  min-height: 500px;
   backface-visibility: hidden;
   display: flex;
   flex-direction: column;
@@ -1608,6 +1609,9 @@ body:has(.study-modal-overlay) {
   background-color: rgba(255, 255, 255, 0.25);
   border-radius: 8px;
   overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Improve mobile responsiveness */
@@ -1617,180 +1621,63 @@ body:has(.study-modal-overlay) {
     padding: 15px 12px;
     border-radius: 12px;
     margin: 0;
-    max-height: 95vh;
+    max-height: 90vh;
   }
   
   .study-modal .study-card {
-    min-height: 480px;
-    max-height: 70vh;
+    min-height: 400px;
   }
   
-  .study-modal-close {
-    top: 10px;
-    right: 10px;
-    width: 36px;
-    height: 36px;
-    font-size: 1.2rem;
-  }
-  
-  /* Ensure the flip response appears in a good position on mobile */
-  .flip-response {
-    position: fixed;
-    top: 50%;
-    left: 50%; 
-    transform: translate(-50%, -50%);
-    width: 85%;
-    max-width: 350px;
-    z-index: 1200;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  }
-  
-  .flip-response-overlay.active {
-    display: block !important;
-  }
-}
-
-/* Portrait mode specific fixes */
-@media (max-width: 480px) {
-  .study-modal .study-card {
-    min-height: 300px;
+  .study-card .card-inner {
+    min-height: 400px;
   }
   
   .study-card .card-front,
   .study-card .card-back {
+    min-height: 400px;
+    padding: 20px 12px;
+  }
+  
+  .study-card .card-content {
+    font-size: 1.2rem;
+    padding: 12px;
+    margin: 8px 0;
+  }
+  
+  .multiple-choice-option {
+    padding: 10px 12px;
+    margin: 5px 0;
+    font-size: 0.95rem;
+  }
+  
+  .card-content.multiple-choice-question {
+    max-height: 120px;
+    min-height: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .study-modal .study-card {
+    min-height: 350px;
+  }
+  
+  .study-card .card-inner {
+    min-height: 350px;
+  }
+  
+  .study-card .card-front,
+  .study-card .card-back {
+    min-height: 350px;
     padding: 15px 10px;
   }
   
   .study-card .card-content {
-    padding: 10px 8px;
     font-size: 1rem;
+    padding: 10px 8px;
   }
   
-  .multiple-choice-option {
-    padding: 8px 10px;
-    margin: 5px 0;
-  }
-  
-  .option-letter {
-    font-size: 0.9rem;
-    min-width: 15px;
-  }
-  
-  .option-text {
-    font-size: 0.9rem;
-  }
-}
-
-/* Multiple choice specific fixes */
-.study-card .card-front.has-multiple-choice {
-  justify-content: flex-start;
-  padding-top: 20px;
-  overflow-y: auto;
-}
-
-.multiple-choice-options {
-  margin-top: 10px;
-  width: 95%;
-  max-height: unset; /* Remove fixed height constraint */
-  overflow-y: visible;
-  padding-bottom: 15px;
-}
-
-.multiple-choice-list {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-@media (max-width: 768px) {
   .multiple-choice-options {
-    width: 100%;
-  }
-}
-
-/* Animations for modals */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Remove absolute positioning for feedback elements */
-.study-modal .flip-response,
-.study-modal .answer-feedback {
-  position: static;
-  margin: 20px auto;
-  width: 80%;
-  max-width: 500px;
-}
-
-/* When in modal, adjust the study card area */
-.study-modal .card-study-area {
-  min-height: 600px;
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.study-modal .study-card {
-  height: auto;
-  min-height: 550px; /* Increased height */
-  max-height: 60vh;
-}
-
-.study-modal .card-navigation {
-  margin-top: 30px;
-  margin-bottom: 10px;
-}
-
-/* Mobile responsiveness for study modal */
-@media (max-width: 768px) {
-  .study-modal-overlay {
-    padding: 10px;
-    align-items: center;
-  }
-  
-  .study-modal {
-    width: 95%;
-    padding: 15px 12px;
-    border-radius: 12px;
-    margin: 0;
-    max-height: 95vh;
-  }
-  
-  .study-modal-close {
-    top: 10px;
-    right: 10px;
-    width: 36px;
-    height: 36px;
-    font-size: 1.2rem;
-  }
-  
-  /* Ensure the flip response appears in a good position on mobile */
-  .flip-response {
-    position: fixed;
-    top: 50%;
-    left: 50%; 
-    transform: translate(-50%, -50%);
-    width: 85%;
-    max-width: 350px;
-    z-index: 1200;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  }
-  
-  .flip-response-overlay.active {
-    display: block !important;
+    padding: 5px 0 10px 0;
   }
 }
 

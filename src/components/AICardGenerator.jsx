@@ -593,7 +593,7 @@ useEffect(() => {
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
         lastReviewed: new Date().toISOString(), // Initialize review dates
-        nextReviewDate: new Date().toISOString(),
+        nextReviewDate: new Date().toISOString(), // Set to TODAY for immediate review
         boxNum: card.boxNum || 1, // Ensure boxNum exists, starting in box 1 for spaced repetition
         // Ensure options/savedOptions are handled correctly for MCQs
         ...(card.questionType === 'multiple_choice' && {
@@ -728,8 +728,8 @@ useEffect(() => {
           textColor: getContrastColor(cardColor), // Calculate appropriate text color
           created: new Date().toISOString(),
           updated: new Date().toISOString(),
-          lastReviewed: new Date().toISOString(), 
-          nextReviewDate: new Date().toISOString(),
+          lastReviewed: new Date().toISOString(), // Initialize review dates
+          nextReviewDate: new Date().toISOString(), // Set to TODAY for immediate review
           boxNum: card.boxNum || 1,
           ...(card.questionType === 'multiple_choice' && {
             options: card.options || card.savedOptions || [],

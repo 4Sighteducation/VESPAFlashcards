@@ -264,7 +264,7 @@ const FlashcardGeneratorBridge = ({
           // Fields with updated/derived values
           boxNum: 1, 
           lastReviewed: now.toISOString(),
-          nextReviewDate: tomorrow.toISOString(),
+          nextReviewDate: now.toISOString(), // Set to TODAY instead of tomorrow for immediate review
           createdAt: card.createdAt || now.toISOString(),
           updatedAt: now.toISOString(),
           // --- USE DIRECTLY FROM INPUT card --- 

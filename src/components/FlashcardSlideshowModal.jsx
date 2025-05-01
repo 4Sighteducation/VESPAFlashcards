@@ -68,8 +68,8 @@ const FlashcardSlideshowModal = ({
         case 4: // Every week
           nextReviewDate.setDate(now.getDate() + 7);
           break;
-        case 5: // "Retired" - 1 month
-          nextReviewDate.setMonth(now.getMonth() + 1);
+        case 5: // "Retired" - 14 days (2 weeks)
+          nextReviewDate.setDate(now.getDate() + 14); // Using 14 days for Box 5 to match SpacedRepetition
           break;
         default:
           nextReviewDate.setDate(now.getDate() + 1);
