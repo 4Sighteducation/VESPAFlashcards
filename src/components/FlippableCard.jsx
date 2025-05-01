@@ -25,6 +25,18 @@ const DetailedAnswerModal = ({ isOpen, onClose, title, content }) => {
 };
 // ------------------------------
 
+// --- Feedback Popup --- (Define before FlippableCard)
+const FeedbackPopup = ({ message, isCorrect, isVisible }) => {
+  if (!isVisible) return null;
+
+  return (
+    <div className={`feedback-popup ${isCorrect ? 'correct' : 'incorrect'} ${isVisible ? 'visible' : ''}`}>
+      {message}
+    </div>
+  );
+};
+// ------------------------
+
 const FlippableCard = ({ 
   card, 
   isFlipped, 
@@ -41,6 +53,8 @@ const FlippableCard = ({
   const [selectedOption, setSelectedOption] = useState(null);
   const [showAnswer, setShowAnswer] = useState(false);
   const [showDetailedAnswerModal, setShowDetailedAnswerModal] = useState(false); // State for modal
+  const [feedback, setFeedback] = useState({ isVisible: false, message: '', isCorrect: null });
+  const feedbackTimeoutRef = useRef(null);
   
   // Determine if we're using internal or external flip state
   const flipped = isFlipped !== undefined ? isFlipped : internalFlipped;
@@ -60,6 +74,7 @@ const FlippableCard = ({
     }
     // Close detailed answer modal when flipping
     setShowDetailedAnswerModal(false); 
+    setFeedback({ isVisible: false, message: '', isCorrect: null }); // Hide feedback on flip
   };
   
   // Reset answer state when card changes
@@ -67,6 +82,12 @@ const FlippableCard = ({
     setSelectedOption(null);
     setShowAnswer(false);
     setShowDetailedAnswerModal(false); // Reset modal state too
+    setFeedback({ isVisible: false, message: '', isCorrect: null }); // Reset feedback on card change
+    // Clear any pending feedback timeout
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
   }, [card]); // Depend on the whole card object in case delete removed it
   
   // Handle option selection for multiple choice
@@ -76,16 +97,33 @@ const FlippableCard = ({
     if (!showAnswer) {
       setSelectedOption(index);
       
-      // Show the answer after a slight delay
+      // --- Show Immediate Feedback --- 
+      const isCorrect = index === getCorrectAnswerIndex();
+      setFeedback({ 
+        isVisible: true, 
+        message: isCorrect ? 'Correct!' : `Incorrect! Answer: ${String.fromCharCode(97 + getCorrectAnswerIndex())})`,
+        isCorrect: isCorrect 
+      });
+
+      // Set timeout to hide feedback after a delay
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current);
+      }
+      feedbackTimeoutRef.current = setTimeout(() => {
+        setFeedback({ isVisible: false, message: '', isCorrect: null });
+        feedbackTimeoutRef.current = null;
+      }, 2500); // Hide after 2.5 seconds
+      // ---------------------------------
+
+      // Show the visual answer indication after a short delay
       setTimeout(() => {
-        setShowAnswer(true);
+        setShowAnswer(true); // This will apply .correct/.incorrect classes
         
-        // Call the onAnswer callback if provided
+        // Call the onAnswer callback if provided (e.g., for Leitner update)
         if (onAnswer && card?.options) {
-          const isCorrect = index === getCorrectAnswerIndex();
           onAnswer(isCorrect, index);
         }
-      }, 300);
+      }, 300); // Slightly delayed visual confirmation
     }
   };
   
@@ -294,24 +332,19 @@ const FlippableCard = ({
           </div>
         )}
 
-        {/* --- Answer Feedback Area (Only if MC) --- */}
-        {isMultipleChoice && showAnswer && (
-          <div className="answer-feedback">
-            {selectedOption === correctAnswerIndex ? (
-              <div className="correct-feedback-text">Correct!</div>
-            ) : (
-              <div className="incorrect-feedback-text">
-                Incorrect. The correct answer is {String.fromCharCode(97 + correctAnswerIndex)}.
-              </div>
-            )}
-          </div>
-        )}
-        
         {card.boxNum !== undefined && (
           <div className="box-indicator">
             Box {card.boxNum}
           </div>
         )}
+
+        {/* --- Add New Feedback Popup Component Here --- */}
+        <FeedbackPopup 
+          message={feedback.message}
+          isCorrect={feedback.isCorrect}
+          isVisible={feedback.isVisible}
+        />
+        {/* --------------------------------------------- */}
       </div>
     );
   };

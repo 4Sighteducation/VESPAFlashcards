@@ -759,15 +759,26 @@ const FlashcardList = ({
         // Listen for the save result message from the parent
         const handleSaveResult = (event) => {
           if (event.data && event.data.type === 'SAVE_RESULT') {
-            clearTimeout(timeoutId);
-            window.removeEventListener('message', handleSaveResult);
-            setIsSaving(false);
+            clearTimeout(timeoutId); // Clear the timeout
+            window.removeEventListener('message', handleSaveResult); // Clean up listener
+            setIsSaving(false); // Hide saving indicator
             
             if (event.data.success) {
-              console.log("[FlashcardList] Save operation successful");
+              console.log("[FlashcardList] Save operation successful. Requesting data refresh.");
+              // --- Request data refresh AFTER successful save --- 
+              if (propagateSaveToBridge) {
+                  console.log(`[FlashcardList] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
+                  propagateSaveToBridge({
+                      type: 'REQUEST_UPDATED_DATA',
+                      recordId: recordId // Ensure recordId is included here
+                  });
+              } else {
+                  console.warn("[FlashcardList] Cannot request updated data: propagateSaveToBridge is missing.");
+              }
+              // -------------------------------------------------
             } else {
-              console.error("[FlashcardList] Save operation failed:", event.data.message);
-              setSaveError(event.data.message || "Failed to save cards");
+              console.error("[FlashcardList] Save operation failed:", event.data.error);
+              setSaveError(event.data.error || "Failed to save cards"); // Use error from message
             }
           }
         };

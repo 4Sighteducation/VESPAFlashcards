@@ -1892,3 +1892,49 @@ html {
 .save-error-message button:hover {
   background-color: #5a171d;
 }
+
+/* --- Feedback Popup Styling --- */
+.feedback-popup {
+  position: absolute;
+  bottom: 50px; /* Position above the box indicator */
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-radius: 15px;
+  color: white;
+  font-size: 0.9em;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 10; /* Ensure it's above other card content */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+}
+
+.feedback-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -10px); /* Move up slightly when visible */
+}
+
+.feedback-popup.correct {
+  background-color: #28a745; /* Green for correct */
+}
+
+.feedback-popup.incorrect {
+  background-color: #dc3545; /* Red for incorrect */
+  max-width: 80%; /* Allow more width for incorrect message */
+  white-space: nowrap;
+}
+/* ----------------------------- */
+
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+  /* ... existing media queries ... */
+
+  .feedback-popup {
+    bottom: 40px; /* Adjust position for smaller screens */
+    font-size: 0.8em;
+    padding: 5px 10px;
+  }
+}

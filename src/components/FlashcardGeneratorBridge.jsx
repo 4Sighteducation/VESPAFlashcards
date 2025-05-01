@@ -78,7 +78,7 @@ const FlashcardGeneratorBridge = ({
       console.log("[FlashcardGeneratorBridge] Calling AI service with:", requestData);
       const results = await AICardGeneratorService.generateCards(requestData);
       
-      console.log("[FlashcardGeneratorBridge] AI service response:", results);
+      console.log("[FlashcardGeneratorBridge] Raw AI service response:", JSON.stringify(results, null, 2)); // Log raw response
       
       if (!results) {
         throw new Error("Empty response from AI service");
@@ -167,7 +167,7 @@ const FlashcardGeneratorBridge = ({
       });
       // --- END ENHANCED CARD PROCESSING ---
       
-      console.log("[FlashcardGeneratorBridge] Cards generated and processed:", processedCards);
+      console.log("[FlashcardGeneratorBridge] Cards generated and processed (check options):", JSON.stringify(processedCards, null, 2)); // Log processed cards
       
       // Store the generated cards and move to review step
       setGeneratedCards(processedCards);
