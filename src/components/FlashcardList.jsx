@@ -380,25 +380,82 @@ const FlashcardList = ({
   // --- START: Function to toggle topic menus ---
   const toggleTopicMenu = useCallback((topicKey, e) => {
     e.stopPropagation(); // Prevent triggering topic click (slideshow)
-    setOpenTopicMenus(prev => ({
-      // Close all other menus
-      // ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}),
-      // Toggle the current one
-      [topicKey]: !prev[topicKey]
-    }));
-  }, []);
+    const buttonElement = e.currentTarget;
+    // Find the closest ancestor '.topic-container' from the button itself
+    // The ref topicRefs.current[topicKey] might point to the topic-container OR its header.
+    // Using closest from the event target is more reliable for finding the *specific* container
+    // of the clicked menu's topic.
+    const parentContainer = buttonElement.closest('.topic-container');
+
+    setOpenTopicMenus(prev => {
+      const isCurrentlyOpen = !!prev[topicKey];
+      const isOpeningNow = !isCurrentlyOpen;
+
+      // Reset overflow for all OTHER topic containers that might have been opened
+      Object.keys(prev).forEach(key => {
+        if (key !== topicKey && prev[key]) {
+          // Attempt to find the container. This assumes topicRefs.current[key] is valid and inside a .topic-container
+          // This might be brittle if refs are not set up perfectly for every topic header or its children.
+          // A more robust approach might involve querying all .topic-container elements if performance allows,
+          // or ensuring refs are consistently on an element from which .closest('.topic-container') works.
+          // For now, we'll rely on current refs and structure.
+          const currentlyOpenRef = topicRefs.current[key];
+          if (currentlyOpenRef) {
+            const otherParentContainer = currentlyOpenRef.closest('.topic-container');
+            if (otherParentContainer) {
+              otherParentContainer.style.overflow = ''; // Revert to CSS default
+            }
+          }
+        }
+      });
+
+      if (parentContainer) {
+        if (isOpeningNow) {
+          parentContainer.style.overflow = 'visible';
+        } else {
+          // If closing the current one, ensure its overflow is reset
+          parentContainer.style.overflow = ''; 
+        }
+      }
+      // Ensure only one menu is open at a time by returning a new state object
+      return isOpeningNow ? { [topicKey]: true } : {};
+    });
+  }, [topicRefs]); // topicRefs is a dependency
   // --- END: Function to toggle topic menus ---
 
   // --- START: Function to toggle subject menus ---
   const toggleSubjectMenu = useCallback((subjectKey, e) => {
     e.stopPropagation(); // Prevent triggering subject toggle
-    setOpenSubjectMenus(prev => ({
-      // Close other menus (optional, uncomment if needed)
-      // ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}),
-      // Toggle the current one
-      [subjectKey]: !prev[subjectKey]
-    }));
-  }, []);
+    const buttonElement = e.currentTarget;
+    const parentContainer = buttonElement.closest('.subject-container');
+
+    setOpenSubjectMenus(prev => {
+      const isCurrentlyOpen = !!prev[subjectKey];
+      const isOpeningNow = !isCurrentlyOpen;
+
+      // Reset overflow for all OTHER subject containers
+      Object.keys(prev).forEach(key => {
+        if (key !== subjectKey && prev[key]) {
+          const currentlyOpenRef = subjectRefs.current[key];
+          if (currentlyOpenRef) {
+            const otherParentContainer = currentlyOpenRef.closest('.subject-container');
+            if (otherParentContainer) {
+              otherParentContainer.style.overflow = '';
+            }
+          }
+        }
+      });
+
+      if (parentContainer) {
+        if (isOpeningNow) {
+          parentContainer.style.overflow = 'visible';
+        } else {
+          parentContainer.style.overflow = '';
+        }
+      }
+      return isOpeningNow ? { [subjectKey]: true } : {};
+    });
+  }, [subjectRefs]); // subjectRefs is a dependency
   // --- END: Function to toggle subject menus ---
 
   // 4. useCallback Hooks (Define functions needed by useMemo/useEffect first)
