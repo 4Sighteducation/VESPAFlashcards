@@ -381,72 +381,66 @@ const FlashcardList = ({
   const toggleTopicMenu = useCallback((topicKey, e) => {
     e.stopPropagation(); // Prevent triggering topic click (slideshow)
     const buttonElement = e.currentTarget;
-    // Find the closest ancestor '.topic-container' from the button itself
-    // The ref topicRefs.current[topicKey] might point to the topic-container OR its header.
-    // Using closest from the event target is more reliable for finding the *specific* container
-    // of the clicked menu's topic.
-    const parentContainer = buttonElement.closest('.topic-container');
+    const topicParentContainer = buttonElement.closest('.topic-container');
+    // Ensure we can get the subject container, even if topicParentContainer is null (shouldn't happen ideally)
+    const subjectGrandparentContainer = topicParentContainer ? topicParentContainer.closest('.subject-container') : buttonElement.closest('.subject-container');
 
     setOpenTopicMenus(prev => {
       const isCurrentlyOpen = !!prev[topicKey];
       const isOpeningNow = !isCurrentlyOpen;
 
-      // Reset overflow for all OTHER topic containers that might have been opened
+      // If any other topic menu was open, reset overflow for its containers
       Object.keys(prev).forEach(key => {
-        if (key !== topicKey && prev[key]) {
-          // Attempt to find the container. This assumes topicRefs.current[key] is valid and inside a .topic-container
-          // This might be brittle if refs are not set up perfectly for every topic header or its children.
-          // A more robust approach might involve querying all .topic-container elements if performance allows,
-          // or ensuring refs are consistently on an element from which .closest('.topic-container') works.
-          // For now, we'll rely on current refs and structure.
-          const currentlyOpenRef = topicRefs.current[key];
-          if (currentlyOpenRef) {
-            const otherParentContainer = currentlyOpenRef.closest('.topic-container');
-            if (otherParentContainer) {
-              otherParentContainer.style.overflow = ''; // Revert to CSS default
+        if (prev[key] && key !== topicKey) { // If it was open and is not the one we are currently toggling
+          const previouslyAttachedRef = topicRefs.current[key]; // Ref is on the topic container itself
+          if (previouslyAttachedRef) {
+            // previouslyAttachedRef is the topic-container
+            previouslyAttachedRef.style.overflow = '';
+            const prevSubjectContainer = previouslyAttachedRef.closest('.subject-container');
+            if (prevSubjectContainer) {
+              prevSubjectContainer.style.overflow = '';
             }
           }
         }
       });
 
-      if (parentContainer) {
-        if (isOpeningNow) {
-          parentContainer.style.overflow = 'visible';
-        } else {
-          // If closing the current one, ensure its overflow is reset
-          parentContainer.style.overflow = ''; 
-        }
+      // Handle current menu's containers
+      if (isOpeningNow) {
+        if (topicParentContainer) topicParentContainer.style.overflow = 'visible';
+        if (subjectGrandparentContainer) subjectGrandparentContainer.style.overflow = 'visible';
+      } else {
+        // Closing the currently active menu (or it's already closed and we clicked again)
+        if (topicParentContainer) topicParentContainer.style.overflow = '';
+        if (subjectGrandparentContainer) subjectGrandparentContainer.style.overflow = '';
       }
-      // Ensure only one menu is open at a time by returning a new state object
-      return isOpeningNow ? { [topicKey]: true } : {};
+
+      return isOpeningNow ? { [topicKey]: true } : {}; // Only one active topic menu
     });
-  }, [topicRefs]); // topicRefs is a dependency
+  }, [topicRefs]); 
   // --- END: Function to toggle topic menus ---
 
   // --- START: Function to toggle subject menus ---
   const toggleSubjectMenu = useCallback((subjectKey, e) => {
     e.stopPropagation(); // Prevent triggering subject toggle
     const buttonElement = e.currentTarget;
-    const parentContainer = buttonElement.closest('.subject-container');
+    const parentContainer = buttonElement.closest('.subject-container'); // This is the subject container itself
 
     setOpenSubjectMenus(prev => {
       const isCurrentlyOpen = !!prev[subjectKey];
       const isOpeningNow = !isCurrentlyOpen;
 
-      // Reset overflow for all OTHER subject containers
+      // If any other subject menu was open, reset its overflow
       Object.keys(prev).forEach(key => {
-        if (key !== subjectKey && prev[key]) {
-          const currentlyOpenRef = subjectRefs.current[key];
-          if (currentlyOpenRef) {
-            const otherParentContainer = currentlyOpenRef.closest('.subject-container');
-            if (otherParentContainer) {
-              otherParentContainer.style.overflow = '';
-            }
+        if (prev[key] && key !== subjectKey) {
+          const previouslyAttachedRef = subjectRefs.current[key]; // Ref is on the subject container
+          if (previouslyAttachedRef) {
+            previouslyAttachedRef.style.overflow = '';
           }
         }
       });
-
-      if (parentContainer) {
+      
+      // Handle current subject menu's container
+      if (parentContainer) { // parentContainer is the one whose menu is being toggled
         if (isOpeningNow) {
           parentContainer.style.overflow = 'visible';
         } else {
@@ -455,7 +449,7 @@ const FlashcardList = ({
       }
       return isOpeningNow ? { [subjectKey]: true } : {};
     });
-  }, [subjectRefs]); // subjectRefs is a dependency
+  }, [subjectRefs]); 
   // --- END: Function to toggle subject menus ---
 
   // 4. useCallback Hooks (Define functions needed by useMemo/useEffect first)
