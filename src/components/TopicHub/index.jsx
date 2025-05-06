@@ -1239,7 +1239,7 @@ const TopicHub = ({
               <button 
                 className="notice-info-button help-info-button" 
                 onClick={() => setShowHelpTextDetails(!showHelpTextDetails)}
-                title="Show details about how topics are generated"
+                title="How we generate topics"
               >
                 <FaInfo />
               </button>
@@ -1247,7 +1247,8 @@ const TopicHub = ({
                  <div className="notice-details help-details-popover">
                    <h4 className="notice-details-heading">How we generate topics</h4> 
                    <p>
-                     Click the button above to generate a comprehensive list of topics for your subject.
+                     Click the button above to generate a comprehensive list of topics for your subject. 
+                     We use AI based on the latest curriculum requirements. 
                      You'll be able to review and edit the topics afterward.
                    </p>
                    <button className="notice-details-close" onClick={() => setShowHelpTextDetails(false)}>

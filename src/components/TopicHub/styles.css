@@ -930,6 +930,26 @@
   .main-topic-actions {
     justify-content: flex-end;
     width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .main-topic-actions .edit-button,
+  .main-topic-actions .delete-button {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+  }
+  .main-topic-actions .edit-button svg,
+  .main-topic-actions .delete-button svg {
+    font-size: 16px;
+  }
+
+  .main-topic-toggle {
+    font-size: 1.1em;
+    padding: 5px;
+    color: #666;
   }
 
   .main-topic-edit-form {
