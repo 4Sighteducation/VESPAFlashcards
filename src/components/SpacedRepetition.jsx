@@ -25,10 +25,12 @@ const SpacedRepetition = ({
   const [lastEmptyMessageIndex, setLastEmptyMessageIndex] = useState(-1);
   
   // State for card review
-  const [selectedOption, setSelectedOption] = useState(null);
   const [showReviewDateMessage, setShowReviewDateMessage] = useState(false);
   const [nextReviewDate, setNextReviewDate] = useState(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  
+  // New state for feedback message after card movement
+  const [feedbackMessage, setFeedbackMessage] = useState("");
   
   // New state for grouped cards by subject and topic
   const [groupedBoxCards, setGroupedBoxCards] = useState({});
@@ -40,10 +42,6 @@ const SpacedRepetition = ({
   // State for study modal
   const [showStudyModal, setShowStudyModal] = useState(false);
 
-  // Add these new state variables
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-  const [hasSelectedOnce, setHasSelectedOnce] = useState(false);
-  
   // Add a new state to manage flip response overlay
   const [showFlipResponseOverlay, setShowFlipResponseOverlay] = useState(false);
   
@@ -249,80 +247,51 @@ const SpacedRepetition = ({
   
   // Handle card flip action
   const handleCardFlip = () => {
-    // If this is a multiple choice card and we have a selected option but haven't shown confirmation yet
-    if (
-      currentCards[currentIndex]?.questionType === 'multiple_choice' && 
-      selectedOption && 
-      !hasSelectedOnce && 
-      !showConfirmationModal && 
-      !isFlipped
-    ) {
-      // Show confirmation modal instead of flipping immediately
-      setShowConfirmationModal(true);
-      return;
-    }
-    
-    // If we have already selected once or this isn't multiple choice, flip the card
+    // This function is primarily for non-MCQ cards, or for MCQs if user explicitly flips after answering.
     if (!isFlipped) {
       setIsFlipped(true);
+      // For non-MCQ, flipping reveals the answer. Show response buttons after a brief moment.
+      if (currentCard?.questionType !== 'multiple_choice') {
+        setTimeout(() => {
+          setShowFlipResponse(true);
+          setShowFlipResponseOverlay(true);
+        }, 300); // Delay to allow flip animation
+      }
     } else {
-      // Only show flip response if it's not a multiple choice card
-      // For multiple choice, we'll show it automatically based on their answer
-      if (currentCards[currentIndex]?.questionType !== 'multiple_choice') {
+      // If card is already flipped (showing answer) and it's not an MCQ,
+      // this means they might be re-clicking to hide the correct/incorrect buttons.
+      // However, the primary action here is to show the response buttons if not already shown.
+      if (currentCard?.questionType !== 'multiple_choice' && !showFlipResponse) {
         setShowFlipResponse(true);
         setShowFlipResponseOverlay(true);
       }
+      // For MCQs, the FlippableCard handles its own feedback display upon option selection.
+      // The `onAnswer` prop in FlippableCard will trigger handleCorrect/Incorrect.
     }
   };
 
-  // Handle multiple choice selection
-  const handleOptionSelect = (option, e) => {
-    e.stopPropagation();
-    
-    if (isFlipped) return; // Don't allow selecting after flip
-    
-    setSelectedOption(option);
-    
-    // If this is the first selection, show confirmation
-    if (!hasSelectedOnce) {
-      setShowConfirmationModal(true);
-    } else {
-      // If they've already selected once before, just flip the card
-      setIsFlipped(true);
-      
-      
-      setTimeout(() => {
-        setShowFlipResponse(true);
-        setShowFlipResponseOverlay(true);
-      }, 500);
-    }
+  // Handle multiple choice selection (via FlippableCard's onAnswer prop)
+  // This function is now called by FlippableCard's onAnswer
+  const handleMcqAnswer = (isCorrect, selectedOptionIndex) => {
+    if (isFlipped) return; // Should not happen if onAnswer is called before manual flip
+
+    // Directly proceed to handleCorrectAnswer or handleIncorrectAnswer
+    // FlippableCard has already provided feedback to the user.
+    setIsFlipped(true); // Ensure card is visually flipped to show "back" if not already.
+
+    setTimeout(() => {
+      if (isCorrect) {
+        handleCorrectAnswer();
+      } else {
+        handleIncorrectAnswer();
+      }
+      // No need to setShowFlipResponse(true) for MCQs here, as box movement is immediate.
+      // FlippableCard handles its own internal feedback display (correct/incorrect option styling).
+    }, 300); // Small delay for user to see FlippableCard's feedback
   };
-  
-  // Handle confirmation response
-  const handleConfirmationResponse = (confirmed) => {
-    setShowConfirmationModal(false);
-    
-    if (confirmed) {
-      // They confirmed, so flip the card
-      setIsFlipped(true);
-      
-      
-      setTimeout(() => {
-        setShowFlipResponse(true);
-        setShowFlipResponseOverlay(true);
-      }, 500);
-    } else {
-      // They canceled, so allow them to select again
-      setHasSelectedOnce(true);
-      setSelectedOption(null);
-    }
-  };
-  
+
   // Reset selection state when moving to a new card
   const resetSelectionState = () => {
-    setSelectedOption(null);
-    setHasSelectedOnce(false);
-    setShowConfirmationModal(false);
     setIsFlipped(false);
     setShowFlipResponse(false);
     setShowFlipResponseOverlay(false);
@@ -366,107 +335,99 @@ const SpacedRepetition = ({
 
   // Add handler functions for correct/incorrect answers (these were missing)
   const handleCorrectAnswer = () => {
-    // First check if we have a valid card
     if (!isValidCard || !currentCard) {
       console.error("Cannot move card: No valid card found at index", currentIndex);
       return;
     }
-
     try {
-      // Hide response overlay
       setShowFlipResponse(false);
       setShowFlipResponseOverlay(false);
       
-      // Move the card to the next box (up to box 5)
-      const nextBox = Math.min(currentBox + 1, 5);
-      const cardToMove = currentCard;
+      const nextBoxNumber = Math.min(currentBox + 1, 5);
+      const cardToMove = { ...currentCard }; // Clone to avoid issues with stale closures
       
-      // Calculate next review date based on the target box
-      const now = new Date();
-      let daysToAdd = 1; // Default for box 1
+      onMoveCard(cardToMove.id, nextBoxNumber); // This will update App.js state including nextReviewDate
       
-      if (nextBox === 2) daysToAdd = 2;
-      else if (nextBox === 3) daysToAdd = 3;
-      else if (nextBox === 4) daysToAdd = 7;
-      else if (nextBox === 5) daysToAdd = 14;
+      setFeedbackMessage(`Card moved to Box ${nextBoxNumber}.`);
+      setShowReviewDateMessage(true); // Re-using this to show feedback
+
+      // Remove card from current session and advance
+      const updatedCurrentCards = currentCards.filter(card => card.id !== cardToMove.id);
       
-      const nextReviewDate = new Date(now);
-      nextReviewDate.setDate(now.getDate() + daysToAdd);
-      
-      
-      // Update card in the deck
-      onMoveCard(cardToMove.id, nextBox);
-      
-      // Update the current cards array to mark this card as reviewed
-      setCurrentCards(prev => 
-        prev.map(card => 
-          card.id === cardToMove.id 
-            ? { ...card, isReviewable: false, nextReviewDate: nextReviewDate.toISOString() } 
-            : card
-        )
-      );
-      
-      // Show a confirmation message
-      setShowReviewDateMessage(true);
-      setNextReviewDate(nextReviewDate);
-      
-      // Move to the next card after a delay
       setTimeout(() => {
         setShowReviewDateMessage(false);
-        nextCard();
+        setFeedbackMessage("");
+        if (updatedCurrentCards.length === 0) {
+          setStudyCompleted(true);
+          setCurrentCards([]); // Clear out cards
+        } else if (currentIndex >= updatedCurrentCards.length) {
+          // If last card was removed, adjust index or complete
+          setStudyCompleted(true);
+          setCurrentCards([]); // Clear out cards
+        } else {
+          // Still cards left, current index is valid for the new array
+          setCurrentCards(updatedCurrentCards);
+          // No need to change currentIndex if it's still valid
+          // If currentIndex was for the removed card and it wasn't the last one,
+          // the next card effectively takes its place at the same index.
+        }
+        resetSelectionState(); // Reset flip state for the next card (or completion screen)
       }, 1500);
     } catch (error) {
       console.error("Error handling correct answer:", error);
-      // Still try to move to next card to recover
-      setTimeout(nextCard, 1500);
+      setFeedbackMessage("Error moving card. Please try again.");
+      setShowReviewDateMessage(true);
+      setTimeout(() => {
+          setShowReviewDateMessage(false);
+          setFeedbackMessage("");
+          nextCard(); // Try to advance anyway
+      }, 1500);
     }
   };
 
   const handleIncorrectAnswer = () => {
-    // First check if we have a valid card
     if (!isValidCard || !currentCard) {
       console.error("Cannot move card: No valid card found at index", currentIndex);
       return;
     }
-
     try {
-      // Hide response overlay
       setShowFlipResponse(false);
       setShowFlipResponseOverlay(false);
       
-      // Move the card back to box 1
-      const cardToMove = currentCard;
+      const targetBoxNumber = 1;
+      const cardToMove = { ...currentCard }; // Clone
+
+      onMoveCard(cardToMove.id, targetBoxNumber);
       
-      // Calculate next review date (same day for box 1)
-      const now = new Date();
-      const nextReviewDate = new Date(now);
-      
-      
-      // Update card in the deck
-      onMoveCard(cardToMove.id, 1);
-      
-      // Update the current cards array to mark this card as reviewed
-      setCurrentCards(prev => 
-        prev.map(card => 
-          card.id === cardToMove.id 
-            ? { ...card, isReviewable: false, nextReviewDate: nextReviewDate.toISOString() } 
-            : card
-        )
-      );
-      
-      // Show a confirmation message
-      setShowReviewDateMessage(true);
-      setNextReviewDate(nextReviewDate);
-      
-      // Move to the next card after a delay
+      setFeedbackMessage(`Card moved to Box ${targetBoxNumber}.`);
+      setShowReviewDateMessage(true); // Re-using this to show feedback
+
+      // Remove card from current session and advance
+      const updatedCurrentCards = currentCards.filter(card => card.id !== cardToMove.id);
+
       setTimeout(() => {
         setShowReviewDateMessage(false);
-        nextCard();
+        setFeedbackMessage("");
+        if (updatedCurrentCards.length === 0) {
+          setStudyCompleted(true);
+          setCurrentCards([]);
+        } else if (currentIndex >= updatedCurrentCards.length) {
+          setStudyCompleted(true);
+          setCurrentCards([]);
+        } else {
+          setCurrentCards(updatedCurrentCards);
+        }
+        resetSelectionState();
       }, 1500);
     } catch (error) {
       console.error("Error handling incorrect answer:", error);
-      // Still try to move to next card to recover
-      setTimeout(nextCard, 1500);
+      setFeedbackMessage("Error moving card. Please try again.");
+      setShowReviewDateMessage(true);
+      setTimeout(() => {
+          setShowReviewDateMessage(false);
+          setFeedbackMessage("");
+          nextCard();
+      }, 1500);
     }
   };
 
@@ -746,21 +707,8 @@ const SpacedRepetition = ({
             card={currentCard}
             isFlipped={isFlipped}
             onFlip={handleCardFlip}
-            onAnswer={(isCorrect, selectedOptionIndex) => {
-              if (currentCard.questionType === 'multiple_choice') {
-                if (isCorrect) {
-                  handleCorrectAnswer();
-                } else {
-                  handleIncorrectAnswer();
-                }
-              } else {
-                // For non-MC cards, FlippableCard doesn't call onAnswer in the same way.
-                // The correct/incorrect buttons are handled by SpacedRepetition's own logic.
-                // This part might need adjustment based on how FlippableCard's onAnswer is designed
-                // for non-MC cards or if we rely on the existing correct/incorrect buttons.
-              }
-            }}
-            isInModal={true} // Assuming it's in a modal-like view
+            onAnswer={currentCard.questionType === 'multiple_choice' ? handleMcqAnswer : undefined}
+            isInModal={true}
           />
         )}
 
@@ -786,32 +734,10 @@ const SpacedRepetition = ({
           </button>
         </div>
         
-        {showFlipResponse && isValidCard && (
+        {showFlipResponse && currentCard?.questionType !== 'multiple_choice' && isValidCard && (
           <>
             <div className={`flip-response-overlay ${showFlipResponseOverlay ? 'active' : ''}`}></div>
             <div className="flip-response">
-              {currentCard.questionType === 'multiple_choice' ? (
-                // For multiple choice questions, check if they got it right automatically
-                <div>
-                  <p>
-                    {selectedOption === currentCard.correctAnswer 
-                      ? "You selected the correct answer!" 
-                      : "Your answer was incorrect."}
-                  </p>
-                  <div className="response-buttons">
-                    {selectedOption === currentCard.correctAnswer ? (
-                      <button className="correct-button" onClick={handleCorrectAnswer}>
-                        Move to Box {Math.min(currentBox + 1, 5)}
-                      </button>
-                    ) : (
-                      <button className="incorrect-button" onClick={handleIncorrectAnswer}>
-                        Move to Box 1
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                // For regular cards, let them self-assess
                 <div>
                   <p>How did you do? Mark your card as correct or incorrect:</p>
                   <div className="response-buttons">
@@ -823,7 +749,6 @@ const SpacedRepetition = ({
                     </button>
                   </div>
                 </div>
-              )}
             </div>
           </>
         )}
@@ -865,19 +790,22 @@ const SpacedRepetition = ({
         </div>
       )}
       
-      {/* Review date message */}
+      {/* Review date message / Feedback Message */}
       {showReviewDateMessage && (
-        <div className="review-date-message">
-          <h3>Card Locked Until Next Review Date</h3>
+        <div className="review-date-message"> {/* Can rename class if styling differs */} 
+          <h3>{feedbackMessage.includes("Error") ? "Error" : "Update"}</h3>
           <p>
-            This card has already been reviewed and is currently locked. It will be available for review on{" "}
-            <strong>{nextReviewDate ? nextReviewDate.toLocaleDateString() : "a future date"}</strong>.
+            {feedbackMessage}
           </p>
-          <p>
-            This spacing helps reinforce your memory according to proven spaced repetition techniques.
-          </p>
+          {/* Only show next review date if it's part of the message (e.g. locked card) */}
+          {nextReviewDate && !feedbackMessage.includes("Box") && (
+             <p>
+               This card has already been reviewed and is currently locked. It will be available for review on{" "}
+               <strong>{nextReviewDate ? new Date(nextReviewDate).toLocaleDateString() : "a future date"}</strong>.
+             </p>
+          )}
           <div className="review-date-actions">
-            <button onClick={() => setShowReviewDateMessage(false)}>Got it</button>
+            <button onClick={() => { setShowReviewDateMessage(false); setFeedbackMessage(""); }}>Got it</button>
           </div>
         </div>
       )}
@@ -896,24 +824,6 @@ const SpacedRepetition = ({
           </div>
         </div>,
         document.body
-      )}
-
-      {/* Confirmation modal */}
-      {showConfirmationModal && (
-        <div className="modal-overlay">
-          <div className="confirmation-modal">
-            <h3>Confirm Your Answer</h3>
-            <p>Are you sure about your answer? This is your last chance to change your mind!</p>
-            <div className="confirmation-buttons">
-              <button className="confirm-no" onClick={() => handleConfirmationResponse(false)}>
-                No, let me select again
-              </button>
-              <button className="confirm-yes" onClick={() => handleConfirmationResponse(true)}>
-                Yes, I'm sure
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

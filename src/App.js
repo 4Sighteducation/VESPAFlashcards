@@ -1059,11 +1059,13 @@ function App() {
         // This is a regular flashcard, not a topic shell
         console.log("[App.addCard] Adding flashcard to topic:", card.topic);
         
+        const nowISO = new Date().toISOString();
         // Ensure the card has a boxNum of 1 for spaced repetition
         const cardWithSpacedRep = {
           ...card,
           boxNum: 1,
-          nextReviewDate: new Date().toISOString(), // Set to today so it's immediately reviewable
+          lastReviewed: nowISO, // Set lastReviewed to now
+          nextReviewDate: nowISO, // Set to today so it's immediately reviewable
           type: card.type || 'flashcard' // Ensure it has a type
         };
         
@@ -1102,8 +1104,8 @@ function App() {
           // Add the card to box1
           newData.box1.push({
             cardId: cardWithSpacedRep.id,
-            lastReviewed: new Date().toISOString(),
-            nextReviewDate: new Date().toISOString() // Reviewable immediately
+            lastReviewed: nowISO, // Use current time
+            nextReviewDate: nowISO // Reviewable immediately
           });
           return newData;
         });
@@ -1171,8 +1173,9 @@ function App() {
         let nextDate = new Date(today);
         
         switch (boxNumber) {
-          case 1: // Review next day
-            nextDate.setDate(today.getDate() + 1);
+          case 1: // Review same day (e.g. new card or incorrect)
+            // nextDate.setDate(today.getDate() + 1); // OLD: Review next day
+            nextDate.setHours(0, 0, 0, 0); // Set to midnight today
             break;
           case 2: // Every other day
             nextDate.setDate(today.getDate() + 2);
@@ -1236,12 +1239,13 @@ function App() {
       setAllCards(prevCards => {
         return prevCards.map(card => {
           if (String(card.id).trim() === stringCardId) {
+            const newNextReviewDate = calculateNextReviewDate(box);
             return {
               ...card,
               boxNum: box,
-              nextReviewDate: calculateNextReviewDate(box),
+              nextReviewDate: newNextReviewDate, // Use calculated date
               lastReviewed: new Date().toISOString(),
-              isReviewable: false
+              isReviewable: new Date(newNextReviewDate) <= new Date() // Recalculate reviewability
             };
           }
           return card;
