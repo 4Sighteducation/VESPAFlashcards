@@ -2012,9 +2012,9 @@ html {
     cursor: pointer !important;
     padding: 0 !important;
     border-radius: 4px !important;
-    width: 24px !important; /* Reduced width */
-    height: 24px !important; /* Reduced height */
-    font-size: 1rem !important; /* Reduced font size for ellipsis icon */
+    width: 18px !important; /* Further Reduced width */
+    height: 18px !important; /* Further Reduced height */
+    font-size: 0.8rem !important; /* Further Reduced font size for ellipsis icon */
   }
   .topic-actions-toggle.mobile-only:hover,
   .subject-actions-toggle.mobile-only:hover {
@@ -2026,14 +2026,14 @@ html {
   .subject-actions-menu {
     display: none !important; /* Hide menu (dropdown) by default on mobile, override desktop important */
     position: absolute !important;
-    top: 100% !important; 
+    bottom: 100% !important; /* CHANGED: Menu opens upwards */
     right: 0 !important;
     background-color: white !important;
     border-radius: 6px !important;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2) !important;
     z-index: 100 !important;
     padding: 8px !important;
-    margin-top: 4px !important;
+    margin-bottom: 4px !important; /* ADDED: Small gap when opening upwards */
     gap: 5px !important;
     min-width: 150px !important;
   }
@@ -2101,6 +2101,7 @@ html {
   .topic-info h3 {
     white-space: normal !important; /* Was normal */
     word-break: break-word !important; /* Was break-word */
+    text-align: left !important; /* ADDED: Left align topic titles */
     font-size: clamp(0.6rem, 1.8vw, 0.85rem) !important; /* More aggressive font shrinking */
     line-height: 1.2 !important; /* Adjusted line height for smaller font */
     max-height: none !important; 
