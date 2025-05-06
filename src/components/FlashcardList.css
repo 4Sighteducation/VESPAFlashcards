@@ -1988,6 +1988,11 @@ html {
     /* inherits flex: 1, overflow: hidden (from general), margin-right: 10px */
   }
 
+  /* Hide topic metadata on mobile to save space */
+  .topic-header .topic-meta {
+    display: none !important; 
+  }
+
   /* Hide the original full buttons that were part of the desktop menu */
   .topic-actions > .topic-actions-menu > .nav-button,
   .subject-actions > .subject-actions-menu > .nav-button {
