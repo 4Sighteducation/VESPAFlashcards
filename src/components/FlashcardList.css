@@ -1981,6 +1981,7 @@ html {
   .subject-actions {
     position: relative; /* Needed for absolute positioning of the menu */
     justify-content: flex-end; /* Align toggle to the right */
+    flex-shrink: 0; /* Prevent this container from shrinking */
   }
 
   .topic-info { /* Added rule for mobile .topic-info */
@@ -2011,9 +2012,9 @@ html {
     cursor: pointer !important;
     padding: 0 !important;
     border-radius: 4px !important;
-    width: 30px !important;
-    height: 30px !important;
-    font-size: 1.2rem !important;
+    width: 24px !important; /* Reduced width */
+    height: 24px !important; /* Reduced height */
+    font-size: 1rem !important; /* Reduced font size for ellipsis icon */
   }
   .topic-actions-toggle.mobile-only:hover,
   .subject-actions-toggle.mobile-only:hover {
@@ -2100,10 +2101,10 @@ html {
   .topic-info h3 {
     white-space: normal !important; /* Was normal */
     word-break: break-word !important; /* Was break-word */
-    font-size: clamp(0.75rem, 2.2vw, 0.95rem) !important; /* Adjusted font size */
-    line-height: 1.3 !important; 
+    font-size: clamp(0.6rem, 1.8vw, 0.85rem) !important; /* More aggressive font shrinking */
+    line-height: 1.2 !important; /* Adjusted line height for smaller font */
     max-height: none !important; 
-    min-height: 1.3em !important; 
+    min-height: 0; /* Allow it to shrink completely if needed, was 1.3em */
   }
 }
 
