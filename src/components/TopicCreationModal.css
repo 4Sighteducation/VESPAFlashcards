@@ -167,3 +167,112 @@
 
 /* Ensure error display and loading spinner styles are available if not global */
 /* (Assuming ErrorDisplay and LoadingSpinner have their own CSS or inherit) */
+
+/* --- START Mobile Responsiveness --- */
+@media (max-width: 768px) {
+  .topic-creation-modal-content {
+    width: 95%; /* Use more screen width on smaller devices */
+    padding: 20px; /* Adjust padding for smaller screens */
+    max-height: 95vh; /* Slightly more height if needed */
+  }
+
+  .modal-header h2 {
+    font-size: 1.3rem; /* Slightly smaller title for mobile */
+  }
+
+  .close-button {
+    font-size: 1.6rem;
+    top: 10px;
+    right: 10px;
+  }
+
+  .form-control {
+    padding: 10px 12px;
+    font-size: 0.95rem;
+  }
+
+  .button-primary, .button-secondary {
+    padding: 10px 15px; /* Adjust button padding */
+    font-size: 0.9rem;
+  }
+
+  .navigation-buttons {
+    margin-top: 15px;
+    padding-top: 15px;
+  }
+
+  .step-content-container {
+    min-height: 150px; /* Adjust min-height for content */
+  }
+
+  /* Styles for Topic Hub on mobile */
+  .topic-hub-step {
+    padding-right: 5px; /* Adjust padding */
+    margin-right: -5px;
+    /* max-height will be constrained by .topic-creation-modal-content's max-height */
+  }
+
+  /* 
+    Assuming topic items within TopicHub have a class like '.topic-item' 
+    or are direct children (e.g., div) of '.main-topics-list'.
+    These are general styles to make them stack and readable.
+    You might need to adjust selectors based on TopicHub.jsx's actual structure.
+  */
+  .topic-hub-step .main-topics-list > * { /* Target direct children of the list */
+    width: 100%; /* Make each topic item take full width */
+    box-sizing: border-box;
+    margin-bottom: 10px; /* Space between items */
+    padding: 10px; /* Add some padding inside items */
+    border: 1px solid #eee; /* Optional: to delineate items */
+    border-radius: 4px; /* Optional: rounded corners for items */
+  }
+
+  .topic-hub-step .main-topics-list h3,
+  .topic-hub-step .main-topics-list p { /* Example: if topics have titles and paragraphs */
+    word-break: break-word; /* Ensure long words don't overflow */
+  }
+  
+  /* Progress bar adjustments for mobile */
+  .progress-bar-container {
+    width: 90%; 
+  }
+  /* If you have specific classes for elements within the topic list items that need styling for mobile (e.g., input fields for editing), add them here. For example:
+  .topic-hub-step .editable-topic-input {
+    width: 100%;
+  }
+  */
+}
+
+@media (max-width: 480px) {
+  .topic-creation-modal-content {
+    padding: 15px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.2rem;
+  }
+  
+  .step-content h2 { /* e.g. "Select Exam Type" */
+      font-size: 1.1rem !important; /* Using !important if needed to override inline styles, but prefer specificity */
+      margin-bottom: 10px !important;
+  }
+
+  .form-group label {
+    font-size: 0.9rem; /* Smaller labels */
+  }
+
+  .button-primary, .button-secondary {
+    width: 48%; /* Make buttons take roughly half width each if next to each other */
+    padding: 10px 5px; /* Further adjust padding if text is too long */
+  }
+
+   .navigation-buttons {
+     flex-direction: column-reverse; /* Stack buttons vertically */
+     gap: 10px; /* Add space between stacked buttons */
+   }
+   .navigation-buttons .button-primary,
+   .navigation-buttons .button-secondary {
+     width: 100%; /* Make stacked buttons full width */
+   }
+}
+/* --- END Mobile Responsiveness --- */
