@@ -1322,23 +1322,23 @@ const TopicHub = ({
           </h3>
           
           <div className="topics-actions">
-            <button 
+            {/* <button 
               className="regenerate-button" 
               onClick={handleRegenerateTopics}
               disabled={isGenerating}
               title="Generate a new set of topics"
             >
               <FaRedo /> Regenerate
-            </button>
+            </button> */}
             
-            <button
+            {/* <button
               className="save-topics-button"
               onClick={handleSaveTopicList}
               disabled={isGenerating || topicListSaved}
               title={topicListSaved ? "Topics already saved" : "Save this topic list"}
             >
               <FaSave /> {topicListSaved ? "Saved" : "Save List"}
-            </button>
+            </button> */}
             
             <button
               className="confirm-shells-button"

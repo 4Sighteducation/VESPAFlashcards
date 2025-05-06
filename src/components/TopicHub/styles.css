@@ -815,28 +815,134 @@
   }
   
   .topic-generator, .topics-container {
-    padding: 16px;
+    padding: 12px; /* Reduced padding for smaller screens */
+  }
+
+  .topics-header h3 {
+    font-size: 18px; /* Smaller header text */
   }
   
   .subtopic-item {
-    flex-direction: column;
+    flex-direction: column; /* Stack elements vertically */
+    align-items: flex-start; /* Align items to the start */
+    padding: 12px 8px; /* Adjust padding */
+    gap: 8px; /* Add gap between stacked elements */
+  }
+
+  .subtopic-info {
+    width: 100%; /* Allow info to take full width */
+    flex-direction: column; /* Stack ID and name if they are still too wide */
     align-items: flex-start;
-    padding: 10px;
+    gap: 4px;
+  }
+
+  .subtopic-id {
+    margin-right: 0; /* Remove right margin as it's stacked now */
+    font-size: 0.8em;
+  }
+
+  .subtopic-name {
+    white-space: normal; /* Allow text to wrap */
+    word-break: break-word; /* Break long words */
+    overflow: visible; /* Ensure text is not hidden */
+    text-overflow: clip; /* Remove ellipsis */
+    font-size: 0.95em; /* Adjust font size */
+    line-height: 1.4;
   }
   
   .subtopic-actions {
     margin-top: 10px;
-    align-self: flex-end;
+    align-self: flex-end; /* Keep actions to the right */
     width: 100%; /* Full width on mobile */
     display: flex !important; /* Force display */
-    justify-content: flex-end;
+    justify-content: flex-end; /* Align buttons to the end */
+    gap: 8px; /* Add gap between buttons */
   }
   
   /* Make action buttons more prominent on mobile */
-  .generate-button, .edit-button, .delete-button {
-    width: 44px; /* Larger touch targets on mobile */
-    height: 44px;
-    margin: 0 3px; /* Slightly more spacing */
+  .subtopic-actions .generate-button, 
+  .subtopic-actions .edit-button, 
+  .subtopic-actions .delete-button,
+  .subtopic-actions .save-edit-button,
+  .subtopic-actions .cancel-edit-button,
+  .subtopic-actions .select-optional-button {
+    width: auto; /* Allow buttons to size to content + padding */
+    min-width: 40px; /* Minimum touch target */
+    height: 38px; /* Adjust height */
+    padding: 0 10px; /* Horizontal padding for text buttons */
+    font-size: 0.9em; /* Smaller icons/text if needed */
+  }
+
+  .subtopic-actions .generate-button svg, 
+  .subtopic-actions .edit-button svg, 
+  .subtopic-actions .delete-button svg,
+  .subtopic-actions .save-edit-button svg,
+  .subtopic-actions .cancel-edit-button svg,
+  .subtopic-actions .select-optional-button svg {
+    font-size: 18px; /* Adjust icon size if they are too big */
+    margin-right: 0; /* Remove margin if button only contains icon */
+  }
+
+  /* Styles for edit forms within subtopic items */
+  .subtopic-edit-form {
+    flex-direction: column; /* Stack edit form elements */
+    width: 100%;
+    gap: 8px;
+  }
+
+  .edit-form-inputs {
+    flex-direction: column; /* Stack input fields */
+    width: 100%;
+    gap: 8px;
+  }
+
+  .edit-main-topic, .edit-subtopic {
+    width: 100%; /* Make input fields take full width */
+    font-size: 0.95em;
+    padding: 10px;
+  }
+
+  .edit-form-actions {
+    width: 100%;
+    justify-content: flex-end; /* Align save/cancel buttons to the right */
+    gap: 8px;
+  }
+
+  /* Main topic header adjustments */
+  .main-topic-header {
+    padding: 10px 12px;
+    flex-wrap: wrap; /* Allow header items to wrap */
+    gap: 8px;
+  }
+
+  .main-topic-name {
+    font-size: 1em; /* Adjust font size */
+    flex-basis: 100%; /* Allow name to take full width if needed */
+  }
+
+  .main-topic-count {
+    font-size: 0.85em;
+  }
+
+  .main-topic-actions {
+    justify-content: flex-end;
+    width: 100%; /* Make actions take full width below name/count */
+  }
+
+  /* Edit form for main topic name */
+  .main-topic-edit-form {
+    padding: 10px;
+    flex-direction: column; /* Stack input and buttons */
+    gap: 10px;
+  }
+  .edit-main-topic-name {
+    width: 100%;
+    margin-right: 0; /* Remove margin as it's stacked */
+    font-size: 1em;
+  }
+  .main-topic-edit-form .edit-form-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
   
   .add-topic-inputs {
