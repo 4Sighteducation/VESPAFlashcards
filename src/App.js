@@ -32,6 +32,12 @@ import {
   validateCards,
 } from './utils/CardDataProcessor';
 
+import {
+  getRandomColor,
+  generateShade,
+  ensureValidColorMapping
+} from './utils/ColorUtils';
+
 
 // API Keys and constants
 // Removed unused KNACK_APP_ID
@@ -692,7 +698,10 @@ function App() {
 
        // Prepare payload carefully
        const cardsPayload = safeSerializeData(dataToSave.cards || allCards || []);
-       const colorMapPayload = safeSerializeData(dataToSave.colorMapping || subjectColorMapping || {});
+       // Use ensureValidColorMapping to normalize the color mapping structure
+       const colorMapPayload = safeSerializeData(
+         ensureValidColorMapping(dataToSave.colorMapping || subjectColorMapping || {})
+       );
        const spacedRepPayload = safeSerializeData(dataToSave.spacedRepetition || spacedRepetitionData || { box1:[], box2:[], box3:[], box4:[], box5:[] });
        const userTopicsPayload = safeSerializeData(dataToSave.userTopics || userTopics || {});
        const topicListsPayload = safeSerializeData(dataToSave.topicLists || topicLists || []);
@@ -724,6 +733,48 @@ function App() {
       }, 15000);
       window.currentSaveTimeout = saveTimeout;
 
+      // Add verification after saves to confirm colors were properly saved
+      const verifySave = (originalMapping) => {
+        setTimeout(() => {
+          // Compare what we have in state now vs what we tried to save
+          const currentMapping = subjectColorMapping;
+          const discrepancies = [];
+          
+          // Check each subject
+          Object.keys(originalMapping).forEach(subject => {
+            if (!currentMapping[subject]) {
+              discrepancies.push(`Subject ${subject} is missing after save`);
+            } else if (typeof currentMapping[subject] !== typeof originalMapping[subject]) {
+              discrepancies.push(`Subject ${subject} has wrong type after save`);
+            } else if (currentMapping[subject].base !== originalMapping[subject].base) {
+              discrepancies.push(`Subject ${subject} base color changed unexpectedly`);
+            }
+            
+            // Check topics too if topics object exists
+            if (originalMapping[subject].topics && currentMapping[subject]?.topics) {
+              Object.keys(originalMapping[subject].topics).forEach(topic => {
+                if (!currentMapping[subject].topics[topic]) {
+                  discrepancies.push(`Topic ${topic} for subject ${subject} is missing after save`);
+                } else if (currentMapping[subject].topics[topic] !== originalMapping[subject].topics[topic]) {
+                  discrepancies.push(`Topic ${topic} for subject ${subject} color changed unexpectedly`);
+                }
+              });
+            }
+          });
+          
+          if (discrepancies.length > 0) {
+            console.error("Save verification failed:", discrepancies);
+            // Retry save with increased delay if verification fails
+            setTimeout(() => saveData(null, true), 2000);  // Even longer timeout for retry
+          } else {
+            console.log("Save verification passed!");
+          }
+        }, 2000); // Check 2 seconds after save
+      };
+      
+      // Capture the original mapping before sending to Knack
+      const originalMapping = JSON.parse(JSON.stringify(subjectColorMapping));
+
       saveQueueService.addToQueue({ type: 'SAVE_DATA', payload: safeData })
         .then(() => {
           console.log("[App] SAVE_DATA processed successfully.");
@@ -742,6 +793,9 @@ function App() {
           // setTopicLists(topicListsPayload);
           // setTopicMetadata(topicMetaPayload);
           // --- END REMOVAL ---
+          
+          // Verify color mapping was saved correctly
+          verifySave(originalMapping);
         })
         .catch(error => {
           console.error("[App] Error in SAVE_DATA:", error);
@@ -774,121 +828,95 @@ function App() {
 
   // Update color mappings - enhanced to ensure immediate color application
   const updateColorMapping = useCallback(
-    (subject, topic, color, updateTopics = false) => {
+    (subject, topic, color, applyToTopics = false) => {
       if (!subject) return;
       
       // If color is null, use a default color or generate one
       const colorToUse = color || getRandomColor();
-      console.log(`Updating color for subject: ${subject}, topic: ${topic || "none"}, color: ${colorToUse}, updateTopics: ${updateTopics}`);
+      console.log(`Updating color for subject: ${subject}, topic: ${topic || "none"}, color: ${colorToUse}, applyToTopics: ${applyToTopics}`);
       
-      // First update the color mapping
+      // CRITICAL: Use functional state update to ensure we're working with latest state
       setSubjectColorMapping((prevMapping) => {
-        const newMapping = { ...prevMapping };
-
-        // Create subject entry if it doesn't exist
+        // Always ensure valid structure by creating deep clone
+        const newMapping = JSON.parse(JSON.stringify(prevMapping || {}));
+        
+        // Normalize the color mapping structure for this subject
         if (!newMapping[subject]) {
           newMapping[subject] = { base: colorToUse, topics: {} };
         } else if (typeof newMapping[subject] === 'string') {
           // Convert legacy string format to object format
           const baseColor = newMapping[subject];
           newMapping[subject] = { base: baseColor, topics: {} };
+        } else if (!newMapping[subject].topics) {
+          // Ensure topics object exists
+          newMapping[subject].topics = {};
         }
 
-        // If it's a subject-level color update
-        if (!topic || updateTopics) {
+        // Subject-level or apply-to-topics update
+        if (!topic || applyToTopics) {
           // Update the base subject color
           newMapping[subject].base = colorToUse;
           
-          // If we should update topic colors automatically
-          if (updateTopics) {
-            console.log(`Updating all topic colors for subject ${subject} based on ${colorToUse}`);
+          // Update topic colors if requested
+          if (applyToTopics) {
+            // Get all topics for this subject
+            const topicsForSubject = [...new Set(
+              allCards
+                .filter(card => (card.subject || "General") === subject)
+                .map(card => card.topic || "General")
+                .filter(Boolean)
+            )];
             
-            // Get all topics for this subject from current cards
-            const topicsForSubject = allCards
-              .filter(card => (card.subject || "General") === subject)
-              .map(item => {
-                if (item.type === 'topic' && item.isShell && item.name) {
-                  // Extract from shell name, handling potential 'Subject: Topic' format
-                  const nameParts = item.name.split(': ');
-                  return nameParts.length > 1 ? nameParts[1].trim() : item.name;
-                }
-                return item.topic || "General"; // Fallback for cards or improperly named shells
-              });
-            
-            // Remove duplicates and sort
-            const uniqueTopics = [...new Set(topicsForSubject)].filter(t => t !== "General").sort();
-            
-            console.log(`Found topics for subject ${subject}:`, uniqueTopics);
-            
-            // Generate a color for each topic
-            if (uniqueTopics.length > 0) {
-              // Ensure the topics object exists
-              if (!newMapping[subject].topics) {
-                newMapping[subject].topics = {};
-              }
-              
-              uniqueTopics.forEach((topicName, index) => {
-                // Skip the "General" topic as it should use the base color
-                if (topicName === "General") return;
-                
-                // Generate a shade of the base color for this topic
-                const topicColor = generateShade(colorToUse, index, uniqueTopics.length);
-                console.log(`Generated color for ${topicName}: ${topicColor}`);
-                
-                // Update the topic color
-                newMapping[subject].topics[topicName] = topicColor;
-                
-                // Also update any cards that match this topic
-                setAllCards(prevCards => 
-                  prevCards.map(card => {
-                    if (card.subject === subject && card.topic === topicName) {
-                      return { ...card, topicColor: topicColor };
-                    }
-                    return card;
-                  })
+            // Generate a shade for each topic
+            topicsForSubject.forEach((topicName, index) => {
+              if (topicName !== "General") {
+                const shade = generateShade(
+                  colorToUse, 
+                  index, 
+                  topicsForSubject.length
                 );
-              });
-            }
+                newMapping[subject].topics[topicName] = shade;
+              }
+            });
           }
         } 
-        // If it's a topic-level color update
+        // Topic-level update
         else if (topic) {
-          // Ensure the subject exists in mapping with the correct structure
-          if (!newMapping[subject]) {
-            newMapping[subject] = { base: colorToUse, topics: {} };
-          } else if (typeof newMapping[subject] === 'string') {
-            // Convert string color to proper object structure
-            const baseColor = newMapping[subject];
-            newMapping[subject] = { base: baseColor, topics: {} };
-          } else if (!newMapping[subject].topics) {
-            // Ensure topics object exists
-            newMapping[subject].topics = {};
-          }
-          
-          // Update the specified topic color
           newMapping[subject].topics[topic] = colorToUse;
-          
-          // Also update any cards that match this topic
-          setAllCards(prevCards => 
-            prevCards.map(card => {
-              if (card.subject === subject && card.topic === topic) {
-                return { ...card, topicColor: colorToUse };
-          }
-          return card;
-            })
-          );
         }
         
         return newMapping;
       });
       
-      // Immediately save to localStorage to ensure color persistence
-      setTimeout(() => saveToLocalStorage(), 0);
+      // Update card colors to match the topic colors
+      if (topic || applyToTopics) {
+        setAllCards(prevCards => 
+          prevCards.map(card => {
+            if (card.subject === subject) {
+              if (!topic && applyToTopics) {
+                // Update all cards for this subject with their topic colors
+                const topicColor = card.topic && card.topic !== "General" 
+                  ? subjectColorMapping[subject]?.topics?.[card.topic] 
+                  : colorToUse;
+                return { ...card, topicColor: topicColor || colorToUse };
+              } else if (topic && card.topic === topic) {
+                // Update specific topic cards
+                return { ...card, topicColor: colorToUse };
+              }
+            }
+            return card;
+          })
+        );
+      }
       
-      // Trigger a full save to Knack after a short delay to ensure state is updated
-      setTimeout(() => saveData(), 500);
+      // CRITICAL: Increase both timeout durations
+      // Save to localStorage with small delay to ensure state update has been processed
+      setTimeout(() => saveToLocalStorage(), 100);
+      
+      // Increase Knack save delay significantly to ensure state is fully updated
+      setTimeout(() => saveData(null, true), 1000);  // true = preserveFields
     },
-    [generateShade, getRandomColor, saveData, saveToLocalStorage, allCards]
+    [generateShade, getRandomColor, saveData, saveToLocalStorage, allCards, subjectColorMapping]
   );
 
   // Function to refresh subject and topic colors

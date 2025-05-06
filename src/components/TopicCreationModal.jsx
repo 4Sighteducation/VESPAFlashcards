@@ -75,6 +75,9 @@ const TopicCreationModal = ({
   const [progressMessage, setProgressMessage] = useState("");
   const [generatedTopics, setGeneratedTopics] = useState([]);
   const [topicGenerationComplete, setTopicGenerationComplete] = useState(false);
+  
+  // Add state for locking during save operations
+  const [isLocked, setIsLocked] = useState(false);
 
   // Ref to track mounted state
   const isMounted = useRef(true);
@@ -392,99 +395,118 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
     return;
   }
 
-  // Get current handlers from refs - always up to date
-  const saveHandler = saveHandlerRef.current;
-  const closeHandler = closeHandlerRef.current;
-
-  // Extra verification logging
-  if (!saveHandler) {
-    console.error("[TopicCreationModal] CRITICAL ERROR: onSaveTopicShells is null or undefined");
-  } else if (typeof saveHandler !== 'function') {
-    console.error("[TopicCreationModal] CRITICAL ERROR: onSaveTopicShells is not a function, type:", typeof saveHandler);
-  } else {
-    console.log("[TopicCreationModal] onSaveTopicShells verification passed - it's a function");
+  // CRITICAL: Add lock check to prevent concurrent saves that could cause subject overwriting
+  if (isLocked) {
+    console.warn("[TopicCreationModal] Another save operation is in progress, please wait.");
+    setError("Save in progress. Please wait a moment before trying again.");
+    return;
   }
 
-  // Ensure shells have the necessary metadata before saving
-  const shellsToSave = topicShells.map(shell => {
-    // Generate a truly unique ID that includes timestamp, randomness, and subject name
-    const timestamp = Date.now();
-    const randomSuffix = Math.floor(Math.random() * 1000000); // Larger random range
-    // Include subject in the ID to ensure uniqueness across subjects
-    const uniqueId = shell.id || `topic_${formData.subject.replace(/\s+/g, '_')}_${timestamp}_${randomSuffix}`;
-    
-    return {
-      ...shell, // Include name, color, etc. from TopicHub selection
-      id: uniqueId, // Ensure unique ID across subjects
-      examType: formData.examType,
-      examBoard: formData.examBoard,
-      subject: formData.subject,
-      type: 'topic', // Ensure type is set correctly
-      isShell: true, // Mark as a shell
-      timestamp: new Date().toISOString(), // Add creation timestamp
-      ...(formData.ibGroup ? { ibGroup: formData.ibGroup } : {}) // Add IB group if applicable
-    };
-  });
-
-  console.log("[TopicCreationModal] Prepared shellsToSave:", shellsToSave);
+  // Set the lock to prevent concurrent save operations
+  setIsLocked(true);
+  console.log("[TopicCreationModal] Lock acquired for save operation");
 
   try {
-    // Final verification before calling save handler
-    if (!saveHandler || typeof saveHandler !== 'function') {
-      console.error("[TopicCreationModal] Cannot save - save handler is missing or not a function");
+    // Get current handlers from refs - always up to date
+    const saveHandler = saveHandlerRef.current;
+    const closeHandler = closeHandlerRef.current;
+
+    // Extra verification logging
+    if (!saveHandler) {
+      console.error("[TopicCreationModal] CRITICAL ERROR: onSaveTopicShells is null or undefined");
+    } else if (typeof saveHandler !== 'function') {
+      console.error("[TopicCreationModal] CRITICAL ERROR: onSaveTopicShells is not a function, type:", typeof saveHandler);
+    } else {
+      console.log("[TopicCreationModal] onSaveTopicShells verification passed - it's a function");
+    }
+
+    // Ensure shells have the necessary metadata before saving
+    const shellsToSave = topicShells.map(shell => {
+      // Generate a truly unique ID that includes timestamp, randomness, and subject name
+      const timestamp = Date.now();
+      const randomSuffix = Math.floor(Math.random() * 1000000); // Larger random range
+      // Include subject in the ID to ensure uniqueness across subjects
+      const uniqueId = shell.id || `topic_${formData.subject.replace(/\s+/g, '_')}_${timestamp}_${randomSuffix}`;
       
-      // FALLBACK: If normal prop is missing, try custom event as backup
-      console.warn("[TopicCreationModal] Save handler missing - attempting event fallback");
+      return {
+        ...shell, // Include name, color, etc. from TopicHub selection
+        id: uniqueId, // Ensure unique ID across subjects
+        examType: formData.examType,
+        examBoard: formData.examBoard,
+        subject: formData.subject,
+        type: 'topic', // Ensure type is set correctly
+        isShell: true, // Mark as a shell
+        timestamp: new Date().toISOString(), // Add creation timestamp
+        ...(formData.ibGroup ? { ibGroup: formData.ibGroup } : {}) // Add IB group if applicable
+      };
+    });
+
+    console.log("[TopicCreationModal] Prepared shellsToSave:", shellsToSave);
+
+    try {
+      // Final verification before calling save handler
+      if (!saveHandler || typeof saveHandler !== 'function') {
+        console.error("[TopicCreationModal] Cannot save - save handler is missing or not a function");
+        
+        // FALLBACK: If normal prop is missing, try custom event as backup
+        console.warn("[TopicCreationModal] Save handler missing - attempting event fallback");
+        try {
+          const event = new CustomEvent('saveTopicShells', {
+            detail: { shells: shellsToSave }
+          });
+          window.dispatchEvent(event);
+          console.log("[TopicCreationModal] Dispatched saveTopicShells event as fallback");
+          
+          // Close modal after event dispatch
+          if (closeHandler && typeof closeHandler === 'function') {
+            closeHandler();
+          } else if (closeHandlerRef.current) {
+            closeHandlerRef.current();
+          }
+          return;
+        } catch (e) {
+          console.error("[TopicCreationModal] Fallback event dispatch failed:", e);
+          setError("Cannot save topics - all save methods failed");
+          return;
+        }
+      }
+
+      // Main path: Use the saveHandler function
+      console.log("[TopicCreationModal] Calling save handler with shells...");
+      await saveHandler(shellsToSave);
+      console.log("[TopicCreationModal] Topic shells passed to onSaveTopicShells handler.");
+      
+      // Close modal immediately after successful save
+      if (closeHandler && typeof closeHandler === 'function') {
+        closeHandler();
+      } else {
+        console.warn("[TopicCreationModal] Close handler is missing or not a function.");
+      }
+    } catch (error) {
+      console.error("[TopicCreationModal] Error saving topic shells:", error);
+      setError(`Failed to save topic shells: ${error.message}`);
+      
+      // FALLBACK ON ERROR: Try event dispatch as a last resort
       try {
+        console.warn("[TopicCreationModal] Save handler failed - attempting event fallback");
         const event = new CustomEvent('saveTopicShells', {
           detail: { shells: shellsToSave }
         });
         window.dispatchEvent(event);
-        console.log("[TopicCreationModal] Dispatched saveTopicShells event as fallback");
-        
-        // Close modal after event dispatch
-        if (closeHandler && typeof closeHandler === 'function') {
-          closeHandler();
-        } else if (closeHandlerRef.current) {
-          closeHandlerRef.current();
-        }
-        return;
+        console.log("[TopicCreationModal] Dispatched saveTopicShells event as fallback after error");
       } catch (e) {
         console.error("[TopicCreationModal] Fallback event dispatch failed:", e);
-        setError("Cannot save topics - all save methods failed");
-        return;
       }
     }
-
-    // Main path: Use the saveHandler function
-    console.log("[TopicCreationModal] Calling save handler with shells...");
-    await saveHandler(shellsToSave);
-    console.log("[TopicCreationModal] Topic shells passed to onSaveTopicShells handler.");
-    
-    // Close modal immediately after successful save
-    if (closeHandler && typeof closeHandler === 'function') {
-      closeHandler();
-    } else {
-      console.warn("[TopicCreationModal] Close handler is missing or not a function.");
-    }
-  } catch (error) {
-    console.error("[TopicCreationModal] Error saving topic shells:", error);
-    setError(`Failed to save topic shells: ${error.message}`);
-    
-    // FALLBACK ON ERROR: Try event dispatch as a last resort
-    try {
-      console.warn("[TopicCreationModal] Save handler failed - attempting event fallback");
-      const event = new CustomEvent('saveTopicShells', {
-        detail: { shells: shellsToSave }
-      });
-      window.dispatchEvent(event);
-      console.log("[TopicCreationModal] Dispatched saveTopicShells event as fallback after error");
-    } catch (e) {
-      console.error("[TopicCreationModal] Fallback event dispatch failed:", e);
-    }
+  } finally {
+    // CRITICAL: Release the lock after a timeout to ensure any related save operations complete
+    // This ensures the lock is always released, even if an error occurs
+    setTimeout(() => {
+      setIsLocked(false);
+      console.log("[TopicCreationModal] Lock released after save operation");
+    }, 3000); // 3 second timeout to ensure we don't block subsequent operations indefinitely
   }
-
-}, [formData]); // Keep formData in dependencies, but use refs for handlers
+}, [formData, isLocked]); // Add isLocked to dependencies
 
   // Render content based on the current step
   const renderStepContent = () => {

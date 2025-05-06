@@ -145,6 +145,48 @@ export const generateShade = (color, percent) => {
 };
 
 /**
+ * Ensures a valid, consistent structure for the color mapping object
+ * Normalizes legacy string format to the newer object format
+ * @param {Object} colorMapping - The color mapping object to validate
+ * @returns {Object} - A validated and normalized color mapping object
+ */
+export const ensureValidColorMapping = (colorMapping) => {
+  if (!colorMapping || typeof colorMapping !== 'object') return {};
+  
+  const updatedMapping = JSON.parse(JSON.stringify(colorMapping));
+  
+  Object.keys(updatedMapping).forEach(subject => {
+    const subjectData = updatedMapping[subject];
+    
+    // Convert string values to proper structure
+    if (typeof subjectData === 'string') {
+      updatedMapping[subject] = {
+        base: subjectData,
+        topics: {}
+      };
+    } 
+    // Ensure each subject has 'base' and 'topics' properties
+    else if (typeof subjectData === 'object' && subjectData !== null) {
+      if (!subjectData.base) {
+        subjectData.base = '#f0f0f0';
+      }
+      if (!subjectData.topics || typeof subjectData.topics !== 'object') {
+        subjectData.topics = {};
+      }
+    }
+    // Replace invalid values with proper structure
+    else {
+      updatedMapping[subject] = {
+        base: '#f0f0f0',
+        topics: {}
+      };
+    }
+  });
+  
+  return updatedMapping;
+};
+
+/**
  * Standard color palette for cards and topics
  */
 export const BRIGHT_COLORS = [
