@@ -1213,11 +1213,6 @@ const TopicHub = ({
       <div className="topic-generator">
         <div className="topic-generator-header">
           <h3>Generate Topics for {subject}</h3>
-          <p>
-            Generate a comprehensive list of topics for {subject} ({examBoard} {examType}) 
-            using our AI-powered topic generation system. The topics will be based on 
-            the latest curriculum requirements.
-          </p>
         </div>
         
         {isGenerating ? (
@@ -1484,9 +1479,6 @@ const TopicHub = ({
                       >
                         <FaTrash />
                       </button>
-                      <span className="main-topic-toggle">
-                        {expandedTopics[mainTopic.name] ? <FaChevronUp /> : <FaChevronDown />}
-                      </span>
                     </div>
                   </div>
                 )}

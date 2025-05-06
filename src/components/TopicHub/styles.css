@@ -937,19 +937,17 @@
 
   .main-topic-actions .edit-button,
   .main-topic-actions .delete-button {
-    width: 36px;
-    height: 36px;
+    width: 24px;
+    height: 24px;
     padding: 0;
   }
   .main-topic-actions .edit-button svg,
   .main-topic-actions .delete-button svg {
-    font-size: 16px;
+    font-size: 12px;
   }
 
   .main-topic-toggle {
-    font-size: 1.1em;
-    padding: 5px;
-    color: #666;
+    display: none;
   }
 
   .main-topic-edit-form {
@@ -1375,8 +1373,6 @@
   gap: 15px;
 }
 
-.add-topic-modal-content .main-topic-input-container {
-}
 
 .add-topic-modal-content .topic-input-toggle {
   margin-bottom: 8px;
@@ -1402,9 +1398,6 @@
   border-top: 1px solid #e9ecef;
 }
 
-.modal-actions .button-primary,
-.modal-actions .button-secondary {
-}
 
 @media (max-width: 575.98px) {
   .add-topic-modal-content,
