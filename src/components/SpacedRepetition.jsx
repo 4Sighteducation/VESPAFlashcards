@@ -344,34 +344,28 @@ const SpacedRepetition = ({
       setShowFlipResponseOverlay(false);
       
       const nextBoxNumber = Math.min(currentBox + 1, 5);
-      const cardToMove = { ...currentCard }; // Clone to avoid issues with stale closures
-      
-      onMoveCard(cardToMove.id, nextBoxNumber); // This will update App.js state including nextReviewDate
+      const cardToMoveId = currentCard.id;
+
+      onMoveCard(cardToMoveId, nextBoxNumber); // This will trigger prop changes and useEffect in SpacedRepetition
       
       setFeedbackMessage(`Card moved to Box ${nextBoxNumber}.`);
-      setShowReviewDateMessage(true); // Re-using this to show feedback
+      setShowReviewDateMessage(true);
 
-      // Remove card from current session and advance
-      const updatedCurrentCards = currentCards.filter(card => card.id !== cardToMove.id);
-      
+      // Determine if this was the last card in the current session BEFORE filtering
+      const wasLastCard = currentCards.length === 1; 
+
       setTimeout(() => {
         setShowReviewDateMessage(false);
         setFeedbackMessage("");
-        if (updatedCurrentCards.length === 0) {
+        if (wasLastCard) {
           setStudyCompleted(true);
-          setCurrentCards([]); // Clear out cards
-        } else if (currentIndex >= updatedCurrentCards.length) {
-          // If last card was removed, adjust index or complete
-          setStudyCompleted(true);
-          setCurrentCards([]); // Clear out cards
+          // currentCards will be updated by useEffect reacting to prop change from onMoveCard
         } else {
-          // Still cards left, current index is valid for the new array
-          setCurrentCards(updatedCurrentCards);
-          // No need to change currentIndex if it's still valid
-          // If currentIndex was for the removed card and it wasn't the last one,
-          // the next card effectively takes its place at the same index.
+          // Advance to the next card if there are more.
+          // The useEffect will repopulate currentCards, and nextCard will adjust currentIndex or complete.
+          nextCard(); 
         }
-        resetSelectionState(); // Reset flip state for the next card (or completion screen)
+        resetSelectionState(); 
       }, 1500);
     } catch (error) {
       console.error("Error handling correct answer:", error);
@@ -380,7 +374,7 @@ const SpacedRepetition = ({
       setTimeout(() => {
           setShowReviewDateMessage(false);
           setFeedbackMessage("");
-          nextCard(); // Try to advance anyway
+          nextCard(); 
       }, 1500);
     }
   };
@@ -395,27 +389,22 @@ const SpacedRepetition = ({
       setShowFlipResponseOverlay(false);
       
       const targetBoxNumber = 1;
-      const cardToMove = { ...currentCard }; // Clone
+      const cardToMoveId = currentCard.id;
 
-      onMoveCard(cardToMove.id, targetBoxNumber);
+      onMoveCard(cardToMoveId, targetBoxNumber);
       
       setFeedbackMessage(`Card moved to Box ${targetBoxNumber}.`);
-      setShowReviewDateMessage(true); // Re-using this to show feedback
+      setShowReviewDateMessage(true);
 
-      // Remove card from current session and advance
-      const updatedCurrentCards = currentCards.filter(card => card.id !== cardToMove.id);
+      const wasLastCard = currentCards.length === 1;
 
       setTimeout(() => {
         setShowReviewDateMessage(false);
         setFeedbackMessage("");
-        if (updatedCurrentCards.length === 0) {
+        if (wasLastCard) {
           setStudyCompleted(true);
-          setCurrentCards([]);
-        } else if (currentIndex >= updatedCurrentCards.length) {
-          setStudyCompleted(true);
-          setCurrentCards([]);
         } else {
-          setCurrentCards(updatedCurrentCards);
+          nextCard();
         }
         resetSelectionState();
       }, 1500);

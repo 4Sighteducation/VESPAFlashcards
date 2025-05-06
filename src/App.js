@@ -1173,9 +1173,10 @@ function App() {
         let nextDate = new Date(today);
         
         switch (boxNumber) {
-          case 1: // Review same day (e.g. new card or incorrect)
-            // nextDate.setDate(today.getDate() + 1); // OLD: Review next day
-            nextDate.setHours(0, 0, 0, 0); // Set to midnight today
+          case 1: // Card answered INCORRECTLY, or a new card being moved (though new cards are handled by addCard initially)
+            // Schedule for review starting NEXT DAY midnight
+            nextDate.setDate(today.getDate() + 1);
+            nextDate.setHours(0, 0, 0, 0); 
             break;
           case 2: // Every other day
             nextDate.setDate(today.getDate() + 2);
