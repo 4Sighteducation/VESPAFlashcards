@@ -236,8 +236,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   const questionText = card.front || card.question || '';
   const questionLengthClass = getQuestionClassByLength(questionText);
   
-  // Check if card has additional information
-  const hasAdditionalInfo = card.additionalInfo || card.detailedAnswer;
+  // Check if card has additional information (now primarily from detailedAnswer)
+  const hasAdditionalInfo = card.detailedAnswer;
   
   // Special class for modal view and fullscreen
   const cardClass = `flashcard flashcard-${card.id || 'unknown'} ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''} ${preview ? 'preview-card' : ''} ${isInModal ? 'modal-card' : ''} ${isFullscreen ? 'fullscreen' : ''}`;
@@ -295,60 +295,27 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   const renderBack = () => {
     let answerContent;
 
-    // Determine the content based on question type
-    switch (card.questionType) {
-      case 'multiple_choice':
-        // Clean the correct answer of any existing prefix
-        const cleanAnswer = card.correctAnswer ? String(card.correctAnswer).replace(/^[a-d]\)\s*/i, '') : "Not specified";
-        
-        // Find the index of this answer in the options array
-        const answerIndex = card.options ? card.options.findIndex(option => {
-          let optionText = '';
-          if (!option) return false;
-          
-          // Handle both string options and object options
-          if (typeof option === 'string') {
-            optionText = option.replace(/^[a-d]\)\s*/i, '').trim();
-          } else if (option && typeof option === 'object' && typeof option.text === 'string') {
-            optionText = option.text.replace(/^[a-d]\)\s*/i, '').trim();
-          } else {
-            return false; // Skip if invalid format
-          }
-          
-          return optionText === cleanAnswer.trim();
-        }) : -1;
-        
-        // Get the letter for this index (a, b, c, d)
-        const letter = answerIndex >= 0 ? String.fromCharCode(97 + answerIndex) : '';
-        const formattedAnswer = answerIndex >= 0 ? `${letter}) ${cleanAnswer}` : cleanAnswer;
-        
-        answerContent = (
-          <div>
-            <strong>Correct Answer:</strong><br />
-            {formattedAnswer}
-          </div>
-        );
-        break;
-      case 'short_answer':
-      case 'essay':
-      case 'acronym':
-        answerContent = (
-          typeof card.back === 'string' ? (
-            <div dangerouslySetInnerHTML={{ __html: card.back || "No answer available" }} />
-          ) : (
-            <div>No answer available</div>
-          )
-        );
-        break;
-      default:
-        // Fallback for unknown or unspecified types
-        answerContent = (
-          typeof card.back === 'string' ? (
-            <div dangerouslySetInnerHTML={{ __html: card.back || "No answer available" }} />
-          ) : (
-            <div>No answer available</div>
-          )
-        );
+    // The card.back field is now pre-processed in FlashcardGeneratorBridge
+    // to hold the appropriate content for the back of each card type.
+    // For MCQs, it's detailedAnswer.
+    // For Short Answer/Essay, it's keyPoints.
+    // For Acronyms, it's the explanation.
+
+    if (typeof card.back === 'string' && card.back.trim() !== '') {
+      // If card.back is a string (e.g., detailedAnswer for MCQ, explanation for Acronym, or joined keyPoints),
+      // render it directly. We use dangerouslySetInnerHTML to allow for newlines from keyPoints.
+      answerContent = <div dangerouslySetInnerHTML={{ __html: card.back.replace(/\n/g, '<br />') }} />;
+    } else if (Array.isArray(card.back) && card.back.length > 0) {
+      // If card.back is an array (should ideally be pre-joined, but as a fallback)
+      answerContent = (
+        <ul>
+          {card.back.map((point, index) => (
+            <li key={index}>{point}</li>
+          ))}
+        </ul>
+      );
+    } else {
+      answerContent = <div>No key points or answer available for the back.</div>;
     }
 
     return (
@@ -564,7 +531,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
               <button className="close-modal-btn" onClick={closeInfoModal}>✕</button>
             </div>
             <div className="info-modal-content">
-              <div dangerouslySetInnerHTML={{ __html: card.additionalInfo || card.detailedAnswer || "No additional information available." }} />
+              {/* Info modal should always show detailedAnswer if available */}
+              <div dangerouslySetInnerHTML={{ __html: card.detailedAnswer || card.additionalInfo || "No detailed information available." }} />
             </div>
           </div>
         </div>,

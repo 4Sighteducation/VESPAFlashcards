@@ -108,6 +108,12 @@ const FlashcardGeneratorBridge = ({
               savedOptions: [], // Initialize savedOptions
               keyPoints: [], // Initialize keyPoints
               detailedAnswer: '', // Initialize detailedAnswer
+              acronym: '', // Initialize acronym for acronym cards
+              explanation: '', // Initialize explanation for acronym cards
+              question: '', // Initialize question
+              answer: '', // Initialize answer
+              front: '', // Initialize front
+              back: '' // Initialize back
           };
           
           // Merge AI response data into the base card
@@ -115,10 +121,13 @@ const FlashcardGeneratorBridge = ({
           
           // --- Specific processing based on actual cardType ---
           if (baseCard.questionType === 'acronym') {
-              baseCard.question = baseCard.question || `What does the acronym "${baseCard.acronym}" stand for?`;
-              baseCard.answer = baseCard.explanation; // Map explanation to answer
-              baseCard.front = baseCard.question; // Set front/back for FlippableCard
-              baseCard.back = baseCard.explanation;
+              baseCard.question = card.question || `What does the acronym "${card.acronym}" stand for?`;
+              baseCard.acronym = card.acronym || ''; // Ensure acronym is present
+              baseCard.explanation = card.explanation || ''; // Ensure explanation is present
+              baseCard.answer = baseCard.explanation; // Map explanation to answer for general purpose
+              baseCard.detailedAnswer = baseCard.explanation; // Use explanation as detailedAnswer for info modal
+              baseCard.front = baseCard.question;
+              baseCard.back = baseCard.explanation; // Back of the card will show the full explanation for acronyms
           } else if (baseCard.questionType === 'multiple_choice') {
               // Ensure options are properly set
               if (!baseCard.options || !Array.isArray(baseCard.options) || baseCard.options.length === 0) {
@@ -154,7 +163,9 @@ const FlashcardGeneratorBridge = ({
                   `Correct Answer: a) ${baseCard.correctAnswer || 'Option A'}`;
           } else { // short_answer or essay
               baseCard.front = baseCard.question;
-              baseCard.back = baseCard.detailedAnswer || baseCard.answer || (Array.isArray(baseCard.keyPoints) ? baseCard.keyPoints.join('\n') : '');
+              // For short_answer and essay, the back of the card should display keyPoints
+              baseCard.back = Array.isArray(card.keyPoints) && card.keyPoints.length > 0 ? card.keyPoints.join('\n') : (baseCard.detailedAnswer || baseCard.answer || '');
+              // detailedAnswer is already assigned from ...card, so it's available for the info modal
           }
           
           // --- Final Standardization Step ---

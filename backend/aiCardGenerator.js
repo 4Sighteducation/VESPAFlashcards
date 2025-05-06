@@ -79,27 +79,25 @@ CONTENT GUIDANCE:
     basePrompt += `
 CONTENT GUIDANCE:
 - Questions should require concise, focused answers
-- KeyPoints should list exactly what an examiner would look for
-- Include 3-5 key points that would earn full marks
-- Explanations should be comprehensive and include examples
+- KeyPoints should list exactly what an examiner would look for (2-4 points)
+- DetailedAnswer should provide a comprehensive explanation with examples
 `;
   } 
   else if (questionType === "essay") {
     basePrompt += `
 CONTENT GUIDANCE:
 - Questions should match typical ${examType} essay question styles
-- KeyPoints should reflect main arguments needed for top marks
-- Include ${examType}-appropriate evaluation and analysis guidance
-- Detailed answer should provide essay structure with intro, arguments, conclusion
+- KeyPoints should reflect main arguments and essay structure needed for top marks (e.g., intro, para 1, para 2, conclusion)
+- Include ${examType}-appropriate evaluation and analysis guidance in the detailed answer
+- DetailedAnswer should provide a more elaborate explanation of the content, suitable for deeper understanding after reviewing key points
 `;
   } 
   else if (questionType === "acronym") {
     basePrompt += `
 CONTENT GUIDANCE:
-- Create genuinely useful acronyms for key ${topic} concepts
-- Acronyms should help remember complex processes, lists or sequences
-- Make sure the acronym is memorable and easy to recall
-- Explanation should cover what each letter stands for with details
+- Question: A clear question asking what the acronym stands for or its relevance.
+- Acronym: The acronym itself.
+- Explanation: What each letter stands for with detailed explanation of the concept it represents.
 `;
   }
 
@@ -149,11 +147,11 @@ async function generateCards({ subject, topic, examType, examBoard, questionType
       keyPoints: { 
         type: "array", 
         items: { type: "string" },
-        description: "3-5 key points that would earn full marks in an exam"
+        description: "2-4 key points that would earn full marks in an exam"
       },
       detailedAnswer: { 
         type: "string", 
-        description: "Comprehensive explanation with examples"
+        description: "Comprehensive explanation with examples, separate from key points."
       }
     };
   } else if (questionType === "essay") {
@@ -163,20 +161,21 @@ async function generateCards({ subject, topic, examType, examBoard, questionType
       keyPoints: { 
         type: "array", 
         items: { type: "string" },
-        description: "Key points or arguments that should be included in the essay"
+        description: "Key points outlining essay structure and main arguments (e.g., intro, arguments, conclusion)."
       },
       detailedAnswer: { 
         type: "string", 
-        description: "Essay structure with intro, arguments, and conclusion"
+        description: "Detailed explanation of essay content, suitable for the info modal."
       }
     };
   } else if (questionType === "acronym") {
     cardProperties = {
       ...cardProperties,
+      question: { type: "string", description: "The question to be displayed on the front of the card, e.g., 'What does HTML stand for?'" },
       acronym: { type: "string", description: "A memorable acronym for a concept" },
       explanation: { 
         type: "string", 
-        description: "What each letter stands for and detailed explanation"
+        description: "What each letter stands for and detailed explanation of the concept it represents (this will be used as the detailed answer)"
       }
     };
   }
@@ -216,6 +215,10 @@ async function generateCards({ subject, topic, examType, examBoard, questionType
     if (response.choices[0].message.function_call) {
       try {
         const functionArgs = JSON.parse(response.choices[0].message.function_call.arguments);
+        if (functionArgs.error) {
+          console.error("OpenAI function call returned an error:", functionArgs.error);
+          return JSON.stringify({ error: "OpenAI function call failed: " + (typeof functionArgs.error === 'string' ? functionArgs.error : JSON.stringify(functionArgs.error)) });
+        }
         if (functionArgs.cards && Array.isArray(functionArgs.cards)) {
           console.log(`Successfully generated ${functionArgs.cards.length} cards using function calling`);
           return JSON.stringify(functionArgs.cards);
