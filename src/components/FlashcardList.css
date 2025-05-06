@@ -1938,3 +1938,149 @@ html {
     padding: 5px 10px;
   }
 }
+
+/* --- START: Hamburger Menu Styles --- */
+
+/* Hide toggles on desktop by default */
+.topic-actions-toggle,
+.subject-actions-toggle {
+  display: none;
+}
+
+/* Hide text spans on desktop */
+.topic-actions-menu .button-text,
+.subject-actions-menu .button-text {
+  display: none;
+}
+
+/* Base style for the menu containers (hidden by default) */
+.topic-actions-menu,
+.subject-actions-menu {
+  display: flex; /* Keep flex for desktop layout */
+  gap: 8px;
+  align-items: center;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .topic-actions,
+  .subject-actions {
+    position: relative; /* Needed for absolute positioning of the menu */
+    justify-content: flex-end; /* Align toggle to the right */
+  }
+
+  /* Hide the original buttons directly inside action containers */
+  .topic-actions > .topic-actions-menu > .nav-button,
+  .subject-actions > .subject-actions-menu > .nav-button {
+    display: none; 
+  }
+
+  /* Show the toggle buttons */
+  .topic-actions-toggle.mobile-only,
+  .subject-actions-toggle.mobile-only {
+    display: flex; /* Show the toggle */
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: inherit; /* Use header text color */
+    cursor: pointer;
+    padding: 0;
+    border-radius: 4px;
+    width: 30px; /* Size of the toggle */
+    height: 30px;
+    font-size: 1.2rem; /* Size of the ellipsis icon */
+    transition: background-color 0.2s;
+  }
+  .topic-actions-toggle.mobile-only:hover,
+  .subject-actions-toggle.mobile-only:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Style the menu containers when active */
+  .topic-actions-menu,
+  .subject-actions-menu {
+    display: none; /* Hide menu by default */
+    position: absolute;
+    top: 100%; /* Position below the toggle */
+    right: 0; /* Align to the right */
+    background-color: white;
+    border-radius: 6px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    padding: 8px;
+    margin-top: 4px; /* Small gap */
+    flex-direction: column; /* Stack buttons vertically */
+    gap: 5px; /* Gap between buttons in menu */
+    min-width: 150px; /* Minimum width */
+  }
+
+  .topic-actions-menu.active,
+  .subject-actions-menu.active {
+    display: flex; /* Show the menu when active */
+  }
+
+  /* Style buttons inside the active menus */
+  .topic-actions-menu.active .nav-button,
+  .subject-actions-menu.active .nav-button {
+    display: flex; /* Ensure button is visible */
+    width: 100%;
+    justify-content: flex-start; /* Align icon/text left */
+    padding: 8px 10px; /* Adjust padding */
+    background-color: transparent;
+    color: #333; /* Dark text for readability on white */
+    border: none;
+    box-shadow: none;
+    height: auto;
+    font-size: 0.9rem;
+    gap: 8px; /* Gap between icon and text */
+  }
+  
+  .topic-actions-menu.active .nav-button:hover,
+  .subject-actions-menu.active .nav-button:hover {
+    background-color: #f0f0f0;
+    color: #000;
+    transform: none;
+  }
+
+  /* Show the text span inside the mobile menus */
+  .topic-actions-menu.active .button-text.mobile-only,
+  .subject-actions-menu.active .button-text.mobile-only {
+    display: inline; 
+    color: inherit; /* Inherit button text color */
+  }
+
+  /* Ensure icons inside menu buttons are styled */
+  .topic-actions-menu.active .button-icon,
+  .subject-actions-menu.active .button-icon {
+     font-size: 1em; /* Adjust icon size if needed */
+     color: #555; /* Slightly muted icon color */
+  }
+
+  /* Specific styling for delete buttons in menus */
+  .topic-actions-menu.active .delete-topic-button,
+  .subject-actions-menu.active .delete-button {
+     color: #d32f2f; /* Red text for delete */
+     background-color: transparent;
+     border-bottom: none;
+  }
+  .topic-actions-menu.active .delete-topic-button:hover,
+  .subject-actions-menu.active .delete-button:hover {
+     background-color: rgba(211, 47, 47, 0.1);
+  }
+  .topic-actions-menu.active .delete-topic-button .button-icon,
+  .subject-actions-menu.active .delete-button .button-icon {
+     color: #d32f2f;
+  }
+
+  /* Ensure topic title wraps */
+  .topic-info h3 {
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+  }
+}
+
+/* --- END: Hamburger Menu Styles --- */

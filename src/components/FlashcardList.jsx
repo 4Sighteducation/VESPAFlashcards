@@ -268,6 +268,12 @@ const FlashcardList = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
+  // State to track open topic action menus
+  const [openTopicMenus, setOpenTopicMenus] = useState({});
+
+  // State to track open subject action menus
+  const [openSubjectMenus, setOpenSubjectMenus] = useState({});
+
   // 2. useRef Hooks
   const subjectRefs = useRef({});
   const topicRefs = useRef({}); // Refs for topic elements
@@ -381,155 +387,29 @@ const FlashcardList = ({
     setGroupedCards(bySubjectAndTopic);
   }, [cards]); // Dependency: Only the cards prop
 
-  // 4. useEffect for Color Initialization and Synchronization with Props
-  useEffect(() => {
-    // --- Log cards prop received ---
-    if (Array.isArray(cards)) {
-        console.log(`[FlashcardList useEffect] Received cards prop. Count: ${cards.length}. Sample options:`);
-        cards.slice(0, 5).forEach((card, index) => {
-            if (card && (card.questionType === 'multiple_choice' || (Array.isArray(card.options) && card.options.length > 0))) {
-                console.log(`[FlashcardList PROP] Card ${index} (ID: ${card.id}) options:`, JSON.stringify(card.options));
-            }
-        });
-    } else {
-        console.warn('[FlashcardList useEffect] Received non-array cards prop:', cards);
-    }
-    // --- End log ---
-    
-    const colorMappingFromProps = subjectColorMappingFromProps || {};
-    console.log("[FlashcardList Color Sync Effect V2] Running. Props received:", colorMappingFromProps);
-
-    if (!groupedCards || Object.keys(groupedCards).length === 0) {
-      if (Object.keys(subjectColorMapping).length > 0) {
-        console.log("[FlashcardList Color Sync Effect V2] No grouped cards, clearing local color state.");
-        setSubjectColorMapping({});
-      }
-      return;
-    }
-
-    let needsLocalUpdate = false;
-    // Start with a deep copy of the current local state
-    // This ensures we preserve existing local colors unless overwritten by props
-    const nextLocalMapping = JSON.parse(JSON.stringify(subjectColorMapping || {}));
-
-    // --- Step 1: Sync with Props --- 
-    // Update local state with colors definitively provided by props
-    Object.keys(colorMappingFromProps).forEach(subject => {
-        const propSubjectInfo = colorMappingFromProps[subject];
-        if (!propSubjectInfo) return; // Skip if prop info is somehow null/undefined
-
-        // Ensure subject entry exists locally
-        if (!nextLocalMapping[subject]) {
-            nextLocalMapping[subject] = { base: null, topics: {} };
-            needsLocalUpdate = true;
-        }
-
-        // Update base color if provided in props and different from local
-        if (propSubjectInfo.base && propSubjectInfo.base !== nextLocalMapping[subject].base) {
-            console.log(`[FlashcardList Color Sync V2] Updating subject '${subject}' base color from props: ${propSubjectInfo.base}`);
-            nextLocalMapping[subject].base = propSubjectInfo.base;
-            needsLocalUpdate = true;
-        }
-
-        // Ensure topics object exists locally
-        if (!nextLocalMapping[subject].topics) {
-             nextLocalMapping[subject].topics = {};
-             // No need to set needsLocalUpdate just for creating empty object
-        }
-
-        // Update topic colors if provided in props
-        if (propSubjectInfo.topics) {
-             Object.keys(propSubjectInfo.topics).forEach(topic => {
-                 const propTopicInfo = propSubjectInfo.topics[topic];
-                 const propTopicColor = propTopicInfo?.base || propTopicInfo; // Handle old/new format
-                 const localTopicColor = nextLocalMapping[subject].topics[topic]?.base || nextLocalMapping[subject].topics[topic];
-
-                 if (propTopicColor && propTopicColor !== localTopicColor) {
-                    console.log(`[FlashcardList Color Sync V2] Updating topic '${topic}' color for subject '${subject}' from props: ${propTopicColor}`);
-                    // Ensure topic entry exists in the modern object format
-                    nextLocalMapping[subject].topics[topic] = { base: propTopicColor };
-                    needsLocalUpdate = true;
-                 }
-             });
-        }
-    });
-
-    // --- Step 2: Assign Defaults ONLY for Missing Entries --- 
-    // Iterate subjects derived from the current cards
-    Object.keys(groupedCards).forEach(subject => {
-      // Check if subject base color is missing locally *after* syncing with props
-      if (!nextLocalMapping[subject] || !nextLocalMapping[subject].base) {
-        const randomBaseColor = BRIGHT_COLORS[Math.floor(Math.random() * BRIGHT_COLORS.length)];
-        console.log(`[FlashcardList Color Sync V2] Subject '${subject}' missing base color locally. Assigning default: ${randomBaseColor}`);
-        if (!nextLocalMapping[subject]) nextLocalMapping[subject] = { topics: {} }; // Ensure subject entry exists
-        nextLocalMapping[subject].base = randomBaseColor;
-        needsLocalUpdate = true;
-      }
-
-      // Ensure topics object exists
-      if (!nextLocalMapping[subject].topics) {
-         nextLocalMapping[subject].topics = {};
-      }
-
-      const subjectBaseColor = nextLocalMapping[subject].base;
-      const topicsInSubject = Object.keys(groupedCards[subject] || {});
-
-      // Check topics within the subject
-      topicsInSubject.forEach((topic, index) => {
-        const localTopicEntry = nextLocalMapping[subject].topics[topic];
-        const localTopicColor = localTopicEntry?.base || localTopicEntry; // Handle old/new format
-
-        // Assign default shade ONLY if topic color is missing locally
-        if (!localTopicColor) {
-          const shadePercent = -10 + (index % 5) * 5;
-          const topicShade = generateShade(subjectBaseColor, shadePercent);
-          console.log(`[FlashcardList Color Sync V2] Topic '${topic}' missing color locally for subject '${subject}'. Assigning default shade: ${topicShade}`);
-          nextLocalMapping[subject].topics[topic] = { base: topicShade }; // Store in modern format
-          needsLocalUpdate = true;
-        }
-      });
-    });
-
-    // --- Step 3: Update State if Changed --- 
-    // Compare the derived nextLocalMapping with the current local state
-    // Only update local state if there's an actual difference to prevent loops
-    if (needsLocalUpdate || JSON.stringify(nextLocalMapping) !== JSON.stringify(subjectColorMapping)) {
-       console.log("[FlashcardList Color Sync V2] Updating local color mapping state.", nextLocalMapping);
-       setSubjectColorMapping(nextLocalMapping);
-    } else {
-        console.log("[FlashcardList Color Sync V2] Local color mapping state is already synchronized.");
-    }
-
-  // Dependency: Run when groupedCards changes OR when the mapping from props changes.
-  }, [groupedCards, subjectColorMappingFromProps]); // REMOVED local subjectColorMapping from deps again
-
-  const getExistingSubjectNames = useMemo(() => {
-    // Now depends on groupedCards which is defined above
-    return Object.keys(groupedCards || {});
-  }, [groupedCards]);
-
-  // Add regroupCards callback here, before the early return
-  const regroupCards = useCallback((cards) => {
-    const bySubjectAndTopic = {};
-    if (!Array.isArray(cards)) return {};
-
-    cards.forEach(item => {
-      if (!item || typeof item !== 'object' || !item.id || !item.subject) return;
-      
-        const subject = item.subject || "General";
-        const topic = item.topic || "General";
-        
-        if (!bySubjectAndTopic[subject]) {
-          bySubjectAndTopic[subject] = {};
-        }
-        if (!bySubjectAndTopic[subject][topic]) {
-          bySubjectAndTopic[subject][topic] = [];
-        }
-        bySubjectAndTopic[subject][topic].push(item);
-    });
-
-    return bySubjectAndTopic;
+  // --- START: Function to toggle topic menus ---
+  const toggleTopicMenu = useCallback((topicKey, e) => {
+    e.stopPropagation(); // Prevent triggering topic click (slideshow)
+    setOpenTopicMenus(prev => ({
+      // Close all other menus
+      // ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}),
+      // Toggle the current one
+      [topicKey]: !prev[topicKey]
+    }));
   }, []);
+  // --- END: Function to toggle topic menus ---
+
+  // --- START: Function to toggle subject menus ---
+  const toggleSubjectMenu = useCallback((subjectKey, e) => {
+    e.stopPropagation(); // Prevent triggering subject toggle
+    setOpenSubjectMenus(prev => ({
+      // Close other menus (optional, uncomment if needed)
+      // ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}),
+      // Toggle the current one
+      [subjectKey]: !prev[subjectKey]
+    }));
+  }, []);
+  // --- END: Function to toggle subject menus ---
 
   // 4. useCallback Hooks (Define functions needed by useMemo/useEffect first)
    const getExamInfo = useCallback((subject) => {
@@ -1149,39 +1029,52 @@ const FlashcardList = ({
             </div>
           </div>
           <div className="topic-actions">
-            {/* Add the regenerate button - Always show if logic allows */}
-            <button
-              onClick={handleRegenerateTopicClick}
-              className="nav-button regenerate-button"
-              title="Generate topic cards"
+            {/* Hamburger Toggle Button - Visible only on mobile via CSS */}
+            <button 
+              className="topic-actions-toggle mobile-only" 
+              onClick={(e) => toggleTopicMenu(topicKey, e)}
+              aria-label="Toggle topic actions"
             >
-              <span className="button-icon">⚡</span>
+              &#x22EE; {/* Vertical ellipsis */} 
             </button>
-            {/* Add slideshow button */}
-            <button
-              onClick={handleSlideshowTopicClick}
-              className="nav-button slideshow-button"
-              title="View cards as slideshow"
-              disabled={displayCount === 0}
-            >
-              <span className="button-icon">🔄</span>
-            </button>
-            {/* Always show print button, but disable if no cards */}
-            <button
-              onClick={handlePrintTopicClick}
-              className="nav-button print-topic-button"
-              title="Print topic cards"
-              disabled={displayCount === 0}
-            >
-              <span className="button-icon">🖨️</span>
-            </button>
-            <button
-              onClick={handleDeleteTopicClick}
-              className="nav-button delete-topic-button"
-              title="Delete topic and cards"
-            >
-              <span className="button-icon">🗑️</span>
-            </button>
+
+            {/* Action Buttons Menu - Hidden on mobile unless active */}
+            <div className={`topic-actions-menu ${openTopicMenus[topicKey] ? 'active' : ''}`}>
+              <button
+                onClick={handleRegenerateTopicClick}
+                className="nav-button regenerate-button"
+                title="Generate topic cards"
+              >
+                <span className="button-icon">⚡</span>
+                <span className="button-text mobile-only">Generate Cards</span> {/* Text for menu view */}
+              </button>
+              <button
+                onClick={handleSlideshowTopicClick}
+                className="nav-button slideshow-button"
+                title="View cards as slideshow"
+                disabled={displayCount === 0}
+              >
+                <span className="button-icon">🔄</span>
+                <span className="button-text mobile-only">Slideshow</span>
+              </button>
+              <button
+                onClick={handlePrintTopicClick}
+                className="nav-button print-topic-button"
+                title="Print topic cards"
+                disabled={displayCount === 0}
+              >
+                <span className="button-icon">🖨️</span>
+                <span className="button-text mobile-only">Print</span>
+              </button>
+              <button
+                onClick={handleDeleteTopicClick}
+                className="nav-button delete-topic-button"
+                title="Delete topic and cards"
+              >
+                <span className="button-icon">🗑️</span>
+                <span className="button-text mobile-only">Delete</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1281,36 +1174,52 @@ const FlashcardList = ({
                 </div>
               </div>
               <div className="subject-actions">
-                <button
-                  onClick={handleSlideshowSubject}
-                  className="nav-button slideshow-button"
-                  title="Start slideshow with all cards"
-                  disabled={totalCardCount === 0}
+                 {/* Hamburger Toggle Button - Visible only on mobile via CSS */}
+                <button 
+                  className="subject-actions-toggle mobile-only" 
+                  onClick={(e) => toggleSubjectMenu(subjectKey, e)}
+                  aria-label="Toggle subject actions"
                 >
-                  <span className="button-icon">🔄</span>
+                  &#x22EE; {/* Vertical ellipsis */} 
                 </button>
-                <button
-                  onClick={handlePrintSubjectClick}
-                  className="nav-button print-button"
-                  title="Print subject cards"
-                  disabled={totalCardCount === 0}
-                >
-                  <span className="button-icon">🖨️</span>
-                </button>
-                <button
-                  onClick={handleColorSubjectClick}
-                  className="nav-button color-button"
-                  title="Edit subject color"
-                >
-                  <span className="button-icon">🎨</span>
-                </button>
-                <button
-                  onClick={handleDeleteSubjectClick}
-                  className="nav-button delete-button"
-                  title="Delete subject"
-                >
-                  <span className="button-icon">🗑️</span>
-                </button>
+
+                 {/* Action Buttons Menu - Hidden on mobile unless active */}
+                <div className={`subject-actions-menu ${openSubjectMenus[subjectKey] ? 'active' : ''}`}>
+                  <button
+                    onClick={handleSlideshowSubject}
+                    className="nav-button slideshow-button"
+                    title="Start slideshow with all cards"
+                    disabled={totalCardCount === 0}
+                  >
+                    <span className="button-icon">🔄</span>
+                    <span className="button-text mobile-only">Slideshow</span>
+                  </button>
+                  <button
+                    onClick={handlePrintSubjectClick}
+                    className="nav-button print-button"
+                    title="Print subject cards"
+                    disabled={totalCardCount === 0}
+                  >
+                    <span className="button-icon">🖨️</span>
+                    <span className="button-text mobile-only">Print</span>
+                  </button>
+                  <button
+                    onClick={handleColorSubjectClick}
+                    className="nav-button color-button"
+                    title="Edit subject color"
+                  >
+                    <span className="button-icon">🎨</span>
+                    <span className="button-text mobile-only">Color</span>
+                  </button>
+                  <button
+                    onClick={handleDeleteSubjectClick}
+                    className="nav-button delete-button"
+                    title="Delete subject"
+                  >
+                    <span className="button-icon">🗑️</span>
+                    <span className="button-text mobile-only">Delete</span>
+                  </button>
+                </div>
               </div>
             </div>
             {isExpanded && renderTopics(subject, subjectBaseColor)}
