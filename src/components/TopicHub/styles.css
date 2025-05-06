@@ -1250,6 +1250,13 @@
   color: #0056b3;
 }
 
+.notice-label {
+  font-size: 0.9rem;
+  color: #555;
+  margin-left: 4px;
+  cursor: default;
+}
+
 .notice-details {
   position: absolute; 
   bottom: 100%;

@@ -1238,6 +1238,9 @@ const TopicHub = ({
               >
                 <FaInfo />
               </button>
+              <span className="notice-label">
+                 How we generate topics
+              </span>
               {showHelpTextDetails && (
                  <div className="notice-details help-details-popover">
                    <h4 className="notice-details-heading">How we generate topics</h4> 
@@ -1339,10 +1342,14 @@ const TopicHub = ({
         <button 
           className="notice-info-button" 
           onClick={() => setShowNoticeDetails(!showNoticeDetails)}
-          title="Show details about topic generation"
+          title="About your topic list"
         >
           <FaInfo />
         </button>
+        {/* Added visible label */}
+        <span className="notice-label">
+          About your topic list
+        </span>
 
         {/* Conditionally render the details in a popover-like div */}
         {showNoticeDetails && (
