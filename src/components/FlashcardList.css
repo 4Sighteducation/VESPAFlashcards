@@ -1943,24 +1943,37 @@ html {
 /* --- START: Hamburger Menu Styles --- */
 
 /* Hide toggles on desktop by default */
-.topic-actions-toggle,
-.subject-actions-toggle {
-  display: none;
+.topic-actions-toggle.mobile-only,
+.subject-actions-toggle.mobile-only {
+  display: none !important; /* Force hide on desktop */
 }
 
-/* Hide text spans on desktop */
+/* Hide text spans on desktop (already here, ensure it's effective) */
 .topic-actions-menu .button-text,
 .subject-actions-menu .button-text {
   display: none;
 }
 
-/* Base style for the menu containers */
+/* Base style for the menu containers (icon holders) */
 .topic-actions-menu,
 .subject-actions-menu {
-  display: flex; /* Default: show buttons side-by-side */
-  gap: 8px;
-  align-items: center;
+  display: flex !important; /* Force show icon container on desktop */
+  flex-direction: row !important; /* Ensure horizontal layout for icons */
+  gap: 8px !important; /* Restore gap if overridden */
+  align-items: center !important; /* Ensure alignment */
 }
+
+/* Ensure direct .nav-button children of these menus are displayed as flex items on desktop */
+.topic-actions-menu > .nav-button,
+.subject-actions-menu > .nav-button {
+    display: flex !important; /* Make sure icons themselves are visible and flex */
+    /* Reset any mobile-specific hiding that might leak */
+    width: auto !important; 
+    padding: 6px !important; /* Re-assert typical desktop padding for icons */
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: inherit !important;
+}
+
 
 /* Mobile Styles */
 @media (max-width: 768px) {
@@ -1970,120 +1983,122 @@ html {
     justify-content: flex-end; /* Align toggle to the right */
   }
 
-  /* Hide the original buttons directly inside action containers ON MOBILE */
+  .topic-info { /* Added rule for mobile .topic-info */
+    min-width: 0; /* Allow shrinking with long content */
+    /* inherits flex: 1, overflow: hidden (from general), margin-right: 10px */
+  }
+
+  /* Hide the original full buttons that were part of the desktop menu */
   .topic-actions > .topic-actions-menu > .nav-button,
   .subject-actions > .subject-actions-menu > .nav-button {
-    display: none; 
+    display: none !important; /* Force hide these direct icons on mobile */
   }
 
   /* Show the toggle buttons ON MOBILE */
   .topic-actions-toggle.mobile-only,
   .subject-actions-toggle.mobile-only {
-    display: flex; /* Show the toggle */
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: inherit; /* Use header text color */
-    cursor: pointer;
-    padding: 0;
-    border-radius: 4px;
-    width: 30px; /* Size of the toggle */
-    height: 30px;
-    font-size: 1.2rem; /* Size of the ellipsis icon */
-    transition: background-color 0.2s;
+    display: flex !important; /* Show the toggle, override desktop important */
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: none !important;
+    color: inherit !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 1.2rem !important;
   }
   .topic-actions-toggle.mobile-only:hover,
   .subject-actions-toggle.mobile-only:hover {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.3) !important;
   }
 
-  /* Style the menu containers when active */
+  /* Style the menu containers (dropdown) when active on MOBILE */
   .topic-actions-menu,
   .subject-actions-menu {
-    display: none; /* Hide menu by default */
-    position: absolute;
-    top: 100%; /* Position below the toggle */
-    right: 0; /* Align to the right */
-    background-color: white;
-    border-radius: 6px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-    z-index: 100;
-    padding: 8px;
-    margin-top: 4px; /* Small gap */
-    flex-direction: column; /* Stack buttons vertically */
-    gap: 5px; /* Gap between buttons in menu */
-    min-width: 150px; /* Minimum width */
+    display: none !important; /* Hide menu (dropdown) by default on mobile, override desktop important */
+    position: absolute !important;
+    top: 100% !important; 
+    right: 0 !important;
+    background-color: white !important;
+    border-radius: 6px !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2) !important;
+    z-index: 100 !important;
+    padding: 8px !important;
+    margin-top: 4px !important;
+    gap: 5px !important;
+    min-width: 150px !important;
   }
 
   .topic-actions-menu.active,
   .subject-actions-menu.active {
-    display: flex; /* Show the menu when active */
+    display: flex !important; /* Show the menu (dropdown) when .active on mobile */
+    flex-direction: column !important; /* Stack buttons vertically */
   }
 
-  /* Style buttons inside the active menus */
+  /* Style buttons inside the active mobile menus */
   .topic-actions-menu.active .nav-button,
   .subject-actions-menu.active .nav-button {
-    display: flex; /* Ensure button is visible */
-    width: 100%;
-    justify-content: flex-start; /* Align icon/text left */
-    padding: 8px 10px; /* Adjust padding */
-    background-color: transparent;
-    color: #333; /* Dark text for readability on white */
-    border: none;
-    box-shadow: none;
-    height: auto;
-    font-size: 0.9rem;
-    gap: 8px; /* Gap between icon and text */
+    display: flex !important; /* Ensure button is visible in mobile menu */
+    width: 100% !important;
+    justify-content: flex-start !important; 
+    padding: 8px 10px !important; 
+    background-color: transparent !important;
+    color: #333 !important; 
+    border: none !important;
+    box-shadow: none !important;
+    height: auto !important;
+    font-size: 0.9rem !important;
+    gap: 8px !important;
   }
   
   .topic-actions-menu.active .nav-button:hover,
   .subject-actions-menu.active .nav-button:hover {
-    background-color: #f0f0f0;
-    color: #000;
-    transform: none;
+    background-color: #f0f0f0 !important;
+    color: #000 !important;
+    transform: none !important;
   }
 
   /* Show the text span inside the mobile menus */
   .topic-actions-menu.active .button-text.mobile-only,
   .subject-actions-menu.active .button-text.mobile-only {
-    display: inline; 
-    color: inherit; /* Inherit button text color */
+    display: inline !important; 
+    color: inherit !important; 
   }
 
   /* Ensure icons inside menu buttons are styled */
   .topic-actions-menu.active .button-icon,
   .subject-actions-menu.active .button-icon {
-     font-size: 1em; /* Adjust icon size if needed */
-     color: #555; /* Slightly muted icon color */
+     font-size: 1em !important; 
+     color: #555 !important; 
   }
 
   /* Specific styling for delete buttons in menus */
   .topic-actions-menu.active .delete-topic-button,
   .subject-actions-menu.active .delete-button {
-     color: #d32f2f; /* Red text for delete */
-     background-color: transparent;
-     border-bottom: none;
+     color: #d32f2f !important; 
+     background-color: transparent !important;
+     border-bottom: none !important;
   }
   .topic-actions-menu.active .delete-topic-button:hover,
   .subject-actions-menu.active .delete-button:hover {
-     background-color: rgba(211, 47, 47, 0.1);
+     background-color: rgba(211, 47, 47, 0.1) !important;
   }
   .topic-actions-menu.active .delete-topic-button .button-icon,
   .subject-actions-menu.active .delete-button .button-icon {
-     color: #d32f2f;
+     color: #d32f2f !important;
   }
 
-  /* Ensure topic title wraps AND is visible */
+  /* Ensure topic title wraps AND is visible and uses smaller font */
   .topic-info h3 {
-    white-space: normal;
-    word-break: break-word;
-    overflow: visible; /* Allow overflow if needed */
-    text-overflow: clip; /* No ellipsis */
-    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
-    line-height: 1.3; /* Adjust line height */
-    max-height: none; /* Remove any max-height restriction */
-    min-height: 1.3em; /* Ensure at least one line is visible */
+    white-space: normal !important; /* Was normal */
+    word-break: break-word !important; /* Was break-word */
+    font-size: clamp(0.75rem, 2.2vw, 0.95rem) !important; /* Adjusted font size */
+    line-height: 1.3 !important; 
+    max-height: none !important; 
+    min-height: 1.3em !important; 
   }
 }
 
