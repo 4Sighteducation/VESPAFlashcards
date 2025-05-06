@@ -56,6 +56,11 @@ const TopicHub = ({
   const [editMainTopicMode, setEditMainTopicMode] = useState(null);
   const [editMainTopicValue, setEditMainTopicValue] = useState('');
   
+  // State for Edit Topic Modal
+  const [showEditTopicModal, setShowEditTopicModal] = useState(false);
+  const [topicToEdit, setTopicToEdit] = useState(null);
+  const [modalEditValue, setModalEditValue] = useState({ mainTopic: '', subtopic: '' }); // State for modal inputs
+  
   // State for deletion confirmation - fixed to properly destructure state
   const [showDeleteMainTopicDialog, setShowDeleteMainTopicDialog] = useState(false);
   const [mainTopicToDelete, setMainTopicToDelete] = useState(null);
@@ -79,6 +84,12 @@ const TopicHub = ({
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   
   const [topicListSaved, setTopicListSaved] = useState(false);
+  
+  // State for the new "Add Topic" modal
+  const [showAddTopicModal, setShowAddTopicModal] = useState(false);
+  
+  // State for the topic generation notice details visibility
+  const [showNoticeDetails, setShowNoticeDetails] = useState(false);
   
    
   // Load saved content guidance when a topic is selected
@@ -911,43 +922,59 @@ const TopicHub = ({
     setTopics(prev => prev.filter(t => t.id !== topicId));
   };
   
-  // Start editing a topic
+  // Start editing a topic (MODIFIED FOR MODAL)
   const startEdit = (topic) => {
-    setEditMode(topic.id);
-    setEditValue({
+    console.log("Opening edit modal for topic:", topic);
+    setTopicToEdit(topic); // Store the whole topic object
+    setModalEditValue({ // Pre-fill modal form state
       mainTopic: topic.mainTopic,
       subtopic: topic.subtopic
     });
+    setShowEditTopicModal(true); // Show the modal
+    // setEditMode(topic.id); // No longer needed for inline edit mode
+    // setEditValue({ mainTopic: topic.mainTopic, subtopic: topic.subtopic }); // No longer needed for inline edit value
   };
   
-  // Save an edited topic
-  const saveEdit = (topicId) => {
-    if (!editValue.mainTopic.trim() || !editValue.subtopic.trim()) {
+  // Save an edited topic (MODIFIED FOR MODAL)
+  const saveEdit = () => { // No longer needs topicId parameter
+    if (!topicToEdit) {
+      console.error("No topic selected for editing.");
+      return;
+    }
+    if (!modalEditValue.mainTopic.trim() || !modalEditValue.subtopic.trim()) {
       setError("Both Main Topic and Subtopic are required");
+      // TODO: Show error within the modal?
       return;
     }
     
     setTopics(prev => prev.map(topic => {
-      if (topic.id === topicId) {
+      if (topic.id === topicToEdit.id) { // Use ID from topicToEdit
+        console.log(`Updating topic ${topicToEdit.id} with values:`, modalEditValue);
         return {
           ...topic,
-          topic: `${editValue.mainTopic}: ${editValue.subtopic}`,
-          mainTopic: editValue.mainTopic,
-          subtopic: editValue.subtopic
+          topic: `${modalEditValue.mainTopic}: ${modalEditValue.subtopic}`,
+          mainTopic: modalEditValue.mainTopic,
+          subtopic: modalEditValue.subtopic
         };
       }
       return topic;
     }));
     
-    setEditMode(null);
-    setEditValue({ mainTopic: '', subtopic: '' });
+    // Close modal and reset state
+    setShowEditTopicModal(false);
+    setTopicToEdit(null);
+    setModalEditValue({ mainTopic: '', subtopic: '' });
     setError(null);
   };
   
-  // Cancel editing
+  // Cancel editing (MODIFIED FOR MODAL)
   const cancelEdit = () => {
-    setEditMode(null);
-    setEditValue({ mainTopic: '', subtopic: '' });
+    setShowEditTopicModal(false);
+    setTopicToEdit(null);
+    setModalEditValue({ mainTopic: '', subtopic: '' });
+    setError(null);
+    // setEditMode(null); // No longer needed
+    // setEditValue({ mainTopic: '', subtopic: '' }); // No longer needed
   };
   
   // Start editing a main topic
@@ -1292,14 +1319,28 @@ const TopicHub = ({
     
     return (
       <div className="topic-generation-notice">
-        <div className="notice-icon">ℹ️</div>
-        <div className="notice-content">
-          <p>
-            <strong>About these topics:</strong> We've curated up to 30 key topics from the {examBoard} {examType} {subject} specification, 
-            focusing on written exam content. While taken directly from the curriculum, the list may not be exhaustive.
-            You can add your own topics as needed.
-          </p>
-        </div>
+        {/* Info button to toggle details */}
+        <button 
+          className="notice-info-button" 
+          onClick={() => setShowNoticeDetails(!showNoticeDetails)}
+          title="Show details about topic generation"
+        >
+          <FaInfo />
+        </button>
+
+        {/* Conditionally render the details in a popover-like div */}
+        {showNoticeDetails && (
+          <div className="notice-details">
+            <p>
+              <strong>About these topics:</strong> We've curated up to 30 key topics from the {examBoard} {examType} {subject} specification, 
+              focusing on written exam content. While taken directly from the curriculum, the list may not be exhaustive.
+              You can add your own topics as needed.
+            </p>
+            <button className="notice-details-close" onClick={() => setShowNoticeDetails(false)}>
+              <FaTimes />
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -1352,7 +1393,7 @@ const TopicHub = ({
             
             <button
               className="add-topic-button"
-              onClick={() => setShowAddTopicForm(true)}
+              onClick={() => setShowAddTopicModal(true)}
               title="Add a new topic manually"
             >
               <FaPlus /> Add Topic
@@ -1432,35 +1473,8 @@ const TopicHub = ({
                 <div className="subtopics-list">
                   {mainTopic.subtopics.map(topic => (
                     <div key={topic.id} className="subtopic-item">
-                      {editMode === topic.id ? (
-                        <div className="subtopic-edit-form">
-                          <div className="edit-form-inputs">
-                            <input
-                              type="text"
-                              value={editValue.mainTopic}
-                              onChange={(e) => setEditValue({...editValue, mainTopic: e.target.value})}
-                              placeholder="Main Topic"
-                              className="edit-main-topic"
-                            />
-                            <input
-                              type="text"
-                              value={editValue.subtopic}
-                              onChange={(e) => setEditValue({...editValue, subtopic: e.target.value})}
-                              placeholder="Subtopic"
-                              className="edit-subtopic"
-                              autoFocus
-                            />
-                          </div>
-                          <div className="edit-form-actions">
-                            <button onClick={() => saveEdit(topic.id)} className="save-edit-button">
-                              <FaSave />
-                            </button>
-                            <button onClick={cancelEdit} className="cancel-edit-button">
-                              <FaExclamationTriangle />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
+                      {/* REMOVED INLINE EDIT FORM LOGIC HERE - Now handled by modal */}
+                      {/* {editMode === topic.id ? (...) : ( */} 
                         <>
                           <div className="subtopic-info">
                             <span className="subtopic-id">{topic.id}</span>
@@ -1486,7 +1500,7 @@ const TopicHub = ({
                             )}
                             <button
                               className="edit-button"
-                              onClick={() => startEdit(topic)}
+                              onClick={() => startEdit(topic)} // Ensure this calls the MODAL version of startEdit
                               title="Edit Topic"
                             >
                               <FaEdit />
@@ -1507,74 +1521,6 @@ const TopicHub = ({
               )}
             </div>
           ))}
-        </div>
-        
-        <div className="add-topic-section">
-          <h4>Add New Topic</h4>
-          <div className="add-topic-form">
-            <div className="add-topic-inputs">
-              <div className="main-topic-input-container">
-                <div className="topic-input-toggle">
-                  <label className="toggle-label">
-                    <input
-                      type="checkbox"
-                      checked={useExistingMainTopic}
-                      onChange={() => setUseExistingMainTopic(!useExistingMainTopic)}
-                      className="toggle-checkbox"
-                    />
-                    <span className="toggle-text">
-                      {useExistingMainTopic ? "Select existing main topic" : "Add new main topic"}
-                    </span>
-                  </label>
-                </div>
-                
-                {useExistingMainTopic && mainTopics.length > 0 ? (
-                  <select
-                    value={newTopicInput.mainTopic}
-                    onChange={(e) => {
-                      if (e.target.value === "__add_new__") {
-                        setUseExistingMainTopic(false);
-                        setNewTopicInput({...newTopicInput, mainTopic: ''});
-                      } else {
-                        setNewTopicInput({...newTopicInput, mainTopic: e.target.value});
-                      }
-                    }}
-                    className="main-topic-select"
-                  >
-                    <option value="">-- Select Main Topic --</option>
-                    {mainTopics.map(mainTopic => (
-                      <option key={mainTopic.name} value={mainTopic.name}>
-                        {mainTopic.name}
-                      </option>
-                    ))}
-                    <option value="__add_new__">+ Add New Main Topic</option>
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={newTopicInput.mainTopic}
-                    onChange={(e) => setNewTopicInput({...newTopicInput, mainTopic: e.target.value})}
-                    placeholder="Main Topic"
-                    className="add-main-topic"
-                  />
-                )}
-              </div>
-              <input
-                type="text"
-                value={newTopicInput.subtopic}
-                onChange={(e) => setNewTopicInput({...newTopicInput, subtopic: e.target.value})}
-                placeholder="Subtopic"
-                className="add-subtopic"
-              />
-            </div>
-            <button 
-              onClick={addTopic} 
-              className="add-topic-button"
-              disabled={!newTopicInput.mainTopic.trim() || !newTopicInput.subtopic.trim() || newTopicInput.mainTopic === "__add_new__"}
-            >
-              <FaPlus /> Add Topic
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -1824,6 +1770,162 @@ const TopicHub = ({
     );
   };
   
+  // Render the Add Topic Modal
+  const renderAddTopicModal = () => {
+    if (!showAddTopicModal) return null;
+
+    // Handle adding the topic and closing the modal
+    const handleAddAndClose = () => {
+      addTopic(); // Call the existing addTopic function
+      setShowAddTopicModal(false); // Close the modal
+      // Reset form state for next time
+      setNewTopicInput({ mainTopic: '', subtopic: '' });
+      setUseExistingMainTopic(true);
+    };
+
+    return (
+      <div className="modal-overlay" onClick={() => setShowAddTopicModal(false)}>
+        <div className="add-topic-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+             <h2>Add New Topic</h2>
+             <button className="modal-close-btn" onClick={() => setShowAddTopicModal(false)}>×</button>
+           </div>
+           
+           <div className="add-topic-form">
+             <div className="add-topic-inputs">
+               <div className="main-topic-input-container">
+                 <div className="topic-input-toggle">
+                   <label className="toggle-label">
+                     <input
+                       type="checkbox"
+                       checked={useExistingMainTopic}
+                       onChange={() => setUseExistingMainTopic(!useExistingMainTopic)}
+                       className="toggle-checkbox"
+                     />
+                     <span className="toggle-text">
+                       {useExistingMainTopic ? "Select existing main topic" : "Add new main topic"}
+                     </span>
+                   </label>
+                 </div>
+                 
+                 {useExistingMainTopic && mainTopics.length > 0 ? (
+                   <select
+                     value={newTopicInput.mainTopic}
+                     onChange={(e) => {
+                       if (e.target.value === "__add_new__") {
+                         setUseExistingMainTopic(false);
+                         setNewTopicInput({...newTopicInput, mainTopic: ''});
+                       } else {
+                         setNewTopicInput({...newTopicInput, mainTopic: e.target.value});
+                       }
+                     }}
+                     className="main-topic-select form-control"
+                   >
+                     <option value="">-- Select Main Topic --</option>
+                     {mainTopics.map(mainTopic => (
+                       <option key={mainTopic.name} value={mainTopic.name}>
+                         {mainTopic.name}
+                       </option>
+                     ))}
+                     <option value="__add_new__">+ Add New Main Topic</option>
+                   </select>
+                 ) : (
+                   <input
+                     type="text"
+                     value={newTopicInput.mainTopic}
+                     onChange={(e) => setNewTopicInput({...newTopicInput, mainTopic: e.target.value})}
+                     placeholder="New Main Topic Name"
+                     className="add-main-topic form-control"
+                   />
+                 )}
+               </div>
+               <input
+                 type="text"
+                 value={newTopicInput.subtopic}
+                 onChange={(e) => setNewTopicInput({...newTopicInput, subtopic: e.target.value})}
+                 placeholder="Subtopic Name"
+                 className="add-subtopic form-control"
+               />
+             </div>
+             <div className="modal-actions">
+                <button
+                  onClick={() => setShowAddTopicModal(false)}
+                  className="button-secondary cancel-button"
+                >
+                  Cancel
+                </button>
+               <button 
+                 onClick={handleAddAndClose}
+                 className="button-primary add-topic-button"
+                 disabled={!newTopicInput.mainTopic.trim() || !newTopicInput.subtopic.trim() || newTopicInput.mainTopic === "__add_new__"}
+               >
+                 <FaPlus /> Add Topic
+               </button>
+             </div>
+           </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Render the Edit Topic Modal
+  const renderEditTopicModal = () => {
+    if (!showEditTopicModal || !topicToEdit) return null;
+  
+    return (
+      <div className="modal-overlay" onClick={cancelEdit}> {/* Use cancelEdit for background click */}
+        <div className="edit-topic-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+             <h2>Edit Topic</h2>
+             <button className="modal-close-btn" onClick={cancelEdit}>×</button>
+           </div>
+           
+           <div className="edit-topic-form"> {/* Use a specific class if needed */}
+             {/* Input fields using modalEditValue state */}
+             <div className="form-group">
+               <label htmlFor="modal-edit-mainTopic">Main Topic</label>
+               <input
+                 id="modal-edit-mainTopic"
+                 type="text"
+                 value={modalEditValue.mainTopic}
+                 onChange={(e) => setModalEditValue({...modalEditValue, mainTopic: e.target.value})}
+                 placeholder="Main Topic"
+                 className="form-control" 
+               />
+             </div>
+             <div className="form-group">
+               <label htmlFor="modal-edit-subtopic">Subtopic</label>
+               <input
+                 id="modal-edit-subtopic"
+                 type="text"
+                 value={modalEditValue.subtopic}
+                 onChange={(e) => setModalEditValue({...modalEditValue, subtopic: e.target.value})}
+                 placeholder="Subtopic"
+                 className="form-control"
+               />
+             </div>
+  
+             <div className="modal-actions">
+               <button
+                 onClick={cancelEdit}
+                 className="button-secondary cancel-button"
+               >
+                 Cancel
+               </button>
+               <button 
+                 onClick={saveEdit} // Calls the modified saveEdit
+                 className="button-primary save-edit-button" 
+                 disabled={!modalEditValue.mainTopic.trim() || !modalEditValue.subtopic.trim()}
+               >
+                 <FaSave /> Save Changes
+               </button>
+             </div>
+           </div>
+        </div>
+      </div>
+    );
+  };
+  
   // Main render method
   return (
     <div className={`topic-hub`}>
@@ -1833,6 +1935,8 @@ const TopicHub = ({
       {renderSuccessModal()}
       {renderDeleteMainTopicDialog()}
       {renderLoadingOverlay()}
+      {renderAddTopicModal()}
+      {renderEditTopicModal()}
     </div>
   );
 };
