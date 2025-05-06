@@ -91,6 +91,9 @@ const TopicHub = ({
   // State for the topic generation notice details visibility
   const [showNoticeDetails, setShowNoticeDetails] = useState(false);
   
+  // State for the generation help text details visibility
+  const [showHelpTextDetails, setShowHelpTextDetails] = useState(false);
+  
    
   // Load saved content guidance when a topic is selected
   useEffect(() => {
@@ -1232,10 +1235,27 @@ const TopicHub = ({
             >
               <FaMagic /> Generate Topics
             </button>
-            <p className="generation-help-text">
-              Click the button above to generate a comprehensive list of topics for your subject.
-              You'll be able to review and edit the topics afterward.
-            </p>
+            <div className="generation-help-notice">
+              <button 
+                className="notice-info-button help-info-button" 
+                onClick={() => setShowHelpTextDetails(!showHelpTextDetails)}
+                title="Show details about how topics are generated"
+              >
+                <FaInfo />
+              </button>
+              {showHelpTextDetails && (
+                 <div className="notice-details help-details-popover">
+                   <h4 className="notice-details-heading">How we generate topics</h4> 
+                   <p>
+                     Click the button above to generate a comprehensive list of topics for your subject.
+                     You'll be able to review and edit the topics afterward.
+                   </p>
+                   <button className="notice-details-close" onClick={() => setShowHelpTextDetails(false)}>
+                     <FaTimes />
+                   </button>
+                 </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -1313,7 +1333,7 @@ const TopicHub = ({
     );
   };
   
-  // Add a notice to explain topic generation
+  // Add a notice to explain topic generation (Modified for Info Button)
   const renderTopicGenerationNotice = () => {
     if (!hasGenerated || !topics || topics.length === 0) return null;
     
@@ -1331,8 +1351,10 @@ const TopicHub = ({
         {/* Conditionally render the details in a popover-like div */}
         {showNoticeDetails && (
           <div className="notice-details">
+            {/* Added Heading */}
+            <h4 className="notice-details-heading">About these topics</h4> 
             <p>
-              <strong>About these topics:</strong> We've curated up to 30 key topics from the {examBoard} {examType} {subject} specification, 
+              We've curated up to 30 key topics from the {examBoard} {examType} {subject} specification, 
               focusing on written exam content. While taken directly from the curriculum, the list may not be exhaustive.
               You can add your own topics as needed.
             </p>
@@ -1514,7 +1536,6 @@ const TopicHub = ({
                             </button>
                           </div>
                         </>
-                      )}
                     </div>
                   ))}
                 </div>

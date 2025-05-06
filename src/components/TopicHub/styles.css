@@ -268,10 +268,11 @@
 
 .subtopic-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #e9ecef;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 8px;
+  gap: 10px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .subtopic-item:last-child {
@@ -280,52 +281,56 @@
 
 .subtopic-info {
   display: flex;
-  align-items: center;
-  flex: 1;
-  overflow: hidden; /* Prevent content from overflowing */
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .subtopic-id {
-  color: #6c757d;
+  color: #888;
   font-size: 14px;
   margin-right: 12px;
   min-width: 40px;
-  flex-shrink: 0; /* Don't allow ID to shrink */
+  flex-shrink: 0;
 }
 
 .subtopic-name {
-  color: #212529;
-  overflow: hidden;
-  text-overflow: ellipsis; /* Show ellipsis when text overflows */
-  white-space: nowrap; /* Keep text on one line */
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.4;
+  font-size: clamp(11px, 2.5vw, 14px);
+  font-weight: 500;
+  color: #333;
 }
 
 .subtopic-actions {
-  display: flex !important; /* Force display regardless of other styles */
-  gap: 8px;
-  flex-shrink: 0; /* Don't allow buttons to shrink */
-  margin-left: 8px; /* Add some space between text and buttons */
-  position: relative; /* Establish stacking context */
-  z-index: 5; /* Ensure buttons appear above other elements */
-  min-width: 120px; /* Minimum width to ensure buttons have space */
-  justify-content: flex-end; /* Align buttons to the right */
+  margin-top: 8px;
+  align-self: flex-end;
+  width: auto;
+  max-width: 100%;
+  display: flex !important;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
 }
 
 .generate-button, .edit-button, .delete-button, .save-edit-button, .cancel-edit-button, .select-optional-button {
-  background-color: #f8f9fa; /* Light background for visibility */
-  border: 1px solid #dee2e6; /* Add border to make buttons visible */
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
   cursor: pointer;
-  display: flex !important; /* Force display */
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  width: 44px; /* Increased size */
-  height: 44px; /* Increased size */
+  width: 44px;
+  height: 44px;
   border-radius: 4px;
   transition: all 0.2s;
-  margin: 0 4px; /* Add margin between buttons */
-  position: relative; /* For proper stacking */
-  visibility: visible !important; /* Force visibility */
-  opacity: 1 !important; /* Full opacity */
+  margin: 0 4px;
+  position: relative;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .generate-button {
@@ -369,20 +374,19 @@
 .delete-button:hover,
 .save-edit-button:hover,
 .cancel-edit-button:hover {
-  background-color: #e9ecef; /* Darker background on hover for better feedback */
-  transform: translateY(-1px); /* Slight lift effect on hover */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Add shadow on hover */
+  background-color: #e9ecef;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Ensure icons inside buttons are visible */
 .generate-button svg, 
 .edit-button svg, 
 .delete-button svg,
 .save-edit-button svg,
 .cancel-edit-button svg,
 .select-optional-button svg {
-  font-size: 20px; /* Larger icons for better visibility */
-  display: block !important; /* Force display */
+  font-size: 20px;
+  display: block !important;
 }
 
 .subtopic-edit-form {
@@ -575,7 +579,6 @@
   background-color: #c82333;
 }
 
-/* Delete dialog specific styles */
 .delete-dialog {
   max-width: 450px;
 }
@@ -695,7 +698,6 @@
   color: #dc3545;
 }
 
-/* Fallback notice styles */
 .fallback-notice {
   margin-bottom: 16px;
   padding: 10px 15px;
@@ -712,7 +714,6 @@
   align-items: center;
 }
 
-/* Database source badges */
 .database-source-badge {
   display: inline-flex;
   align-items: center;
@@ -736,8 +737,8 @@
 
 .fallback-notice-icon {
   margin-right: 12px;
-  font-size: 24px; /* Larger icon */
-  color: #e5be00; /* More striking color */
+  font-size: 24px;
+  color: #e5be00;
 }
 
 .fallback-notice-message {
@@ -769,7 +770,6 @@
   background-color: rgba(0, 0, 0, 0.05);
 }
 
-/* Highlight editing cues for fallback topics */
 .using-fallback .edit-button {
   position: relative;
 }
@@ -785,7 +785,6 @@
   right: 0;
 }
 
-/* Style for optional topics */
 .subtopic-item .subtopic-name[data-optional="true"] {
   color: #e74c3c;
   font-weight: 500;
@@ -808,7 +807,6 @@
   border-radius: 4px;
 }
 
-/* Small devices (phones, < 576px) */
 @media (max-width: 575.98px) {
   .add-topic-modal-content,
   .edit-topic-modal-content
@@ -817,62 +815,64 @@
   }
   
   .topic-generator, .topics-container {
-    padding: 12px; /* Reduced padding for smaller screens */
+    padding: 12px;
   }
 
   .topics-header h3 {
-    font-size: 18px; /* Smaller header text */
+    font-size: 18px;
   }
   
   .subtopic-item {
-    flex-direction: column; /* Stack elements vertically */
-    align-items: flex-start; /* Align items to the start */
-    padding: 12px 8px; /* Adjust padding */
-    gap: 8px; /* Add gap between stacked elements */
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 8px;
+    gap: 10px;
+    border-bottom: 1px solid #f0f0f0;
   }
 
   .subtopic-info {
-    width: 100%; /* Allow info to take full width */
-    flex-direction: column; /* Stack ID and name if they are still too wide */
+    width: 100%;
+    flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
 
   .subtopic-id {
-    margin-right: 0; /* Remove right margin as it's stacked now */
+    margin-right: 0;
     font-size: 0.8em;
   }
 
   .subtopic-name {
-    white-space: normal; /* Allow text to wrap */
-    word-break: break-word; /* Break long words */
-    overflow: visible; /* Ensure text is not hidden */
-    text-overflow: clip; /* Remove ellipsis */
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    text-overflow: clip;
     line-height: 1.4;
-    font-size: clamp(10px, 2.8vw, 15px); /* Adjust values as needed */
+    font-size: clamp(11px, 2.5vw, 14px);
   }
   
   .subtopic-actions {
-    margin-top: 10px;
-    align-self: flex-end; /* Keep actions to the right */
-    width: 100%; /* Full width on mobile */
-    display: flex !important; /* Force display */
-    justify-content: flex-end; /* Align buttons to the end */
-    gap: 8px; /* Add gap between buttons */
+    margin-top: 8px;
+    align-self: flex-end;
+    width: auto;
+    max-width: 100%;
+    display: flex !important;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
   }
   
-  /* Make action buttons more prominent on mobile */
   .subtopic-actions .generate-button, 
   .subtopic-actions .edit-button, 
   .subtopic-actions .delete-button,
   .subtopic-actions .save-edit-button,
   .subtopic-actions .cancel-edit-button,
   .subtopic-actions .select-optional-button {
-    width: auto; /* Allow buttons to size to content + padding */
-    min-width: 40px; /* Minimum touch target */
-    height: 38px; /* Adjust height */
-    padding: 0 10px; /* Horizontal padding for text buttons */
-    font-size: 0.9em; /* Smaller icons/text if needed */
+    width: auto;
+    min-width: 40px;
+    height: 38px;
+    padding: 0 10px;
+    font-size: 0.9em;
   }
 
   .subtopic-actions .generate-button svg, 
@@ -881,47 +881,46 @@
   .subtopic-actions .save-edit-button svg,
   .subtopic-actions .cancel-edit-button svg,
   .subtopic-actions .select-optional-button svg {
-    font-size: 18px; /* Adjust icon size if they are too big */
-    margin-right: 0; /* Remove margin if button only contains icon */
+    font-size: 18px;
+    margin-right: 0;
   }
 
-  /* Styles for edit forms within subtopic items */
   .subtopic-edit-form {
-    flex-direction: column; /* Stack edit form elements */
+    flex-direction: column;
     width: 100%;
     gap: 8px;
   }
 
   .edit-form-inputs {
-    flex-direction: column; /* Stack input fields */
+    flex-direction: column;
     width: 100%;
     gap: 8px;
   }
 
   .edit-main-topic, .edit-subtopic {
-    width: 100%; /* Make input fields take full width */
+    width: 100%;
     font-size: 0.95em;
     padding: 10px;
   }
 
   .edit-form-actions {
     width: 100%;
-    justify-content: flex-end; /* Align save/cancel buttons to the right */
+    justify-content: flex-end;
     gap: 8px;
   }
 
-  /* Main topic header adjustments */
   .main-topic-header {
     padding: 10px 12px;
-    flex-wrap: wrap; /* Allow header items to wrap */
+    flex-wrap: wrap;
     gap: 8px;
   }
 
   .main-topic-name {
-    flex-basis: 100%; /* Allow name to take full width if needed */
-    font-size: clamp(12px, 3vw, 16px); /* Adjust values as needed */
-    white-space: normal; /* Ensure main topic name can wrap too */
+    flex-basis: 100%;
+    font-size: clamp(13px, 3vw, 17px);
+    white-space: normal;
     word-break: break-word;
+    font-weight: 600;
   }
 
   .main-topic-count {
@@ -930,18 +929,17 @@
 
   .main-topic-actions {
     justify-content: flex-end;
-    width: 100%; /* Make actions take full width below name/count */
+    width: 100%;
   }
 
-  /* Edit form for main topic name */
   .main-topic-edit-form {
     padding: 10px;
-    flex-direction: column; /* Stack input and buttons */
+    flex-direction: column;
     gap: 10px;
   }
   .edit-main-topic-name {
     width: 100%;
-    margin-right: 0; /* Remove margin as it's stacked */
+    margin-right: 0;
     font-size: 1em;
   }
   .main-topic-edit-form .edit-form-actions {
@@ -954,7 +952,7 @@
   }
   
   .generation-button, .regenerate-button, .add-topic-button, .continue-button, .save-button {
-    width: 100%; /* Full width buttons on small screens */
+    width: 100%;
     justify-content: center;
   }
   
@@ -969,7 +967,6 @@
   }
 }
 
-/* Medium devices (tablets, 576px - 767px) */
 @media (min-width: 576px) and (max-width: 767.98px) {
   .topics-header {
     flex-direction: column;
@@ -984,17 +981,16 @@
   
   .subtopic-item {
     padding: 10px 16px;
-    position: relative; /* Ensure positioning context */
+    position: relative;
   }
   
   .subtopic-actions {
-    display: flex !important; /* Force display */
+    display: flex !important;
     position: relative;
     right: 0;
     z-index: 10;
   }
   
-  /* Ensure action buttons are visible on medium screens */
   .subtopic-actions .generate-button,
   .subtopic-actions .edit-button,
   .subtopic-actions .delete-button {
@@ -1003,10 +999,9 @@
   }
 }
 
-/* Large devices (desktops, 768px and up) */
 @media (min-width: 768px) {
   .subtopic-actions {
-    display: flex !important; /* Force display on all screen sizes */
+    display: flex !important;
     visibility: visible !important;
   }
   
@@ -1016,16 +1011,14 @@
   
   .subtopic-item {
     padding: 12px 18px;
-    position: relative; /* Ensure proper stacking context */
+    position: relative;
   }
   
-  /* Ensure action buttons remain visible on hover */
   .subtopic-item:hover .subtopic-actions {
-    background-color: rgba(248, 249, 250, 0.8); /* Light background to help buttons stand out */
+    background-color: rgba(248, 249, 250, 0.8);
   }
 }
 
-/* New Success Modal Styles */
 .topic-success-dialog {
   background-color: white;
   border-radius: 8px;
@@ -1167,7 +1160,6 @@
   background-color: #218838;
 }
 
-/* Add CSS for the loading overlay */
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -1211,26 +1203,27 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Topic generation notice styling */
 .topic-generation-notice {
-  position: relative; /* Needed for absolute positioning of details */
+  position: relative;
   display: flex;
-  align-items: center; /* Align button vertically */
+  align-items: center;
   background-color: #f8f9fa;
   border: 1px solid #e9ecef;
   border-radius: 6px;
-  padding: 8px 12px; /* Adjusted padding */
+  padding: 8px 12px;
   margin: 10px 0 20px;
+  margin-bottom: 8px;
+  animation: fadeInPopover 0.2s ease-out;
 }
 
 .notice-info-button {
   background: none;
   border: none;
-  color: #007bff; /* Info blue color */
+  color: #007bff;
   cursor: pointer;
-  font-size: 1.3rem; /* Icon size */
+  font-size: 1.3rem;
   padding: 5px;
-  margin-right: 10px; /* Space between button and potential text (if added back) */
+  margin-right: 10px;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -1241,17 +1234,17 @@
 
 .notice-details {
   position: absolute; 
-  bottom: 100%; /* Position above the notice bar */
+  bottom: 100%;
   left: 0;
   background-color: #ffffff;
   border: 1px solid #dee2e6;
   border-radius: 6px;
   padding: 15px 20px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 20; /* Ensure it appears above other list items */
-  width: calc(100% - 20px); /* Slightly less than full width */
-  max-width: 400px; /* Max width for the popover */
-  margin-bottom: 8px; /* Space between popover and notice bar */
+  z-index: 20;
+  width: calc(100% - 20px);
+  max-width: 400px;
+  margin-bottom: 8px;
   animation: fadeInPopover 0.2s ease-out;
 }
 
@@ -1283,42 +1276,45 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mobile adjustments for notice details popover */
 @media (max-width: 575.98px) {
   .notice-details {
-    width: 95%; /* Adjust width on smaller screens */
+    width: 95%;
     left: 2.5%;
-    bottom: auto; /* Let it position normally or adjust as needed */
-    top: 100%; /* Position below the button on mobile */
+    bottom: auto;
+    top: 100%;
     margin-top: 8px; 
     margin-bottom: 0;
   }
 }
 
-/* --- START: Styles for Add/Edit Topic Modals --- */
-
-/* Reusing general modal overlay style */
 .modal-overlay {
-  /* ... (keep existing styles: position, top, left, right, bottom, background, display, align, justify, z-index) ... */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
-/* Specific content styles for Add/Edit Topic modals */
 .add-topic-modal-content,
-.edit-topic-modal-content { /* Add class for edit modal later */
+.edit-topic-modal-content {
   background-color: #ffffff;
   padding: 25px 30px;
   border-radius: 10px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   width: 90%;
-  max-width: 550px; /* Adjust as needed */
+  max-width: 550px;
   display: flex;
   flex-direction: column;
   position: relative;
   max-height: 85vh;
-  overflow-y: auto; /* Allow scrolling if form is long */
+  overflow-y: auto;
 }
 
-/* Reusable modal header */
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -1334,7 +1330,6 @@
   color: #333;
 }
 
-/* Reusable close button (use general .close-button if defined globally/in modal CSS) */
 .modal-close-btn {
   background: none;
   border: none;
@@ -1348,21 +1343,19 @@
   color: #333;
 }
 
-/* Form specific styles inside the modal */
-.add-topic-modal-content .add-topic-form { /* Target form inside modal */
+.add-topic-modal-content .add-topic-form {
   display: flex;
   flex-direction: column;
-  gap: 20px; /* Spacing between input groups and actions */
+  gap: 20px;
 }
 
 .add-topic-modal-content .add-topic-inputs {
   display: flex;
-  flex-direction: column; /* Stack inputs vertically */
+  flex-direction: column;
   gap: 15px;
 }
 
 .add-topic-modal-content .main-topic-input-container {
-  /* Styles for the container holding the toggle and main topic input/select */
 }
 
 .add-topic-modal-content .topic-input-toggle {
@@ -1372,8 +1365,7 @@
 .add-topic-modal-content .main-topic-select,
 .add-topic-modal-content .add-main-topic,
 .add-topic-modal-content .add-subtopic {
-  width: 100%; /* Ensure inputs take full width */
-  /* Inherit .form-control styles if available, or add padding/border here */
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid #ced4da;
   border-radius: 4px;
@@ -1381,7 +1373,6 @@
   box-sizing: border-box;
 }
 
-/* Modal action buttons */
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -1391,13 +1382,10 @@
   border-top: 1px solid #e9ecef;
 }
 
-/* Ensure button styles are applied (assuming .button-primary, .button-secondary exist) */
 .modal-actions .button-primary,
 .modal-actions .button-secondary {
-  /* Assuming styles like padding, border-radius, font-size are defined elsewhere */
 }
 
-/* Responsive adjustments for the Add/Edit modals */
 @media (max-width: 575.98px) {
   .add-topic-modal-content,
   .edit-topic-modal-content {
@@ -1410,14 +1398,53 @@
   }
 
   .modal-actions {
-    flex-direction: column-reverse; /* Stack buttons */
+    flex-direction: column-reverse;
     gap: 12px;
   }
 
   .modal-actions .button-primary,
   .modal-actions .button-secondary {
-    width: 100%; /* Full width buttons */
+    width: 100%;
   }
 }
 
-/* --- END: Styles for Add/Edit Topic Modals --- */
+/* Style for heading inside popover */
+.notice-details-heading {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* --- START: Styles for Generation Help Text Popover --- */
+.generation-help-notice {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.generation-help-notice .notice-info-button {
+  margin-right: 0;
+}
+
+.generation-help-notice .notice-details {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  min-width: 250px;
+  max-width: 90%;
+}
+
+@media (max-width: 575.98px) {
+  .generation-help-notice .notice-details {
+    bottom: auto;
+    top: 100%;
+    margin-top: 8px;
+    margin-bottom: 0;
+    width: 90%;
+    max-width: 300px;
+  }
+}
+/* --- END: Styles for Generation Help Text Popover --- */
