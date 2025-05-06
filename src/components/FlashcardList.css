@@ -594,7 +594,7 @@
   
   .subject-header, .topic-header {
     padding: 10px;
-    align-items: flex-start; /* Added for better text layout when wrapping */
+    align-items: center;
   }
   
   .subject-info h2 {
@@ -1984,6 +1984,9 @@ html {
     flex-shrink: 0; /* Prevent this container from shrinking */
     padding: 0 4px 0 0 !important; /* Minimize padding */
     gap: 2px !important; /* Minimize gap */
+    /* Ensure it aligns nicely if the topic-header uses align-items: center */
+    display: flex; /* It is already a flex container */
+    align-items: center; /* Vertically center its content (the toggle button) */ 
   }
 
   .topic-info { /* Added rule for mobile .topic-info */
@@ -2011,16 +2014,16 @@ html {
     display: flex !important; /* Show the toggle, override desktop important */
     align-items: center !important;
     justify-content: center !important;
-    background: rgba(255, 255, 255, 0.2) !important;
+    background-color: transparent !important; /* Invisible background */
     border: none !important;
-    color: inherit !important;
+    color: inherit !important; /* Dots take color from parent */
     cursor: pointer !important;
     padding: 0 !important; /* Ensure no padding */
     border-radius: 3px !important; /* Slightly smaller radius */
-    width: 16px !important; /* Drastically Reduced width */
-    height: 16px !important; /* Drastically Reduced height */
-    font-size: 12px !important; /* Absolute pixel font size for ellipsis icon */
-    line-height: 16px !important; /* Vertically center small icon in small button */
+    width: 20px !important; /* Slightly larger tappable area */
+    height: 20px !important; /* Slightly larger tappable area */
+    font-size: 12px !important; /* Actual dots size */
+    /* line-height: 16px !important; Removed, flex centering is used */
   }
   .topic-actions-toggle.mobile-only:hover,
   .subject-actions-toggle.mobile-only:hover {
