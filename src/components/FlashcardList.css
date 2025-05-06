@@ -1982,11 +1982,16 @@ html {
     position: relative; /* Needed for absolute positioning of the menu */
     justify-content: flex-end; /* Align toggle to the right */
     flex-shrink: 0; /* Prevent this container from shrinking */
+    padding: 0 4px 0 0 !important; /* Minimize padding */
+    gap: 2px !important; /* Minimize gap */
   }
 
   .topic-info { /* Added rule for mobile .topic-info */
     min-width: 0; /* Allow shrinking with long content */
     /* inherits flex: 1, overflow: hidden (from general), margin-right: 10px */
+    display: flex; /* Use flex to control alignment of children */
+    flex-direction: column; /* Stack children vertically */
+    align-items: flex-start; /* Align children (like h3) to the left */
   }
 
   /* Hide topic metadata on mobile to save space */
@@ -2010,11 +2015,12 @@ html {
     border: none !important;
     color: inherit !important;
     cursor: pointer !important;
-    padding: 0 !important;
-    border-radius: 4px !important;
-    width: 18px !important; /* Further Reduced width */
-    height: 18px !important; /* Further Reduced height */
-    font-size: 0.8rem !important; /* Further Reduced font size for ellipsis icon */
+    padding: 0 !important; /* Ensure no padding */
+    border-radius: 3px !important; /* Slightly smaller radius */
+    width: 16px !important; /* Drastically Reduced width */
+    height: 16px !important; /* Drastically Reduced height */
+    font-size: 12px !important; /* Absolute pixel font size for ellipsis icon */
+    line-height: 16px !important; /* Vertically center small icon in small button */
   }
   .topic-actions-toggle.mobile-only:hover,
   .subject-actions-toggle.mobile-only:hover {
