@@ -1019,9 +1019,9 @@ const FlashcardList = ({
             </div>
           </div>
           <div className="topic-actions">
-            {/* Hamburger Toggle Button - Visible only on mobile via CSS */}
+            {/* Hamburger Toggle Button - Add mobile-only class */}
             <button 
-              className="topic-actions-toggle mobile-only" 
+              className="topic-actions-toggle mobile-only"
               onClick={(e) => toggleTopicMenu(topicKey, e)}
               aria-label="Toggle topic actions"
             >
