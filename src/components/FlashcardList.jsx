@@ -278,6 +278,35 @@ const FlashcardList = ({
   const subjectRefs = useRef({});
   const topicRefs = useRef({}); // Refs for topic elements
 
+  // --- Define regroupCards and getExistingSubjectNames earlier --- 
+  const regroupCards = useCallback((cards) => {
+    const bySubjectAndTopic = {};
+    if (!Array.isArray(cards)) return {};
+
+    cards.forEach(item => {
+      if (!item || typeof item !== 'object' || !item.id || !item.subject) return;
+      
+        const subject = item.subject || "General";
+        const topic = item.topic || "General";
+        
+        if (!bySubjectAndTopic[subject]) {
+          bySubjectAndTopic[subject] = {};
+        }
+        if (!bySubjectAndTopic[subject][topic]) {
+          bySubjectAndTopic[subject][topic] = [];
+        }
+        bySubjectAndTopic[subject][topic].push(item);
+    });
+
+    return bySubjectAndTopic;
+  }, []); // Empty dependency array as it doesn't depend on component state/props
+
+  const getExistingSubjectNames = useMemo(() => {
+    // Depends on groupedCards which is defined above this point in component flow
+    return Object.keys(groupedCards || {});
+  }, [groupedCards]);
+  // --- End moved definitions ---
+
   // Try to get userId from localStorage if not provided as prop
   useEffect(() => {
     if (!userId && !localUserId) {
@@ -343,49 +372,10 @@ const FlashcardList = ({
   // Regroup cards whenever the 'cards' prop changes
   useEffect(() => {
     console.log("[FlashcardList regroup useEffect] Cards prop changed:", cards);
-    const bySubjectAndTopic = {};
-    if (!Array.isArray(cards)) {
-      console.error("FlashcardList received non-array cards prop:", cards);
-      setGroupedCards({}); // Reset if prop is invalid
-      return;
-    }
-
-    const extractActualTopicName = (item) => {
-      if (item.type === 'topic' && item.isShell && item.name) {
-        const name = item.name;
-        const subject = item.subject || "General";
-        // Heuristic to check if subject is prefixing topic name
-        if (name.toLowerCase().startsWith(subject.toLowerCase() + ': ')) {
-          return name.substring(subject.length + 2).trim() || "General";
-        }
-        return name.trim() || "General"; // Fallback to name if no prefix found
-      }
-      return item.topic?.trim() || "General"; // Use topic field for actual cards
-    };
-
-    cards.forEach(item => {
-      if (!item || typeof item !== 'object' || !item.id) {
-        console.warn("[FlashcardList Grouping] Skipping invalid item (missing id or not object):", item);
-        return;
-      }
-      // Ensure subject and topic are strings, provide defaults
-      const subject = typeof item.subject === 'string' && item.subject.trim() ? item.subject.trim() : "General";
-      const topic = extractActualTopicName(item); // Use helper
-
-      if (!bySubjectAndTopic[subject]) {
-        bySubjectAndTopic[subject] = {};
-      }
-      if (!bySubjectAndTopic[subject][topic]) {
-        bySubjectAndTopic[subject][topic] = [];
-      }
-      // Ensure no duplicates if items can represent both shell and data source
-      if (!bySubjectAndTopic[subject][topic].some(existing => existing.id === item.id)) {
-        bySubjectAndTopic[subject][topic].push(item);
-      }
-    });
+    const bySubjectAndTopic = regroupCards(cards);
     console.log("[FlashcardList regroup useEffect] Setting grouped cards:", bySubjectAndTopic);
     setGroupedCards(bySubjectAndTopic);
-  }, [cards]); // Dependency: Only the cards prop
+  }, [cards, regroupCards]);
 
   // --- START: Function to toggle topic menus ---
   const toggleTopicMenu = useCallback((topicKey, e) => {
