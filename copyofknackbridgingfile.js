@@ -2143,6 +2143,7 @@ retryApiCall(findRecordApiCall)
                  updatedAt: new Date().toISOString(), // Always update timestamp
                  options: Array.isArray(cleanCard.options) ? cleanCard.options : [], // Ensure array
                  savedOptions: Array.isArray(cleanCard.savedOptions) ? cleanCard.savedOptions : [], // Ensure array
+                 correctAnswer: cleanCard.correctAnswer || '', // Explicitly copy correctAnswer
                  questionType: cleanCard.questionType || 'short_answer', // Default type
                  type: cleanCard.type || 'card' // Ensure type field exists ('card' or 'topic')
                };

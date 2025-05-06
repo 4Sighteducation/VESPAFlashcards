@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import ReactDOM from "react-dom";
 import "./SpacedRepetition.css";
+import FlippableCard from './FlippableCard';
 
 const SpacedRepetition = ({
   cards,
@@ -475,95 +476,6 @@ const SpacedRepetition = ({
     setShowInfoModal(!showInfoModal);
   };
 
-  // Improved multiple choice rendering to ensure questions display better on mobile
-  const renderMultipleChoice = (card) => {
-    // First validate the card and its options
-    if (!card || !isValidCard) {
-      console.warn("Cannot render multiple choice: Card is not valid");
-      return (
-        <div className="multiple-choice-options">
-          <h4>Multiple choice unavailable</h4>
-          <p className="error-message">The card data is not valid.</p>
-        </div>
-      );
-    }
-    
-    // Add defensive checks
-    if (!card.options || !Array.isArray(card.options) || card.options.length === 0) {
-      console.warn("Cannot render multiple choice: Invalid card or missing options", card);
-      return (
-        <div className="multiple-choice-options">
-          <h4>Multiple choice options unavailable</h4>
-          <p className="error-message">This card appears to be missing its options.</p>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="multiple-choice-options">
-        <ul className="multiple-choice-list">
-          {card.options.map((option, index) => (
-            <li 
-              key={index}
-              className={`
-                multiple-choice-option
-                ${selectedOption === option ? 'selected-option' : ''}
-                ${isFlipped && option === card.correctAnswer ? 'correct-option' : ''}
-              `}
-              onClick={(e) => {
-                if (!isFlipped) handleOptionSelect(option, e);
-              }}
-            >
-              <span className="option-letter">{String.fromCharCode(65 + index)}.</span> 
-              <span className="option-text">{option}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  };
-
-  // Add a function to render the simplified back of multiple choice cards
-  const renderMultipleChoiceBack = (card) => {
-    if (!card || !card.correctAnswer) {
-      console.warn("Cannot render multiple choice back: Missing correct answer", card);
-      return (
-        <div className="multiple-choice-answer error">
-          <h3>Correct Answer:</h3>
-          <div className="correct-answer-display error">
-            <span className="answer-text">No answer available</span>
-          </div>
-        </div>
-      );
-    }
-    
-    try {
-      // Find the index of the correct answer to get its letter
-      const correctIndex = card.options ? card.options.findIndex(option => option === card.correctAnswer) : -1;
-      const optionLetter = correctIndex >= 0 ? String.fromCharCode(65 + correctIndex) : '';
-      
-      return (
-        <div className="multiple-choice-answer">
-          <h3>Correct Answer:</h3>
-          <div className="correct-answer-display">
-            {optionLetter && <span className="answer-letter">{optionLetter}.</span>}
-            <span className="answer-text">{card.correctAnswer}</span>
-          </div>
-        </div>
-      );
-    } catch (error) {
-      console.error("Error rendering multiple choice back:", error);
-      return (
-        <div className="multiple-choice-answer error">
-          <h3>Correct Answer:</h3>
-          <div className="correct-answer-display error">
-            <span className="answer-text">{card.correctAnswer || "Error displaying answer"}</span>
-          </div>
-        </div>
-      );
-    }
-  };
-
   // Computed property to check if we have a valid card to work with
   const isValidCard = currentCards && 
                      currentCards.length > 0 && 
@@ -829,114 +741,28 @@ const SpacedRepetition = ({
           </div>
         </div>
         
-        <div
-          className={`study-card ${isFlipped ? "flipped" : ""} ${
-            !currentCard.isReviewable ? "not-reviewable" : ""
-          }`}
-          style={{
-            '--card-color': currentCard.cardColor || '#ffffff'
-          }}
-        >
-          <div className="card-inner">
-            <div 
-              className={`card-front ${currentCard.questionType === 'multiple_choice' ? 'has-multiple-choice' : ''}`}
-              onClick={currentCard.questionType === 'multiple_choice' ? null : handleCardFlip}
-            >
-              <div className="card-subject-topic">
-                <span className="card-subject">{currentCard.subject || "General"}</span>
-                <span className="card-topic">{currentCard.topic || ""}</span>
-              </div>
-              {/* Check for either additionalInfo or detailedAnswer */}
-              {((currentCard.additionalInfo || currentCard.detailedAnswer)) && (
-                <button 
-                  className="info-btn" 
-                  onClick={toggleInfoModal}
-                >
-                  ℹ️
-                </button>
-              )}
-              
-              {/* Next review date display */}
-              {currentCard.nextReviewDate && (
-                <div className="review-date-indicator">
-                  Next review: {new Date(currentCard.nextReviewDate).toLocaleDateString()}
-                </div>
-              )}
-              
-              {/* Enhanced question display for multiple choice */}
-              {currentCard.questionType === 'multiple_choice' ? (
-                <>
-                  <div className="multiple-choice-header-container">
-                    <h4 className="multiple-choice-header">Choose the correct answer:</h4>
-                  </div>
-                  
-                  <div
-                    className="card-content multiple-choice-question"
-                    dangerouslySetInnerHTML={{
-                      __html:
-                        currentCard.front ||
-                        currentCard.question ||
-                        "No question"
-                    }}
-                  />
-                  
-                  {!isFlipped && renderMultipleChoice(currentCard)}
-                </>
-              ) : (
-                <div
-                  className="card-content"
-                  dangerouslySetInnerHTML={{
-                    __html:
-                      currentCard.front ||
-                      currentCard.question ||
-                      "No question"
-                  }}
-                  onClick={handleCardFlip}
-                />
-              )}
-              
-              {!currentCard.isReviewable && (
-                <div className="review-date-overlay">
-                  <p>This card has been reviewed already</p>
-                  <p>The next review date is:</p>
-                  <p className="next-review-date">{new Date(currentCard.nextReviewDate).toLocaleDateString()}</p>
-                </div>
-              )}
-            </div>
-            <div className="card-back" onClick={handleCardFlip}>
-              <div className="card-subject-topic">
-                <span className="card-subject">{currentCard.subject || "General"}</span>
-                <span className="card-topic">{currentCard.topic || ""}</span>
-              </div>
-              {/* Check for either additionalInfo or detailedAnswer */}
-              {((currentCard.additionalInfo || currentCard.detailedAnswer)) && (
-                <button 
-                  className="info-btn" 
-                  onClick={toggleInfoModal}
-                >
-                  ℹ️
-                </button>
-              )}
-              
-              {/* For multiple choice, show simplified back */}
-              {currentCard.questionType === 'multiple_choice' ? (
-                renderMultipleChoiceBack(currentCard)
-              ) : (
-                <div
-                  className="card-content"
-                  dangerouslySetInnerHTML={{
-                    __html:
-                      currentCard.back ||
-                      (currentCard.detailedAnswer && !currentCard.additionalInfo ? 
-                        currentCard.detailedAnswer : 
-                        currentCard.correctAnswer || 
-                        "No answer")
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        </div>
+        {currentCard && (
+          <FlippableCard
+            card={currentCard}
+            isFlipped={isFlipped}
+            onFlip={handleCardFlip}
+            onAnswer={(isCorrect, selectedOptionIndex) => {
+              if (currentCard.questionType === 'multiple_choice') {
+                if (isCorrect) {
+                  handleCorrectAnswer();
+                } else {
+                  handleIncorrectAnswer();
+                }
+              } else {
+                // For non-MC cards, FlippableCard doesn't call onAnswer in the same way.
+                // The correct/incorrect buttons are handled by SpacedRepetition's own logic.
+                // This part might need adjustment based on how FlippableCard's onAnswer is designed
+                // for non-MC cards or if we rely on the existing correct/incorrect buttons.
+              }
+            }}
+            isInModal={true} // Assuming it's in a modal-like view
+          />
+        )}
 
         <div className="card-navigation">
           <button
