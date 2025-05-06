@@ -2031,7 +2031,7 @@ html {
     background-color: white !important;
     border-radius: 6px !important;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2) !important;
-    z-index: 100 !important;
+    z-index: 1001 !important; /* Increased z-index */
     padding: 8px !important;
     margin-bottom: 4px !important; /* ADDED: Small gap when opening upwards */
     gap: 5px !important;
@@ -2051,7 +2051,7 @@ html {
     width: 100% !important;
     justify-content: flex-start !important; 
     padding: 8px 10px !important; 
-    background-color: transparent !important;
+    background-color: white !important; /* Default background for items in menu */
     color: #333 !important; 
     border: none !important;
     box-shadow: none !important;
