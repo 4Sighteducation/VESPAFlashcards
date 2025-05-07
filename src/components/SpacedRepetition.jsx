@@ -31,6 +31,9 @@ const SpacedRepetition = ({
   
   // New state for feedback message after card movement
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  // State for humorous completion modal
+  const [humorousCompletionMessage, setHumorousCompletionMessage] = useState("");
+  const [showHumorousCompletionModal, setShowHumorousCompletionModal] = useState(false);
   
   // New state for grouped cards by subject and topic
   const [groupedBoxCards, setGroupedBoxCards] = useState({});
@@ -222,13 +225,18 @@ const SpacedRepetition = ({
       if (newIndex !== currentIndex) {
         setCurrentIndex(newIndex); 
       }
-      setStudyCompleted(false); // We have cards, so not completed
-      console.log('[SR Effect] Has cards. newIndex:', newIndex, 'studyCompleted set to false.');
+      if (studyCompleted) setStudyCompleted(false); // If we have cards, study is not completed
+      console.log('[SR Effect] Has cards. newIndex:', newIndex, 'studyCompleted potentially set to false.');
     } else {
       // No cards available for the current filter
-      setStudyCompleted(true);
-      setCurrentIndex(0); // Reset index when completed/empty
-      console.log('[SR Effect] No cards. studyCompleted set to true, currentIndex set to 0.');
+      if (!studyCompleted) { // Only update if not already completed
+        setStudyCompleted(true);
+        setCurrentIndex(0); // Reset index when completed/empty
+        const message = getRandomEmptyStateMessage();
+        setHumorousCompletionMessage(message);
+        setShowHumorousCompletionModal(true);
+        console.log('[SR Effect] No cards. studyCompleted set to true, humorous modal triggered.');
+      }
     }
 
     // Reset visual state for the current card (or empty view)
@@ -635,19 +643,21 @@ const SpacedRepetition = ({
   const renderCardReview = () => {
     console.log('[SR renderCardReview] Rendering. studyCompleted:', studyCompleted, 'currentCards.length:', currentCards.length, 'currentIndex:', currentIndex);
 
-    // PRIORITY CHECK 1: If study is marked as completed, show completion message.
-    if (studyCompleted) {
-      console.log('[SR renderCardReview] Rendering completion message because studyCompleted is true.');
+    // PRIORITY CHECK 1: If study is marked as completed (and humorous modal isn't already up), show completion message.
+    // The humorous modal takes precedence if it's active.
+    if (studyCompleted && !showHumorousCompletionModal) {
+      console.log('[SR renderCardReview] Rendering completion message because studyCompleted is true and humorous modal is not active.');
+      // This might be redundant if humorous modal is always shown on completion, but good as a fallback.
       return (
         <div className="completion-message">
           <h3>Session Complete!</h3>
-          <p>You've completed reviewing all cards in this session.</p>
+          <p>You've reviewed all available cards for this selection.</p>
           <button 
             className="return-button" 
             onClick={() => {
               setSelectedSubject(null);
               setSelectedTopic(null);
-              setStudyCompleted(false); // Reset for next potential session
+              setStudyCompleted(false); 
               setShowStudyModal(false); 
             }}
           >
@@ -657,9 +667,11 @@ const SpacedRepetition = ({
       );
     }
 
-    // PRIORITY CHECK 2: If no cards are available for the current filter (e.g., after filtering or if box is empty)
-    if (!currentCards || currentCards.length === 0) {
-      console.log('[SR renderCardReview] Rendering empty box message (no currentCards). studyCompleted is false, so this means filters resulted in no cards or box is empty.');
+    // PRIORITY CHECK 2: If no cards are available for the current filter
+    // This check is important if studyCompleted hasn't been set yet by the effect,
+    // or if the humorous modal isn't the desired display for an initially empty filter.
+    if ((!currentCards || currentCards.length === 0) && !showHumorousCompletionModal) {
+      console.log('[SR renderCardReview] Rendering empty box message (no currentCards, and humorous modal not active).');
       return (
         <div className="empty-box">
           <h3>Wow! You're keen!!</h3>
@@ -767,9 +779,12 @@ const SpacedRepetition = ({
             onFlip={handleCardFlip}
             onAnswer={currentCardForRender.questionType === 'multiple_choice' ? handleMcqAnswer : undefined}
             isInModal={true}
+            // Pass lock status and review date for "already studied" cards
+            isLocked={!currentCardForRender.isReviewable}
+            lockedNextReviewDate={currentCardForRender.nextReviewDate}
           />
         )}
-        {console.log('[SR renderCardReview] Proceeding to render FlippableCard for card ID:', currentCardForRender?.id)}
+        {console.log('[SR renderCardReview] Proceeding to render FlippableCard for card ID:', currentCardForRender?.id, 'isReviewable:', currentCardForRender.isReviewable)}
 
         <div className="card-navigation">
           <button
@@ -819,7 +834,7 @@ const SpacedRepetition = ({
   return (
     <div className="spaced-repetition">
       {/* Box Info */}
-      <div className="box-info">
+      <div className={`box-info box-info-${currentBox}`}>
         <h2>Box {currentBox}</h2>
         <p>
           {currentBox === 1 && "Review daily."}
@@ -849,22 +864,52 @@ const SpacedRepetition = ({
         </div>
       )}
       
-      {/* Review date message / Feedback Message */}
+      {/* Review date message / Feedback Message Modal */}
       {showReviewDateMessage && (
-        <div className="review-date-message"> {/* Can rename class if styling differs */} 
-          <h3>{feedbackMessage.includes("Error") ? "Error" : "Update"}</h3>
-          <p>
-            {feedbackMessage}
-          </p>
-          {/* Only show next review date if it's part of the message (e.g. locked card) */}
-          {nextReviewDate && !feedbackMessage.includes("Box") && (
-             <p>
-               This card has already been reviewed and is currently locked. It will be available for review on{" "}
-               <strong>{nextReviewDate ? new Date(nextReviewDate).toLocaleDateString() : "a future date"}</strong>.
-             </p>
-          )}
-          <div className="review-date-actions">
-            <button onClick={() => { setShowReviewDateMessage(false); setFeedbackMessage(""); }}>Got it</button>
+        <div className="feedback-modal-overlay" onClick={() => { setShowReviewDateMessage(false); setFeedbackMessage(""); }}>
+          <div className="feedback-modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>{feedbackMessage.includes("Error") ? "Error" : "Update"}</h3>
+            <p>
+              {feedbackMessage}
+            </p>
+            {/* Only show next review date if it's part of the message (e.g. locked card) */}
+            {nextReviewDate && !feedbackMessage.includes("Box") && (
+              <p>
+                This card has already been reviewed and is currently locked. It will be available for review on{" "}
+                <strong>{nextReviewDate ? new Date(nextReviewDate).toLocaleDateString() : "a future date"}</strong>.
+              </p>
+            )}
+            <div className="feedback-modal-actions">
+              <button onClick={() => { setShowReviewDateMessage(false); setFeedbackMessage(""); }}>Got it</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Humorous Completion Modal */}
+      {showHumorousCompletionModal && (
+        <div className="feedback-modal-overlay" onClick={() => {
+          setShowHumorousCompletionModal(false);
+          setHumorousCompletionMessage("");
+          // Also fully exit study mode
+          setSelectedSubject(null);
+          setSelectedTopic(null);
+          setStudyCompleted(false); 
+          setShowStudyModal(false);
+        }}>
+          <div className="feedback-modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Session Complete!</h3>
+            <p className="humorous-completion-message">{humorousCompletionMessage}</p>
+            <div className="feedback-modal-actions">
+              <button onClick={() => {
+                setShowHumorousCompletionModal(false);
+                setHumorousCompletionMessage("");
+                setSelectedSubject(null);
+                setSelectedTopic(null);
+                setStudyCompleted(false); 
+                setShowStudyModal(false);
+              }}>Return to Box View</button>
+            </div>
           </div>
         </div>
       )}

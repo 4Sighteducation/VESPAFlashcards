@@ -46,7 +46,9 @@ const FlippableCard = ({
   // New props for list view / review view
   showDeleteButton = false, 
   onDeleteRequest, // Function to call when delete is clicked, passes card.id
-  disableFlipOnClick = false // To prevent flipping when shown in a list
+  disableFlipOnClick = false, // To prevent flipping when shown in a list
+  isLocked = false, // New prop for locked state
+  lockedNextReviewDate = null // New prop for the review date when locked
 }) => {
   // Use parent-controlled flipped state if provided, otherwise internal state
   const [internalFlipped, setInternalFlipped] = useState(false);
@@ -74,7 +76,8 @@ const FlippableCard = ({
   // <<< END LOGGING >>>
   
   // Determine if we're using internal or external flip state
-  const flipped = isFlipped !== undefined ? isFlipped : internalFlipped;
+  // If the card is locked, it should never appear flipped from an external state.
+  const effectivelyFlipped = isLocked ? false : (isFlipped !== undefined ? isFlipped : internalFlipped);
   
   // Get the card color with fallbacks
   const cardColor = card?.cardColor || card?.topicColor || card?.subjectColor || '#3cb44b';
@@ -84,8 +87,10 @@ const FlippableCard = ({
   
   // Handle flip
   const handleFlip = () => {
+    if (isLocked || disableFlipOnClick) return; // Do not flip if locked or disabled
+
     if (onFlip) {
-      onFlip(!flipped); // Use external handler if provided
+      onFlip(!effectivelyFlipped); // Use external handler if provided
     } else {
       setInternalFlipped(!internalFlipped); // Use internal state otherwise
     }
@@ -486,8 +491,8 @@ const FlippableCard = ({
   return (
     <>
       <div 
-        className={`flashcard ${flipped ? 'flipped' : ''}`}
-        onClick={!disableFlipOnClick ? handleFlip : undefined} // Conditionally allow flip
+        className={`flashcard ${effectivelyFlipped ? 'flipped' : ''} ${isLocked ? 'is-locked' : ''}`}
+        onClick={handleFlip} // handleFlip now internally checks isLocked and disableFlipOnClick
         style={{
           boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)',
           transition: 'all 0.3s ease',
@@ -496,7 +501,16 @@ const FlippableCard = ({
       >
         <div className="flashcard-inner">
           {renderFront()}
-          {renderBack()}
+          {!isLocked && renderBack()} {/* Don't render back if locked */}
+          
+          {isLocked && (
+            <div className="locked-card-overlay">
+              <h4>Card already studied today</h4>
+              {lockedNextReviewDate && (
+                <p>Next review: {new Date(lockedNextReviewDate).toLocaleDateString()}</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
