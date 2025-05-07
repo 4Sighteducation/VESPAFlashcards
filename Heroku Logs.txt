@@ -1,7 +1,0 @@
-2025-04-02T09:19:12.936043+00:00 app[web.1]: Client disconnected
-2025-04-02T09:19:12.935605+00:00 heroku[router]: at=info method=GET path="/" host=vespa-flashcards-e7f31e9ff3c9.herokuapp.com request_id=0f43203d-8cc0-4245-8b8a-f25666a8f33e fwd="81.99.198.18" dyno=web.1 connect=1ms service=23618ms status=101 bytes=189 protocol=https
-2025-04-02T09:19:18.077316+00:00 heroku[router]: at=info method=GET path="/" host=vespa-flashcards-e7f31e9ff3c9.herokuapp.com request_id=709118dc-1f80-4c01-87b5-ad2d84673297 fwd="81.99.198.18" dyno=web.1 connect=1ms service=1ms status=304 bytes=237 protocol=https
-2025-04-02T09:19:18.139221+00:00 heroku[router]: at=info method=GET path="/static/js/main.2f954bb8.js" host=vespa-flashcards-e7f31e9ff3c9.herokuapp.com request_id=4b4c720d-22e3-44e3-ab4e-6743c46137d1 fwd="81.99.198.18" dyno=web.1 connect=2ms service=1ms status=304 bytes=239 protocol=https
-2025-04-02T09:19:18.180546+00:00 heroku[router]: at=info method=GET path="/static/css/main.38d08c1c.css" host=vespa-flashcards-e7f31e9ff3c9.herokuapp.com request_id=8a25c840-34c8-4594-b4ef-d75fe8aed30a fwd="81.99.198.18" dyno=web.1 connect=1ms service=1ms status=304 bytes=239 protocol=https
-2025-04-02T09:19:18.326917+00:00 heroku[router]: at=info method=GET path="/static/css/main.38d08c1c.css.map" host=vespa-flashcards-e7f31e9ff3c9.herokuapp.com request_id=17f75ebe-ac40-44e8-94b9-e0eb56617f18 fwd="81.99.198.18" dyno=web.1 connect=1ms service=2ms status=304 bytes=239 protocol=https
-2025-04-02T09:19:18.702283+00:00 app[web.1]: Client connected

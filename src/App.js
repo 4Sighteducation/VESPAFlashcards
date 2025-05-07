@@ -1506,7 +1506,8 @@ useEffect(() => {
       if (typeof boxItem === 'string') {
         // If it's just a string ID without review date, assume it's reviewable
         cardId = boxItem;
-        nextReviewDate = null;
+        nextReviewDate = null; // Will evaluate to true against todayUTC if !card.nextReviewDate
+        isReviewable = true; // Explicitly true
       } else if (boxItem && typeof boxItem === 'object') {
         // If it has review date info
         cardId = boxItem.cardId;
@@ -1514,13 +1515,17 @@ useEffect(() => {
         if (boxItem.nextReviewDate) {
           try {
             nextReviewDate = new Date(boxItem.nextReviewDate);
-            // Card is reviewable if the next review date is today or earlier
-            isReviewable = nextReviewDate <= today;
+            // Card is reviewable if the next review date is today or earlier (UTC comparison)
+            isReviewable = nextReviewDate <= todayUTC;
           } catch (e) {
             console.warn(`Invalid date format for nextReviewDate: ${boxItem.nextReviewDate}`);
             nextReviewDate = null;
-            isReviewable = true;
+            isReviewable = true; // Fallback to reviewable if date is invalid
           }
+        } else {
+          // No nextReviewDate means it should be reviewable (e.g. new card error state or legacy)
+          isReviewable = true;
+          nextReviewDate = null;
         }
       } else {
         console.warn("Invalid box item, skipping", boxItem);
@@ -1542,9 +1547,10 @@ useEffect(() => {
       
       if (matchingCard) {
         // Add reviewability and next review date info to the card
+        // Ensure isReviewable from the boxItem logic (which now uses UTC) is authoritative here
         const cardWithReviewInfo = {
           ...matchingCard,
-          isReviewable,
+          isReviewable, // This is the key part, determined by UTC comparison
           nextReviewDate: nextReviewDate ? nextReviewDate.toISOString() : null
         };
         
