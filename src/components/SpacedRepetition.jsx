@@ -129,9 +129,7 @@ const SpacedRepetition = ({
         Object.keys(grouped[subject]).forEach(topic => {
           const topicKey = `${subject}-${topic}`;
           const cardsInTopic = grouped[subject][topic];
-          const hasReviewableCards = cardsInTopic.some(card => 
-            !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC // Compare with todayUTC
-          );
+          const hasReviewableCards = cardsInTopic.some(card => card.isReviewable === true);
           reviewable.topics[topicKey] = hasReviewableCards;
           if (hasReviewableCards) reviewable.subjects[subject] = true;
         });
@@ -200,6 +198,49 @@ const SpacedRepetition = ({
       answerFeedbackTimeoutRef.current = null;
     }
   }, [currentCards, showStudyModal]); // Removed currentIndex from dependencies
+
+  // <<< REVISED useEffect for Study Session Management >>>
+  useEffect(() => {
+    if (!showStudyModal) {
+      // Modal closed: Reset session states
+      setCurrentIndex(0);
+      setStudyCompleted(false);
+      resetCardVisualState();
+      // Clear any pending timeouts
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+      if (answerFeedbackTimeoutRef.current) clearTimeout(answerFeedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+      answerFeedbackTimeoutRef.current = null;
+      return;
+    }
+
+    // Modal is open: Adjust state based on currentCards
+    if (currentCards.length > 0) {
+      // If index is out of bounds, reset to 0 or last valid index
+      const newIndex = Math.min(Math.max(currentIndex, 0), currentCards.length - 1);
+      if (newIndex !== currentIndex) {
+        setCurrentIndex(newIndex); 
+      }
+      setStudyCompleted(false); // We have cards, so not completed
+    } else {
+      // No cards available for the current filter
+      setStudyCompleted(true);
+      setCurrentIndex(0); // Reset index when completed/empty
+    }
+
+    // Reset visual state for the current card (or empty view)
+    resetCardVisualState();
+
+    // Clear pending feedback timeouts
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
+    if (answerFeedbackTimeoutRef.current) {
+      clearTimeout(answerFeedbackTimeoutRef.current);
+      answerFeedbackTimeoutRef.current = null;
+    }
+  }, [currentCards, showStudyModal, currentIndex]); // Add currentIndex back as it's used for adjustment
 
   
   // Toggle expansion of a subject
@@ -462,6 +503,7 @@ const SpacedRepetition = ({
           const subjectColor = subjectCards[0]?.baseColor || subjectCards[0]?.cardColor || '#e0e0e0';
           const textColor = getContrastColor(subjectColor);
           const isReviewable = reviewableCards.subjects[subject];
+          const anySubjectCardReviewable = subjectCards.some(card => card.isReviewable === true);
           
           return (
             <div key={subject} className="subject-box">
@@ -477,7 +519,7 @@ const SpacedRepetition = ({
                     <h2>{subject}</h2>
                     <div className="subject-meta">
                       <span className="box-badge">Box {currentBox}</span>
-                      {isReviewable && <span className="reviewable-badge">Ready for Review</span>}
+                      {anySubjectCardReviewable && <span className="reviewable-badge">Ready for Review</span>}
                     </div>
                   </div>
                   <span className="card-count">
@@ -488,8 +530,8 @@ const SpacedRepetition = ({
                   className="review-btn" 
                   onClick={() => reviewSubject(subject)}
                   style={{ color: textColor }}
-                  disabled={!isReviewable} // Disable if no reviewable cards in subject
-                  title={isReviewable ? "Review this subject" : "No cards ready for review in this subject"}
+                  disabled={!anySubjectCardReviewable}
+                  title={anySubjectCardReviewable ? "Review this subject" : "No cards ready for review in this subject"}
                 >
                   <span className="review-icon">👁️</span>
                 </button>
@@ -501,6 +543,7 @@ const SpacedRepetition = ({
                 const textColorTopic = getContrastColor(topicColor); // Renamed to avoid conflict
                 const topicKey = `${subject}-${topic}`;
                 const isTopicReviewable = reviewableCards.topics[topicKey];
+                const anyTopicCardReviewable = (groupedBoxCards[subject][topic] || []).some(card => card.isReviewable === true);
                 
                 return (
                   <div key={topicKey} className="topic-group">
@@ -519,15 +562,15 @@ const SpacedRepetition = ({
                           <span className="card-count">
                             ({(groupedBoxCards[subject][topic] || []).length} cards)
                           </span>
-                          {isTopicReviewable && <span className="topic-reviewable-badge">Ready</span>}
+                          {anyTopicCardReviewable && <span className="topic-reviewable-badge">Ready</span>}
                         </div>
                       </div>
                       <button 
                         className="review-btn small" 
                         onClick={() => reviewTopic(subject, topic)}
                         style={{ color: textColorTopic }} // Use renamed variable
-                        disabled={!isTopicReviewable} // Disable if no reviewable cards in topic
-                        title={isTopicReviewable ? "Review this topic" : "No cards ready for review in this topic"}
+                        disabled={!anyTopicCardReviewable}
+                        title={anyTopicCardReviewable ? "Review this topic" : "No cards ready for review in this topic"}
                       >
                         <span className="review-icon">👁️</span>
                       </button>
@@ -538,7 +581,7 @@ const SpacedRepetition = ({
                         {(groupedBoxCards[subject][topic] || []).map((card) => {
                            const todayUTC = new Date(); // Use UTC for check
                            todayUTC.setUTCHours(0,0,0,0);
-                           const cardIsCurrentlyReviewable = !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC;
+                           const cardIsCurrentlyReviewable = card.isReviewable === true;
                           return (
                             <div 
                               key={card.id} 

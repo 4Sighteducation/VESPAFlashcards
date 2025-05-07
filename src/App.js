@@ -721,6 +721,23 @@ function App() {
      // Apply enhanced encoding for multi-subject support
      safeData = prepareKnackSaveData(safeData);
 
+     // <<< NEW LOGGING START >>>
+     try {
+       console.log('[SaveData DEBUG] Preparing to queue SAVE_DATA. Data snapshot:', JSON.stringify({
+         recordId: safeRecordId,
+         cardsCount: (dataToSave.cards || allCards || []).length,
+         colorsKeys: Object.keys(dataToSave.colorMapping || subjectColorMapping || {}),
+         box1Count: (dataToSave.spacedRepetition?.box1 || spacedRepetitionData?.box1 || []).length,
+         box2Count: (dataToSave.spacedRepetition?.box2 || spacedRepetitionData?.box2 || []).length,
+         // ... add other box counts if needed ...
+         topicListsCount: (dataToSave.topicLists || topicLists || []).length,
+         topicMetadataCount: (dataToSave.topicMetadata || topicMetadata || []).length,
+         preserveFields: preserveFields
+       }, null, 2)); // Pretty print for readability
+     } catch(e) {
+        console.error('[SaveData DEBUG] Error logging data snapshot:', e);
+     }
+     // <<< NEW LOGGING END >>>
 
       console.log(`[Save] Sending data to Knack. Payload size: ${safeData.cards?.length} items.`);
 
@@ -1181,6 +1198,10 @@ function App() {
       const newNextReviewDateCalculated = calculateNextReviewDate(box); // Calculate once
       const nowISOForMove = new Date().toISOString(); // Define once for this move
 
+      // <<< NEW LOGGING START >>>
+      console.log(`[MoveCard DEBUG] Card ID: ${stringCardId}, Target Box: ${box}, Calculated Next Review: ${newNextReviewDateCalculated}`);
+      // <<< NEW LOGGING END >>>
+
       setSpacedRepetitionData((prevData) => {
         const newData = { ...prevData };
         for (let i = 1; i <= 5; i++) {
@@ -1204,6 +1225,10 @@ function App() {
       });
       
       setAllCards(prevCards => {
+        // <<< NEW LOGGING START >>>
+        const cardBeforeUpdate = prevCards.find(card => String(card.id).trim() === stringCardId);
+        console.log(`[MoveCard DEBUG] Card ${stringCardId} state BEFORE update:`, JSON.stringify({ boxNum: cardBeforeUpdate?.boxNum, nextReviewDate: cardBeforeUpdate?.nextReviewDate, isReviewable: cardBeforeUpdate?.isReviewable }));
+        // <<< NEW LOGGING END >>>
         return prevCards.map(card => {
           if (String(card.id).trim() === stringCardId) {
             // const newNextReviewDate = calculateNextReviewDate(box); // Already calculated
@@ -1216,6 +1241,9 @@ function App() {
               lastReviewed: nowISOForMove, // Use consistent timestamp
               isReviewable: new Date(newNextReviewDateCalculated) <= todayUTC 
             };
+            // <<< NEW LOGGING START >>>
+            console.log(`[MoveCard DEBUG] Card ${stringCardId} state AFTER update:`, JSON.stringify({ boxNum: updatedCardData.boxNum, nextReviewDate: updatedCardData.nextReviewDate, isReviewable: updatedCardData.isReviewable }));
+            // <<< NEW LOGGING END >>>
           }
           return card;
         });

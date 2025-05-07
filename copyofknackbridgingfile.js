@@ -443,12 +443,16 @@ function safeParseJSON(jsonString, defaultVal = null) {
                      updateData[FIELD_MAPPING.cardBankData] = JSON.stringify(
                          this.ensureSerializable(data.cards || []) // data.cards should be the raw array
                      );
+                     // Encode after stringifying
+                     updateData[FIELD_MAPPING.cardBankData] = safeEncodeURIComponent(updateData[FIELD_MAPPING.cardBankData]);
                      console.log("[SaveQueue] Stringified cardBankData for 'cards' save.");
                      break;
                  case 'colors': // Assuming this type might still be used elsewhere?
                      updateData[FIELD_MAPPING.colorMapping] = JSON.stringify(
                          this.ensureSerializable(data.colorMapping || {}) // data.colorMapping should be the raw object
                      );
+                     // Encode after stringifying
+                     updateData[FIELD_MAPPING.colorMapping] = safeEncodeURIComponent(updateData[FIELD_MAPPING.colorMapping]);
                      console.log("[SaveQueue] Stringified colorMapping for 'colors' save.");
                      break;
                  // REMOVED 'topics' case as topicLists are no longer saved separately
@@ -465,9 +469,13 @@ function safeParseJSON(jsonString, defaultVal = null) {
                      // --- Restoring processing of actual data --- 
                      if (data.cards !== undefined) {
                          updateData[FIELD_MAPPING.cardBankData] = JSON.stringify(this.ensureSerializable(data.cards || []));
+                         // Encode after stringifying
+                         updateData[FIELD_MAPPING.cardBankData] = safeEncodeURIComponent(updateData[FIELD_MAPPING.cardBankData]);
                      }
                      if (data.colorMapping !== undefined) {
                          updateData[FIELD_MAPPING.colorMapping] = JSON.stringify(this.ensureSerializable(data.colorMapping || {}));
+                         // Encode after stringifying
+                         updateData[FIELD_MAPPING.colorMapping] = safeEncodeURIComponent(updateData[FIELD_MAPPING.colorMapping]);
                      }
                      if (data.spacedRepetition !== undefined) {
                          const srData = data.spacedRepetition || {};
@@ -476,9 +484,17 @@ function safeParseJSON(jsonString, defaultVal = null) {
                          if (srData.box3 !== undefined) updateData[FIELD_MAPPING.box3Data] = JSON.stringify(this.ensureSerializable(srData.box3 || []));
                          if (srData.box4 !== undefined) updateData[FIELD_MAPPING.box4Data] = JSON.stringify(this.ensureSerializable(srData.box4 || []));
                          if (srData.box5 !== undefined) updateData[FIELD_MAPPING.box5Data] = JSON.stringify(this.ensureSerializable(srData.box5 || []));
+                         // Encode box data after stringifying
+                         if (updateData[FIELD_MAPPING.box1Data]) updateData[FIELD_MAPPING.box1Data] = safeEncodeURIComponent(updateData[FIELD_MAPPING.box1Data]);
+                         if (updateData[FIELD_MAPPING.box2Data]) updateData[FIELD_MAPPING.box2Data] = safeEncodeURIComponent(updateData[FIELD_MAPPING.box2Data]);
+                         if (updateData[FIELD_MAPPING.box3Data]) updateData[FIELD_MAPPING.box3Data] = safeEncodeURIComponent(updateData[FIELD_MAPPING.box3Data]);
+                         if (updateData[FIELD_MAPPING.box4Data]) updateData[FIELD_MAPPING.box4Data] = safeEncodeURIComponent(updateData[FIELD_MAPPING.box4Data]);
+                         if (updateData[FIELD_MAPPING.box5Data]) updateData[FIELD_MAPPING.box5Data] = safeEncodeURIComponent(updateData[FIELD_MAPPING.box5Data]);
                      }
                      if (data.topicMetadata !== undefined) {
                          updateData[FIELD_MAPPING.topicMetadata] = JSON.stringify(this.ensureSerializable(data.topicMetadata || []));
+                         // Encode after stringifying
+                         updateData[FIELD_MAPPING.topicMetadata] = safeEncodeURIComponent(updateData[FIELD_MAPPING.topicMetadata]);
                      }
                      // --- End restoring processing --- 
                      break;
