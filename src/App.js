@@ -1149,33 +1149,32 @@ function App() {
 
       const calculateNextReviewDate = (boxNumber) => {
         const now = new Date(); 
-        let nextDate = new Date(now); 
+        let nextDateUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())); // Start of current UTC day
 
         switch (boxNumber) {
           case 1:
-            return new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(); // 1ms before current UTC day start
+            // Set review for the START of the NEXT UTC day (minus 1ms)
+            nextDateUTC.setUTCDate(nextDateUTC.getUTCDate() + 1); 
+            nextDateUTC.setUTCMilliseconds(nextDateUTC.getUTCMilliseconds() - 1);
+            break;
           case 2: 
-            nextDate.setDate(now.getDate() + 2); 
+            nextDateUTC.setUTCDate(nextDateUTC.getUTCDate() + 2); 
             break;
           case 3: 
-            nextDate.setDate(now.getDate() + 3);
+            nextDateUTC.setUTCDate(nextDateUTC.getUTCDate() + 3);
             break;
           case 4: 
-            nextDate.setDate(now.getDate() + 7);
+            nextDateUTC.setUTCDate(nextDateUTC.getUTCDate() + 7);
             break;
           case 5: 
-            nextDate.setDate(now.getDate() + 28);
+            nextDateUTC.setUTCDate(nextDateUTC.getUTCDate() + 28);
             break;
-          default:
-            nextDate.setDate(now.getDate() + 1); 
+          default: // Fallback (shouldn't happen for boxes 1-5)
+            nextDateUTC.setUTCDate(nextDateUTC.getUTCDate() + 1); 
         }
         
-        if (boxNumber > 1) {
-            nextDate.setHours(0, 0, 0, 0); // Set to local midnight of the future day
-            return nextDate.toISOString(); // Convert to UTC ISO string
-        }
-        // Fallback for Box 1, though case 1 should catch it.
-        return new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(); 
+        // Return the calculated UTC date as an ISO string
+        return nextDateUTC.toISOString(); 
       };
 
       const stringCardId = String(cardId).trim();

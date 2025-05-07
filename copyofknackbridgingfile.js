@@ -1301,6 +1301,9 @@ function safeParseJSON(jsonString, defaultVal = null) {
           // tomorrow.setDate(now.getDate() + 1); // REMOVE
           // const tomorrowISO = tomorrow.toISOString(); // REMOVE
           
+          // Calculate the correct review date (1ms before start of current UTC day)
+          const reviewDateForNewCard = new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString();
+
           const existingBox1Map = new Map(box1Data.map(entry => [entry.cardId, true]));
           
           // Add ONLY the newly added cards to Box 1
@@ -1309,11 +1312,11 @@ function safeParseJSON(jsonString, defaultVal = null) {
             .map(card => ({ 
               cardId: card.id, 
               lastReviewed: nowISO, 
-              nextReviewDate: nowISO // CORRECTED: Schedule for review today (nowISO)
+              nextReviewDate: reviewDateForNewCard // <-- Corrected line
             }));
 
           const updatedBox1 = [...box1Data, ...newBox1Entries];
-          console.log(`[Knack Script] Added ${newBox1Entries.length} new entries to Box 1 with nextReviewDate: ${nowISO}`); // Log nowISO
+          console.log(`[Knack Script] Added ${newBox1Entries.length} new entries to Box 1 with nextReviewDate: ${reviewDateForNewCard}`); // Log the correct date
 
          // --- Queue a 'full' save operation with merged data ---
          const fullSaveData = {
