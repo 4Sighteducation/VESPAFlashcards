@@ -410,19 +410,23 @@ const SpacedRepetition = ({
     try {
       const nextBoxNumber = Math.min(currentBox + 1, 5);
       const cardToMoveId = currentCard.id;
+      const wasLastCard = currentIndex === currentCards.length - 1;
 
-      onMoveCard(cardToMoveId, nextBoxNumber); // This prop change will trigger useEffects
+      onMoveCard(cardToMoveId, nextBoxNumber); 
       
       setFeedbackMessage(`Card moved to Box ${nextBoxNumber}.`);
-      setShowReviewDateMessage(true); // Show feedback popup
+      setShowReviewDateMessage(true);
 
-      // Delay hiding feedback and then let useEffect handle card advancement/completion
-      // --- Store timeout ref for potential cleanup --- 
+      if (wasLastCard) {
+        console.log('[SR handleCorrectAnswer] Last card answered correctly. Setting studyCompleted=true, currentIndex=0.');
+        setStudyCompleted(true);
+        setCurrentIndex(0); 
+      }
+
       feedbackTimeoutRef.current = setTimeout(() => {
         setShowReviewDateMessage(false);
         setFeedbackMessage("");
-        feedbackTimeoutRef.current = null; // Clear ref after execution
-        // The main useEffect reacting to currentCards change will now advance or complete.
+        feedbackTimeoutRef.current = null; 
       }, 1500);
     } catch (error) {
       console.error("Error handling correct answer:", error);
@@ -431,7 +435,6 @@ const SpacedRepetition = ({
       setTimeout(() => {
           setShowReviewDateMessage(false);
           setFeedbackMessage("");
-          // Let useEffect handle advancement/completion
       }, 1500);
     }
   };
@@ -444,18 +447,23 @@ const SpacedRepetition = ({
     try {
       const targetBoxNumber = 1;
       const cardToMoveId = currentCard.id;
+      const wasLastCard = currentIndex === currentCards.length - 1;
 
       onMoveCard(cardToMoveId, targetBoxNumber);
       
       setFeedbackMessage(`Card moved to Box ${targetBoxNumber}.`);
       setShowReviewDateMessage(true);
 
-      // --- Store timeout ref for potential cleanup --- 
+      if (wasLastCard) {
+        console.log('[SR handleIncorrectAnswer] Last card answered incorrectly. Setting studyCompleted=true, currentIndex=0.');
+        setStudyCompleted(true);
+        setCurrentIndex(0);
+      }
+
       feedbackTimeoutRef.current = setTimeout(() => {
         setShowReviewDateMessage(false);
         setFeedbackMessage("");
-        feedbackTimeoutRef.current = null; // Clear ref after execution
-        // Let useEffect handle advancement/completion
+        feedbackTimeoutRef.current = null; 
       }, 1500);
     } catch (error) {
       console.error("Error handling incorrect answer:", error);
@@ -464,7 +472,6 @@ const SpacedRepetition = ({
       setTimeout(() => {
           setShowReviewDateMessage(false);
           setFeedbackMessage("");
-          // Let useEffect handle advancement/completion
       }, 1500);
     }
   };
@@ -627,26 +634,21 @@ const SpacedRepetition = ({
   // Render the flashcard review interface when a subject/topic is selected
   const renderCardReview = () => {
     console.log('[SR renderCardReview] Rendering. studyCompleted:', studyCompleted, 'currentCards.length:', currentCards.length, 'currentIndex:', currentIndex);
-    const isValidCardCheck = currentCards && currentCards.length > 0 && currentIndex >= 0 && currentIndex < currentCards.length && currentCards[currentIndex] !== undefined;
-    const currentCardForRender = isValidCardCheck ? currentCards[currentIndex] : null;
-    console.log('[SR renderCardReview] isValidCardCheck:', isValidCardCheck, 'currentCardForRender ID:', currentCardForRender?.id);
 
-    // If we have completed studying all available cards
+    // PRIORITY CHECK 1: If study is marked as completed, show completion message.
     if (studyCompleted) {
-      console.log('[SR renderCardReview] Rendering completion message.');
+      console.log('[SR renderCardReview] Rendering completion message because studyCompleted is true.');
       return (
         <div className="completion-message">
           <h3>Session Complete!</h3>
-          <p>
-            You've completed reviewing all cards in this session.
-          </p>
+          <p>You've completed reviewing all cards in this session.</p>
           <button 
             className="return-button" 
             onClick={() => {
               setSelectedSubject(null);
               setSelectedTopic(null);
-              setStudyCompleted(false);
-              setShowStudyModal(false); // Close the modal
+              setStudyCompleted(false); // Reset for next potential session
+              setShowStudyModal(false); 
             }}
           >
             Return to Box View
@@ -655,8 +657,9 @@ const SpacedRepetition = ({
       );
     }
 
+    // PRIORITY CHECK 2: If no cards are available for the current filter (e.g., after filtering or if box is empty)
     if (!currentCards || currentCards.length === 0) {
-      console.log('[SR renderCardReview] Rendering empty box message (no currentCards).');
+      console.log('[SR renderCardReview] Rendering empty box message (no currentCards). studyCompleted is false, so this means filters resulted in no cards or box is empty.');
       return (
         <div className="empty-box">
           <h3>Wow! You're keen!!</h3>
@@ -674,7 +677,7 @@ const SpacedRepetition = ({
             onClick={() => {
               setSelectedSubject(null);
               setSelectedTopic(null);
-              setShowStudyModal(false); // Close the modal
+              setShowStudyModal(false); 
             }}
           >
             Return to Box View
@@ -683,21 +686,19 @@ const SpacedRepetition = ({
       );
     }
 
+    // PRIORITY CHECK 3: If currentIndex is out of bounds for the currentCards array.
     if (currentIndex < 0 || currentIndex >= currentCards.length || !currentCards[currentIndex]) {
-      console.log('[SR renderCardReview] Rendering all cards reviewed message (currentIndex out of bounds or card undefined).');
-      // This state should ideally be caught by the useEffect that manages currentIndex.
-      // If it still happens, it means currentCards might have become empty unexpectedly.
+      console.log('[SR renderCardReview] currentIndex is out of bounds or card is undefined. currentCards.length:', currentCards.length, 'currentIndex:', currentIndex, '. This likely means the last card was just processed.');
       return (
-        <div className="empty-box">
+        <div className="completion-message"> {/* Using completion message as it's more accurate */}
           <h3>All cards for this selection reviewed!</h3>
-          <p>
-            You've gone through all available cards for this specific filter.
-          </p>
+          <p>You've gone through all available cards for this specific filter.</p>
           <button 
             className="return-button" 
             onClick={() => {
               setSelectedSubject(null);
               setSelectedTopic(null);
+              setStudyCompleted(false); // Ensure reset
               setShowStudyModal(false);
             }}
           >
@@ -707,6 +708,10 @@ const SpacedRepetition = ({
       );
     }
     
+    const currentCardForRender = currentCards[currentIndex]; // Define after checks
+    console.log('[SR renderCardReview] isValidCardCheck: true (implied by passing guards), currentCardForRender ID:', currentCardForRender?.id);
+
+
     if (!currentCardForRender || (!currentCardForRender.front && !currentCardForRender.question)) {
       console.log('[SR renderCardReview] Rendering invalid card message. currentCardForRender:', currentCardForRender);
       return (
