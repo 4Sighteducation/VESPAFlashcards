@@ -220,22 +220,20 @@ const SpacedRepetition = ({
   
   // Select all cards in a subject for review
   const reviewSubject = (subject) => {
-    setSelectedSubject(subject);
-    setSelectedTopic(null);
-    
-    // updateCurrentCardsInternal will be called by the main useEffect due to state change.
-    // Then the new useEffect (watching currentCards) will set currentIndex etc.
+    // Directly use props.cards (named 'cards' in this component's scope) to get the most up-to-date card list
+    const currentPropsCards = cards || []; // 'cards' is from props
+    const subjectCards = currentPropsCards.filter(card => (card.subject || "General") === subject);
 
-    // Check if there are actually reviewable cards before opening the modal
-    const subjectCards = Object.values(groupedBoxCards[subject] || {}).flat();
-    const todayUTC = new Date(); // Use UTC for check
+    const todayUTC = new Date();
     todayUTC.setUTCHours(0,0,0,0);
-    const hasAnyReviewable = subjectCards.some(card => 
-      !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC // Compare with todayUTC
+    const hasAnyReviewable = subjectCards.some(card =>
+      !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC
     );
 
     if (hasAnyReviewable) {
-      setShowStudyModal(true);
+      setSelectedSubject(subject); // Set state to trigger re-render for the modal
+      setSelectedTopic(null);
+      setShowStudyModal(true); // This will trigger the useEffect to filter currentCards for study
     } else {
       alert(`No cards in "${subject}" are ready for review today. Check back tomorrow!`);
     }
@@ -243,19 +241,21 @@ const SpacedRepetition = ({
   
   // Select cards in a specific topic for review
   const reviewTopic = (subject, topic) => {
-    setSelectedSubject(subject);
-    setSelectedTopic(topic);
-    // updateCurrentCardsInternal will be called by the main useEffect.
-    // Then the new useEffect (watching currentCards) will set currentIndex etc.
-    
-    const topicCards = groupedBoxCards[subject]?.[topic] || [];
-    const todayUTC = new Date(); // Use UTC for check
+    const currentPropsCards = cards || [];
+    const topicCards = currentPropsCards.filter(card =>
+        (card.subject || "General") === subject &&
+        (card.topic || "General") === topic
+    );
+
+    const todayUTC = new Date();
     todayUTC.setUTCHours(0,0,0,0);
-    const hasAnyReviewable = topicCards.some(card => 
-      !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC // Compare with todayUTC
+    const hasAnyReviewable = topicCards.some(card =>
+      !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC
     );
 
     if (hasAnyReviewable) {
+      setSelectedSubject(subject);
+      setSelectedTopic(topic);
       setShowStudyModal(true);
     } else {
       alert(`No cards in "${topic}" are ready for review today. Check back tomorrow!`);
