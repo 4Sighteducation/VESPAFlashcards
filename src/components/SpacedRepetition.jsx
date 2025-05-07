@@ -151,33 +151,32 @@ const SpacedRepetition = ({
   useEffect(() => {
     if (!showStudyModal) {
       // If modal is closed, reset study-specific states
-      setCurrentIndex(0);
-      setIsFlipped(false);
-      setShowFlipResponse(false);
-      setShowFlipResponseOverlay(false);
+      setCurrentIndex(0); // Reset for next session
       setStudyCompleted(false);
+      resetCardVisualState(); // Call this here too
       return;
     }
 
     // If modal is open and currentCards is populated:
     if (currentCards.length > 0) {
-      // If currentIndex is out of bounds (e.g., after a card was removed), adjust it.
-      // Or, if it's simply the start of a new set of cards, ensure it's 0.
-      if (currentIndex >= currentCards.length || currentIndex < 0) {
-        setCurrentIndex(0);
-      }
-      setStudyCompleted(false); // Not completed if there are cards
-    } else {
-      // If currentCards is empty (and modal is open), the study session for this selection is complete.
-      setStudyCompleted(true);
+        // If currentIndex is now out of bounds of the NEW currentCards list,
+        // it means the card at the previous currentIndex was removed or the list changed.
+        if (currentIndex >= currentCards.length) {
+            // If current index is now past the end (e.g. last card was removed or list shortened significantly)
+            // Go to the new last card if the list is not empty, otherwise complete.
+            setCurrentIndex(Math.max(0, currentCards.length - 1)); 
+        } else if (currentIndex < 0) { // Should ideally not happen
+             setCurrentIndex(0);
+        }
+        // If currentIndex is still valid within the new currentCards, no change to currentIndex needed here from this check.
+        setStudyCompleted(false); // Not completed if there are cards
+    } else { // currentCards is empty
+        setStudyCompleted(true);
     }
     
-    // Always reset flip state for the new/current card.
-    setIsFlipped(false);
-    setShowFlipResponse(false);
-    setShowFlipResponseOverlay(false);
+    resetCardVisualState(); // Reset flip state for the new/current card
 
-  }, [currentCards, showStudyModal, currentIndex]); // Added currentIndex to re-evaluate if it goes out of bounds.
+  }, [currentCards, showStudyModal]); // Removed currentIndex from dependencies
 
   
   // Toggle expansion of a subject
@@ -294,15 +293,15 @@ const SpacedRepetition = ({
   
   // Simplified nextCard: only changes index or sets studyCompleted.
   // The new useEffect will handle resetting flip state.
-  const nextCard = () => {
+  const nextCard = useCallback(() => { // Make it a useCallback
     if (currentIndex < currentCards.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      // Flip state reset will be handled by the new useEffect watching currentCards & currentIndex
+      setCurrentIndex(prevIndex => prevIndex + 1); // Use functional update
     } else {
-      setStudyCompleted(true); // All cards in the current session are done
+      setStudyCompleted(true); 
     }
-  };
-  
+    // Flip state reset will be handled by the useEffect watching currentIndex and currentCard
+  }, [currentIndex, currentCards.length]);
+
   // Simplified prevCard
   const prevCard = () => {
     if (currentIndex > 0) {

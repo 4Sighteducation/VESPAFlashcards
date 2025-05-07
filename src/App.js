@@ -1065,7 +1065,7 @@ function App() {
           ...card,
           boxNum: 1,
           lastReviewed: nowISO, // Set lastReviewed to now
-          nextReviewDate: nowISO, // Set to today so it's immediately reviewable (UTC)
+          nextReviewDate: new Date(Date.now() - 60000).toISOString(), // Set to 1 minute ago to ensure reviewability against UTC start of day
           type: card.type || 'flashcard' // Ensure it has a type
         };
         
@@ -1169,40 +1169,37 @@ function App() {
 
       // Calculate the next review date based on the box number
       const calculateNextReviewDate = (boxNumber) => {
-        const today = new Date();
-        let nextDate = new Date(today); // Base on current local time initially
-        
+        const now = new Date(); // Current moment
+        let nextDate = new Date(now); 
+
         switch (boxNumber) {
-          case 1: // Card answered INCORRECTLY, or a new card being moved
-            // Should be reviewable immediately or same UTC day.
-            // Setting to current ISO string makes it reviewable when compared against start of UTC day.
-            return new Date().toISOString(); 
-          case 2: // Every other day (from current local day, then to UTC midnight)
-            nextDate.setDate(today.getDate() + 2);
+          case 1:
+            // For Box 1 (incorrect or new), make it reviewable by setting its date slightly in the past.
+            return new Date(Date.now() - 60000).toISOString(); // 1 minute ago from now
+          case 2: 
+            nextDate.setDate(now.getDate() + 2); // Review in 2 local days
             break;
           case 3: // Every 3rd day
-            nextDate.setDate(today.getDate() + 3);
+            nextDate.setDate(now.getDate() + 3);
             break;
           case 4: // Every week (7 days)
-            nextDate.setDate(today.getDate() + 7);
+            nextDate.setDate(now.getDate() + 7);
             break;
           case 5: // Every 4 weeks (28 days)
-            nextDate.setDate(today.getDate() + 28);
+            nextDate.setDate(now.getDate() + 28);
             break;
           default:
-            nextDate.setDate(today.getDate() + 1); // Default to next day
+            nextDate.setDate(now.getDate() + 1); // Default to next day
         }
         
-        // For boxes 2-5, set the time to UTC midnight for consistent day-based comparisons
-        // For Box 1, it's already an ISO string from `new Date().toISOString()`
+        // For boxes 2-5, set the time to the START of that future LOCAL day, then convert to UTC string.
         if (boxNumber > 1) {
-            nextDate.setUTCHours(0, 0, 0, 0); 
-            return nextDate.toISOString();
+            nextDate.setHours(0, 0, 0, 0); 
+            return nextDate.toISOString(); 
         }
-        // For box 1, it's already an ISO string from new Date().toISOString(), so just return it
-        // This was already handled by the case 1 return new Date().toISOString();
-        // However, to be explicit, if for some reason it wasn't, this ensures it.
-        return nextDate.toISOString(); 
+        // This fallback should ideally not be reached if boxNumber is always 1-5.
+        // If it is box 1, it should have returned from the case 1 block.
+        return new Date(Date.now() - 60000).toISOString(); // Fallback for safety for Box 1 if logic error elsewhere
       };
 
       // Ensure cardId is a string
