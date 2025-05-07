@@ -163,7 +163,7 @@ const SpacedRepetition = ({
         // it means the card at the previous currentIndex was removed or the list changed.
         if (currentIndex >= currentCards.length) {
             // If current index is now past the end (e.g. last card was removed or list shortened significantly)
-            // Go to the new last card if the list is not empty, otherwise complete.
+            // Go to the new last card if the list is not empty.
             setCurrentIndex(Math.max(0, currentCards.length - 1)); 
         } else if (currentIndex < 0) { // Should ideally not happen
              setCurrentIndex(0);
@@ -172,6 +172,7 @@ const SpacedRepetition = ({
         setStudyCompleted(false); // Not completed if there are cards
     } else { // currentCards is empty
         setStudyCompleted(true);
+        setCurrentIndex(0); // Reset index when completed, though no card is shown
     }
     
     resetCardVisualState(); // Reset flip state for the new/current card

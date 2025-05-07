@@ -1065,7 +1065,8 @@ function App() {
           ...card,
           boxNum: 1,
           lastReviewed: nowISO, // Set lastReviewed to now
-          nextReviewDate: new Date(Date.now() - 60000).toISOString(), // Set to 1 minute ago to ensure reviewability against UTC start of day
+          // Set nextReviewDate to ensure it's reviewable against the start of the current UTC day
+          nextReviewDate: new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(), 
           type: card.type || 'flashcard' // Ensure it has a type
         };
         
@@ -1174,8 +1175,8 @@ function App() {
 
         switch (boxNumber) {
           case 1:
-            // For Box 1 (incorrect or new), make it reviewable by setting its date slightly in the past.
-            return new Date(Date.now() - 60000).toISOString(); // 1 minute ago from now
+            // For Box 1 (incorrect or new), make it reviewable by setting its date to be before the current UTC day started.
+            return new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(); // 1 millisecond before start of current UTC day
           case 2: 
             nextDate.setDate(now.getDate() + 2); // Review in 2 local days
             break;
@@ -1199,7 +1200,7 @@ function App() {
         }
         // This fallback should ideally not be reached if boxNumber is always 1-5.
         // If it is box 1, it should have returned from the case 1 block.
-        return new Date(Date.now() - 60000).toISOString(); // Fallback for safety for Box 1 if logic error elsewhere
+        return new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(); // Fallback for safety for Box 1 if logic error elsewhere
       };
 
       // Ensure cardId is a string
