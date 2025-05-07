@@ -35,7 +35,8 @@ import {
 import {
   getRandomColor,
   generateShade,
-  ensureValidColorMapping
+  ensureValidColorMapping,
+  BRIGHT_COLORS // Import BRIGHT_COLORS
 } from './utils/ColorUtils';
 
 
@@ -1820,13 +1821,15 @@ useEffect(() => {
             console.log("[User Info] Initialized AuthManager with user data from Knack.");
 
             // If user data (the JSON blob) was included, process it with timestamp comparison
+            // If user data (the JSON blob) was included, process it with timestamp comparison
             if (event.data.data?.userData) {
               const knackPayload = event.data.data; // This is the `data` part of the message
               const knackUserDataBlob = safeParseJSON(knackPayload.userData); // This is the stringified JSON content
               const knackRecordTimestampString = knackPayload.knackRecordLastSaved; // Timestamp of the Knack record itself
-              const localDataTimestampString = localStorageDataTimestampRef.current; // Timestamp from appData.metadata.timestamp
+              // Corrected: Use localStorageDataTimestampRef.current directly
+              const localDataTimestampStringFromRef = localStorageDataTimestampRef.current; // Timestamp from appData.metadata.timestamp
 
-              console.log("[User Info] Processing KNACK_USER_INFO. LocalStorage Timestamp:", localDataTimestampString, "Knack Record Timestamp:", knackRecordTimestampString);
+              console.log("[User Info] Processing KNACK_USER_INFO. LocalStorage Timestamp:", localDataTimestampStringFromRef, "Knack Record Timestamp:", knackRecordTimestampString);
 
               // Store the recordId if available from the blob (as it's part of the userData blob)
               // The recordId in the blob should be the ID of the object_102 record.
@@ -1843,13 +1846,13 @@ useEffect(() => {
                 console.warn("[User Info] recordId not found in Knack userData blob. Relying on ensureRecordId or existing recordId state.");
               }
               
-              const localTimestamp = localDataTimestampString ? new Date(localDataTimestampString).getTime() : 0;
+              const localTimestamp = localDataTimestampStringFromRef ? new Date(localDataTimestampStringFromRef).getTime() : 0;
               const knackTimestamp = knackRecordTimestampString ? new Date(knackRecordTimestampString).getTime() : 0;
               const timeBuffer = 10000; // 10 seconds buffer to account for save queue and potential small discrepancies
 
               if (localTimestamp > (knackTimestamp + timeBuffer)) {
                 // LocalStorage data is significantly newer.
-                console.warn(`[User Info] LocalStorage data (ts: ${localTimestampString}) is newer than Knack record (ts: ${knackRecordTimestampString}). Prioritizing local data.`);
+                console.warn(`[User Info] LocalStorage data (ts: ${localDataTimestampStringFromRef}) is newer than Knack record (ts: ${knackRecordTimestampString}). Prioritizing local data.`);
                 showStatus("Local data is newer. Syncing to server...");
                 // The app state is already populated from localStorage by loadCombinedData.
                 // We just need to ensure Knack gets updated with this fresher data.
@@ -1857,7 +1860,7 @@ useEffect(() => {
               } else {
                 // Knack data is newer, or timestamps are inconclusive/local is not significantly newer.
                 // Proceed with updating state from Knack data.
-                console.log(`[User Info] Knack data (ts: ${knackRecordTimestampString}) is newer or similar to local (ts: ${localDataTimestampString}). Using Knack data.`);
+                console.log(`[User Info] Knack data (ts: ${knackRecordTimestampString}) is newer or similar to local (ts: ${localDataTimestampStringFromRef}). Using Knack data.`);
                 try {
                   if (knackUserDataBlob.cards && Array.isArray(knackUserDataBlob.cards)) {
                     const restoredCards = restoreMultipleChoiceOptions(knackUserDataBlob.cards);
