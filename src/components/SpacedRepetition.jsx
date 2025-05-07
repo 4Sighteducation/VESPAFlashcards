@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import ReactDOM from "react-dom";
 import "./SpacedRepetition.css";
 import FlippableCard from './FlippableCard';
@@ -45,6 +45,10 @@ const SpacedRepetition = ({
   // Add a new state to manage flip response overlay
   const [showFlipResponseOverlay, setShowFlipResponseOverlay] = useState(false);
   
+  // Refs for timeouts
+  const feedbackTimeoutRef = useRef(null);
+  const answerFeedbackTimeoutRef = useRef(null); // For MCQ immediate feedback
+
   // Add this array of humorous empty state messages
   const emptyStateMessages = [
     "Actually enjoy your free time (shocking concept, we know)",
@@ -154,6 +158,15 @@ const SpacedRepetition = ({
       setCurrentIndex(0); // Reset for next session
       setStudyCompleted(false);
       resetCardVisualState(); // Call this here too
+      // Clear any pending timeouts when modal closes or currentCards change
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current);
+        feedbackTimeoutRef.current = null;
+      }
+      if (answerFeedbackTimeoutRef.current) {
+        clearTimeout(answerFeedbackTimeoutRef.current);
+        answerFeedbackTimeoutRef.current = null;
+      }
       return;
     }
 
@@ -176,6 +189,16 @@ const SpacedRepetition = ({
     
     resetCardVisualState(); // Reset flip state for the new/current card, or for empty state
 
+    // Clear any pending feedback timeout
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
+    // Clear the MCQ answer feedback timeout as well
+    if (answerFeedbackTimeoutRef.current) {
+      clearTimeout(answerFeedbackTimeoutRef.current);
+      answerFeedbackTimeoutRef.current = null;
+    }
   }, [currentCards, showStudyModal]); // Removed currentIndex from dependencies
 
   
@@ -273,14 +296,17 @@ const SpacedRepetition = ({
     // FlippableCard has already provided feedback to the user.
     setIsFlipped(true); // Ensure card is visually flipped to show "back" if not already.
 
-    setTimeout(() => {
+    // Set timeout to hide feedback after a delay
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+    }
+    feedbackTimeoutRef.current = setTimeout(() => {
       if (isCorrect) {
         handleCorrectAnswer();
       } else {
         handleIncorrectAnswer();
       }
-      // No need to setShowFlipResponse(true) for MCQs here, as box movement is immediate.
-      // FlippableCard handles its own internal feedback display (correct/incorrect option styling).
+      answerFeedbackTimeoutRef.current = null; // Clear ref after execution
     }, 300); // Small delay for user to see FlippableCard's feedback
   };
 
@@ -347,9 +373,11 @@ const SpacedRepetition = ({
       setShowReviewDateMessage(true); // Show feedback popup
 
       // Delay hiding feedback and then let useEffect handle card advancement/completion
-      setTimeout(() => {
+      // --- Store timeout ref for potential cleanup --- 
+      feedbackTimeoutRef.current = setTimeout(() => {
         setShowReviewDateMessage(false);
         setFeedbackMessage("");
+        feedbackTimeoutRef.current = null; // Clear ref after execution
         // The main useEffect reacting to currentCards change will now advance or complete.
       }, 1500);
     } catch (error) {
@@ -378,9 +406,11 @@ const SpacedRepetition = ({
       setFeedbackMessage(`Card moved to Box ${targetBoxNumber}.`);
       setShowReviewDateMessage(true);
 
-      setTimeout(() => {
+      // --- Store timeout ref for potential cleanup --- 
+      feedbackTimeoutRef.current = setTimeout(() => {
         setShowReviewDateMessage(false);
         setFeedbackMessage("");
+        feedbackTimeoutRef.current = null; // Clear ref after execution
         // Let useEffect handle advancement/completion
       }, 1500);
     } catch (error) {
