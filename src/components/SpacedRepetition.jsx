@@ -89,11 +89,11 @@ const SpacedRepetition = ({
         .flat();
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to midnight for consistent day comparison
+    const todayUTC = new Date();
+    todayUTC.setUTCHours(0, 0, 0, 0); // Start of current day in UTC
 
     const filteredReviewableCards = cardsToStudy.filter(card => {
-      return !card.nextReviewDate || new Date(card.nextReviewDate) <= today;
+      return !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC;
     });
     
     setCurrentCards(filteredReviewableCards);
@@ -117,13 +117,16 @@ const SpacedRepetition = ({
       setBoxSubjects(Object.keys(grouped).sort());
       
       const reviewable = { subjects: {}, topics: {} };
+      const todayUTC = new Date(); // Use UTC for reviewability check
+      todayUTC.setUTCHours(0, 0, 0, 0);
+
       Object.keys(grouped).forEach(subject => {
         reviewable.subjects[subject] = false;
         Object.keys(grouped[subject]).forEach(topic => {
           const topicKey = `${subject}-${topic}`;
           const cardsInTopic = grouped[subject][topic];
           const hasReviewableCards = cardsInTopic.some(card => 
-            !card.nextReviewDate || new Date(card.nextReviewDate) <= new Date()
+            !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC // Compare with todayUTC
           );
           reviewable.topics[topicKey] = hasReviewableCards;
           if (hasReviewableCards) reviewable.subjects[subject] = true;
@@ -203,10 +206,10 @@ const SpacedRepetition = ({
 
     // Check if there are actually reviewable cards before opening the modal
     const subjectCards = Object.values(groupedBoxCards[subject] || {}).flat();
-    const today = new Date();
-    today.setHours(0,0,0,0);
+    const todayUTC = new Date(); // Use UTC for check
+    todayUTC.setUTCHours(0,0,0,0);
     const hasAnyReviewable = subjectCards.some(card => 
-      !card.nextReviewDate || new Date(card.nextReviewDate) <= today
+      !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC // Compare with todayUTC
     );
 
     if (hasAnyReviewable) {
@@ -224,10 +227,10 @@ const SpacedRepetition = ({
     // Then the new useEffect (watching currentCards) will set currentIndex etc.
     
     const topicCards = groupedBoxCards[subject]?.[topic] || [];
-    const today = new Date();
-    today.setHours(0,0,0,0);
+    const todayUTC = new Date(); // Use UTC for check
+    todayUTC.setUTCHours(0,0,0,0);
     const hasAnyReviewable = topicCards.some(card => 
-      !card.nextReviewDate || new Date(card.nextReviewDate) <= today
+      !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC // Compare with todayUTC
     );
 
     if (hasAnyReviewable) {
@@ -503,32 +506,37 @@ const SpacedRepetition = ({
 
                     {expandedTopics[topicKey] && (
                       <div className="topic-cards expanded-topic">
-                        {(groupedBoxCards[subject][topic] || []).map((card) => (
-                          <div 
-                            key={card.id} 
-                            className="card-preview"
-                            style={{
-                              backgroundColor: card.cardColor,
-                              color: getContrastColor(card.cardColor)
-                            }}
-                          >
-                            <div className="card-preview-header">
-                              <span className="card-type">{card.questionType}</span>
-                              <div className="card-review-status">
-                                {!card.nextReviewDate || new Date(card.nextReviewDate) <= new Date() ? (
-                                  <span className="review-ready">Ready for Review</span>
-                                ) : (
-                                  <span className="review-waiting">
-                                    Next: {new Date(card.nextReviewDate).toLocaleDateString()}
-                                  </span>
-                                )}
+                        {(groupedBoxCards[subject][topic] || []).map((card) => {
+                           const todayUTC = new Date(); // Use UTC for check
+                           todayUTC.setUTCHours(0,0,0,0);
+                           const cardIsCurrentlyReviewable = !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC;
+                          return (
+                            <div 
+                              key={card.id} 
+                              className="card-preview"
+                              style={{
+                                backgroundColor: card.cardColor,
+                                color: getContrastColor(card.cardColor)
+                              }}
+                            >
+                              <div className="card-preview-header">
+                                <span className="card-type">{card.questionType}</span>
+                                <div className="card-review-status">
+                                  {cardIsCurrentlyReviewable ? (
+                                    <span className="review-ready">Ready for Review</span>
+                                  ) : (
+                                    <span className="review-waiting">
+                                      Next: {new Date(card.nextReviewDate).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="card-preview-content">
+                                <div dangerouslySetInnerHTML={{ __html: card.front || card.question }} />
                               </div>
                             </div>
-                            <div className="card-preview-content">
-                              <div dangerouslySetInnerHTML={{ __html: card.front || card.question }} />
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
