@@ -68,6 +68,7 @@ function App() {
   const [view, setView] = useState("cardBank"); // cardBank, createCard, spacedRepetition
 
   const appInstanceRef = useRef(null);
+  const localStorageDataTimestampRef = useRef(null); // For storing timestamp of localStorage data
 
   // Flashcard data
   const [allCards, setAllCards] = useState([]);
@@ -606,9 +607,18 @@ function App() {
               // Run topic reconciliation after a short delay to ensure state is updated
               setTimeout(reconcileTopics, 500);
               
+              // Store the timestamp of the loaded localStorage data
+              if (loadedData.success && loadedData.data?.metadata?.timestamp) {
+                localStorageDataTimestampRef.current = loadedData.data.metadata.timestamp;
+                console.log('[App Load] Stored localStorage timestamp:', localStorageDataTimestampRef.current);
+              } else {
+                localStorageDataTimestampRef.current = null; // Reset if no valid timestamp from this load
+              }
+              
               console.log("[App Load] Data loading complete from " + source);
           } else {
               console.log("[App Load] No data found in " + source);
+              localStorageDataTimestampRef.current = null; // No data, no timestamp
               setAllCards([]);
               setSubjectColorMapping({});
               setTopicLists([]);
@@ -1797,90 +1807,92 @@ useEffect(() => {
             }
             
             // Initialize AuthManager with the complete authentication data
-            const authData = {
+            const authDataFromKnack = { // Renamed to avoid confusion
               ...event.data.data,
               ...userStudentData
             };
             
             // Set auth state for React components
-            setAuth(authData);
+            setAuth(authDataFromKnack);
             
             // Initialize the centralized AuthManager with the same data
-            initializeAuthManager(authData);
-            console.log("[User Info] Initialized AuthManager with user data");
+            initializeAuthManager(authDataFromKnack);
+            console.log("[User Info] Initialized AuthManager with user data from Knack.");
 
-            // If user data was included, process it
+            // If user data (the JSON blob) was included, process it with timestamp comparison
             if (event.data.data?.userData) {
-              try {
-                // Use our safe parsing function to handle potential corrupted JSON
-                console.log("[User Info] Raw userData from Knack:", event.data.data.userData); // Log raw data
-                const userData = safeParseJSON(event.data.data.userData);
-                console.log("[User Info] Parsed userData object:", userData); // Log parsed object
+              const knackPayload = event.data.data; // This is the `data` part of the message
+              const knackUserDataBlob = safeParseJSON(knackPayload.userData); // This is the stringified JSON content
+              const knackRecordTimestampString = knackPayload.knackRecordLastSaved; // Timestamp of the Knack record itself
+              const localDataTimestampString = localStorageDataTimestampRef.current; // Timestamp from appData.metadata.timestamp
 
-                // Store the recordId if available
-                if (userData.recordId) {
-                  setRecordId(userData.recordId);
-                  console.log("[User Info] Stored recordId:", userData.recordId);
-                  
-                  // Store in localStorage for recovery
-                  try {
-                    localStorage.setItem('flashcards_auth', JSON.stringify({ recordId: userData.recordId }));
-                    console.log("[User Info] Stored record ID in localStorage for recovery");
-                  } catch (e) {
-                    console.error("[User Info] Error storing record ID in localStorage:", e);
+              console.log("[User Info] Processing KNACK_USER_INFO. LocalStorage Timestamp:", localDataTimestampString, "Knack Record Timestamp:", knackRecordTimestampString);
+
+              // Store the recordId if available from the blob (as it's part of the userData blob)
+              // The recordId in the blob should be the ID of the object_102 record.
+              if (knackUserDataBlob && knackUserDataBlob.recordId) {
+                setRecordId(knackUserDataBlob.recordId);
+                console.log("[User Info] Stored recordId from Knack userData blob:", knackUserDataBlob.recordId);
+                try {
+                  localStorage.setItem('flashcards_auth', JSON.stringify({ recordId: knackUserDataBlob.recordId }));
+                } catch (e) { console.error("[User Info] Error storing record ID in localStorage:", e); }
+              } else if (authDataFromKnack.id) { // Fallback to main auth ID (user's own ID from object_3) if not in blob
+                                          // This might not be the object_102 record ID, be cautious.
+                // setRecordId(authDataFromKnack.id); // This might be incorrect if authDataFromKnack.id is the user's ID, not the flashcard data record ID.
+                                                  // The ensureRecordId logic should handle finding the correct flashcard record ID.
+                console.warn("[User Info] recordId not found in Knack userData blob. Relying on ensureRecordId or existing recordId state.");
+              }
+              
+              const localTimestamp = localDataTimestampString ? new Date(localDataTimestampString).getTime() : 0;
+              const knackTimestamp = knackRecordTimestampString ? new Date(knackRecordTimestampString).getTime() : 0;
+              const timeBuffer = 10000; // 10 seconds buffer to account for save queue and potential small discrepancies
+
+              if (localTimestamp > (knackTimestamp + timeBuffer)) {
+                // LocalStorage data is significantly newer.
+                console.warn(`[User Info] LocalStorage data (ts: ${localTimestampString}) is newer than Knack record (ts: ${knackRecordTimestampString}). Prioritizing local data.`);
+                showStatus("Local data is newer. Syncing to server...");
+                // The app state is already populated from localStorage by loadCombinedData.
+                // We just need to ensure Knack gets updated with this fresher data.
+                setTimeout(() => saveData(null, true), 2500); // preserveFields = true to be safe, slightly longer delay
+              } else {
+                // Knack data is newer, or timestamps are inconclusive/local is not significantly newer.
+                // Proceed with updating state from Knack data.
+                console.log(`[User Info] Knack data (ts: ${knackRecordTimestampString}) is newer or similar to local (ts: ${localDataTimestampString}). Using Knack data.`);
+                try {
+                  if (knackUserDataBlob.cards && Array.isArray(knackUserDataBlob.cards)) {
+                    const restoredCards = restoreMultipleChoiceOptions(knackUserDataBlob.cards);
+                    setAllCards(restoredCards);
+                    updateSpacedRepetitionData(restoredCards);
+                  } else {
+                     console.warn("[User Info] Knack userData.cards is missing or not an array.");
                   }
+                  // Ensure colorMapping is an object before processing
+                  setSubjectColorMapping(ensureValidColorMapping(knackUserDataBlob.colorMapping || {}));
+                  
+                  if (knackUserDataBlob.spacedRepetition) {
+                    setSpacedRepetitionData(knackUserDataBlob.spacedRepetition);
+                  } else {
+                    console.warn("[User Info] Knack userData.spacedRepetition is missing.");
+                  }
+                  if (knackUserDataBlob.userTopics) {
+                    setUserTopics(knackUserDataBlob.userTopics);
+                  }
+                  if (knackUserDataBlob.topicLists && Array.isArray(knackUserDataBlob.topicLists)) {
+                    setTopicLists(knackUserDataBlob.topicLists);
+                  }
+                  if (knackUserDataBlob.topicMetadata && Array.isArray(knackUserDataBlob.topicMetadata)) {
+                    setTopicMetadata(knackUserDataBlob.topicMetadata);
+                  }
+                  console.log("[User Info] Successfully processed user data from Knack.");
+                } catch (e) {
+                  console.error("[User Info] Error processing Knack userData JSON:", e);
+                  showStatus("Error loading your data from server. Using local data as fallback.");
                 }
-
-                // Process cards
-                if (userData.cards && Array.isArray(userData.cards)) {
-                  console.log("[User Info] Found userData.cards array:", userData.cards); // Log the cards array
-                  const restoredCards = restoreMultipleChoiceOptions(userData.cards);
-                  console.log("[User Info] Calling setAllCards with:", restoredCards); // Log what's being set
-                  setAllCards(restoredCards);
-                  updateSpacedRepetitionData(restoredCards);
-                  console.log("[User Info] Restored multiple choice options for cards");
-                } else {
-                   console.warn("[User Info] userData.cards is missing or not an array:", userData.cards);
-                }
-                
-                // Process color mapping
-                if (userData.colorMapping) {
-                  setSubjectColorMapping(userData.colorMapping);
-                }
-                
-                // Process spaced repetition data if separate
-                if (userData.spacedRepetition) {
-                  setSpacedRepetitionData(userData.spacedRepetition);
-                }
-                
-                // Process user topics if available
-                if (userData.userTopics) {
-                  setUserTopics(userData.userTopics);
-                }
-                
-                // Process topic lists if available
-                if (userData.topicLists && Array.isArray(userData.topicLists)) {
-                  setTopicLists(userData.topicLists);
-                  console.log("[User Info] Loaded topic lists from Knack:", userData.topicLists.length);
-                }
-                
-                // Process topic metadata if available
-                if (userData.topicMetadata && Array.isArray(userData.topicMetadata)) {
-                  setTopicMetadata(userData.topicMetadata);
-                  console.log("[User Info] Loaded topic metadata from Knack:", userData.topicMetadata.length);
-                }
-                
-                // Additional logging to help with debugging
-                console.log("[User Info] Successfully processed user data from Knack");
-              } catch (e) {
-                console.error("[User Info] Error processing userData JSON:", e);
-                showStatus("Error loading your data. Loading from local storage instead.");
-                loadFromLocalStorage();
               }
             } else {
-              // If no user data, load from localStorage
-              console.log("[User Info] No user data received, falling back to localStorage");
-              loadFromLocalStorage();
+              // If no userData blob from Knack, it implies this might be the first load for the user in Knack
+              // or an issue with Knack data. Data loaded from localStorage (if any) will be used.
+              console.log("[User Info] No userData blob received from Knack. App will rely on localStorage data or defaults.");
             }
             
             setLoading(false);
@@ -2550,10 +2562,13 @@ const handleSaveTopicShells = useCallback(async (generatedShells) => {
     const subject = subjectToUse;
     let subjectColor = subjectColorMapping[subject]?.base;
     
-    // If no color exists for this subject, create one
+    // If no color exists for this subject, assign one by cycling through the palette
     if (!subjectColor) {
-      subjectColor = getRandomColor();
-      updateColorMapping(subject, null, subjectColor, true);
+      const existingSubjectKeys = Object.keys(subjectColorMapping);
+      const newSubjectIndex = existingSubjectKeys.length; // This will be 0 for the first subject, 1 for the second, etc.
+      subjectColor = BRIGHT_COLORS[newSubjectIndex % BRIGHT_COLORS.length];
+      console.log(`[handleSaveTopicShells] Assigning new subject color for '${subject}': ${subjectColor} (index ${newSubjectIndex})`);
+      updateColorMapping(subject, null, subjectColor, true); // true to apply to topics as well
     }
 
     // Generate a topic color based on the subject color
@@ -2607,21 +2622,22 @@ const handleSaveTopicShells = useCallback(async (generatedShells) => {
   });
 
   // 4. Prepare topic list for the NEW subject only
-  // Create a topic list for this subject from the shells
-  const newTopicListForThisSubject = {
-    subject: subjectToUse,
-    topics: processedShells.map(shell => ({
-      id: shell.id,
-      name: shell.name,
-      examBoard: shell.examType || shell.metadata?.examBoard || '',
-      examType: shell.examType || shell.metadata?.examType || '',
-      color: shell.color,
-      subjectColor: shell.subjectColor
-    })),
-    color: subjectColorMapping[subjectToUse]?.base || getRandomColor()
-  };
+    // Create a topic list for this subject from the shells
+    const newTopicListForThisSubject = {
+      subject: subjectToUse,
+      topics: processedShells.map(shell => ({
+        id: shell.id,
+        name: shell.name,
+        examBoard: shell.examType || shell.metadata?.examBoard || '',
+        examType: shell.examType || shell.metadata?.examType || '',
+        color: shell.color,
+        subjectColor: shell.subjectColor
+      })),
+      // Use the determined subjectColor for the topic list itself
+      color: subjectColorMapping[subjectToUse]?.base || BRIGHT_COLORS[Object.keys(subjectColorMapping).length % BRIGHT_COLORS.length]
+    };
   
-  // Merge with existing topic lists WITHOUT modifying other subjects
+    // Merge with existing topic lists WITHOUT modifying other subjects
   const existingTopicLists = [...topicLists];
   const existingListIndex = existingTopicLists.findIndex(list => 
     list.subject === subjectToUse
