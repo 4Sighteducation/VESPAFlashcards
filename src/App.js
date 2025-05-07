@@ -1234,16 +1234,17 @@ function App() {
             // const newNextReviewDate = calculateNextReviewDate(box); // Already calculated
             const todayUTC = new Date();
             todayUTC.setUTCHours(0,0,0,0);
-            return {
+            const updatedCardData = { // Define updatedCardData here
               ...card,
               boxNum: box,
               nextReviewDate: newNextReviewDateCalculated, // Use the pre-calculated date
               lastReviewed: nowISOForMove, // Use consistent timestamp
               isReviewable: new Date(newNextReviewDateCalculated) <= todayUTC 
             };
-            // <<< NEW LOGGING START >>>
+            // <<< NEW LOGGING MOVED HERE >>>
             console.log(`[MoveCard DEBUG] Card ${stringCardId} state AFTER update:`, JSON.stringify({ boxNum: updatedCardData.boxNum, nextReviewDate: updatedCardData.nextReviewDate, isReviewable: updatedCardData.isReviewable }));
-            // <<< NEW LOGGING END >>>
+            // <<< END LOGGING >>>
+            return updatedCardData;
           }
           return card;
         });
