@@ -1249,11 +1249,20 @@ function App() {
           return card;
         });
       });
+
+      // ***** NEW: Call saveToLocalStorage more immediately *****
+      // Use a microtask (Promise.resolve().then()) to ensure the state updates
+      // have likely been processed by React before saveToLocalStorage reads them.
+      Promise.resolve().then(() => {
+        console.log("[MoveCard DEBUG] Attempting immediate saveToLocalStorage after state updates.");
+        saveToLocalStorage(); // This will use the `allCards` and `spacedRepetitionData` state variables from App's scope
+      });
+      // *********************************************************
       
-      setTimeout(() => saveData(), 100);
+      setTimeout(() => saveData(), 200); // Slightly increase delay for full save
       console.log(`Card ${cardId} moved to box ${box}`);
     },
-    [saveData] // Removed updateKnackBoxNotifications from here, it's handled by knackFieldsNeedUpdate effect
+    [saveData, saveToLocalStorage] // Added saveToLocalStorage to dependencies
   );
 
   // Add state to track if Knack fields need updating

@@ -201,6 +201,7 @@ const SpacedRepetition = ({
 
   // <<< REVISED useEffect for Study Session Management >>>
   useEffect(() => {
+    console.log('[SR Effect] Running. showStudyModal:', showStudyModal, 'currentCards.length:', currentCards.length, 'currentIndex:', currentIndex, 'studyCompleted (before):', studyCompleted);
     if (!showStudyModal) {
       // Modal closed: Reset session states
       setCurrentIndex(0);
@@ -222,10 +223,12 @@ const SpacedRepetition = ({
         setCurrentIndex(newIndex); 
       }
       setStudyCompleted(false); // We have cards, so not completed
+      console.log('[SR Effect] Has cards. newIndex:', newIndex, 'studyCompleted set to false.');
     } else {
       // No cards available for the current filter
       setStudyCompleted(true);
       setCurrentIndex(0); // Reset index when completed/empty
+      console.log('[SR Effect] No cards. studyCompleted set to true, currentIndex set to 0.');
     }
 
     // Reset visual state for the current card (or empty view)
@@ -623,8 +626,14 @@ const SpacedRepetition = ({
 
   // Render the flashcard review interface when a subject/topic is selected
   const renderCardReview = () => {
+    console.log('[SR renderCardReview] Rendering. studyCompleted:', studyCompleted, 'currentCards.length:', currentCards.length, 'currentIndex:', currentIndex);
+    const isValidCardCheck = currentCards && currentCards.length > 0 && currentIndex >= 0 && currentIndex < currentCards.length && currentCards[currentIndex] !== undefined;
+    const currentCardForRender = isValidCardCheck ? currentCards[currentIndex] : null;
+    console.log('[SR renderCardReview] isValidCardCheck:', isValidCardCheck, 'currentCardForRender ID:', currentCardForRender?.id);
+
     // If we have completed studying all available cards
     if (studyCompleted) {
+      console.log('[SR renderCardReview] Rendering completion message.');
       return (
         <div className="completion-message">
           <h3>Session Complete!</h3>
@@ -647,6 +656,7 @@ const SpacedRepetition = ({
     }
 
     if (!currentCards || currentCards.length === 0) {
+      console.log('[SR renderCardReview] Rendering empty box message (no currentCards).');
       return (
         <div className="empty-box">
           <h3>Wow! You're keen!!</h3>
@@ -674,6 +684,7 @@ const SpacedRepetition = ({
     }
 
     if (currentIndex < 0 || currentIndex >= currentCards.length || !currentCards[currentIndex]) {
+      console.log('[SR renderCardReview] Rendering all cards reviewed message (currentIndex out of bounds or card undefined).');
       // This state should ideally be caught by the useEffect that manages currentIndex.
       // If it still happens, it means currentCards might have become empty unexpectedly.
       return (
@@ -696,7 +707,8 @@ const SpacedRepetition = ({
       );
     }
     
-    if (!currentCard || (!currentCard.front && !currentCard.question)) {
+    if (!currentCardForRender || (!currentCardForRender.front && !currentCardForRender.question)) {
+      console.log('[SR renderCardReview] Rendering invalid card message. currentCardForRender:', currentCardForRender);
       return (
         <div className="empty-box">
           <h3>Invalid Card Detected</h3>
@@ -743,15 +755,16 @@ const SpacedRepetition = ({
           </div>
         </div>
         
-        {currentCard && (
+        {currentCardForRender && (
           <FlippableCard
-            card={currentCard}
+            card={currentCardForRender}
             isFlipped={isFlipped}
             onFlip={handleCardFlip}
-            onAnswer={currentCard.questionType === 'multiple_choice' ? handleMcqAnswer : undefined}
+            onAnswer={currentCardForRender.questionType === 'multiple_choice' ? handleMcqAnswer : undefined}
             isInModal={true}
           />
         )}
+        {console.log('[SR renderCardReview] Proceeding to render FlippableCard for card ID:', currentCardForRender?.id)}
 
         <div className="card-navigation">
           <button
