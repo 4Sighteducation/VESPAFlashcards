@@ -1826,57 +1826,68 @@ useEffect(() => {
               const knackPayload = event.data.data; // This is the `data` part of the message
               const knackUserDataBlob = safeParseJSON(knackPayload.userData); // This is the stringified JSON content
               const knackRecordTimestampString = knackPayload.knackRecordLastSaved; // Timestamp of the Knack record itself
-              // Corrected: Use localStorageDataTimestampRef.current directly
               const localDataTimestampStringFromRef = localStorageDataTimestampRef.current; // Timestamp from appData.metadata.timestamp
 
               console.log("[User Info] Processing KNACK_USER_INFO. LocalStorage Timestamp:", localDataTimestampStringFromRef, "Knack Record Timestamp:", knackRecordTimestampString);
 
-              // Store the recordId if available from the blob (as it's part of the userData blob)
-              // The recordId in the blob should be the ID of the object_102 record.
               if (knackUserDataBlob && knackUserDataBlob.recordId) {
                 setRecordId(knackUserDataBlob.recordId);
                 console.log("[User Info] Stored recordId from Knack userData blob:", knackUserDataBlob.recordId);
                 try {
                   localStorage.setItem('flashcards_auth', JSON.stringify({ recordId: knackUserDataBlob.recordId }));
                 } catch (e) { console.error("[User Info] Error storing record ID in localStorage:", e); }
-              } else if (authDataFromKnack.id) { // Fallback to main auth ID (user's own ID from object_3) if not in blob
-                                          // This might not be the object_102 record ID, be cautious.
-                // setRecordId(authDataFromKnack.id); // This might be incorrect if authDataFromKnack.id is the user's ID, not the flashcard data record ID.
-                                                  // The ensureRecordId logic should handle finding the correct flashcard record ID.
+              } else {
                 console.warn("[User Info] recordId not found in Knack userData blob. Relying on ensureRecordId or existing recordId state.");
               }
               
               const localTimestamp = localDataTimestampStringFromRef ? new Date(localDataTimestampStringFromRef).getTime() : 0;
               const knackTimestamp = knackRecordTimestampString ? new Date(knackRecordTimestampString).getTime() : 0;
-              const timeBuffer = 10000; // 10 seconds buffer to account for save queue and potential small discrepancies
+              const TIME_BUFFER = 10000; // 10 seconds buffer
 
-              if (localTimestamp > (knackTimestamp + timeBuffer)) {
-                // LocalStorage data is significantly newer.
-                console.warn(`[User Info] LocalStorage data (ts: ${localDataTimestampStringFromRef}) is newer than Knack record (ts: ${knackRecordTimestampString}). Prioritizing local data.`);
+              let useKnackData = true; // Assume Knack data is primary by default
+
+              if (localTimestamp > (knackTimestamp + TIME_BUFFER)) {
+                console.warn(`[App.js] Local data (ts: ${localDataTimestampStringFromRef}) is significantly newer than Knack (ts: ${knackRecordTimestampString}). Prioritizing local state for cards, SR, and colors.`);
                 showStatus("Local data is newer. Syncing to server...");
+                useKnackData = false;
+                // Trigger a save to Knack with current (local) state.
                 // The app state is already populated from localStorage by loadCombinedData.
-                // We just need to ensure Knack gets updated with this fresher data.
-                setTimeout(() => saveData(null, true), 2500); // preserveFields = true to be safe, slightly longer delay
-              } else {
-                // Knack data is newer, or timestamps are inconclusive/local is not significantly newer.
-                // Proceed with updating state from Knack data.
-                console.log(`[User Info] Knack data (ts: ${knackRecordTimestampString}) is newer or similar to local (ts: ${localDataTimestampStringFromRef}). Using Knack data.`);
+                setTimeout(() => {
+                  console.log("[App.js] Pushing newer local data to Knack.");
+                  saveData({ // Explicitly pass current state to ensure freshness
+                    cards: allCards,
+                    colorMapping: subjectColorMapping,
+                    spacedRepetition: spacedRepetitionData,
+                    userTopics: userTopics,
+                    topicLists: topicLists,
+                    topicMetadata: topicMetadata
+                  }, true); // preserveFields = true
+                }, 2000); // Delay to allow React to settle and ensure other initial processes complete
+              }
+
+              if (useKnackData) {
+                console.log(`[App.js] Knack data (ts: ${knackRecordTimestampString}) is newer or similar to local (ts: ${localDataTimestampStringFromRef}). Using Knack data to update state.`);
                 try {
                   if (knackUserDataBlob.cards && Array.isArray(knackUserDataBlob.cards)) {
                     const restoredCards = restoreMultipleChoiceOptions(knackUserDataBlob.cards);
                     setAllCards(restoredCards);
-                    updateSpacedRepetitionData(restoredCards);
+                    updateSpacedRepetitionData(restoredCards); // Ensure SR data is derived from these cards
                   } else {
                      console.warn("[User Info] Knack userData.cards is missing or not an array.");
                   }
-                  // Ensure colorMapping is an object before processing
+                  
                   setSubjectColorMapping(ensureValidColorMapping(knackUserDataBlob.colorMapping || {}));
                   
+                  // Only set SR from Knack if Knack is truly the source of truth for cards too.
                   if (knackUserDataBlob.spacedRepetition) {
+                     // This might need to be conditional on useKnackData for cards too,
+                     // but if useKnackData is true, we are already using Knack cards.
                     setSpacedRepetitionData(knackUserDataBlob.spacedRepetition);
                   } else {
                     console.warn("[User Info] Knack userData.spacedRepetition is missing.");
                   }
+
+                  // Update other states like topicLists, userTopics, topicMetadata from knackUserDataBlob
                   if (knackUserDataBlob.userTopics) {
                     setUserTopics(knackUserDataBlob.userTopics);
                   }
@@ -1891,6 +1902,8 @@ useEffect(() => {
                   console.error("[User Info] Error processing Knack userData JSON:", e);
                   showStatus("Error loading your data from server. Using local data as fallback.");
                 }
+              } else {
+                console.log("[App.js] Retained local state for cards, SR, and colors. Other Knack data (profile, etc.) already set via authDataFromKnack.");
               }
             } else {
               // If no userData blob from Knack, it implies this might be the first load for the user in Knack
@@ -1898,6 +1911,7 @@ useEffect(() => {
               console.log("[User Info] No userData blob received from Knack. App will rely on localStorage data or defaults.");
             }
             
+            // setLoading(false) and AUTH_CONFIRMED should be outside this conditional block.
             setLoading(false);
             
             // Confirm receipt of auth info (only do this once)
