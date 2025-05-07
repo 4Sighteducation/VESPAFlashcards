@@ -73,65 +73,42 @@ const SpacedRepetition = ({
     return emptyStateMessages[randomIndex];
   };
   
-  // Update current study cards based on filtering
-  const updateCurrentCards = useCallback((grouped) => {
+  // Renamed and simplified: This function now only filters cards based on selection.
+  // It does NOT reset currentIndex or other session states directly.
+  const updateCurrentCardsInternal = useCallback((grouped) => {
     let cardsToStudy = [];
     
     if (selectedSubject && selectedTopic) {
-      // Filter by both subject and topic
       cardsToStudy = grouped[selectedSubject]?.[selectedTopic] || [];
     } else if (selectedSubject) {
-      // Filter by subject only
       const topicsForSubject = grouped[selectedSubject] || {};
       cardsToStudy = Object.values(topicsForSubject).flat();
     } else {
-      // No filters, include all cards for current box
       cardsToStudy = Object.values(grouped)
         .map(topicMap => Object.values(topicMap).flat())
         .flat();
     }
 
-    // Filter out cards that have been reviewed and should no longer be in this box
     const today = new Date();
-    const reviewableCards = cardsToStudy.filter(card => {
-      // If card has no next review date or is due for review
+    today.setHours(0, 0, 0, 0); // Set to midnight for consistent day comparison
+
+    const filteredReviewableCards = cardsToStudy.filter(card => {
       return !card.nextReviewDate || new Date(card.nextReviewDate) <= today;
     });
     
-    // If we have no reviewable cards but the study modal is open, we should close it
-    if (reviewableCards.length === 0 && showStudyModal) {
-      setShowStudyModal(false);
-      // Show a message to the user
-      alert("No cards available for review at this time. Please check back later.");
-      // Reset selection
-      setSelectedSubject(null);
-      setSelectedTopic(null);
-    }
-    
-    setCurrentCards(reviewableCards);
-    setCurrentIndex(0);
-    setIsFlipped(false);
-    setShowFlipResponse(false);
-    setShowFlipResponseOverlay(false);
-    setStudyCompleted(false);
-  }, [selectedSubject, selectedTopic, showStudyModal]);
-  
-  // Group cards by subject and topic and filter for review availability
+    setCurrentCards(filteredReviewableCards);
+    // DO NOT reset currentIndex, isFlipped, etc. here. This will be handled by a new useEffect.
+
+  }, [selectedSubject, selectedTopic]); // Removed showStudyModal as it's not directly used for filtering logic here
+
+  // Effect for when the base `cards` prop (from App.js) or selection changes
   useEffect(() => {
     if (cards && cards.length > 0) {
-      // Group cards by subject and topic
       const grouped = cards.reduce((acc, card) => {
         const subject = card.subject || "General";
         const topic = card.topic || "General";
-        
-        if (!acc[subject]) {
-          acc[subject] = {};
-        }
-        
-        if (!acc[subject][topic]) {
-          acc[subject][topic] = [];
-        }
-        
+        if (!acc[subject]) acc[subject] = {};
+        if (!acc[subject][topic]) acc[subject][topic] = [];
         acc[subject][topic].push(card);
         return acc;
       }, {});
@@ -139,47 +116,66 @@ const SpacedRepetition = ({
       setGroupedBoxCards(grouped);
       setBoxSubjects(Object.keys(grouped).sort());
       
-      // Mark reviewable subjects and topics
-      const reviewable = {
-        subjects: {},
-        topics: {}
-      };
-      
+      const reviewable = { subjects: {}, topics: {} };
       Object.keys(grouped).forEach(subject => {
         reviewable.subjects[subject] = false;
-        
         Object.keys(grouped[subject]).forEach(topic => {
           const topicKey = `${subject}-${topic}`;
           const cardsInTopic = grouped[subject][topic];
-          
-          // Check if any cards in this topic are reviewable
-          const hasReviewableCards = cardsInTopic.some(card => {
-            if (!card.nextReviewDate) return true;
-            const reviewDate = new Date(card.nextReviewDate);
-            return reviewDate <= new Date();
-          });
-          
+          const hasReviewableCards = cardsInTopic.some(card => 
+            !card.nextReviewDate || new Date(card.nextReviewDate) <= new Date()
+          );
           reviewable.topics[topicKey] = hasReviewableCards;
-          
-          // If any topic has reviewable cards, mark the subject as reviewable
-          if (hasReviewableCards) {
-            reviewable.subjects[subject] = true;
-          }
+          if (hasReviewableCards) reviewable.subjects[subject] = true;
         });
       });
-      
       setReviewableCards(reviewable);
       
-      // Initialize currently selected cards based on filtering
-      updateCurrentCards(grouped);
+      // Update the study session cards based on current filters
+      updateCurrentCardsInternal(grouped);
+
     } else {
-      // If no cards in this box, clear the grouped data
       setGroupedBoxCards({});
       setBoxSubjects([]);
       setReviewableCards({ subjects: {}, topics: {} });
-      setCurrentCards([]);
+      setCurrentCards([]); // Clear current cards if the box is empty
     }
-  }, [cards, currentBox, selectedSubject, selectedTopic, spacedRepetitionData, updateCurrentCards]);
+  }, [cards, currentBox, selectedSubject, selectedTopic, spacedRepetitionData, updateCurrentCardsInternal]); // updateCurrentCardsInternal is now a dependency
+
+
+  // New useEffect to manage study session state (currentIndex, studyCompleted, flip states)
+  // This reacts to changes in `currentCards` (after filtering) and when the study modal opens/closes.
+  useEffect(() => {
+    if (!showStudyModal) {
+      // If modal is closed, reset study-specific states
+      setCurrentIndex(0);
+      setIsFlipped(false);
+      setShowFlipResponse(false);
+      setShowFlipResponseOverlay(false);
+      setStudyCompleted(false);
+      return;
+    }
+
+    // If modal is open and currentCards is populated:
+    if (currentCards.length > 0) {
+      // If currentIndex is out of bounds (e.g., after a card was removed), adjust it.
+      // Or, if it's simply the start of a new set of cards, ensure it's 0.
+      if (currentIndex >= currentCards.length || currentIndex < 0) {
+        setCurrentIndex(0);
+      }
+      setStudyCompleted(false); // Not completed if there are cards
+    } else {
+      // If currentCards is empty (and modal is open), the study session for this selection is complete.
+      setStudyCompleted(true);
+    }
+    
+    // Always reset flip state for the new/current card.
+    setIsFlipped(false);
+    setShowFlipResponse(false);
+    setShowFlipResponseOverlay(false);
+
+  }, [currentCards, showStudyModal, currentIndex]); // Added currentIndex to re-evaluate if it goes out of bounds.
+
   
   // Toggle expansion of a subject
   const toggleExpandSubject = (subject) => {
@@ -202,21 +198,20 @@ const SpacedRepetition = ({
     setSelectedSubject(subject);
     setSelectedTopic(null);
     
-    // Get all cards for this subject
+    // updateCurrentCardsInternal will be called by the main useEffect due to state change.
+    // Then the new useEffect (watching currentCards) will set currentIndex etc.
+
+    // Check if there are actually reviewable cards before opening the modal
     const subjectCards = Object.values(groupedBoxCards[subject] || {}).flat();
-    
-    // Check if there are any reviewable cards for this subject
     const today = new Date();
-    const reviewableCards = subjectCards.filter(card => 
+    today.setHours(0,0,0,0);
+    const hasAnyReviewable = subjectCards.some(card => 
       !card.nextReviewDate || new Date(card.nextReviewDate) <= today
     );
-    
-    // Only open the modal if there are cards to review
-    if (reviewableCards.length > 0) {
-      updateCurrentCards(groupedBoxCards);
-      setShowStudyModal(true); // Open the study modal
+
+    if (hasAnyReviewable) {
+      setShowStudyModal(true);
     } else {
-      // Show a message that no cards are available for review yet
       alert(`No cards in "${subject}" are ready for review today. Check back tomorrow!`);
     }
   };
@@ -225,22 +220,19 @@ const SpacedRepetition = ({
   const reviewTopic = (subject, topic) => {
     setSelectedSubject(subject);
     setSelectedTopic(topic);
+    // updateCurrentCardsInternal will be called by the main useEffect.
+    // Then the new useEffect (watching currentCards) will set currentIndex etc.
     
-    // Get all cards for this topic
     const topicCards = groupedBoxCards[subject]?.[topic] || [];
-    
-    // Check if there are any reviewable cards for this topic
     const today = new Date();
-    const reviewableCards = topicCards.filter(card => 
+    today.setHours(0,0,0,0);
+    const hasAnyReviewable = topicCards.some(card => 
       !card.nextReviewDate || new Date(card.nextReviewDate) <= today
     );
-    
-    // Only open the modal if there are cards to review
-    if (reviewableCards.length > 0) {
-      updateCurrentCards(groupedBoxCards);
-      setShowStudyModal(true); // Open the study modal
+
+    if (hasAnyReviewable) {
+      setShowStudyModal(true);
     } else {
-      // Show a message that no cards are available for review yet
       alert(`No cards in "${topic}" are ready for review today. Check back tomorrow!`);
     }
   };
@@ -290,27 +282,29 @@ const SpacedRepetition = ({
     }, 300); // Small delay for user to see FlippableCard's feedback
   };
 
-  // Reset selection state when moving to a new card
-  const resetSelectionState = () => {
+  // Reset selection state when moving to a new card (now mainly for flip state)
+  const resetCardVisualState = () => {
     setIsFlipped(false);
     setShowFlipResponse(false);
     setShowFlipResponseOverlay(false);
   };
   
-  // Update nextCard and prevCard to use resetSelectionState
+  // Simplified nextCard: only changes index or sets studyCompleted.
+  // The new useEffect will handle resetting flip state.
   const nextCard = () => {
     if (currentIndex < currentCards.length - 1) {
-      resetSelectionState();
       setCurrentIndex(currentIndex + 1);
+      // Flip state reset will be handled by the new useEffect watching currentCards & currentIndex
     } else {
-      setStudyCompleted(true);
+      setStudyCompleted(true); // All cards in the current session are done
     }
   };
   
+  // Simplified prevCard
   const prevCard = () => {
     if (currentIndex > 0) {
-      resetSelectionState();
       setCurrentIndex(currentIndex - 1);
+      // Flip state reset will be handled by the new useEffect
     }
   };
   
@@ -333,39 +327,28 @@ const SpacedRepetition = ({
     return brightness > 120 ? '#000000' : '#ffffff';
   };
 
-  // Add handler functions for correct/incorrect answers (these were missing)
+  // Handle correct/incorrect answers
+  // These functions will trigger onMoveCard, which causes `props.cards` to update.
+  // The new useEffect watching `currentCards` will then handle UI updates (advancing card, etc.).
   const handleCorrectAnswer = () => {
     if (!isValidCard || !currentCard) {
       console.error("Cannot move card: No valid card found at index", currentIndex);
       return;
     }
     try {
-      setShowFlipResponse(false);
-      setShowFlipResponseOverlay(false);
-      
       const nextBoxNumber = Math.min(currentBox + 1, 5);
       const cardToMoveId = currentCard.id;
 
-      onMoveCard(cardToMoveId, nextBoxNumber); // This will trigger prop changes and useEffect in SpacedRepetition
+      onMoveCard(cardToMoveId, nextBoxNumber); // This prop change will trigger useEffects
       
       setFeedbackMessage(`Card moved to Box ${nextBoxNumber}.`);
-      setShowReviewDateMessage(true);
+      setShowReviewDateMessage(true); // Show feedback popup
 
-      // Determine if this was the last card in the current session BEFORE filtering
-      const wasLastCard = currentCards.length === 1; 
-
+      // Delay hiding feedback and then let useEffect handle card advancement/completion
       setTimeout(() => {
         setShowReviewDateMessage(false);
         setFeedbackMessage("");
-        if (wasLastCard) {
-          setStudyCompleted(true);
-          // currentCards will be updated by useEffect reacting to prop change from onMoveCard
-        } else {
-          // Advance to the next card if there are more.
-          // The useEffect will repopulate currentCards, and nextCard will adjust currentIndex or complete.
-          nextCard(); 
-        }
-        resetSelectionState(); 
+        // The main useEffect reacting to currentCards change will now advance or complete.
       }, 1500);
     } catch (error) {
       console.error("Error handling correct answer:", error);
@@ -374,7 +357,7 @@ const SpacedRepetition = ({
       setTimeout(() => {
           setShowReviewDateMessage(false);
           setFeedbackMessage("");
-          nextCard(); 
+          // Let useEffect handle advancement/completion
       }, 1500);
     }
   };
@@ -385,9 +368,6 @@ const SpacedRepetition = ({
       return;
     }
     try {
-      setShowFlipResponse(false);
-      setShowFlipResponseOverlay(false);
-      
       const targetBoxNumber = 1;
       const cardToMoveId = currentCard.id;
 
@@ -396,17 +376,10 @@ const SpacedRepetition = ({
       setFeedbackMessage(`Card moved to Box ${targetBoxNumber}.`);
       setShowReviewDateMessage(true);
 
-      const wasLastCard = currentCards.length === 1;
-
       setTimeout(() => {
         setShowReviewDateMessage(false);
         setFeedbackMessage("");
-        if (wasLastCard) {
-          setStudyCompleted(true);
-        } else {
-          nextCard();
-        }
-        resetSelectionState();
+        // Let useEffect handle advancement/completion
       }, 1500);
     } catch (error) {
       console.error("Error handling incorrect answer:", error);
@@ -415,7 +388,7 @@ const SpacedRepetition = ({
       setTimeout(() => {
           setShowReviewDateMessage(false);
           setFeedbackMessage("");
-          nextCard();
+          // Let useEffect handle advancement/completion
       }, 1500);
     }
   };
@@ -453,7 +426,7 @@ const SpacedRepetition = ({
       <div className="subjects-container">
         {boxSubjects.map((subject) => {
           // Get subject color for styling
-          const subjectCards = Object.values(groupedBoxCards[subject]).flat();
+          const subjectCards = Object.values(groupedBoxCards[subject] || {} ).flat();
           const subjectColor = subjectCards[0]?.baseColor || subjectCards[0]?.cardColor || '#e0e0e0';
           const textColor = getContrastColor(subjectColor);
           const isReviewable = reviewableCards.subjects[subject];
@@ -476,22 +449,24 @@ const SpacedRepetition = ({
                     </div>
                   </div>
                   <span className="card-count">
-                    ({Object.values(groupedBoxCards[subject]).flat().length} cards)
+                    ({Object.values(groupedBoxCards[subject] || {} ).flat().length} cards)
                   </span>
                 </div>
                 <button 
                   className="review-btn" 
                   onClick={() => reviewSubject(subject)}
                   style={{ color: textColor }}
+                  disabled={!isReviewable} // Disable if no reviewable cards in subject
+                  title={isReviewable ? "Review this subject" : "No cards ready for review in this subject"}
                 >
                   <span className="review-icon">👁️</span>
                 </button>
               </div>
 
-              {expandedSubjects[subject] && Object.keys(groupedBoxCards[subject]).map((topic) => {
+              {expandedSubjects[subject] && Object.keys(groupedBoxCards[subject] || {} ).map((topic) => {
                 // Get the first card's color for the topic
-                const topicColor = groupedBoxCards[subject][topic][0]?.cardColor || '#e0e0e0';
-                const textColor = getContrastColor(topicColor);
+                const topicColor = groupedBoxCards[subject][topic]?.[0]?.cardColor || '#e0e0e0';
+                const textColorTopic = getContrastColor(topicColor); // Renamed to avoid conflict
                 const topicKey = `${subject}-${topic}`;
                 const isTopicReviewable = reviewableCards.topics[topicKey];
                 
@@ -501,7 +476,7 @@ const SpacedRepetition = ({
                       className="topic-header"
                       style={{ 
                         backgroundColor: topicColor,
-                        color: textColor 
+                        color: textColorTopic // Use renamed variable
                       }}
                     >
                       <div className="topic-content" onClick={() => toggleExpandTopic(topicKey)}>
@@ -510,7 +485,7 @@ const SpacedRepetition = ({
                         </div>
                         <div className="topic-meta">
                           <span className="card-count">
-                            ({groupedBoxCards[subject][topic].length} cards)
+                            ({(groupedBoxCards[subject][topic] || []).length} cards)
                           </span>
                           {isTopicReviewable && <span className="topic-reviewable-badge">Ready</span>}
                         </div>
@@ -518,7 +493,9 @@ const SpacedRepetition = ({
                       <button 
                         className="review-btn small" 
                         onClick={() => reviewTopic(subject, topic)}
-                        style={{ color: textColor }}
+                        style={{ color: textColorTopic }} // Use renamed variable
+                        disabled={!isTopicReviewable} // Disable if no reviewable cards in topic
+                        title={isTopicReviewable ? "Review this topic" : "No cards ready for review in this topic"}
                       >
                         <span className="review-icon">👁️</span>
                       </button>
@@ -526,7 +503,7 @@ const SpacedRepetition = ({
 
                     {expandedTopics[topicKey] && (
                       <div className="topic-cards expanded-topic">
-                        {groupedBoxCards[subject][topic].map((card) => (
+                        {(groupedBoxCards[subject][topic] || []).map((card) => (
                           <div 
                             key={card.id} 
                             className="card-preview"
@@ -589,10 +566,6 @@ const SpacedRepetition = ({
       );
     }
 
-    // Show humorous empty state message when there are no cards to review
-    // This should trigger when either:
-    // 1. No cards in currentCards array
-    // 2. Cards exist but none are available for review (all reviewed already)
     if (!currentCards || currentCards.length === 0) {
       return (
         <div className="empty-box">
@@ -620,14 +593,14 @@ const SpacedRepetition = ({
       );
     }
 
-    // If we don't have a valid card, don't try to render it
-    // This handles edge cases where currentIndex is invalid
     if (currentIndex < 0 || currentIndex >= currentCards.length || !currentCards[currentIndex]) {
+      // This state should ideally be caught by the useEffect that manages currentIndex.
+      // If it still happens, it means currentCards might have become empty unexpectedly.
       return (
         <div className="empty-box">
-          <h3>Oops! Something went wrong</h3>
+          <h3>All cards for this selection reviewed!</h3>
           <p>
-            We couldn't load this card properly. Let's try another subject or box.
+            You've gone through all available cards for this specific filter.
           </p>
           <button 
             className="return-button" 
@@ -642,8 +615,7 @@ const SpacedRepetition = ({
         </div>
       );
     }
-
-    // Additional safety check - if we have cards but the current card is invalid or missing properties
+    
     if (!currentCard || (!currentCard.front && !currentCard.question)) {
       return (
         <div className="empty-box">

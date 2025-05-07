@@ -1892,17 +1892,17 @@ useEffect(() => {
             setIsSaving(false);
             if (event.data.success) {
               showStatus("Saved successfully!");
-              // --- ADD: Request data refresh after successful general save --- 
-              if (isKnack && propagateSaveToBridge && recordId) { // Check if in Knack & have function/ID
-                  console.log(`[App SAVE_RESULT] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
-                  propagateSaveToBridge({
-                      type: 'REQUEST_UPDATED_DATA',
-                      recordId: recordId // Correct format
-                  });
-              } else if (isKnack) {
-                  console.warn("[App SAVE_RESULT] Cannot request updated data: propagate function or recordId missing.");
-              }
-              // -----------------------------------------------------------
+              // --- REMOVE AUTOMATIC DATA REFRESH ON SAVE --- 
+              // if (isKnack && propagateSaveToBridge && recordId) { 
+              //     console.log(`[App SAVE_RESULT] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
+              //     propagateSaveToBridge({
+              //         type: 'REQUEST_UPDATED_DATA',
+              //         recordId: recordId 
+              //     });
+              // } else if (isKnack) {
+              //     console.warn("[App SAVE_RESULT] Cannot request updated data: propagate function or recordId missing.");
+              // }
+              // -------------------------------------------
             } else {
               showStatus("Error saving data. Changes saved locally.");
             }
