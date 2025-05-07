@@ -1045,80 +1045,59 @@ function App() {
       // Special handling for topic shells vs actual cards
       if (card.type === 'topic' && card.isShell) {
         console.log("[App.addCard] Adding topic shell:", card.name);
-        // Check for duplicate topic shells with the same ID
         setAllCards((prevCards) => {
-          // First remove any existing shell with the same ID
           const filteredCards = prevCards.filter(existingCard => 
             !(existingCard.type === 'topic' && existingCard.isShell && existingCard.id === card.id)
           );
-          
-          // Then add the new shell
           return [...filteredCards, {...card}];
         });
       } else {
-        // This is a regular flashcard, not a topic shell
         console.log("[App.addCard] Adding flashcard to topic:", card.topic);
         
         const nowISO = new Date().toISOString();
-        // Ensure the card has a boxNum of 1 for spaced repetition
+        const reviewDateForNewCard = new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(); // Explicitly 1ms before current UTC day start
+
         const cardWithSpacedRep = {
           ...card,
           boxNum: 1,
-          lastReviewed: nowISO, // Set lastReviewed to now
-          // Set nextReviewDate to ensure it's reviewable against the start of the current UTC day
-          nextReviewDate: new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(), 
-          type: card.type || 'flashcard' // Ensure it has a type
+          lastReviewed: nowISO,
+          nextReviewDate: reviewDateForNewCard, 
+          type: card.type || 'flashcard'
         };
         
-        // Update topic shell isEmpty flag if this card belongs to a topic
         setAllCards((prevCards) => {
-          // Create a new array to avoid mutation
           const newCards = [...prevCards];
-          
-          // Check if we have a matching topic shell
           if (card.topicId) {
-            // Find the topic shell with this ID
             const topicShellIndex = newCards.findIndex(c => 
               c.type === 'topic' && c.isShell && c.id === card.topicId
             );
-            
             if (topicShellIndex >= 0) {
-              // Update the topic shell to mark it as not empty
               newCards[topicShellIndex] = {
                 ...newCards[topicShellIndex],
                 isEmpty: false,
                 updatedAt: new Date().toISOString()
               };
-              console.log(`[App.addCard] Updated topic shell (${card.topicId}) isEmpty=false`);
-            } else {
-              console.warn(`[App.addCard] No topic shell found with ID: ${card.topicId}`);
             }
           }
-          
-          // Add the new card to the array
           return [...newCards, cardWithSpacedRep];
         });
         
-        // Update spaced repetition data separately to ensure it's added to box1
         setSpacedRepetitionData((prevData) => {
           const newData = { ...prevData };
-          // Add the card to box1
           newData.box1.push({
             cardId: cardWithSpacedRep.id,
-            lastReviewed: nowISO, // Use current time
-            nextReviewDate: nowISO // Reviewable immediately
+            lastReviewed: nowISO, 
+            nextReviewDate: reviewDateForNewCard // Use the same explicitly calculated date
           });
           return newData;
         });
         
-        // Update color mapping if needed
         if (card.subject && card.cardColor) {
           updateColorMapping(card.subject, card.topic, card.cardColor);
         }
       }
       
-      // Save the changes after state updates have completed
-      setTimeout(() => saveData(), 300); // Increased timeout to ensure all state updates complete
+      setTimeout(() => saveData(), 300);
       showStatus("Card added successfully!");
     },
     [updateColorMapping, saveData, showStatus]
@@ -1168,49 +1147,43 @@ function App() {
     (cardId, box) => {
       console.log(`Moving card ${cardId} to box ${box}`);
 
-      // Calculate the next review date based on the box number
       const calculateNextReviewDate = (boxNumber) => {
-        const now = new Date(); // Current moment
+        const now = new Date(); 
         let nextDate = new Date(now); 
 
         switch (boxNumber) {
           case 1:
-            // For Box 1 (incorrect or new), make it reviewable by setting its date to be before the current UTC day started.
-            return new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(); // 1 millisecond before start of current UTC day
+            return new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(); // 1ms before current UTC day start
           case 2: 
-            nextDate.setDate(now.getDate() + 2); // Review in 2 local days
+            nextDate.setDate(now.getDate() + 2); 
             break;
-          case 3: // Every 3rd day
+          case 3: 
             nextDate.setDate(now.getDate() + 3);
             break;
-          case 4: // Every week (7 days)
+          case 4: 
             nextDate.setDate(now.getDate() + 7);
             break;
-          case 5: // Every 4 weeks (28 days)
+          case 5: 
             nextDate.setDate(now.getDate() + 28);
             break;
           default:
-            nextDate.setDate(now.getDate() + 1); // Default to next day
+            nextDate.setDate(now.getDate() + 1); 
         }
         
-        // For boxes 2-5, set the time to the START of that future LOCAL day, then convert to UTC string.
         if (boxNumber > 1) {
-            nextDate.setHours(0, 0, 0, 0); 
-            return nextDate.toISOString(); 
+            nextDate.setHours(0, 0, 0, 0); // Set to local midnight of the future day
+            return nextDate.toISOString(); // Convert to UTC ISO string
         }
-        // This fallback should ideally not be reached if boxNumber is always 1-5.
-        // If it is box 1, it should have returned from the case 1 block.
-        return new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(); // Fallback for safety for Box 1 if logic error elsewhere
+        // Fallback for Box 1, though case 1 should catch it.
+        return new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(); 
       };
 
-      // Ensure cardId is a string
       const stringCardId = String(cardId).trim();
-      
-      setSpacedRepetitionData((prevData) => {
-        // Create a new object to avoid direct state mutation
-        const newData = { ...prevData };
+      const newNextReviewDateCalculated = calculateNextReviewDate(box); // Calculate once
+      const nowISOForMove = new Date().toISOString(); // Define once for this move
 
-        // Remove the card from its current box (if it exists)
+      setSpacedRepetitionData((prevData) => {
+        const newData = { ...prevData };
         for (let i = 1; i <= 5; i++) {
           newData[`box${i}`] = newData[`box${i}`].filter(
             (item) => {
@@ -1221,46 +1194,38 @@ function App() {
             }
           );
         }
-
-        // Add the card to the new box with next review date
         const targetBox = `box${box}`;
-        const nextReviewDate = calculateNextReviewDate(box);
-        
-        // Store both the card ID and review date information
         newData[targetBox].push({
           cardId: stringCardId,
-          lastReviewed: new Date().toISOString(),
-          nextReviewDate: nextReviewDate
+          lastReviewed: nowISOForMove, // Use consistent timestamp for this operation
+          nextReviewDate: newNextReviewDateCalculated // Use the pre-calculated date
         });
-
-        // Update the Knack notification fields on the next save
         setKnackFieldsNeedUpdate(true);
-        
         return newData;
       });
       
-      // Also update the card's boxNum property in allCards
       setAllCards(prevCards => {
         return prevCards.map(card => {
           if (String(card.id).trim() === stringCardId) {
-            const newNextReviewDate = calculateNextReviewDate(box);
+            // const newNextReviewDate = calculateNextReviewDate(box); // Already calculated
+            const todayUTC = new Date();
+            todayUTC.setUTCHours(0,0,0,0);
             return {
               ...card,
               boxNum: box,
-              nextReviewDate: newNextReviewDate, // Use calculated date
-              lastReviewed: new Date().toISOString(),
-              isReviewable: new Date(newNextReviewDate) <= new Date() // Recalculate reviewability
+              nextReviewDate: newNextReviewDateCalculated, // Use the pre-calculated date
+              lastReviewed: nowISOForMove, // Use consistent timestamp
+              isReviewable: new Date(newNextReviewDateCalculated) <= todayUTC 
             };
           }
           return card;
         });
       });
       
-      // Save the updated data
       setTimeout(() => saveData(), 100);
       console.log(`Card ${cardId} moved to box ${box}`);
     },
-    [saveData]
+    [saveData] // Removed updateKnackBoxNotifications from here, it's handled by knackFieldsNeedUpdate effect
   );
 
   // Add state to track if Knack fields need updating
@@ -1527,8 +1492,8 @@ useEffect(() => {
     console.log("All available cards:", allCards.length, allCards.map(c => c.id).slice(0, 10));
     
     // Current date for review date comparisons
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to midnight for consistent day comparison
+    const todayUTC = new Date();
+    todayUTC.setUTCHours(0, 0, 0, 0); // Start of current day in UTC
     
     // Map the IDs to the actual card objects
     const cardsForBox = [];

@@ -159,23 +159,22 @@ const SpacedRepetition = ({
 
     // If modal is open and currentCards is populated:
     if (currentCards.length > 0) {
-        // If currentIndex is now out of bounds of the NEW currentCards list,
-        // it means the card at the previous currentIndex was removed or the list changed.
-        if (currentIndex >= currentCards.length) {
-            // If current index is now past the end (e.g. last card was removed or list shortened significantly)
-            // Go to the new last card if the list is not empty.
-            setCurrentIndex(Math.max(0, currentCards.length - 1)); 
-        } else if (currentIndex < 0) { // Should ideally not happen
-             setCurrentIndex(0);
+        let newIndex = currentIndex; // Start with current, may not need to change
+        if (currentIndex >= currentCards.length) { // Current index is out of bounds for the new list
+            newIndex = Math.max(0, currentCards.length - 1); // Go to new last card, or 0 if list just emptied then repopulated with one item
+        } else if (currentIndex < 0) { // Should ideally not happen, but guard it
+             newIndex = 0;
         }
-        // If currentIndex is still valid within the new currentCards, no change to currentIndex needed here from this check.
-        setStudyCompleted(false); // Not completed if there are cards
+        // Only update if necessary
+        if (newIndex !== currentIndex) setCurrentIndex(newIndex); 
+        
+        if (studyCompleted) setStudyCompleted(false); // If we have cards, we are not completed
     } else { // currentCards is empty
-        setStudyCompleted(true);
-        setCurrentIndex(0); // Reset index when completed, though no card is shown
+        if (!studyCompleted) setStudyCompleted(true); // Only set if not already true
+        // setCurrentIndex(0); // Reset index when completed, though no card is shown. Not strictly necessary if studyCompleted handles render.
     }
     
-    resetCardVisualState(); // Reset flip state for the new/current card
+    resetCardVisualState(); // Reset flip state for the new/current card, or for empty state
 
   }, [currentCards, showStudyModal]); // Removed currentIndex from dependencies
 
