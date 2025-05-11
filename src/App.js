@@ -1821,7 +1821,6 @@ useEffect(() => {
             console.log("[User Info] Initialized AuthManager with user data from Knack.");
 
             // If user data (the JSON blob) was included, process it with timestamp comparison
-            // If user data (the JSON blob) was included, process it with timestamp comparison
             if (event.data.data?.userData) {
               const knackPayload = event.data.data; // This is the `data` part of the message
               const knackUserDataBlob = safeParseJSON(knackPayload.userData); // This is the stringified JSON content
@@ -1854,14 +1853,17 @@ useEffect(() => {
                 // The app state is already populated from localStorage by loadCombinedData.
                 setTimeout(() => {
                   console.log("[App.js] Pushing newer local data to Knack.");
-                  saveData({ // Explicitly pass current state to ensure freshness
+                  // Explicitly pass current state to ensure freshness
+                  const currentSaveData = { 
                     cards: allCards,
                     colorMapping: subjectColorMapping,
                     spacedRepetition: spacedRepetitionData,
                     userTopics: userTopics,
                     topicLists: topicLists,
                     topicMetadata: topicMetadata
-                  }, true); // preserveFields = true
+                  };
+                  console.log("[App.js] Data being pushed to Knack:", currentSaveData);
+                  saveData(currentSaveData, true); // preserveFields = true
                 }, 2000); // Delay to allow React to settle and ensure other initial processes complete
               }
 
@@ -1872,30 +1874,33 @@ useEffect(() => {
                     const restoredCards = restoreMultipleChoiceOptions(knackUserDataBlob.cards);
                     setAllCards(restoredCards);
                     updateSpacedRepetitionData(restoredCards); // Ensure SR data is derived from these cards
+                    console.log("[App.js] Updated allCards and SR data from Knack.");
                   } else {
                      console.warn("[User Info] Knack userData.cards is missing or not an array.");
                   }
                   
-                  setSubjectColorMapping(ensureValidColorMapping(knackUserDataBlob.colorMapping || {}));
+                  const newColorMapping = ensureValidColorMapping(knackUserDataBlob.colorMapping || {});
+                  setSubjectColorMapping(newColorMapping);
+                  console.log("[App.js] Updated subjectColorMapping from Knack:", newColorMapping);
                   
-                  // Only set SR from Knack if Knack is truly the source of truth for cards too.
                   if (knackUserDataBlob.spacedRepetition) {
-                     // This might need to be conditional on useKnackData for cards too,
-                     // but if useKnackData is true, we are already using Knack cards.
                     setSpacedRepetitionData(knackUserDataBlob.spacedRepetition);
+                    console.log("[App.js] Updated spacedRepetitionData from Knack.");
                   } else {
-                    console.warn("[User Info] Knack userData.spacedRepetition is missing.");
+                    console.warn("[User Info] Knack userData.spacedRepetition is missing. SR data might be derived from cards if cards were loaded.");
                   }
 
-                  // Update other states like topicLists, userTopics, topicMetadata from knackUserDataBlob
                   if (knackUserDataBlob.userTopics) {
                     setUserTopics(knackUserDataBlob.userTopics);
+                    console.log("[App.js] Updated userTopics from Knack.");
                   }
                   if (knackUserDataBlob.topicLists && Array.isArray(knackUserDataBlob.topicLists)) {
                     setTopicLists(knackUserDataBlob.topicLists);
+                    console.log("[App.js] Updated topicLists from Knack.");
                   }
                   if (knackUserDataBlob.topicMetadata && Array.isArray(knackUserDataBlob.topicMetadata)) {
                     setTopicMetadata(knackUserDataBlob.topicMetadata);
+                    console.log("[App.js] Updated topicMetadata from Knack.");
                   }
                   console.log("[User Info] Successfully processed user data from Knack.");
                 } catch (e) {
