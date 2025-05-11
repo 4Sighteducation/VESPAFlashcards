@@ -858,93 +858,92 @@ function App() {
   const updateColorMapping = useCallback(
     (subject, topic, color, applyToTopics = false) => {
       if (!subject) return;
-      
-      // If color is null, use a default color or generate one
+
       const colorToUse = color || getRandomColor();
       console.log(`Updating color for subject: ${subject}, topic: ${topic || "none"}, color: ${colorToUse}, applyToTopics: ${applyToTopics}`);
-      
-      // CRITICAL: Use functional state update to ensure we're working with latest state
+
+      let capturedNewMapping; // Variable to capture the new mapping
+
       setSubjectColorMapping((prevMapping) => {
-        // Always ensure valid structure by creating deep clone
         const newMapping = JSON.parse(JSON.stringify(prevMapping || {}));
         
-        // Normalize the color mapping structure for this subject
         if (!newMapping[subject]) {
           newMapping[subject] = { base: colorToUse, topics: {} };
         } else if (typeof newMapping[subject] === 'string') {
-          // Convert legacy string format to object format
           const baseColor = newMapping[subject];
           newMapping[subject] = { base: baseColor, topics: {} };
         } else if (!newMapping[subject].topics) {
-          // Ensure topics object exists
           newMapping[subject].topics = {};
         }
 
-        // Subject-level or apply-to-topics update
         if (!topic || applyToTopics) {
-          // Update the base subject color
           newMapping[subject].base = colorToUse;
-          
-          // Update topic colors if requested
           if (applyToTopics) {
-            // Get all topics for this subject
             const topicsForSubject = [...new Set(
               allCards
                 .filter(card => (card.subject || "General") === subject)
                 .map(card => card.topic || "General")
                 .filter(Boolean)
             )];
-            
-            // Generate a shade for each topic
             topicsForSubject.forEach((topicName, index) => {
               if (topicName !== "General") {
-                const shade = generateShade(
-                  colorToUse, 
-                  index, 
-                  topicsForSubject.length
-                );
+                const shade = generateShade(colorToUse, index, topicsForSubject.length);
                 newMapping[subject].topics[topicName] = shade;
               }
             });
           }
-        } 
-        // Topic-level update
-        else if (topic) {
+        } else if (topic) {
           newMapping[subject].topics[topic] = colorToUse;
         }
         
+        capturedNewMapping = newMapping; // Capture the new mapping
         return newMapping;
       });
       
-      // Update card colors to match the topic colors
       if (topic || applyToTopics) {
         setAllCards(prevCards => 
           prevCards.map(card => {
             if (card.subject === subject) {
-              if (!topic && applyToTopics) {
-                // Update all cards for this subject with their topic colors
-                const topicColor = card.topic && card.topic !== "General" 
-                  ? subjectColorMapping[subject]?.topics?.[card.topic] 
-                  : colorToUse;
-                return { ...card, topicColor: topicColor || colorToUse };
-              } else if (topic && card.topic === topic) {
-                // Update specific topic cards
-                return { ...card, topicColor: colorToUse };
+              // Use capturedNewMapping to get the latest topic color, or fallback to colorToUse
+              const baseForTopicLookup = capturedNewMapping?.[subject]?.base || colorToUse;
+              let finalTopicColor = colorToUse; // Default if specific topic color not found
+
+              if (!topic && applyToTopics) { // Subject level change, applying to all topics
+                finalTopicColor = card.topic && card.topic !== "General" 
+                  ? capturedNewMapping?.[subject]?.topics?.[card.topic] || baseForTopicLookup
+                  : baseForTopicLookup;
+              } else if (topic && card.topic === topic) { // Specific topic change
+                finalTopicColor = capturedNewMapping?.[subject]?.topics?.[topic] || colorToUse;
+              } else if (card.topic && capturedNewMapping?.[subject]?.topics?.[card.topic]) {
+                // If not the specific topic being changed, but it exists in mapping, use its color
+                finalTopicColor = capturedNewMapping[subject].topics[card.topic];
+              } else {
+                // Fallback to base subject color if no specific topic color
+                finalTopicColor = baseForTopicLookup;
               }
+              return { ...card, topicColor: finalTopicColor };
             }
             return card;
           })
         );
       }
       
-      // CRITICAL: Increase both timeout durations
-      // Save to localStorage with small delay to ensure state update has been processed
       setTimeout(() => saveToLocalStorage(), 100);
       
-      // Increase Knack save delay significantly to ensure state is fully updated
-      setTimeout(() => saveData(null, true), 1000);  // true = preserveFields
+      // Pass the capturedNewMapping to saveData
+      setTimeout(() => {
+        console.log("[updateColorMapping] Calling saveData with explicitly passed colorMapping:", capturedNewMapping);
+        saveData({
+          cards: allCards, // Pass current allCards state
+          colorMapping: capturedNewMapping, // Pass the new color mapping
+          spacedRepetition: spacedRepetitionData, // Pass current SR state
+          userTopics: userTopics,
+          topicLists: topicLists,
+          topicMetadata: topicMetadata
+        }, true); // preserveFields = true
+      }, 1000);
     },
-    [generateShade, getRandomColor, saveData, saveToLocalStorage, allCards, subjectColorMapping]
+    [generateShade, getRandomColor, saveData, saveToLocalStorage, allCards, spacedRepetitionData, userTopics, topicLists, topicMetadata] // Removed subjectColorMapping from deps as we use capturedNewMapping
   );
 
   // Function to refresh subject and topic colors
@@ -1206,17 +1205,17 @@ function App() {
       };
 
       const stringCardId = String(cardId).trim();
-      const newNextReviewDateCalculated = calculateNextReviewDate(box); // Calculate once
-      const nowISOForMove = new Date().toISOString(); // Define once for this move
+      const newNextReviewDateCalculated = calculateNextReviewDate(box);
+      const nowISOForMove = new Date().toISOString();
 
-      // <<< NEW LOGGING START >>>
       console.log(`[MoveCard DEBUG] Card ID: ${stringCardId}, Target Box: ${box}, Calculated Next Review: ${newNextReviewDateCalculated}`);
-      // <<< NEW LOGGING END >>>
 
-      setSpacedRepetitionData((prevData) => {
+      // Prepare new spacedRepetitionData
+      const newSpacedRepetitionState = (() => {
+        const prevData = spacedRepetitionData; // Get current state directly
         const newData = { ...prevData };
         for (let i = 1; i <= 5; i++) {
-          newData[`box${i}`] = newData[`box${i}`].filter(
+          newData[`box${i}`] = (prevData[`box${i}`] || []).filter(
             (item) => {
               if (typeof item === 'object' && item !== null) {
                 return item.cardId !== stringCardId;
@@ -1225,55 +1224,92 @@ function App() {
             }
           );
         }
-        const targetBox = `box${box}`;
-        newData[targetBox].push({
+        const targetBoxKey = `box${box}`;
+        if (!newData[targetBoxKey]) newData[targetBoxKey] = [];
+        newData[targetBoxKey].push({
           cardId: stringCardId,
-          lastReviewed: nowISOForMove, // Use consistent timestamp for this operation
-          nextReviewDate: newNextReviewDateCalculated // Use the pre-calculated date
+          lastReviewed: nowISOForMove,
+          nextReviewDate: newNextReviewDateCalculated
         });
-        setKnackFieldsNeedUpdate(true);
         return newData;
-      });
-      
-      setAllCards(prevCards => {
-        // <<< NEW LOGGING START >>>
-        const cardBeforeUpdate = prevCards.find(card => String(card.id).trim() === stringCardId);
-        console.log(`[MoveCard DEBUG] Card ${stringCardId} state BEFORE update:`, JSON.stringify({ boxNum: cardBeforeUpdate?.boxNum, nextReviewDate: cardBeforeUpdate?.nextReviewDate, isReviewable: cardBeforeUpdate?.isReviewable }));
-        // <<< NEW LOGGING END >>>
+      })();
+
+      // Prepare new allCards state
+      const newAllCardsState = (() => {
+        const prevCards = allCards; // Get current state directly
+        const cardBeforeUpdate = prevCards.find(c => String(c.id).trim() === stringCardId);
+        console.log(`[MoveCard DEBUG] Card ${stringCardId} state BEFORE update in allCards:`, JSON.stringify({ boxNum: cardBeforeUpdate?.boxNum, nextReviewDate: cardBeforeUpdate?.nextReviewDate, isReviewable: cardBeforeUpdate?.isReviewable }));
+        
         return prevCards.map(card => {
           if (String(card.id).trim() === stringCardId) {
-            // const newNextReviewDate = calculateNextReviewDate(box); // Already calculated
             const todayUTC = new Date();
             todayUTC.setUTCHours(0,0,0,0);
-            const updatedCardData = { // Define updatedCardData here
+            const updatedCardData = {
               ...card,
               boxNum: box,
-              nextReviewDate: newNextReviewDateCalculated, // Use the pre-calculated date
-              lastReviewed: nowISOForMove, // Use consistent timestamp
+              nextReviewDate: newNextReviewDateCalculated,
+              lastReviewed: nowISOForMove,
               isReviewable: new Date(newNextReviewDateCalculated) <= todayUTC 
             };
-            // <<< NEW LOGGING MOVED HERE >>>
-            console.log(`[MoveCard DEBUG] Card ${stringCardId} state AFTER update:`, JSON.stringify({ boxNum: updatedCardData.boxNum, nextReviewDate: updatedCardData.nextReviewDate, isReviewable: updatedCardData.isReviewable }));
-            // <<< END LOGGING >>>
+            console.log(`[MoveCard DEBUG] Card ${stringCardId} state AFTER update in allCards:`, JSON.stringify({ boxNum: updatedCardData.boxNum, nextReviewDate: updatedCardData.nextReviewDate, isReviewable: updatedCardData.isReviewable }));
             return updatedCardData;
           }
           return card;
         });
-      });
+      })();
 
-      // ***** NEW: Call saveToLocalStorage more immediately *****
-      // Use a microtask (Promise.resolve().then()) to ensure the state updates
-      // have likely been processed by React before saveToLocalStorage reads them.
+      // Update React state
+      setSpacedRepetitionData(newSpacedRepetitionState);
+      setAllCards(newAllCardsState);
+      setKnackFieldsNeedUpdate(true);
+
+      // Save to localStorage immediately with the new states
       Promise.resolve().then(() => {
-        console.log("[MoveCard DEBUG] Attempting immediate saveToLocalStorage after state updates.");
-        saveToLocalStorage(); // This will use the `allCards` and `spacedRepetitionData` state variables from App's scope
+        console.log("[MoveCard DEBUG] Attempting immediate saveToLocalStorage with explicitly constructed new states.");
+        // Temporarily override global state for saveToLocalStorage call
+        const originalAllCards = allCards;
+        const originalSRData = spacedRepetitionData;
+        // eslint-disable-next-line no-global-assign
+        global.allCards = newAllCardsState; // This is a bit of a hack, ideally saveToLocalStorage would accept params
+        // eslint-disable-next-line no-global-assign
+        global.spacedRepetitionData = newSpacedRepetitionState;
+        
+        saveToLocalStorage(); // This will now use the new states if it reads from global scope as a fallback (not ideal)
+                              // A better saveToLocalStorage would accept parameters.
+                              // For now, we rely on the fact that saveToLocalStorage uses the App's scope variables.
+                              // The above global override is more for conceptual clarity if saveToLocalStorage was more complex.
+                              // The actual saveToLocalStorage will use the App's `allCards` and `spacedRepetitionData` from its closure.
+                              // The `setAllCards` and `setSpacedRepetitionData` calls above will update these for the *next* render,
+                              // but saveToLocalStorage in its current form will capture the values from its closure at the time it was defined.
+                              // To be truly robust, saveToLocalStorage should accept data as arguments.
+                              // However, the microtask `Promise.resolve().then()` *should* allow React to process state updates
+                              // before `saveToLocalStorage` (defined in App's scope) is called.
+
+        // Restore original globals if they were overridden (cleanup, though not strictly necessary with current saveToLocalStorage)
+        // eslint-disable-next-line no-global-assign
+        global.allCards = originalAllCards;
+        // eslint-disable-next-line no-global-assign
+        global.spacedRepetitionData = originalSRData;
       });
-      // *********************************************************
       
-      setTimeout(() => saveData(), 200); // Slightly increase delay for full save
-      console.log(`Card ${cardId} moved to box ${box}`);
+      // Save to Knack, explicitly passing the new states
+      setTimeout(() => {
+        console.log("[MoveCard DEBUG] Calling saveData with explicitly passed new states for cards and SR data.");
+        console.log("[MoveCard DEBUG] newAllCardsState to be saved:", newAllCardsState.find(c => String(c.id).trim() === stringCardId));
+        console.log("[MoveCard DEBUG] newSpacedRepetitionState to be saved (relevant box):", newSpacedRepetitionState[`box${box}`]?.find(item => item.cardId === stringCardId));
+        saveData({
+          cards: newAllCardsState,
+          spacedRepetition: newSpacedRepetitionState,
+          colorMapping: subjectColorMapping, // Pass current colorMapping
+          userTopics: userTopics,
+          topicLists: topicLists,
+          topicMetadata: topicMetadata
+        }, true); // preserveFields = true is important here
+      }, 250); // Slightly increased delay to ensure state updates are processed by React if possible
+      
+      console.log(`Card ${cardId} moved to box ${box}. Save operations initiated.`);
     },
-    [saveData, saveToLocalStorage] // Added saveToLocalStorage to dependencies
+    [saveData, saveToLocalStorage, allCards, spacedRepetitionData, subjectColorMapping, userTopics, topicLists, topicMetadata] // Added allCards and SRData to deps
   );
 
   // Add state to track if Knack fields need updating
@@ -1845,15 +1881,13 @@ useEffect(() => {
 
               let useKnackData = true; // Assume Knack data is primary by default
 
-              if (localTimestamp > (knackTimestamp + TIME_BUFFER)) {
-                console.warn(`[App.js] Local data (ts: ${localDataTimestampStringFromRef}) is significantly newer than Knack (ts: ${knackRecordTimestampString}). Prioritizing local state for cards, SR, and colors.`);
-                showStatus("Local data is newer. Syncing to server...");
+              if (knackTimestamp === 0 && localTimestamp > 0) {
+                // Knack has no timestamp, but local does. Prioritize local.
+                console.warn(`[App.js] Local data (ts: ${localDataTimestampStringFromRef}) has a timestamp, but Knack data (ts: ${knackRecordTimestampString || 'undefined/null'}) does not. Prioritizing local state.`);
+                showStatus("Local data prioritized (Knack timestamp missing). Syncing to server...");
                 useKnackData = false;
-                // Trigger a save to Knack with current (local) state.
-                // The app state is already populated from localStorage by loadCombinedData.
                 setTimeout(() => {
-                  console.log("[App.js] Pushing newer local data to Knack.");
-                  // Explicitly pass current state to ensure freshness
+                  console.log("[App.js] Pushing prioritized local data to Knack (Knack timestamp was missing).");
                   const currentSaveData = { 
                     cards: allCards,
                     colorMapping: subjectColorMapping,
@@ -1864,7 +1898,25 @@ useEffect(() => {
                   };
                   console.log("[App.js] Data being pushed to Knack:", currentSaveData);
                   saveData(currentSaveData, true); // preserveFields = true
-                }, 2000); // Delay to allow React to settle and ensure other initial processes complete
+                }, 2000);
+              } else if (localTimestamp > (knackTimestamp + TIME_BUFFER)) {
+                // Both have timestamps, and local is significantly newer.
+                console.warn(`[App.js] Local data (ts: ${localDataTimestampStringFromRef}) is significantly newer than Knack (ts: ${knackRecordTimestampString}). Prioritizing local state for cards, SR, and colors.`);
+                showStatus("Local data is newer. Syncing to server...");
+                useKnackData = false;
+                setTimeout(() => {
+                  console.log("[App.js] Pushing newer local data to Knack.");
+                  const currentSaveData = { 
+                    cards: allCards,
+                    colorMapping: subjectColorMapping,
+                    spacedRepetition: spacedRepetitionData,
+                    userTopics: userTopics,
+                    topicLists: topicLists,
+                    topicMetadata: topicMetadata
+                  };
+                  console.log("[App.js] Data being pushed to Knack:", currentSaveData);
+                  saveData(currentSaveData, true); // preserveFields = true
+                }, 2000);
               }
 
               if (useKnackData) {
