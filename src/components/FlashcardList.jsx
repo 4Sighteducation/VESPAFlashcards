@@ -1076,32 +1076,36 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
     );
   };
 
-  const renderTopics = (subject, subjectColor) => {
+    const renderTopics = (subject, subjectColor) => {
     const topicsData = groupedCards[subject] || {};
     const topicNames = Object.keys(topicsData).sort((a, b) => a.localeCompare(b));
 
     return (
       <div className="topics-container">
         {topicNames.map((topic, index) => {
+          const topicItems = topicsData[topic] || []; // Get items for the current topic, default to empty array
+
+          // Now, correctly define topicShellOrFirstCard using topicItems
+          const topicShellOrFirstCard = topicItems.find(item => item.type === 'topic' && item.isShell) || topicItems[0];
           
-    const topicShellOrFirstCard = validItems.find(item => item.type === 'topic' && item.isShell) || validItems[0];
-    let topicDisplayColor = topicShellOrFirstCard?.topicColor || // Prioritize topicColor from the item
-                           topicShellOrFirstCard?.cardColor ||   // Then cardColor from the item
-                           (subjectColorMapping[subject]?.topics?.[topic]) || // Then from subjectColorMapping (direct color string)
-                           subjectColor; // Fallback to the subject's base color (subjectColor is subjectBaseColor passed to renderTopics)
-    
-    // Ensure topicDisplayColor is a valid hex or HSL, otherwise default
-    if (!topicDisplayColor || (typeof topicDisplayColor === 'string' && !topicDisplayColor.startsWith('#') && !topicDisplayColor.toLowerCase().startsWith('hsl'))) {
-        console.warn(`[FlashcardList renderTopic] Invalid topicDisplayColor for ${subject} - ${topic}: '${topicDisplayColor}'. Defaulting to subject color '${subjectColor}'.`);
-        topicDisplayColor = subjectColor; 
-    }const topicItems = topicsData[topic];
+          let topicDisplayColor = topicShellOrFirstCard?.topicColor || 
+                                 topicShellOrFirstCard?.cardColor ||   
+                                 (subjectColorMapping[subject]?.topics?.[topic]) || 
+                                 subjectColor; 
+          
+          if (!topicDisplayColor || (typeof topicDisplayColor === 'string' && !topicDisplayColor.startsWith('#') && !topicDisplayColor.toLowerCase().startsWith('hsl'))) {
+              console.warn(`[FlashcardList renderTopics] Invalid topicDisplayColor for ${subject} - ${topic}: '${topicDisplayColor}'. Defaulting to subject color '${subjectColor}'.`);
+              topicDisplayColor = subjectColor; 
+          }
+          
           return (
-            renderTopic(subject, topic, topicItems, topicDisplayColor)
+            renderTopic(subject, topic, topicItems, topicDisplayColor) // Pass the calculated topicDisplayColor
           );
         })}
       </div>
     );
   };
+
 
   return (
     <div className="flashcard-list">
