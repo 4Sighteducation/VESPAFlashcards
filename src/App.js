@@ -57,6 +57,52 @@ const cleanHtmlTags = (str) => {
   return strValue.replace(/<\/?[^>]+(>|$)/g, "").trim();
 };
 
+// --- ADD THE NEW RECONCILIATION FUNCTION HERE ---
+const reconcileCardColors = (cardsArray, colorMapping) => {
+  if (!Array.isArray(cardsArray) || !colorMapping || typeof colorMapping !== 'object') {
+    console.warn('[reconcileCardColors] Invalid input. cardsArray must be an array and colorMapping an object.');
+    return cardsArray || [];
+  }
+
+  const reconciledCards = cardsArray.map(item => {
+    if (!item || typeof item !== 'object') return item; // Skip invalid items
+
+    const newItem = { ...item }; // Work on a copy
+    const subjectName = newItem.subject || "General";
+    const topicName = newItem.topic || "General"; // Assuming 'topic' field holds the name for topic shells too
+
+    const subjectMapEntry = colorMapping[subjectName];
+    // Fallback to a default bright color if subject not in mapping or base color missing
+    const subjectBaseColor = subjectMapEntry?.base && subjectMapEntry.base.startsWith('#') ? subjectMapEntry.base : BRIGHT_COLORS[0]; 
+    
+    let specificTopicColor = null;
+    if (subjectMapEntry && subjectMapEntry.topics && subjectMapEntry.topics[topicName] && subjectMapEntry.topics[topicName].startsWith('#')) {
+      specificTopicColor = subjectMapEntry.topics[topicName];
+    }
+
+    newItem.subjectColor = subjectBaseColor;
+    newItem.topicColor = specificTopicColor; // This can be null if no specific topic color
+
+    // Determine cardColor based on priority: specific topic color, then subject base color
+    if (specificTopicColor) {
+      newItem.cardColor = specificTopicColor;
+    } else {
+      newItem.cardColor = subjectBaseColor;
+    }
+    
+    // Optional: Log if a card's color was changed during reconciliation for debugging
+    // if (item.cardColor !== newItem.cardColor || item.subjectColor !== newItem.subjectColor || item.topicColor !== newItem.topicColor) {
+    //   console.log(`[reconcileCardColors] Card ID ${newItem.id}: Old(card:${item.cardColor},subj:${item.subjectColor},topic:${item.topicColor}) -> New(card:${newItem.cardColor},subj:${newItem.subjectColor},topic:${newItem.topicColor})`);
+    // }
+
+    return newItem;
+  });
+
+  return reconciledCards;
+};
+// --- END OF NEW RECONCILIATION FUNCTION ---
+
+
 function App() {
   // Authentication and user state
   const [auth, setAuth] = useState(null);
@@ -883,7 +929,7 @@ function App() {
         console.log(`[App updateColorMapping] Set base color for ${subject} to ${colorToUse}`);
         if (applyToTopics) {
           const topicsForSubject = [...new Set(
-            allCards
+            allCards // Use current allCards from state here for topic list generation
               .filter(card => (card.subject || "General") === subject && card.topic && card.topic !== "General")
               .map(card => card.topic)
           )];
@@ -899,55 +945,21 @@ function App() {
       }
       
       finalColorMapping = newMapping; // Capture for use outside
-      return newMapping;
+      return newMapping; // This will trigger a re-render
     });
 
     // Update allCards state based on the new color mapping
+    // This state update will also trigger a re-render.
+    // We use the functional update form of setAllCards to ensure we're working with the latest prevCards.
     setAllCards(prevCards => {
-      const updatedCards = prevCards.map(card => {
-        if ((card.subject || "General") === subject) {
-          const newCardColors = { ...card };
-          const subjectMapData = finalColorMapping?.[subject];
-
-          if (subjectMapData) {
-            newCardColors.subjectColor = subjectMapData.base; // Always update subjectColor
-
-            if (applyToTopics && card.topic && card.topic !== "General") {
-              newCardColors.topicColor = subjectMapData.topics?.[card.topic] || subjectMapData.base;
-              newCardColors.cardColor = newCardColors.topicColor; // cardColor often mirrors topicColor
-            } else if (topic && card.topic === topic) {
-              newCardColors.topicColor = subjectMapData.topics?.[topic] || subjectMapData.base;
-              newCardColors.cardColor = newCardColors.topicColor;
-            } else if (card.topic && subjectMapData.topics?.[card.topic]) {
-              // If not the specific topic being changed, but it exists in mapping, use its color
-              newCardColors.topicColor = subjectMapData.topics[card.topic];
-              newCardColors.cardColor = newCardColors.topicColor;
-            } else {
-              // Fallback to base subject color if no specific topic color or not applying to topics
-              newCardColors.topicColor = subjectMapData.base;
-              newCardColors.cardColor = subjectMapData.base;
-            }
-            if(JSON.stringify(newCardColors) !== JSON.stringify(card)) {
-               console.log(`[App updateColorMapping] Updating card ${card.id} colors: subjectColor=${newCardColors.subjectColor}, topicColor=${newCardColors.topicColor}`);
-            }
-            return newCardColors;
-          }
-        }
-        return card;
-      });
-      finalAllCards = updatedCards; // Capture for use outside
-      return updatedCards;
+        // finalColorMapping should be available here due to closure, 
+        // or ensure it's passed if issues arise.
+        const reconciled = reconcileCardColors(prevCards, finalColorMapping || subjectColorMapping);
+        finalAllCards = reconciled; // Capture for saveData
+        return reconciled;
     });
     
     // Save to localStorage and then to Knack
-    setTimeout(() => {
-        // Use the captured states for saving to ensure consistency
-        console.log("[updateColorMapping] Attempting immediate saveToLocalStorage.");
-        // To make saveToLocalStorage use the freshest data, we'd ideally pass it as params.
-        // For now, we rely on the fact that the state updates above will eventually reflect.
-        saveToLocalStorage(); 
-    }, 100); 
-    
     setTimeout(() => {
       console.log("[updateColorMapping] Calling saveData with explicitly passed colorMapping and allCards.");
       saveData({
@@ -1906,15 +1918,21 @@ useEffect(() => {
                 useKnackData = false;
                 setTimeout(() => {
                   console.log("[App.js] Pushing prioritized local data to Knack (Knack timestamp was missing).");
+                  const currentLocalCards = allCards; // Use current state
+                  const currentLocalColorMapping = subjectColorMapping; // Use current state
+                  
+                  const reconciledLocalCardsForPush = reconcileCardColors(currentLocalCards, currentLocalColorMapping);
+                  console.log("[App.js] Local data reconciled before pushing to Knack (Knack ts missing).");
+
                   const currentSaveData = { 
-                    cards: allCards,
-                    colorMapping: subjectColorMapping,
+                    cards: reconciledLocalCardsForPush,
+                    colorMapping: currentLocalColorMapping,
                     spacedRepetition: spacedRepetitionData,
                     userTopics: userTopics,
                     topicLists: topicLists,
                     topicMetadata: topicMetadata
                   };
-                  console.log("[App.js] Data being pushed to Knack:", currentSaveData);
+                  console.log("[App.js] Data being pushed to Knack:", /* Consider logging keys/counts */);
                   saveData(currentSaveData, true); // preserveFields = true
                 }, 2000);
               } else if (localTimestamp > (knackTimestamp + TIME_BUFFER)) {
@@ -1924,15 +1942,21 @@ useEffect(() => {
                 useKnackData = false;
                 setTimeout(() => {
                   console.log("[App.js] Pushing newer local data to Knack.");
+                  const currentLocalCards = allCards; // Use current state
+                  const currentLocalColorMapping = subjectColorMapping; // Use current state
+
+                  const reconciledLocalCardsForPush = reconcileCardColors(currentLocalCards, currentLocalColorMapping);
+                  console.log("[App.js] Local data reconciled before pushing to Knack (local newer).");
+
                   const currentSaveData = { 
-                    cards: allCards,
-                    colorMapping: subjectColorMapping,
+                    cards: reconciledLocalCardsForPush,
+                    colorMapping: currentLocalColorMapping,
                     spacedRepetition: spacedRepetitionData,
                     userTopics: userTopics,
                     topicLists: topicLists,
                     topicMetadata: topicMetadata
                   };
-                  console.log("[App.js] Data being pushed to Knack:", currentSaveData);
+                  console.log("[App.js] Data being pushed to Knack:", /* Consider logging keys/counts */);
                   saveData(currentSaveData, true); // preserveFields = true
                 }, 2000);
               }
@@ -1940,18 +1964,21 @@ useEffect(() => {
               if (useKnackData) {
                 console.log(`[App.js] Knack data (ts: ${knackRecordTimestampString}) is newer or similar to local (ts: ${localDataTimestampStringFromRef}). Using Knack data to update state.`);
                 try {
-                  if (knackUserDataBlob.cards && Array.isArray(knackUserDataBlob.cards)) {
-                    const restoredCards = restoreMultipleChoiceOptions(knackUserDataBlob.cards);
-                    setAllCards(restoredCards);
-                    updateSpacedRepetitionData(restoredCards); // Ensure SR data is derived from these cards
-                    console.log("[App.js] Updated allCards and SR data from Knack.");
-                  } else {
-                     console.warn("[User Info] Knack userData.cards is missing or not an array.");
-                  }
+                  const rawCardsFromKnack = knackUserDataBlob.cards && Array.isArray(knackUserDataBlob.cards) ? knackUserDataBlob.cards : [];
+                  const initialRestoredCards = restoreMultipleChoiceOptions(rawCardsFromKnack);
                   
-                  const newColorMapping = ensureValidColorMapping(knackUserDataBlob.colorMapping || {});
-                  setSubjectColorMapping(newColorMapping);
-                  console.log("[App.js] Updated subjectColorMapping from Knack:", newColorMapping);
+                  const initialColorMappingFromKnack = ensureValidColorMapping(knackUserDataBlob.colorMapping || {});
+                  
+                  // --- Reconciliation Point ---
+                  const reconciledCardsFromKnack = reconcileCardColors(initialRestoredCards, initialColorMappingFromKnack);
+                  console.log("[App.js] Cards reconciled with Knack color mapping upon load.");
+                  // --- End Reconciliation ---
+
+                  setAllCards(reconciledCardsFromKnack); // <--- Use reconciled cards
+                  updateSpacedRepetitionData(reconciledCardsFromKnack); // Use reconciled for SR data too
+                  console.log("[App.js] Updated allCards and SR data from Knack (reconciled).");
+                  
+                  setSubjectColorMapping(initialColorMappingFromKnack); // Set the mapping
                   
                   if (knackUserDataBlob.spacedRepetition) {
                     setSpacedRepetitionData(knackUserDataBlob.spacedRepetition);
@@ -1979,6 +2006,9 @@ useEffect(() => {
                 }
               } else {
                 console.log("[App.js] Retained local state for cards, SR, and colors. Other Knack data (profile, etc.) already set via authDataFromKnack.");
+                // Even if using local data primarily, ensure it's reconciled with its own mapping
+                setAllCards(prev => reconcileCardColors(prev, subjectColorMapping));
+                console.log("[App.js] Ensured local allCards state is reconciled with local subjectColorMapping.");
               }
             } else {
               // If no userData blob from Knack, it implies this might be the first load for the user in Knack
@@ -2739,24 +2769,30 @@ const handleSaveTopicShells = useCallback(async (generatedShells) => {
   console.log(`[App handleSaveTopicShells] Final topic lists count for save: ${newTopicListsState.length}`);
 
   try {
+    // --- Reconciliation Point ---
+    const reconciledCardsForSave = reconcileCardColors(newAllCardsState, workingColorMapping);
+    console.log("[App handleSaveTopicShells] Cards reconciled before saving.");
+    // --- End Reconciliation ---
+
     // Update React state first IF the color mapping was indeed changed for a new subject
     if (colorMappingWasUpdated) {
         setSubjectColorMapping(workingColorMapping); 
     }
     // Always update allCards and topicLists as they are definitely changing
-    setAllCards(newAllCardsState);
+    setAllCards(reconciledCardsForSave); // Use reconciled cards for state
     setTopicLists(newTopicListsState);
 
     // Use a short timeout to allow React state updates to process before constructing save payload
     // This is a common pattern to ensure `saveData` (if it relies on component state) gets fresher values.
     setTimeout(async () => {
-        const currentCardsForSave = newAllCardsState; // Use the just constructed one
-        const currentTopicListsForSave = newTopicListsState; // Use the just constructed one
-        const currentColorMappingForSave = workingColorMapping; // Use the one we potentially updated
+        // For `saveData`, use the reconciled states we just set or prepared.
+        const currentCardsForSave = reconciledCardsForSave; // Directly use the reconciled version
+        const currentTopicListsForSave = newTopicListsState; 
+        const currentColorMappingForSave = workingColorMapping; 
 
         const savePayload = {
           recordId: theRecordId,
-          cards: currentCardsForSave,
+          cards: currentCardsForSave, // Pass reconciled cards
           colorMapping: currentColorMappingForSave, 
           spacedRepetition: spacedRepetitionData, 
           userTopics: userTopics, 
