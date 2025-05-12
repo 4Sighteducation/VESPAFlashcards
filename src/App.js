@@ -854,97 +854,115 @@ function App() {
     return brightColors[Math.floor(Math.random() * brightColors.length)];
   }, []);
 
-  // Update color mappings - enhanced to ensure immediate color application
   const updateColorMapping = useCallback(
-    (subject, topic, color, applyToTopics = false) => {
-      if (!subject) return;
+  (subject, topic, color, applyToTopics = false) => {
+    if (!subject) return;
 
-      const colorToUse = color || getRandomColor();
-      console.log(`Updating color for subject: ${subject}, topic: ${topic || "none"}, color: ${colorToUse}, applyToTopics: ${applyToTopics}`);
+    const colorToUse = color || getRandomColor();
+    console.log(`[App updateColorMapping] For subject: ${subject}, topic: ${topic || "none"}, color: ${colorToUse}, applyToTopics: ${applyToTopics}`);
 
-      let capturedNewMapping; // Variable to capture the new mapping
+    let finalColorMapping;
+    let finalAllCards;
 
-      setSubjectColorMapping((prevMapping) => {
-        const newMapping = JSON.parse(JSON.stringify(prevMapping || {}));
-        
-        if (!newMapping[subject]) {
-          newMapping[subject] = { base: colorToUse, topics: {} };
-        } else if (typeof newMapping[subject] === 'string') {
-          const baseColor = newMapping[subject];
-          newMapping[subject] = { base: baseColor, topics: {} };
-        } else if (!newMapping[subject].topics) {
-          newMapping[subject].topics = {};
-        }
-
-        if (!topic || applyToTopics) {
-          newMapping[subject].base = colorToUse;
-          if (applyToTopics) {
-            const topicsForSubject = [...new Set(
-              allCards
-                .filter(card => (card.subject || "General") === subject)
-                .map(card => card.topic || "General")
-                .filter(Boolean)
-            )];
-            topicsForSubject.forEach((topicName, index) => {
-              if (topicName !== "General") {
-                const shade = generateShade(colorToUse, index, topicsForSubject.length);
-                newMapping[subject].topics[topicName] = shade;
-              }
-            });
-          }
-        } else if (topic) {
-          newMapping[subject].topics[topic] = colorToUse;
-        }
-        
-        capturedNewMapping = newMapping; // Capture the new mapping
-        return newMapping;
-      });
+    // Update subjectColorMapping state
+    setSubjectColorMapping((prevMapping) => {
+      const newMapping = JSON.parse(JSON.stringify(ensureValidColorMapping(prevMapping || {})));
       
-      if (topic || applyToTopics) {
-        setAllCards(prevCards => 
-          prevCards.map(card => {
-            if (card.subject === subject) {
-              // Use capturedNewMapping to get the latest topic color, or fallback to colorToUse
-              const baseForTopicLookup = capturedNewMapping?.[subject]?.base || colorToUse;
-              let finalTopicColor = colorToUse; // Default if specific topic color not found
-
-              if (!topic && applyToTopics) { // Subject level change, applying to all topics
-                finalTopicColor = card.topic && card.topic !== "General" 
-                  ? capturedNewMapping?.[subject]?.topics?.[card.topic] || baseForTopicLookup
-                  : baseForTopicLookup;
-              } else if (topic && card.topic === topic) { // Specific topic change
-                finalTopicColor = capturedNewMapping?.[subject]?.topics?.[topic] || colorToUse;
-              } else if (card.topic && capturedNewMapping?.[subject]?.topics?.[card.topic]) {
-                // If not the specific topic being changed, but it exists in mapping, use its color
-                finalTopicColor = capturedNewMapping[subject].topics[card.topic];
-              } else {
-                // Fallback to base subject color if no specific topic color
-                finalTopicColor = baseForTopicLookup;
-              }
-              return { ...card, topicColor: finalTopicColor };
-            }
-            return card;
-          })
-        );
+      if (!newMapping[subject]) {
+        newMapping[subject] = { base: colorToUse, topics: {} };
+      } else if (typeof newMapping[subject] === 'string') {
+        newMapping[subject] = { base: newMapping[subject], topics: {} }; // Preserve old string as base if converting
       }
       
-      setTimeout(() => saveToLocalStorage(), 100);
+      if (!newMapping[subject].topics) { // Ensure topics object exists
+        newMapping[subject].topics = {};
+      }
+
+      if (!topic || applyToTopics) { // Subject-level or apply-to-all-topics update
+        newMapping[subject].base = colorToUse;
+        console.log(`[App updateColorMapping] Set base color for ${subject} to ${colorToUse}`);
+        if (applyToTopics) {
+          const topicsForSubject = [...new Set(
+            allCards
+              .filter(card => (card.subject || "General") === subject && card.topic && card.topic !== "General")
+              .map(card => card.topic)
+          )];
+          topicsForSubject.forEach((topicName, index) => {
+            const shade = generateShade(colorToUse, index, topicsForSubject.length);
+            newMapping[subject].topics[topicName] = shade;
+            console.log(`[App updateColorMapping] Applied shade ${shade} to topic ${topicName} under ${subject}`);
+          });
+        }
+      } else if (topic) { // Specific topic-level update
+        newMapping[subject].topics[topic] = colorToUse;
+        console.log(`[App updateColorMapping] Set color for topic ${topic} under ${subject} to ${colorToUse}`);
+      }
       
-      // Pass the capturedNewMapping to saveData
-      setTimeout(() => {
-        console.log("[updateColorMapping] Calling saveData with explicitly passed colorMapping:", capturedNewMapping);
-        saveData({
-          cards: allCards, // Pass current allCards state
-          colorMapping: capturedNewMapping, // Pass the new color mapping
-          spacedRepetition: spacedRepetitionData, // Pass current SR state
-          userTopics: userTopics,
-          topicLists: topicLists,
-          topicMetadata: topicMetadata
-        }, true); // preserveFields = true
-      }, 1000);
-    },
-    [generateShade, getRandomColor, saveData, saveToLocalStorage, allCards, spacedRepetitionData, userTopics, topicLists, topicMetadata] // Removed subjectColorMapping from deps as we use capturedNewMapping
-  );
+      finalColorMapping = newMapping; // Capture for use outside
+      return newMapping;
+    });
+
+    // Update allCards state based on the new color mapping
+    setAllCards(prevCards => {
+      const updatedCards = prevCards.map(card => {
+        if ((card.subject || "General") === subject) {
+          const newCardColors = { ...card };
+          const subjectMapData = finalColorMapping?.[subject];
+
+          if (subjectMapData) {
+            newCardColors.subjectColor = subjectMapData.base; // Always update subjectColor
+
+            if (applyToTopics && card.topic && card.topic !== "General") {
+              newCardColors.topicColor = subjectMapData.topics?.[card.topic] || subjectMapData.base;
+              newCardColors.cardColor = newCardColors.topicColor; // cardColor often mirrors topicColor
+            } else if (topic && card.topic === topic) {
+              newCardColors.topicColor = subjectMapData.topics?.[topic] || subjectMapData.base;
+              newCardColors.cardColor = newCardColors.topicColor;
+            } else if (card.topic && subjectMapData.topics?.[card.topic]) {
+              // If not the specific topic being changed, but it exists in mapping, use its color
+              newCardColors.topicColor = subjectMapData.topics[card.topic];
+              newCardColors.cardColor = newCardColors.topicColor;
+            } else {
+              // Fallback to base subject color if no specific topic color or not applying to topics
+              newCardColors.topicColor = subjectMapData.base;
+              newCardColors.cardColor = subjectMapData.base;
+            }
+            if(JSON.stringify(newCardColors) !== JSON.stringify(card)) {
+               console.log(`[App updateColorMapping] Updating card ${card.id} colors: subjectColor=${newCardColors.subjectColor}, topicColor=${newCardColors.topicColor}`);
+            }
+            return newCardColors;
+          }
+        }
+        return card;
+      });
+      finalAllCards = updatedCards; // Capture for use outside
+      return updatedCards;
+    });
+    
+    // Save to localStorage and then to Knack
+    setTimeout(() => {
+        // Use the captured states for saving to ensure consistency
+        console.log("[updateColorMapping] Attempting immediate saveToLocalStorage.");
+        // To make saveToLocalStorage use the freshest data, we'd ideally pass it as params.
+        // For now, we rely on the fact that the state updates above will eventually reflect.
+        saveToLocalStorage(); 
+    }, 100); 
+    
+    setTimeout(() => {
+      console.log("[updateColorMapping] Calling saveData with explicitly passed colorMapping and allCards.");
+      saveData({
+        cards: finalAllCards || allCards, // Use captured if available, else current state
+        colorMapping: finalColorMapping || subjectColorMapping, // Use captured if available
+        spacedRepetition: spacedRepetitionData,
+        userTopics: userTopics,
+        topicLists: topicLists,
+        topicMetadata: topicMetadata
+      }, true); // preserveFields = true
+    }, 1000); 
+  },
+  [allCards, generateShade, getRandomColor, saveData, saveToLocalStorage, spacedRepetitionData, userTopics, topicLists, topicMetadata, subjectColorMapping] // Added subjectColorMapping back as it's read for initial prevMapping
+);
+
 
   // Function to refresh subject and topic colors
   // Removed unused refreshSubjectAndTopicColors useCallback
@@ -2603,7 +2621,6 @@ useEffect(() => {
   }, [isKnack, recordId]);
 
 // Fixed function to handle saving topic shells generated by TopicCreationModal
-// This improved version ensures subjects don't overwrite each other
 const handleSaveTopicShells = useCallback(async (generatedShells) => {
   if (!Array.isArray(generatedShells) || generatedShells.length === 0) {
     console.warn("[App] handleSaveTopicShells called with no shells.");
@@ -2615,7 +2632,6 @@ const handleSaveTopicShells = useCallback(async (generatedShells) => {
   setIsSaving(true);
   showStatus("Saving topic list...");
 
-  // 1. Ensure we have a record ID
   const theRecordId = await ensureRecordId();
   if (!theRecordId) {
     console.error("[App] Cannot save topic shells: Missing record ID.");
@@ -2624,43 +2640,62 @@ const handleSaveTopicShells = useCallback(async (generatedShells) => {
     return;
   }
 
-  // CRITICAL FIX: Extract the subject from the first shell to use consistently
   const subjectToUse = generatedShells[0]?.subject || "General";
   console.log("[App] Processing shells for subject:", subjectToUse);
 
-  // 2. Process shells and assign colors - with unique ID generation
   const timestamp = Date.now();
-  const uniqueRandom = Math.random().toString(36).substring(2, 7); // Common random string for all shells in this batch
-  const processedShells = generatedShells.map((shell, index) => {
-    // Ensure all shells have the same subject - critical for consistency
-    const subject = subjectToUse;
-    let subjectColor = subjectColorMapping[subject]?.base;
+  const uniqueRandom = Math.random().toString(36).substring(2, 7);
+
+  // --- Start of new color handling logic for handleSaveTopicShells ---
+  let workingColorMapping = JSON.parse(JSON.stringify(ensureValidColorMapping(subjectColorMapping)));
+  let baseSubjectColorForNewShells = workingColorMapping[subjectToUse]?.base;
+  let colorMappingWasUpdated = false;
+
+  if (!baseSubjectColorForNewShells || baseSubjectColorForNewShells === '#f0f0f0') { // Also assign if it's the default grey
+    const existingSubjectKeys = Object.keys(workingColorMapping);
+    const newSubjectIndex = existingSubjectKeys.length;
+    baseSubjectColorForNewShells = BRIGHT_COLORS[newSubjectIndex % BRIGHT_COLORS.length];
     
-    // If no color exists for this subject, assign one by cycling through the palette
-    if (!subjectColor) {
-      const existingSubjectKeys = Object.keys(subjectColorMapping);
-      const newSubjectIndex = existingSubjectKeys.length; // This will be 0 for the first subject, 1 for the second, etc.
-      subjectColor = BRIGHT_COLORS[newSubjectIndex % BRIGHT_COLORS.length];
-      console.log(`[handleSaveTopicShells] Assigning new subject color for '${subject}': ${subjectColor} (index ${newSubjectIndex})`);
-      updateColorMapping(subject, null, subjectColor, true); // true to apply to topics as well
+    if (!workingColorMapping[subjectToUse]) {
+      workingColorMapping[subjectToUse] = { base: baseSubjectColorForNewShells, topics: {} };
+    } else {
+      workingColorMapping[subjectToUse].base = baseSubjectColorForNewShells;
+    }
+    console.log(`[handleSaveTopicShells] Assigned/Updated base color for subject '${subjectToUse}': ${baseSubjectColorForNewShells}`);
+    colorMappingWasUpdated = true;
+  }
+  // --- End of new color handling logic ---
+
+  const processedShells = generatedShells.map((shell, index) => {
+    const subject = subjectToUse;
+    const topicName = shell.name || shell.topic || "Unknown Topic";
+
+    if (!workingColorMapping[subject]) {
+        workingColorMapping[subject] = { base: baseSubjectColorForNewShells, topics: {} };
+    }
+    if (!workingColorMapping[subject].topics) {
+        workingColorMapping[subject].topics = {};
     }
 
-    // Generate a topic color based on the subject color
-    const topicColor = generateShade(subjectColor, index % 5, 5);
-
-    // Generate a truly unique ID with a consistent format
-    // The key fix here is using a different ID format that won't collide with other subjects
+    let topicColor = workingColorMapping[subject].topics[topicName];
+    if (!topicColor) {
+        topicColor = generateShade(baseSubjectColorForNewShells, index % 5, 5);
+        workingColorMapping[subject].topics[topicName] = topicColor;
+        colorMappingWasUpdated = true; 
+    }
+    
     const uniqueId = `topic_${subject.replace(/\s+/g, '_')}_${timestamp}_${uniqueRandom}_${index}`;
 
     return {
       ...shell,
-      id: uniqueId, // Override any existing ID to ensure consistency
-      subject: subject, // Ensure subject is set correctly and consistently
+      id: uniqueId,
+      subject: subject,
       type: 'topic',
       isShell: true,
-      isEmpty: true, // Explicitly mark as empty
-      color: topicColor,
-      subjectColor: subjectColor,
+      isEmpty: true,
+      cardColor: topicColor, 
+      subjectColor: baseSubjectColorForNewShells, 
+      topicColor: topicColor, 
       metadata: {
         examType: shell.examType || "General",
         examBoard: shell.examBoard || "General",
@@ -2670,114 +2705,86 @@ const handleSaveTopicShells = useCallback(async (generatedShells) => {
     };
   });
 
-  // 3. Update allCards with the new shells - with improved merging logic
-  setAllCards(prevCards => {
-    // Get all existing cards that belong to OTHER subjects - critical fix
-    const otherSubjectCards = prevCards.filter(card => 
-      (card.subject || "General") !== subjectToUse
-    );
-    
-    // Get existing cards for THIS subject that are NOT topic shells
-    const thisSubjectNonShellCards = prevCards.filter(card => 
-      (card.subject || "General") === subjectToUse && 
-      (card.type !== 'topic' || !card.isShell)
-    );
-    
-    // Combine other subject cards, this subject's non-shell cards, and the new shells
-    const mergedCards = [...otherSubjectCards, ...thisSubjectNonShellCards, ...processedShells];
-    
-    console.log(`[App] New merged card counts:
-      - Other subjects: ${otherSubjectCards.length}
-      - This subject (non-shells): ${thisSubjectNonShellCards.length}
-      - New shells: ${processedShells.length}
-      - Total: ${mergedCards.length}`);
-    
-    return mergedCards;
-  });
+  const newAllCardsState = (() => {
+    const otherSubjectCards = allCards.filter(card => (card.subject || "General") !== subjectToUse);
+    const thisSubjectNonShellCards = allCards.filter(card => (card.subject || "General") === subjectToUse && (card.type !== 'topic' || !card.isShell));
+    return [...otherSubjectCards, ...thisSubjectNonShellCards, ...processedShells];
+  })();
+  
+  console.log(`[App handleSaveTopicShells] New merged card counts for save: ${newAllCardsState.length}`);
 
-  // 4. Prepare topic list for the NEW subject only
-    // Create a topic list for this subject from the shells
-    const newTopicListForThisSubject = {
-      subject: subjectToUse,
-      topics: processedShells.map(shell => ({
-        id: shell.id,
-        name: shell.name,
-        examBoard: shell.examType || shell.metadata?.examBoard || '',
-        examType: shell.examType || shell.metadata?.examType || '',
-        color: shell.color,
-        subjectColor: shell.subjectColor
-      })),
-      // Use the determined subjectColor for the topic list itself
-      color: subjectColorMapping[subjectToUse]?.base || BRIGHT_COLORS[Object.keys(subjectColorMapping).length % BRIGHT_COLORS.length]
-    };
-  
-    // Merge with existing topic lists WITHOUT modifying other subjects
-  const existingTopicLists = [...topicLists];
-  const existingListIndex = existingTopicLists.findIndex(list => 
-    list.subject === subjectToUse
-  );
-  
-  let mergedTopicLists;
-  
-  if (existingListIndex >= 0) {
-    // Replace the existing topic list for this subject
-    console.log(`[App] Replacing existing topic list for subject: ${subjectToUse}`);
-    mergedTopicLists = [...existingTopicLists];
-    mergedTopicLists[existingListIndex] = newTopicListForThisSubject;
-  } else {
-    // Add a new topic list for this subject while preserving all others
-    console.log(`[App] Adding new topic list for subject: ${subjectToUse}`);
-    mergedTopicLists = [...existingTopicLists, newTopicListForThisSubject];
-  }
-  
-  // Update topic lists state immediately
-  setTopicLists(mergedTopicLists);
-  
-  console.log(`[App] Final topic lists count: ${mergedTopicLists.length}`);
+  const newTopicListForThisSubject = {
+    subject: subjectToUse,
+    topics: processedShells.map(shell => ({
+      id: shell.id,
+      name: shell.name,
+      examBoard: shell.metadata?.examBoard || '',
+      examType: shell.metadata?.examType || '',
+      color: shell.topicColor,
+      subjectColor: shell.subjectColor
+    })),
+    color: baseSubjectColorForNewShells 
+  };
 
-  // 5. Save to Knack with complete payload
+  const newTopicListsState = (() => {
+    const existingTopicListsCopy = [...topicLists];
+    const existingListIndex = existingTopicListsCopy.findIndex(list => list.subject === subjectToUse);
+    if (existingListIndex >= 0) {
+      existingTopicListsCopy[existingListIndex] = newTopicListForThisSubject;
+      return existingTopicListsCopy;
+    } else {
+      return [...existingTopicListsCopy, newTopicListForThisSubject];
+    }
+  })();
+  console.log(`[App handleSaveTopicShells] Final topic lists count for save: ${newTopicListsState.length}`);
+
   try {
-    // First save the topic lists
-    console.log("[App] Saving topic lists via queue");
-    await saveQueueService.addToQueue({
-      type: 'TOPIC_LISTS_UPDATED',
-      payload: {
-        recordId: theRecordId,
-        topicLists: mergedTopicLists
-      }
-    });
+    // Update React state first IF the color mapping was indeed changed for a new subject
+    if (colorMappingWasUpdated) {
+        setSubjectColorMapping(workingColorMapping); 
+    }
+    // Always update allCards and topicLists as they are definitely changing
+    setAllCards(newAllCardsState);
+    setTopicLists(newTopicListsState);
 
-    // 6. Now save the complete state with cards, using preserveFields=true to prevent data loss
-    console.log("[App] Triggering full save with updated data");
-    
-    // Get the current state of all cards after our update
-    const currentCards = [...allCards];
-    
-    // Create a complete payload for saving
-    const savePayload = {
-      recordId: theRecordId,
-      cards: currentCards,
-      colorMapping: subjectColorMapping,
-      spacedRepetition: spacedRepetitionData,
-      userTopics: userTopics,
-      topicLists: mergedTopicLists,
-      topicMetadata: topicMetadata,
-      preserveFields: true // Critical to prevent data loss
-    };
-    
-    // Use saveData but pass true for preserveFields
-    await saveData(savePayload, true);
-    
-    console.log("[App] Save operations completed successfully");
-    setIsSaving(false);
-    showStatus("Topic list saved successfully!");
+    // Use a short timeout to allow React state updates to process before constructing save payload
+    // This is a common pattern to ensure `saveData` (if it relies on component state) gets fresher values.
+    setTimeout(async () => {
+        const currentCardsForSave = newAllCardsState; // Use the just constructed one
+        const currentTopicListsForSave = newTopicListsState; // Use the just constructed one
+        const currentColorMappingForSave = workingColorMapping; // Use the one we potentially updated
+
+        const savePayload = {
+          recordId: theRecordId,
+          cards: currentCardsForSave,
+          colorMapping: currentColorMappingForSave, 
+          spacedRepetition: spacedRepetitionData, 
+          userTopics: userTopics, 
+          topicLists: currentTopicListsForSave,
+          topicMetadata: topicMetadata, 
+          preserveFields: true 
+        };
+        
+        console.log("[App handleSaveTopicShells] Calling saveData with payload:", JSON.stringify(savePayload, null, 2));
+        await saveData(savePayload, true); 
+        
+        console.log("[App] Save operations completed successfully for topic shells.");
+        showStatus("Topic list saved successfully!");
+    }, 100); // Small delay
     
   } catch (error) {
     console.error("[App] Error saving topic data:", error);
-    setIsSaving(false);
     showStatus("Error saving topic list: " + error.message);
+  } finally {
+    setIsSaving(false);
   }
-}, [ensureRecordId, showStatus, setIsSaving, subjectColorMapping, getRandomColor, generateShade, updateColorMapping, saveData, topicLists, setTopicLists]);
+}, [
+    ensureRecordId, showStatus, setIsSaving, subjectColorMapping, 
+    getRandomColor, generateShade, saveData, topicLists, setTopicLists, 
+    allCards, setAllCards, setSubjectColorMapping, 
+    spacedRepetitionData, userTopics, topicMetadata, BRIGHT_COLORS // Added BRIGHT_COLORS
+]);
+
 
 // --- Filtered Cards Logic ---
 const filteredCards = useMemo(() => {

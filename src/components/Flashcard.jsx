@@ -264,15 +264,17 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
       const b = parseInt(cardColor.slice(5, 7), 16) || 0;
       const brightness = (r * 299 + g * 587 + b * 114) / 1000;
       
-      const textColor = brightness > 125 ? '#000000' : '#ffffff';
-      
-      // Update the style element with scoped CSS variables
-      styleEl.textContent = `
-        .flashcard-${card.id} {
-          --card-bg-color: ${cardColor};
-          --card-text-color: ${textColor};
-        }
-      `;
+      const effectiveCardColor = getCardColor(); // Use the result of getCardColor()
+const effectiveTextColor = getContrastColor(effectiveCardColor); // Recalculate for the CSS var based on effectiveCardColor
+
+// Update the style element with scoped CSS variables
+styleEl.textContent = `
+  .flashcard-${card.id || 'dynamic'} { /* Add fallback for card.id if it can be null */
+    --card-bg-color: ${effectiveCardColor};
+    --card-text-color: ${effectiveTextColor};
+  }
+`;
+
       
       // Add a cleanup function to remove the style element
       return () => {
@@ -283,7 +285,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
     } catch (error) {
       console.error('Error setting card CSS variables:', error);
     }
-  }, [card && card.cardColor, card && card.id]);
+  }, [card?.cardColor, card?.topicColor, card?.subjectColor, card?.id]
+);
   
   // Toggle fullscreen mode
   const toggleFullscreen = (e) => {
@@ -365,7 +368,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
     return (
       <div className="flashcard-front flashcard-flip-area" style={{ 
         color: textColor,
-        backgroundColor: card.cardColor || '#3cb44b',
+        backgroundColor: cardStyle.backgroundColor,
         padding: '15px',
         display: 'flex',
         flexDirection: 'column',

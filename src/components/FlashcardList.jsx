@@ -8,7 +8,8 @@ import TopicCreationModal from "./TopicCreationModal";
 import { deleteSubject, deleteTopic } from "./FlashcardTopicHandler";
 import FlashcardGeneratorBridge from './FlashcardGeneratorBridge';
 import ErrorBoundary from './ErrorBoundary';
-import { BRIGHT_COLORS, getContrastColor, generateShade } from '../utils/ColorUtils';
+import { BRIGHT_COLORS, getContrastColor, generateShade, ensureValidColorMapping } from '../utils/ColorUtils';
+
 
 // ScrollManager component - Now handles subjects AND topics
 const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRefs }) => {
@@ -250,7 +251,9 @@ const FlashcardList = ({
   const [slideshowTitle, setSlideshowTitle] = useState("");
   const [showSlideshow, setShowSlideshow] = useState(false);
   const [groupedCards, setGroupedCards] = useState({});
-  const [subjectColorMapping, setSubjectColorMapping] = useState({});
+  const [subjectColorMapping, setSubjectColorMapping] = useState(() => ensureValidColorMapping(subjectColorMappingFromProps || {}));
+
+
   // Add new state for delete confirmation
   const [deleteConfirmState, setDeleteConfirmState] = useState({
     isOpen: false,
@@ -325,6 +328,12 @@ const FlashcardList = ({
     }
   }, [userId, localUserId]);
 
+useEffect(() => {
+  console.log("[FlashcardList] subjectColorMappingFromProps updated in prop, syncing local state:", subjectColorMappingFromProps);
+  setSubjectColorMapping(ensureValidColorMapping(subjectColorMappingFromProps || {}));
+}, [subjectColorMappingFromProps]);
+
+  
   // 3. useCallback Hooks for State Updates & Grouping
   const updateColorMapping = useCallback((newMapping) => {
     setSubjectColorMapping(prev => {
@@ -576,83 +585,27 @@ const FlashcardList = ({
   }, [cards, regroupCards, subjectColorMapping, updateColorMapping]);
 
   // Update this useEffect to use the state and update function
-  useEffect(() => {
-      console.log("[FlashcardList] Cards prop updated:", cards);
-      if (cards && cards.length > 0) {
-          // --- 1. Regroup Cards ---
-          const newGroupedCards = regroupCards(cards);
-          console.log("[FlashcardList] Regrouped cards:", newGroupedCards);
-          setGroupedCards(newGroupedCards);
+ useEffect(() => {
+    console.log("[FlashcardList] Cards prop updated:", cards);
+    if (cards && cards.length > 0) {
+        // --- 1. Regroup Cards ---
+        const newGroupedCards = regroupCards(cards);
+        console.log("[FlashcardList] Regrouped cards:", newGroupedCards);
+        setGroupedCards(newGroupedCards);
 
-          // --- 2. Update Color Mapping ---
-          const subjects = Object.keys(newGroupedCards);
-          let needsColorUpdate = false;
-          const newColorMappingEntries = {};
+        // --- 2. Update Color Mapping --- // THIS SECTION IS NOW GONE
 
-          setSubjectColorMapping(currentMapping => {
-              const updatedMapping = { ...currentMapping }; // Start with current mapping
+        // --- 3. Expand First Subject (Optional) ---
+        // const subjects = Object.keys(newGroupedCards); // You'd need this if re-enabling below
+        // if (subjects.length > 0 && expandedSubjects.size === 0) {
+        //     // setExpandedSubjects(new Set([subjects[0]])); 
+        // }
 
-              subjects.forEach(subject => {
-                  if (!updatedMapping[subject]) {
-                      // Assign a new random base color for a new subject
-                      const randomColor = BRIGHT_COLORS[Math.floor(Math.random() * BRIGHT_COLORS.length)];
-                      console.log(`[FlashcardList Color Init] Assigning new color ${randomColor} to subject: ${subject}`);
-                      updatedMapping[subject] = {
-                          base: randomColor,
-                          topics: {} // Initialize empty topics object
-                      };
-                      needsColorUpdate = true;
-                      newColorMappingEntries[subject] = updatedMapping[subject]; // Track newly added
-                  }
+    } else {
+        setGroupedCards({});
+    }
+}, [cards, regroupCards, expandedSubjects.size]); // REMOVED subjectColorMapping and updateColorMapping from dependencies here
 
-                  // Ensure topics object exists
-                  if (!updatedMapping[subject].topics) {
-                      updatedMapping[subject].topics = {};
-                  }
-
-                  // Assign colors to topics within this subject if they don't have one
-                  const subjectBaseColor = updatedMapping[subject].base;
-                  const topicsInSubject = Object.keys(newGroupedCards[subject] || {});
-                  topicsInSubject.forEach((topic, index) => {
-                      if (!updatedMapping[subject].topics[topic]) {
-                           // Generate a shade based on the subject's base color
-                           // Use index to vary the shade slightly, avoid pure black/white shades initially
-                          const shadePercent = -10 + (index % 5) * 5; // e.g., -10%, -5%, 0%, 5%, 10%
-                          const topicShade = generateShade(subjectBaseColor, shadePercent);
-                           console.log(`[FlashcardList Color Init] Assigning shade ${topicShade} to topic: ${subject} -> ${topic}`);
-                          updatedMapping[subject].topics[topic] = { base: topicShade };
-                          needsColorUpdate = true;
-                          // No need to track topic colors separately for onUpdateSubjectColor prop for now
-                      }
-                  });
-              });
-
-              // If updates happened, trigger the state update
-              if (needsColorUpdate) {
-                   console.log("[FlashcardList Color Init] Updating color mapping state:", updatedMapping);
-                   // If using a prop to notify parent, call it here with only the *new* entries
-                   // if (Object.keys(newColorMappingEntries).length > 0) {
-                   //    onUpdateSubjectColor?.(newColorMappingEntries);
-                   // }
-                  return updatedMapping;
-              }
-              return currentMapping; // No changes needed
-          });
-
-          // --- 3. Expand First Subject (Optional) ---
-          if (subjects.length > 0 && expandedSubjects.size === 0) {
-              // Expand only if no subjects are currently expanded
-              // setExpandedSubjects(new Set([subjects[0]])); // Expand the first subject based on grouped data
-          }
-
-      } else {
-          // Handle case where cards become empty
-          setGroupedCards({});
-          // Maybe clear colors? Or keep them? Keeping them for now.
-          // setSubjectColorMapping({});
-      }
-      // Dependencies: cards array itself, regroup function, and the updateColorMapping function
-  }, [cards, regroupCards, updateColorMapping, expandedSubjects.size, subjectColorMapping]);
 
   // --- Modify handleAddGeneratedCards ---
   const handleAddGeneratedCards = useCallback((generatedCards) => {
@@ -1058,9 +1011,10 @@ const FlashcardList = ({
         onClick={handleSlideshowTopicClick} // Open slideshow on click of entire topic
       >
         <div
-          className={`topic-header ${displayCount === 0 ? 'empty-shell' : ''}`}
-          style={{ backgroundColor: topicColor, color: textColor }}
-        >
+  className={`topic-header ${displayCount === 0 ? 'empty-shell' : ''}`}
+style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
+>
+
           <div className="topic-info">
             <h3>{topic}</h3>
             <div className="topic-meta">
@@ -1129,10 +1083,20 @@ const FlashcardList = ({
     return (
       <div className="topics-container">
         {topicNames.map((topic, index) => {
-          const topicItems = topicsData[topic];
-          const topicBaseColor = subjectColorMapping[subject]?.topics[topic]?.base || generateShade(subjectColor, -10 + (index % 5) * 5);
+          
+    const topicShellOrFirstCard = validItems.find(item => item.type === 'topic' && item.isShell) || validItems[0];
+    let topicDisplayColor = topicShellOrFirstCard?.topicColor || // Prioritize topicColor from the item
+                           topicShellOrFirstCard?.cardColor ||   // Then cardColor from the item
+                           (subjectColorMapping[subject]?.topics?.[topic]) || // Then from subjectColorMapping (direct color string)
+                           subjectColor; // Fallback to the subject's base color (subjectColor is subjectBaseColor passed to renderTopics)
+    
+    // Ensure topicDisplayColor is a valid hex or HSL, otherwise default
+    if (!topicDisplayColor || (typeof topicDisplayColor === 'string' && !topicDisplayColor.startsWith('#') && !topicDisplayColor.toLowerCase().startsWith('hsl'))) {
+        console.warn(`[FlashcardList renderTopic] Invalid topicDisplayColor for ${subject} - ${topic}: '${topicDisplayColor}'. Defaulting to subject color '${subjectColor}'.`);
+        topicDisplayColor = subjectColor; 
+    }const topicItems = topicsData[topic];
           return (
-            renderTopic(subject, topic, topicItems, topicBaseColor)
+            renderTopic(subject, topic, topicItems, topicDisplayColor)
           );
         })}
       </div>
