@@ -189,6 +189,18 @@
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
+/* When a topic's menu is active, increase its z-index */
+.topic-container.topic-menu-active {
+  z-index: 10; /* Higher than sibling topic-containers */
+  /* overflow: visible; is set by JS */
+}
+
+/* When a subject's menu is active, ensure its z-index is high too */
+.subject-container.subject-menu-active {
+  z-index: 5; /* Higher than other subject-containers, but lower than an active topic menu */
+  /* overflow: visible; is set by JS */
+}
+
 /* Topic header styling - Match exact UI from screenshot */
 .topic-header {
   padding: 12px 15px;
@@ -2063,8 +2075,8 @@ html {
     width: 100% !important;
     justify-content: flex-start !important; 
     padding: 8px 10px !important; 
-    background-color: white !important; /* Default background for items in menu */
-    color: #333 !important; 
+    background-color: white !important; /* Solid white background */
+    color: #333 !important; /* Dark text for all items */
     border: none !important;
     box-shadow: none !important;
     height: auto !important;
@@ -2074,7 +2086,7 @@ html {
   
   .topic-actions-menu.active .nav-button:hover,
   .subject-actions-menu.active .nav-button:hover {
-    background-color: #f0f0f0 !important;
+    background-color: #f0f0f0 !important; /* Light grey hover */
     color: #000 !important;
     transform: none !important;
   }
@@ -2083,30 +2095,30 @@ html {
   .topic-actions-menu.active .button-text.mobile-only,
   .subject-actions-menu.active .button-text.mobile-only {
     display: inline !important; 
-    color: inherit !important; 
+    color: inherit !important; /* Inherit the #333 from the button */
   }
 
-  /* Ensure icons inside menu buttons are styled */
+  /* Ensure icons inside menu buttons are styled for contrast */
   .topic-actions-menu.active .button-icon,
   .subject-actions-menu.active .button-icon {
      font-size: 1em !important; 
-     color: #555 !important; 
+     color: #555 !important; /* Dark grey for icons */
   }
 
   /* Specific styling for delete buttons in menus */
   .topic-actions-menu.active .delete-topic-button,
   .subject-actions-menu.active .delete-button {
-     color: #d32f2f !important; 
-     background-color: transparent !important;
+     color: #d32f2f !important; /* Red text for delete */
+     background-color: white !important; /* Ensure white background */
      border-bottom: none !important;
   }
   .topic-actions-menu.active .delete-topic-button:hover,
   .subject-actions-menu.active .delete-button:hover {
-     background-color: rgba(211, 47, 47, 0.1) !important;
+     background-color: rgba(211, 47, 47, 0.1) !important; /* Light red hover for delete */
   }
   .topic-actions-menu.active .delete-topic-button .button-icon,
   .subject-actions-menu.active .delete-button .button-icon {
-     color: #d32f2f !important;
+     color: #d32f2f !important; /* Red icon for delete */
   }
 
   /* Ensure topic title wraps AND is visible and uses smaller font */

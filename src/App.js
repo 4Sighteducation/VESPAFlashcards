@@ -3126,28 +3126,32 @@ useEffect(() => {
                   {/* Added header showing total card count */}
                   <div className="bank-content-header">
                     <h2>All Flashcards ({getFilteredCards().length})</h2>
-                    <button 
+                    {/* Save button is now in the Header, so it can be removed from here if desired */}
+                    {/* <button 
                       className="save-icon-button" 
                       onClick={saveData} 
                       disabled={isSaving}
                       title="Save All Changes"
                     >
                       {isSaving ? '⏳' : '💾'}
-                    </button>
+                    </button> */}
                   </div>
                   
-                  {/* Show empty state or card list based on whether there are cards */}
+                  {/* Show empty state or card list based on whether there are cards */}                  
                   {allCards.length === 0 ? (
                     <div className="empty-card-bank">
-                        <h3>No Flashcards Yet</h3>
-                        {/* ** MODIFIED TEXT ** */}
-                        <p>Start by adding your subjects and topic lists.</p>
-                        {/* ** MODIFIED BUTTON ** */}
+                        <h3>Welcome to Your Card Bank! 🧠</h3>
+                        <p className="card-bank-description">
+                          This is your personal flashcard vault! Think of it as a treasure chest for your brain. 
+                          You can store all your subjects, create dazzling topic lists, and generate brilliant flashcards. 
+                          Ready to fill it up with knowledge nuggets?
+                        </p>
+                        <p className="empty-card-prompt">Click below to add your first subject, and let our AI help you conjure up some topics!</p>
                         <button 
-                          className="primary-button" 
-                          onClick={() => setIsTopicCreationModalOpen(true)} // Open the new modal
+                          className="primary-button create-first-subject-btn" 
+                          onClick={() => setIsTopicCreationModalOpen(true)} 
                         >
-                          Create Topic Lists
+                          <span className="button-icon">✨</span> Create My Subjects
                       </button>
                     </div>
                   ) : (

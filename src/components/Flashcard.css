@@ -5,8 +5,8 @@
   perspective: 1000px;
   cursor: pointer;
   border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #dce0e4; /* Slightly more defined border */
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.12); /* Softer, slightly larger shadow */
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   font-family: 'Lato', sans-serif;
   background-color: white;

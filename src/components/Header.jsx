@@ -51,7 +51,7 @@ const Header = ({
   // Determine what view toggle to show based on current view
   const isInCardBank = currentView === "cardBank";
   const isInSpacedRep = currentView === "spacedRepetition";
-  const alternateViewName = isInCardBank ? "Study" : "Cards";
+  const alternateViewName = isInCardBank ? "Study" : "Card Bank";
   const alternateViewIcon = isInCardBank ? "🔄" : "📚";
   const alternateViewAction = isInCardBank 
     ? () => onViewChange("spacedRepetition") 
@@ -112,16 +112,17 @@ const Header = ({
           {alternateViewName}
         </button>
         
-        {/* Only show Create Card, Print, and Logout buttons in Card Bank view */}
+        {/* Only show Print button in Card Bank view. Create and Logout are removed. */}
         {isInCardBank && (
           <>
-            <button
+            {/* Create button is removed from here, assuming onCreateCard is handled elsewhere (e.g. modal) */}
+            {/* <button
               className="nav-button create-card-btn"
               onClick={() => handleNavClick(onCreateCard)}
             >
               <span className="button-icon">➕</span>
               Create
-            </button>
+            </button> */}
             
             <button
               className="nav-button print-button"
@@ -131,13 +132,14 @@ const Header = ({
               Print
             </button>
             
-            <button
+            {/* Logout button is removed */}
+            {/* <button
               className="nav-button logout-button"
               onClick={() => handleNavClick(handleLogout)}
             >
               <span className="button-icon">↪️</span>
               Logout
-            </button>
+            </button> */}
           </>
         )}
         
@@ -153,6 +155,17 @@ const Header = ({
         >
           ☰
         </button>
+        {/* Save button moved here to be on the right, always visible if onSave is provided */}
+        {onSave && (
+          <button 
+            className="save-button" 
+            onClick={() => handleNavClick(onSave)} 
+            disabled={isSaving}
+            title="Save All Changes"
+          >
+            {isSaving ? '⏳ Saving...' : '💾 Save All'}
+          </button>
+        )}
       </div>
     </header>
   );
