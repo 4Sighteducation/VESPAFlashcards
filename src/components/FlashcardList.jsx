@@ -390,65 +390,72 @@ useEffect(() => {
   const toggleTopicMenu = useCallback((topicKey, e) => {
     e.stopPropagation();
     const buttonElement = e.currentTarget;
-    const topicParentContainer = buttonElement.closest('.topic-container');
-    const subjectGrandparentContainer = topicParentContainer?.closest('.subject-container');
+    const topicParentContainer = buttonElement.closest('.topic-container'); // The li/div for the specific topic
     const menuElement = buttonElement.nextElementSibling; // Should be .topic-actions-menu
+    const subjectGrandparentContainer = topicParentContainer?.closest('.subject-container');
+    // Attempt to find the scrollable topics list within the current subject
+    const topicsListContainer = subjectGrandparentContainer?.querySelector('.topics-container');
 
     setOpenTopicMenus(prev => {
       const isCurrentlyOpen = !!prev[topicKey];
       const isOpeningNow = !isCurrentlyOpen;
 
+      // Reset styles for previously open menus and their containers
       Object.keys(prev).forEach(key => {
         if (prev[key] && key !== topicKey) {
-          const previouslyAttachedRef = topicRefs.current[key];
-          if (previouslyAttachedRef) {
-            previouslyAttachedRef.style.overflow = '';
-            previouslyAttachedRef.classList.remove('topic-menu-active');
-            const oldMenu = previouslyAttachedRef.querySelector('.topic-actions-menu');
+          const oldTopicRef = topicRefs.current[key];
+          if (oldTopicRef) {
+            oldTopicRef.style.overflow = '';
+            oldTopicRef.classList.remove('topic-menu-active');
+            const oldMenu = oldTopicRef.querySelector('.topic-actions-menu');
             if (oldMenu) oldMenu.classList.remove('menu-opens-downward');
-            const prevSubjectContainer = previouslyAttachedRef.closest('.subject-container');
-            if (prevSubjectContainer) {
-              prevSubjectContainer.style.overflow = '';
-              prevSubjectContainer.classList.remove('subject-hosting-active-topic-menu');
+            
+            const oldSubjectContainer = oldTopicRef.closest('.subject-container');
+            if (oldSubjectContainer) {
+              oldSubjectContainer.style.overflow = '';
+              oldSubjectContainer.classList.remove('subject-hosting-active-topic-menu');
+              const oldTopicsList = oldSubjectContainer.querySelector('.topics-container');
+              if (oldTopicsList) oldTopicsList.style.overflowY = 'auto'; // Restore scroll
             }
           }
         }
       });
 
       if (isOpeningNow) {
-        if (topicParentContainer && menuElement && subjectGrandparentContainer) { // Ensure subjectGrandparentContainer exists
-          topicParentContainer.style.overflow = 'visible';
+        if (topicParentContainer && menuElement && subjectGrandparentContainer) {
+          topicParentContainer.style.overflow = 'visible'; // Topic item itself
           topicParentContainer.classList.add('topic-menu-active');
-          subjectGrandparentContainer.style.overflow = 'visible';
+          subjectGrandparentContainer.style.overflow = 'visible'; // Subject container
           subjectGrandparentContainer.classList.add('subject-hosting-active-topic-menu');
-          
+
           setTimeout(() => {
             if (menuElement && menuElement.classList.contains('active')) {
               const buttonRect = buttonElement.getBoundingClientRect();
               const menuHeight = menuElement.offsetHeight;
               const subjectHeader = subjectGrandparentContainer.querySelector('.subject-header');
               let subjectHeaderBottom = 0;
-              if (subjectHeader) {
-                subjectHeaderBottom = subjectHeader.getBoundingClientRect().bottom;
-              }
-              const thresholdBelowHeader = 5; // Small buffer in pixels
+              if (subjectHeader) subjectHeaderBottom = subjectHeader.getBoundingClientRect().bottom;
+              const thresholdBelowHeader = 5;
 
-              console.log(`[Topic: ${topicKey}] Menu Active. ButtonTop: ${buttonRect.top.toFixed(2)}, MenuHeight: ${menuHeight}, SubjectHeaderBottom: ${subjectHeaderBottom.toFixed(2)}`);
+              // console.log(`[Topic: ${topicKey}] Menu Active. BT: ${buttonRect.top.toFixed(2)}, MH: ${menuHeight}, SHB: ${subjectHeaderBottom.toFixed(2)}`);
 
-              // Open downwards if menu top would be above (or too close to) the subject header's bottom edge
               if (menuHeight > 0 && (buttonRect.top - menuHeight) < (subjectHeaderBottom + thresholdBelowHeader)) {
-                console.log(`%c[Topic: ${topicKey}] সিদ্ধান্ত: Opening Downwards (clipped by subject header)`, 'color: blue;');
+                // console.log(`%c[Topic: ${topicKey}] Decision: Opening Downwards (clipped by subject header)`, 'color: blue;');
                 menuElement.classList.add('menu-opens-downward');
+                // AGGRESSIVE OVERRIDE FOR TOPICS LIST SCROLLING
+                if (topicsListContainer) topicsListContainer.style.overflowY = 'visible';
               } else {
-                console.log(`%c[Topic: ${topicKey}] সিদ্ধান্ত: Opening Upwards`, 'color: green;');
+                // console.log(`%c[Topic: ${topicKey}] Decision: Opening Upwards`, 'color: green;');
                 menuElement.classList.remove('menu-opens-downward');
+                // Ensure topics list is scrollable if menu opens upwards normally
+                if (topicsListContainer) topicsListContainer.style.overflowY = 'auto';
               }
             } else {
-              console.warn(`[Topic: ${topicKey}] Menu NOT active or not found in setTimeout when trying to set direction.`);
+              // console.warn(`[Topic: ${topicKey}] Menu NOT active in setTimeout.`);
             }
           }, 50);
         }
-      } else {
+      } else { // Closing menu
         if (topicParentContainer) {
           topicParentContainer.style.overflow = '';
           topicParentContainer.classList.remove('topic-menu-active');
@@ -460,6 +467,8 @@ useEffect(() => {
           }
           subjectGrandparentContainer.classList.remove('subject-hosting-active-topic-menu');
         }
+        // Restore scrolling on the topics list when any topic menu is closed
+        if (topicsListContainer) topicsListContainer.style.overflowY = 'auto';
       }
       return isOpeningNow ? { [topicKey]: true } : {}; 
     });
