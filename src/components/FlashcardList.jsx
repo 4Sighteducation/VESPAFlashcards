@@ -392,12 +392,13 @@ useEffect(() => {
     const buttonElement = e.currentTarget;
     const topicParentContainer = buttonElement.closest('.topic-container');
     const subjectGrandparentContainer = topicParentContainer?.closest('.subject-container');
-    const menuElement = buttonElement.nextElementSibling; // This is .topic-actions-menu
+    const menuElement = buttonElement.nextElementSibling; // Should be .topic-actions-menu
 
     setOpenTopicMenus(prev => {
       const isCurrentlyOpen = !!prev[topicKey];
       const isOpeningNow = !isCurrentlyOpen;
 
+      // Close other menus and reset their associated styles
       Object.keys(prev).forEach(key => {
         if (prev[key] && key !== topicKey) {
           const previouslyAttachedRef = topicRefs.current[key];
@@ -416,8 +417,8 @@ useEffect(() => {
         }
       });
 
-      if (topicParentContainer && menuElement) {
-        if (isOpeningNow) {
+      if (isOpeningNow) {
+        if (topicParentContainer && menuElement) {
           topicParentContainer.style.overflow = 'visible';
           topicParentContainer.classList.add('topic-menu-active');
           if (subjectGrandparentContainer) {
@@ -425,35 +426,42 @@ useEffect(() => {
             subjectGrandparentContainer.classList.add('subject-hosting-active-topic-menu');
           }
 
-          // Dynamically set menu direction
+          // Defer direction check until after this state update cycle
           setTimeout(() => {
-            if (menuElement.classList.contains('active')) { // Check if still active
+            // Check if the menu is still intended to be open and is part of the DOM
+            // The menuElement should have the 'active' class from the re-render
+            if (menuElement && menuElement.classList.contains('active')) {
               const buttonRect = buttonElement.getBoundingClientRect();
               const menuHeight = menuElement.offsetHeight;
               const viewportTopThreshold = 10; // Small margin from viewport top
 
-              if ((buttonRect.top - menuHeight) < viewportTopThreshold) {
+              // console.log(`Topic ${topicKey}: buttonTop=${buttonRect.top}, menuHeight=${menuHeight}, openingDown=${(buttonRect.top - menuHeight) < viewportTopThreshold && menuHeight > 0}`);
+
+              if (menuHeight > 0 && (buttonRect.top - menuHeight) < viewportTopThreshold) {
                 menuElement.classList.add('menu-opens-downward');
               } else {
                 menuElement.classList.remove('menu-opens-downward');
               }
             }
-          }, 0);
-
-        } else { // Closing menu
+          }, 0); // Using 0 should be sufficient, but 50 could be tried if 0 is too fast
+        }
+      } else { // Closing the menu
+        if (topicParentContainer) {
           topicParentContainer.style.overflow = '';
           topicParentContainer.classList.remove('topic-menu-active');
-          menuElement.classList.remove('menu-opens-downward'); // Clean up on close
-
-          if (subjectGrandparentContainer) {
-            if (!subjectGrandparentContainer.classList.contains('subject-menu-active')) {
-              subjectGrandparentContainer.style.overflow = '';
-            }
-            subjectGrandparentContainer.classList.remove('subject-hosting-active-topic-menu');
+        }
+        if (menuElement) {
+          menuElement.classList.remove('menu-opens-downward');
+        }
+        if (subjectGrandparentContainer) {
+          if (!subjectGrandparentContainer.classList.contains('subject-menu-active')) {
+            subjectGrandparentContainer.style.overflow = '';
           }
+          subjectGrandparentContainer.classList.remove('subject-hosting-active-topic-menu');
         }
       }
-      return isOpeningNow ? { [topicKey]: true } : {};
+      // Return the new state for which menus are open
+      return isOpeningNow ? { [topicKey]: true } : {}; 
     });
   }, [topicRefs]);
   // --- END: Function to toggle topic menus ---
@@ -463,7 +471,7 @@ useEffect(() => {
     e.stopPropagation();
     const buttonElement = e.currentTarget;
     const parentContainer = buttonElement.closest('.subject-container');
-    const menuElement = buttonElement.nextElementSibling; // This is .subject-actions-menu
+    const menuElement = buttonElement.nextElementSibling; // Should be .subject-actions-menu
 
     setOpenSubjectMenus(prev => {
       const isCurrentlyOpen = !!prev[subjectKey];
@@ -481,30 +489,34 @@ useEffect(() => {
         }
       });
       
-      if (parentContainer && menuElement) { 
-        if (isOpeningNow) {
+      if (isOpeningNow) {
+        if (parentContainer && menuElement) {
           parentContainer.style.overflow = 'visible';
           parentContainer.classList.add('subject-menu-active');
 
-          // Dynamically set menu direction
           setTimeout(() => {
-            if (menuElement.classList.contains('active')) { // Check if still active
+            if (menuElement && menuElement.classList.contains('active')) {
               const buttonRect = buttonElement.getBoundingClientRect();
               const menuHeight = menuElement.offsetHeight;
-              const viewportTopThreshold = 10; 
+              const viewportTopThreshold = 10;
 
-              if ((buttonRect.top - menuHeight) < viewportTopThreshold) {
+              // console.log(`Subject ${subjectKey}: buttonTop=${buttonRect.top}, menuHeight=${menuHeight}, openingDown=${(buttonRect.top - menuHeight) < viewportTopThreshold && menuHeight > 0}`);
+
+              if (menuHeight > 0 && (buttonRect.top - menuHeight) < viewportTopThreshold) {
                 menuElement.classList.add('menu-opens-downward');
               } else {
                 menuElement.classList.remove('menu-opens-downward');
               }
             }
           }, 0);
-
-        } else { // Closing menu
+        }
+      } else { // Closing the menu
+        if (parentContainer) {
           parentContainer.style.overflow = '';
           parentContainer.classList.remove('subject-menu-active');
-          menuElement.classList.remove('menu-opens-downward'); // Clean up on close
+        }
+        if (menuElement) {
+          menuElement.classList.remove('menu-opens-downward');
         }
       }
       return isOpeningNow ? { [subjectKey]: true } : {};

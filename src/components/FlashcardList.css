@@ -590,16 +590,14 @@
   .subject-actions-menu {
     display: none !important;
     position: absolute !important;
-    /* Default: opens upwards */
-    bottom: 100% !important;
+    bottom: 100% !important; /* Default: opens upwards */
     right: 0 !important;
-    background-color: white !important;
+    background-color: white !important; /* Ensures the panel itself is solid white */
     border-radius: 6px !important;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25) !important;
     z-index: 1001 !important;
-    padding: 8px !important;
-    margin-bottom: 4px !important; /* Gap when opening upwards */
-    gap: 5px !important;
+    padding: 8px !important; /* Padding around the group of buttons */
+    margin-bottom: 4px !important;
     min-width: 150px !important;
   }
 
@@ -607,29 +605,29 @@
   .subject-actions-menu.active {
     display: flex !important;
     flex-direction: column !important;
-  }
-
-  /* New style for opening downwards */
-  .topic-actions-menu.menu-opens-downward,
-  .subject-actions-menu.menu-opens-downward {
-    bottom: auto !important;      /* Override default upward opening */
-    top: 100% !important;         /* Position below the toggle button */
-    margin-bottom: 0 !important;  /* Remove upward margin */
-    margin-top: 4px !important;     /* Add downward margin */
+    gap: 4px !important; /* Reduced gap, ensures white background of panel shows through if items are also white */
   }
 
   /* Buttons INSIDE the active mobile menus */
   .topic-actions-menu.active .nav-button,
   .subject-actions-menu.active .nav-button {
-    /* ... existing styles like display, width, padding, color ... */
-    background-color: white !important; /* Explicitly solid white background for each button */
+    background-color: white !important; /* Explicitly white for the button background */
     color: #333 !important;
-    opacity: 1 !important; /* Ensure no accidental transparency */
+    opacity: 1 !important;
+    display: flex !important;
+    width: 100% !important;
+    justify-content: flex-start !important; 
+    padding: 8px 10px !important; 
+    border: none !important; /* Remove any individual button borders */
+    box-shadow: none !important; /* Remove any individual button shadows */
+    height: auto !important;
+    font-size: 0.9rem !important;
   }
 
   .topic-actions-menu.active .nav-button:hover,
   .subject-actions-menu.active .nav-button:hover {
     background-color: #f0f0f0 !important; /* Light grey hover, still opaque */
+    transform: none !important;
   }
 
   /* Specific styling for delete buttons in menus to ensure they are opaque */
@@ -638,6 +636,7 @@
      color: #d32f2f !important;
      background-color: white !important; /* Ensure white background before hover */
   }
+
   .topic-actions-menu.active .delete-topic-button:hover,
   .subject-actions-menu.active .delete-button:hover {
      background-color: rgba(211, 47, 47, 0.1) !important; /* Light red hover */
@@ -2200,13 +2199,13 @@ html {
   /* Specific styling for delete buttons in menus */
   .topic-actions-menu.active .delete-topic-button,
   .subject-actions-menu.active .delete-button {
-     color: #d32f2f !important; /* Red text for delete */
+     color: #d32f2f !important;
      background-color: white !important; /* Ensure white background */
      border-bottom: none !important;
   }
   .topic-actions-menu.active .delete-topic-button:hover,
   .subject-actions-menu.active .delete-button:hover {
-     background-color: rgba(211, 47, 47, 0.1) !important; /* Light red hover for delete */
+     background-color: rgba(211, 47, 47, 0.1) !important; /* Light red hover */
   }
   .topic-actions-menu.active .delete-topic-button .button-icon,
   .subject-actions-menu.active .delete-button .button-icon {
