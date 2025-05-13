@@ -398,7 +398,6 @@ useEffect(() => {
       const isCurrentlyOpen = !!prev[topicKey];
       const isOpeningNow = !isCurrentlyOpen;
 
-      // Close other menus and reset their associated styles
       Object.keys(prev).forEach(key => {
         if (prev[key] && key !== topicKey) {
           const previouslyAttachedRef = topicRefs.current[key];
@@ -407,7 +406,6 @@ useEffect(() => {
             previouslyAttachedRef.classList.remove('topic-menu-active');
             const oldMenu = previouslyAttachedRef.querySelector('.topic-actions-menu');
             if (oldMenu) oldMenu.classList.remove('menu-opens-downward');
-
             const prevSubjectContainer = previouslyAttachedRef.closest('.subject-container');
             if (prevSubjectContainer) {
               prevSubjectContainer.style.overflow = '';
@@ -425,34 +423,31 @@ useEffect(() => {
             subjectGrandparentContainer.style.overflow = 'visible';
             subjectGrandparentContainer.classList.add('subject-hosting-active-topic-menu');
           }
-
-          // Defer direction check until after this state update cycle
           setTimeout(() => {
-            // Check if the menu is still intended to be open and is part of the DOM
-            // The menuElement should have the 'active' class from the re-render
             if (menuElement && menuElement.classList.contains('active')) {
               const buttonRect = buttonElement.getBoundingClientRect();
               const menuHeight = menuElement.offsetHeight;
-              const viewportTopThreshold = 10; // Small margin from viewport top
-
-              // console.log(`Topic ${topicKey}: buttonTop=${buttonRect.top}, menuHeight=${menuHeight}, openingDown=${(buttonRect.top - menuHeight) < viewportTopThreshold && menuHeight > 0}`);
-
+              const viewportHeight = window.innerHeight;
+              const viewportTopThreshold = 10;
+              console.log(`[Topic: ${topicKey}] Menu Active. ButtonTop: ${buttonRect.top.toFixed(2)}, MenuHeight: ${menuHeight}, ViewportHeight: ${viewportHeight}`);
               if (menuHeight > 0 && (buttonRect.top - menuHeight) < viewportTopThreshold) {
+                console.log(`%c[Topic: ${topicKey}] সিদ্ধান্ত: Opening Downwards`, 'color: blue;');
                 menuElement.classList.add('menu-opens-downward');
               } else {
+                console.log(`%c[Topic: ${topicKey}] সিদ্ধান্ত: Opening Upwards (or menuHeight is 0 or not enough space above)`, 'color: green;');
                 menuElement.classList.remove('menu-opens-downward');
               }
+            } else {
+              console.warn(`[Topic: ${topicKey}] Menu NOT active or not found in setTimeout when trying to set direction.`);
             }
-          }, 0); // Using 0 should be sufficient, but 50 could be tried if 0 is too fast
+          }, 50); // Increased timeout slightly to 50ms
         }
-      } else { // Closing the menu
+      } else {
         if (topicParentContainer) {
           topicParentContainer.style.overflow = '';
           topicParentContainer.classList.remove('topic-menu-active');
         }
-        if (menuElement) {
-          menuElement.classList.remove('menu-opens-downward');
-        }
+        if (menuElement) menuElement.classList.remove('menu-opens-downward');
         if (subjectGrandparentContainer) {
           if (!subjectGrandparentContainer.classList.contains('subject-menu-active')) {
             subjectGrandparentContainer.style.overflow = '';
@@ -460,7 +455,6 @@ useEffect(() => {
           subjectGrandparentContainer.classList.remove('subject-hosting-active-topic-menu');
         }
       }
-      // Return the new state for which menus are open
       return isOpeningNow ? { [topicKey]: true } : {}; 
     });
   }, [topicRefs]);
@@ -493,31 +487,31 @@ useEffect(() => {
         if (parentContainer && menuElement) {
           parentContainer.style.overflow = 'visible';
           parentContainer.classList.add('subject-menu-active');
-
           setTimeout(() => {
             if (menuElement && menuElement.classList.contains('active')) {
               const buttonRect = buttonElement.getBoundingClientRect();
               const menuHeight = menuElement.offsetHeight;
+              const viewportHeight = window.innerHeight;
               const viewportTopThreshold = 10;
-
-              // console.log(`Subject ${subjectKey}: buttonTop=${buttonRect.top}, menuHeight=${menuHeight}, openingDown=${(buttonRect.top - menuHeight) < viewportTopThreshold && menuHeight > 0}`);
-
+              console.log(`[Subject: ${subjectKey}] Menu Active. ButtonTop: ${buttonRect.top.toFixed(2)}, MenuHeight: ${menuHeight}, ViewportHeight: ${viewportHeight}`);
               if (menuHeight > 0 && (buttonRect.top - menuHeight) < viewportTopThreshold) {
+                console.log(`%c[Subject: ${subjectKey}] সিদ্ধান্ত: Opening Downwards`, 'color: blue;');
                 menuElement.classList.add('menu-opens-downward');
               } else {
+                console.log(`%c[Subject: ${subjectKey}] সিদ্ধান্ত: Opening Upwards (or menuHeight is 0 or not enough space above)`, 'color: green;');
                 menuElement.classList.remove('menu-opens-downward');
               }
+            } else {
+              console.warn(`[Subject: ${subjectKey}] Menu NOT active or not found in setTimeout when trying to set direction.`);
             }
-          }, 0);
+          }, 50); // Increased timeout slightly to 50ms
         }
-      } else { // Closing the menu
+      } else {
         if (parentContainer) {
           parentContainer.style.overflow = '';
           parentContainer.classList.remove('subject-menu-active');
         }
-        if (menuElement) {
-          menuElement.classList.remove('menu-opens-downward');
-        }
+        if (menuElement) menuElement.classList.remove('menu-opens-downward');
       }
       return isOpeningNow ? { [subjectKey]: true } : {};
     });
