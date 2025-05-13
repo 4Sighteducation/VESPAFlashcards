@@ -588,9 +588,34 @@
   /* Dropdown Menus Styling */
   .topic-actions-menu,
   .subject-actions-menu {
-    /* ... existing styles like position, z-index: 1001 !important ... */
-    background-color: white !important; /* Ensure the menu container itself is opaque white */
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25) !important; /* Slightly stronger shadow */
+    display: none !important;
+    position: absolute !important;
+    /* Default: opens upwards */
+    bottom: 100% !important;
+    right: 0 !important;
+    background-color: white !important;
+    border-radius: 6px !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25) !important;
+    z-index: 1001 !important;
+    padding: 8px !important;
+    margin-bottom: 4px !important; /* Gap when opening upwards */
+    gap: 5px !important;
+    min-width: 150px !important;
+  }
+
+  .topic-actions-menu.active,
+  .subject-actions-menu.active {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* New style for opening downwards */
+  .topic-actions-menu.menu-opens-downward,
+  .subject-actions-menu.menu-opens-downward {
+    bottom: auto !important;      /* Override default upward opening */
+    top: 100% !important;         /* Position below the toggle button */
+    margin-bottom: 0 !important;  /* Remove upward margin */
+    margin-top: 4px !important;     /* Add downward margin */
   }
 
   /* Buttons INSIDE the active mobile menus */
