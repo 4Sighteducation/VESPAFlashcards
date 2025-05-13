@@ -416,31 +416,37 @@ useEffect(() => {
       });
 
       if (isOpeningNow) {
-        if (topicParentContainer && menuElement) {
+        if (topicParentContainer && menuElement && subjectGrandparentContainer) { // Ensure subjectGrandparentContainer exists
           topicParentContainer.style.overflow = 'visible';
           topicParentContainer.classList.add('topic-menu-active');
-          if (subjectGrandparentContainer) {
-            subjectGrandparentContainer.style.overflow = 'visible';
-            subjectGrandparentContainer.classList.add('subject-hosting-active-topic-menu');
-          }
+          subjectGrandparentContainer.style.overflow = 'visible';
+          subjectGrandparentContainer.classList.add('subject-hosting-active-topic-menu');
+          
           setTimeout(() => {
             if (menuElement && menuElement.classList.contains('active')) {
               const buttonRect = buttonElement.getBoundingClientRect();
               const menuHeight = menuElement.offsetHeight;
-              const viewportHeight = window.innerHeight;
-              const viewportTopThreshold = 10;
-              console.log(`[Topic: ${topicKey}] Menu Active. ButtonTop: ${buttonRect.top.toFixed(2)}, MenuHeight: ${menuHeight}, ViewportHeight: ${viewportHeight}`);
-              if (menuHeight > 0 && (buttonRect.top - menuHeight) < viewportTopThreshold) {
-                console.log(`%c[Topic: ${topicKey}] সিদ্ধান্ত: Opening Downwards`, 'color: blue;');
+              const subjectHeader = subjectGrandparentContainer.querySelector('.subject-header');
+              let subjectHeaderBottom = 0;
+              if (subjectHeader) {
+                subjectHeaderBottom = subjectHeader.getBoundingClientRect().bottom;
+              }
+              const thresholdBelowHeader = 5; // Small buffer in pixels
+
+              console.log(`[Topic: ${topicKey}] Menu Active. ButtonTop: ${buttonRect.top.toFixed(2)}, MenuHeight: ${menuHeight}, SubjectHeaderBottom: ${subjectHeaderBottom.toFixed(2)}`);
+
+              // Open downwards if menu top would be above (or too close to) the subject header's bottom edge
+              if (menuHeight > 0 && (buttonRect.top - menuHeight) < (subjectHeaderBottom + thresholdBelowHeader)) {
+                console.log(`%c[Topic: ${topicKey}] সিদ্ধান্ত: Opening Downwards (clipped by subject header)`, 'color: blue;');
                 menuElement.classList.add('menu-opens-downward');
               } else {
-                console.log(`%c[Topic: ${topicKey}] সিদ্ধান্ত: Opening Upwards (or menuHeight is 0 or not enough space above)`, 'color: green;');
+                console.log(`%c[Topic: ${topicKey}] সিদ্ধান্ত: Opening Upwards`, 'color: green;');
                 menuElement.classList.remove('menu-opens-downward');
               }
             } else {
               console.warn(`[Topic: ${topicKey}] Menu NOT active or not found in setTimeout when trying to set direction.`);
             }
-          }, 50); // Increased timeout slightly to 50ms
+          }, 50);
         }
       } else {
         if (topicParentContainer) {
