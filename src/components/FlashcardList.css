@@ -29,6 +29,7 @@
   display: flex;
   flex-direction: column;
   max-height: unset; /* Remove max-height constraint */
+  position: relative; /* Ensure it's a stacking context */
 }
 
 /* Add this new class to apply the custom border color */
@@ -182,6 +183,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
   min-height: 60px; /* Ensure minimum height */
+  position: relative; /* Ensure it's a stacking context */
 }
 
 .topic-container:hover {
@@ -553,6 +555,71 @@
   .topic-cards {
     min-height: 300px;
   }
+
+  .subject-container {
+    /* Base z-index for subject containers, can be 1 or auto */
+    /* position: relative; /* Already set above */
+    z-index: 1; /* Default stacking */
+  }
+
+  .topic-container {
+    /* position: relative; /* Already set above */
+    z-index: 1; /* Default stacking within its subject */
+  }
+
+  /* When a subject's OWN menu is open */
+  .subject-container.subject-menu-active {
+    overflow: visible !important; /* Ensure JS inline style is respected or reinforced */
+    z-index: 50 !important; /* High, above other subjects and potentially active topics in other subjects */
+  }
+
+  /* When a subject is hosting an active TOPIC menu */
+  .subject-container.subject-hosting-active-topic-menu {
+    overflow: visible !important; /* Ensure JS inline style is respected or reinforced */
+    z-index: 40 !important; /* Above other subjects, but below a subject whose own menu is active */
+  }
+
+  /* When a topic's menu is open */
+  .topic-container.topic-menu-active {
+    overflow: visible !important; /* Ensure JS inline style is respected or reinforced */
+    z-index: 60 !important; /* Highest for containers, to be above its own subject if needed and other topics */
+  }
+
+  /* Dropdown Menus Styling */
+  .topic-actions-menu,
+  .subject-actions-menu {
+    /* ... existing styles like position, z-index: 1001 !important ... */
+    background-color: white !important; /* Ensure the menu container itself is opaque white */
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25) !important; /* Slightly stronger shadow */
+  }
+
+  /* Buttons INSIDE the active mobile menus */
+  .topic-actions-menu.active .nav-button,
+  .subject-actions-menu.active .nav-button {
+    /* ... existing styles like display, width, padding, color ... */
+    background-color: white !important; /* Explicitly solid white background for each button */
+    color: #333 !important;
+    opacity: 1 !important; /* Ensure no accidental transparency */
+  }
+
+  .topic-actions-menu.active .nav-button:hover,
+  .subject-actions-menu.active .nav-button:hover {
+    background-color: #f0f0f0 !important; /* Light grey hover, still opaque */
+  }
+
+  /* Specific styling for delete buttons in menus to ensure they are opaque */
+  .topic-actions-menu.active .delete-topic-button,
+  .subject-actions-menu.active .delete-button {
+     color: #d32f2f !important;
+     background-color: white !important; /* Ensure white background before hover */
+  }
+  .topic-actions-menu.active .delete-topic-button:hover,
+  .subject-actions-menu.active .delete-button:hover {
+     background-color: rgba(211, 47, 47, 0.1) !important; /* Light red hover */
+     color: #d32f2f !important;
+  }
+
+  /* ... rest of existing mobile styles ... */
 }
 
 .close-modal-button {

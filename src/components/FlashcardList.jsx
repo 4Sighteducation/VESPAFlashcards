@@ -397,72 +397,81 @@ useEffect(() => {
       const isCurrentlyOpen = !!prev[topicKey];
       const isOpeningNow = !isCurrentlyOpen;
 
+      // Close other menus and reset their containers' styles
       Object.keys(prev).forEach(key => {
-        if (prev[key] && key !== topicKey) { 
-          const previouslyAttachedRef = topicRefs.current[key]; 
+        if (prev[key] && key !== topicKey) {
+          const previouslyAttachedRef = topicRefs.current[key];
           if (previouslyAttachedRef) {
             previouslyAttachedRef.style.overflow = '';
-            previouslyAttachedRef.classList.remove('topic-menu-active'); // Remove active class from others
+            previouslyAttachedRef.classList.remove('topic-menu-active');
             const prevSubjectContainer = previouslyAttachedRef.closest('.subject-container');
             if (prevSubjectContainer) {
               prevSubjectContainer.style.overflow = '';
+              prevSubjectContainer.classList.remove('subject-hosting-active-topic-menu');
             }
           }
         }
       });
 
-      if (topicParentContainer) { // Check if topicParentContainer exists
+      if (topicParentContainer) {
         if (isOpeningNow) {
           topicParentContainer.style.overflow = 'visible';
-          topicParentContainer.classList.add('topic-menu-active'); // Add active class
-          if (subjectGrandparentContainer) subjectGrandparentContainer.style.overflow = 'visible';
+          topicParentContainer.classList.add('topic-menu-active');
+          if (subjectGrandparentContainer) {
+            subjectGrandparentContainer.style.overflow = 'visible';
+            subjectGrandparentContainer.classList.add('subject-hosting-active-topic-menu');
+          }
         } else {
           topicParentContainer.style.overflow = '';
-          topicParentContainer.classList.remove('topic-menu-active'); // Remove active class
-          // Only reset subject container overflow if no other topic menus for THIS subject are open
-          // This logic can get complex, for now, let's reset it simply.
-          // A more robust way would be to check if any sibling topic menus under the same subject are open.
-          if (subjectGrandparentContainer) subjectGrandparentContainer.style.overflow = '';
+          topicParentContainer.classList.remove('topic-menu-active');
+          if (subjectGrandparentContainer) {
+            // Only reset overflow if the subject's own menu is not also active
+            if (!subjectGrandparentContainer.classList.contains('subject-menu-active')) {
+              subjectGrandparentContainer.style.overflow = '';
+            }
+            subjectGrandparentContainer.classList.remove('subject-hosting-active-topic-menu');
+          }
         }
       }
 
-      return isOpeningNow ? { [topicKey]: true } : {}; 
+      return isOpeningNow ? { [topicKey]: true } : {};
     });
-  }, [topicRefs]); 
+  }, [topicRefs]); // Removed subjectRefs dependency as it's not used here.
   // --- END: Function to toggle topic menus ---
 
   // --- START: Function to toggle subject menus ---
   const toggleSubjectMenu = useCallback((subjectKey, e) => {
     e.stopPropagation(); // Prevent triggering subject toggle
     const buttonElement = e.currentTarget;
-    const parentContainer = buttonElement.closest('.subject-container'); 
+    const parentContainer = buttonElement.closest('.subject-container');
 
     setOpenSubjectMenus(prev => {
       const isCurrentlyOpen = !!prev[subjectKey];
       const isOpeningNow = !isCurrentlyOpen;
 
+      // Close other subject menus and reset their containers
       Object.keys(prev).forEach(key => {
         if (prev[key] && key !== subjectKey) {
-          const previouslyAttachedRef = subjectRefs.current[key]; 
+          const previouslyAttachedRef = subjectRefs.current[key];
           if (previouslyAttachedRef) {
-            previouslyAttachedRef.style.overflow = '';
-            previouslyAttachedRef.classList.remove('subject-menu-active'); // Add this for consistency
+            previouslyAttachedRef.style.overflow = ''; // Reset overflow
+            previouslyAttachedRef.classList.remove('subject-menu-active');
           }
         }
       });
       
-      if (parentContainer) { 
+      if (parentContainer) {
         if (isOpeningNow) {
-          parentContainer.style.overflow = 'visible';
-          parentContainer.classList.add('subject-menu-active'); // Add active class
+          parentContainer.style.overflow = 'visible'; // Set overflow when opening
+          parentContainer.classList.add('subject-menu-active');
         } else {
-          parentContainer.style.overflow = '';
-          parentContainer.classList.remove('subject-menu-active'); // Remove active class
+          parentContainer.style.overflow = ''; // Reset overflow when closing
+          parentContainer.classList.remove('subject-menu-active');
         }
       }
       return isOpeningNow ? { [subjectKey]: true } : {};
     });
-  }, [subjectRefs]); 
+  }, [subjectRefs]);
   // --- END: Function to toggle subject menus ---
 
   // 4. useCallback Hooks (Define functions needed by useMemo/useEffect first)
