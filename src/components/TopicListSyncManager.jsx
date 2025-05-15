@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import NewTopicModal from "./NewTopicModal";
 import { 
   setupPageUnloadProtection
 } from './TopicsPersistenceManager';
 import { dlog, dwarn, derr } from '../utils/logger'; 
+import { fetchTopicsForSubject } from '../services/KnackTopicService';
 /**
  * TopicListSyncManager - Data layer for topic list management
  * 
