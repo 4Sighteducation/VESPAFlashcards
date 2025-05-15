@@ -1252,20 +1252,31 @@
 
 /* Subject container view */
 .subjects-container {
+  --subject-gap: 20px; /* Define gap as a CSS variable */
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 30px;
+  /* justify-content: space-between; /* Changed for better wrapping control */
+  justify-content: flex-start; /* Or space-around, depending on desired alignment */
+  gap: var(--subject-gap);
   margin: 20px 0;
   width: 100%;
   max-width: 1200px;
+  padding: 0 10px; /* Add some padding to the container itself */
+  box-sizing: border-box;
 }
 
 .subject-box {
   position: relative;
-  flex-basis: calc(50% - 15px);
-  flex-grow: 0;
-  margin-bottom: 20px;
+  /* flex-basis: calc(50% - 15px); /* Old approach */
+  /* flex-grow: 0; */
+  
+  /* New flexible approach */
+  flex: 1 1 calc(50% - (var(--subject-gap) / 2)); /* Grow, Shrink, Basis */
+  min-width: 280px; /* Minimum width before wrapping to a new line / becoming full width */
+                     /* Adjust this based on content and desired look on smaller screens */
+  max-width: calc(50% - (var(--subject-gap) / 2)); /* Ensure it doesn't grow beyond 2 per row if space allows */
+
+  margin-bottom: var(--subject-gap); /* Use variable for consistency */
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
@@ -1273,7 +1284,8 @@
   display: flex;
   flex-direction: column;
   background-color: white;
-  min-height: 160px; /* Ensure consistent height */
+  min-height: 160px; 
+  box-sizing: border-box; /* Important for width calculations with padding/border */
 }
 
 /* New styles for the topics list container */
@@ -1545,68 +1557,43 @@
 }
 
 /* Mobile responsiveness for subject containers */
-@media (max-width: 820px) {
+/* Let's adjust this media query or rely on the flex properties above first. 
+   If we want to explicitly go to single column on very small screens, this can be re-enabled/modified.
+*/
+@media (max-width: 600px) { /* Example: Go to single column for screens narrower than 600px */
   .subjects-container {
-    flex-direction: column; /* Ensure items stack vertically */
-    align-items: center; /* Center items when stacked */
+    /* No need to change flex-direction if flex-basis and min-width handle it */
+    justify-content: center; /* Center single items */
+    padding: 0 5px;
+  }
+
+  .subject-box {
+    flex-basis: 100%; /* Take full width */
+    max-width: 100%; /* Allow full width */
+    min-width: 0; /* Reset min-width for single column */
+    /* max-width: 450px; /* Optional: constrain max width on mobile if desired */
+  }
+}
+
+/* The original media query at 820px might be too broad or conflicting */
+/* Removing it or adjusting its target range */
+/* @media (max-width: 820px) {
+  .subjects-container {
+    flex-direction: column; 
+    align-items: center; 
     padding: 10px;
     gap: 20px;
   }
 
   .subject-box {
-    width: 100%; /* Make subject boxes take full width */
-    max-width: 600px; /* Optional: constrain max width on mobile */
-    flex-basis: auto; /* Allow flex-basis to be determined by content or width */
+    width: 100%; 
+    max-width: 600px; 
+    flex-basis: auto; 
     min-height: 140px;
   }
-  
-  /* Fix multiple choice styling for mobile */
-  /* .multiple-choice-options { ... } */ /* Example of a commented out block */
-  
-  /* .multiple-choice-options h4 { ... } */
-  
-  /* .multiple-choice-options li { ... } */
-  
-  /* .study-card .card-front.has-multiple-choice { ... } */
-   
-  /* .study-card .card-front.has-multiple-choice .card-content { ... } */
-}
+} */
 
-/* Extra small mobile devices */
-@media (max-width: 480px) {
-  .study-modal .study-card-area { /* Renamed for clarity if needed, or adjust .card-study-area */
-    width: 100%;
-    max-width: 500px; /* Max width for the card itself */
-    margin: 20px auto; /* Centering the card */
-    height: auto; /* Allow FlippableCard to determine its height */
-  }
-
-  .study-modal .study-card {
-    margin-bottom: 0; /* Example: Remove bottom margin if FlippableCard has its own */
-    /* Remove other conflicting styles like width, height, perspective if FlippableCard handles them */
-  }
-
-  .flip-response {
-    padding: 12px 10px;
-  }
-  
-  .flip-response p {
-    font-size: 0.95rem;
-    margin-bottom: 8px;
-  }
-  
-  .response-buttons {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .correct-button, 
-  .incorrect-button {
-    width: 100%;
-    padding: 12px;
-    font-size: 1rem;
-  }
-}
+/* ... rest of the styles ... */
 
 /* Flip response overlay should still work */
 .flip-response-overlay {
