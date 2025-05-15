@@ -152,8 +152,15 @@ const Header = ({
             disabled={isSaving}
             title="Save All Changes"
           >
-            <span className="button-icon">��</span>
-            Save All
+            {isSaving ? (
+              <>
+                <span className="button-icon">⏳</span> Saving...
+              </>
+            ) : (
+              <>
+                <span className="button-icon">💾</span> Save All
+              </>
+            )}
           </button>
         )}
 
