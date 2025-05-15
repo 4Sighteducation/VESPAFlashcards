@@ -27,6 +27,7 @@
   gap: 15px; /* Gap between individual subject accordions within this group */
   min-width: 280px; /* Minimum width before it tries to take full width on very small screens */
   box-sizing: border-box;
+  flex-grow: 1; /* Allow the container to grow and fill space */
   /* border: 1px solid #eee; /* Optional: for visualizing the group container */
   /* padding: 10px; */ /* Optional: padding for the group container */
 }
@@ -35,7 +36,9 @@
 @media (min-width: 768px) { /* Breakpoint for 2 columns of groups */
   .subject-group-container {
     flex-basis: calc(50% - (var(--subject-group-gap) / 2));
-    max-width: calc(50% - (var(--subject-group-gap) / 2)); /* Strict 2 columns */
+    /* max-width: calc(50% - (var(--subject-group-gap) / 2)); /* Removed to allow single chunk to expand */
+    /* If strict 50% is ever needed even for a single last item when multiple chunks exist, 
+       this max-width could be brought back, but for a single chunk taking full width, it should be removed. */
   }
 }
 
