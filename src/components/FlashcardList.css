@@ -2280,3 +2280,106 @@ html {
   /* display: inline-block; /* or other styling to keep them inline if necessary */
   /* vertical-align: middle; */
 }
+
+.subject-actions .nav-button.hub-button,
+.topic-actions .nav-button.hub-button { /* If you add to topics later */
+  /* background-color: rgba(76, 175, 80, 0.2); /* Example: A slightly different accent if desired */
+  /* color: #4CAF50; */
+}
+
+.subject-actions .nav-button.hub-button .button-icon,
+.topic-actions .nav-button.hub-button .button-icon {
+  /* If using a specific icon font that needs different styling */
+  /* font-size: 18px; Ensure it matches other icons */
+}
+
+/* Mobile menu styling for the hub button if text is shown */
+@media (max-width: 768px) {
+  .subject-actions-menu.active .nav-button.hub-button .button-text.mobile-only,
+  .topic-actions-menu.active .nav-button.hub-button .button-text.mobile-only {
+    /* Ensure it inherits text color correctly in mobile dropdown */
+    /* color: #333 !important; */ 
+  }
+
+  .subject-actions-menu.active .nav-button.hub-button .button-icon,
+  .topic-actions-menu.active .nav-button.hub-button .button-icon {
+    /* color: #555 !important; /* Ensure icon color in mobile dropdown */
+  }
+}
+
+/* Topic Meta Enhancements for Priority */
+.topic-meta {
+  display: flex;
+  align-items: center; /* Vertically align items in meta */
+  gap: 10px; /* Consistent gap */
+  flex-wrap: wrap; /* Allow wrapping on small screens */
+}
+
+.priority-indicator-list {
+  display: inline-flex; /* Use inline-flex for better alignment with text */
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: 500;
+  color: white; /* Default text color, overridden by specific priority classes if needed */
+  margin-right: 8px; /* Space after the indicator */
+  white-space: nowrap;
+}
+
+/* Hide label by default, show on hover or for smaller screens if desired */
+.priority-indicator-list .priority-indicator-label {
+  display: none; /* Initially hide text label */
+  margin-left: 5px;
+}
+
+/* Show label on hover over the indicator */
+.priority-indicator-list:hover .priority-indicator-label {
+  display: inline; 
+}
+
+/* Specific priority class styling (already defined in SubjectHubModal.css, 
+   but good to have fallbacks or ensure they are globally available if not using CSS modules) */
+.priority-indicator-list.priority-low { background-color: #4CAF50; }
+.priority-indicator-list.priority-mild { background-color: #CDDC39; color: #333; /* Adjust text for light bg */ }
+.priority-indicator-list.priority-medium { background-color: #FF9800; }
+.priority-indicator-list.priority-high { background-color: #FF5722; }
+.priority-indicator-list.priority-very-high { background-color: #F44336; }
+
+
+/* Ensure other meta items are styled consistently */
+.topic-meta .card-count,
+.topic-meta .exam-type,
+.topic-meta .exam-board {
+  font-size: 0.8rem; /* Match priority indicator font size */
+  /* Inherit color from .topic-header or set explicitly if needed */
+  opacity: 0.85; /* From existing styling */
+  white-space: nowrap;
+}
+
+/* Responsive adjustments for topic meta */
+@media (max-width: 768px) {
+  .topic-meta {
+    gap: 8px; /* Slightly smaller gap on mobile */
+  }
+  .priority-indicator-list .priority-indicator-label {
+    display: none; /* Keep label hidden on mobile by default to save space */
+  }
+  .topic-info h3 {
+    margin-bottom: 4px; /* Add a bit of space below topic title if meta wraps */
+  }
+}
+
+@media (max-width: 480px) {
+  /* On very small screens, maybe always show priority icon only */
+  .priority-indicator-list .priority-indicator-label {
+    display: none; 
+  }
+  .topic-meta {
+    flex-direction: row; /* Keep horizontal but allow wrap */
+    align-items: flex-start;
+  }
+  .topic-info h3 {
+    font-size: 0.9rem; /* Adjust title size */
+  }
+}

@@ -8,8 +8,19 @@ import TopicCreationModal from "./TopicCreationModal";
 import { deleteSubject, deleteTopic } from "./FlashcardTopicHandler";
 import FlashcardGeneratorBridge from './FlashcardGeneratorBridge';
 import ErrorBoundary from './ErrorBoundary';
+import SubjectHubModal from './SubjectHubModal'; // Import the new modal
 import { BRIGHT_COLORS, getContrastColor, generateShade, ensureValidColorMapping } from '../utils/ColorUtils';
 import { dlog, dwarn, derr } from '../utils/logger'; 
+
+// Define PRIORITY_LEVELS (same as in SubjectHubModal.jsx - consider moving to a shared utils file)
+const PRIORITY_LEVELS = {
+  1: { label: "Leaf it till later", icon: "🪴", color: "#4CAF50", class: "priority-low" },
+  2: { label: "Turtle mode", icon: "🐢", color: "#CDDC39", class: "priority-mild" },
+  3: { label: "Brain says maybe", icon: "🧠", color: "#FF9800", class: "priority-medium" },
+  4: { label: "Deadline incoming!", icon: "⏰", color: "#FF5722", class: "priority-high" },
+  5: { label: "This is fine.", icon: "🔥", color: "#F44336", class: "priority-very-high" }
+};
+const DEFAULT_PRIORITY = 3;
 
 // Helper function to chunk an array
 const chunkArray = (array, size) => {
@@ -242,8 +253,11 @@ const FlashcardList = ({
   subjectColorMapping: subjectColorMappingFromProps,
   propagateSaveToBridge,
   handleSaveTopicShells,
+  onAddTopicShell,
+  onDeleteTopicProp,
   recordId,
-  userId
+  userId,
+  onUpdateTopicPriorityProp
 }) => {
   // --- START: HOOK DEFINITIONS ---
 
@@ -263,6 +277,10 @@ const FlashcardList = ({
   const [groupedCards, setGroupedCards] = useState({});
   const [subjectColorMapping, setSubjectColorMapping] = useState(() => ensureValidColorMapping(subjectColorMappingFromProps || {}));
 
+  // <<< NEW STATE FOR SUBJECT HUB MODAL >>>
+  const [isSubjectHubModalOpen, setIsSubjectHubModalOpen] = useState(false);
+  const [selectedSubjectForHub, setSelectedSubjectForHub] = useState(null);
+  // <<< END NEW STATE >>>
 
   // Add new state for delete confirmation
   const [deleteConfirmState, setDeleteConfirmState] = useState({
@@ -798,6 +816,73 @@ useEffect(() => {
     );
   };
 
+  // <<< NEW FUNCTIONS FOR SUBJECT HUB MODAL >>>
+  const openSubjectHubModal = useCallback((subjectData) => {
+    dlog("[FlashcardList] Opening Subject Hub for:", subjectData);
+    // Pass the subject's name, its topics (actual cards/shells under that subject), and its color
+    const topicsForSubject = Object.entries(groupedCards[subjectData.id] || {})
+      .map(([topicName, items]) => ({ 
+        name: topicName, 
+        id: items[0]?.topicId || `${subjectData.id}-${topicName}`, // Attempt to get a real ID or construct one
+        items // Keep items if needed later for priority display or more info
+      })); 
+
+    setSelectedSubjectForHub({
+      name: subjectData.title, // Use subject.title which is the name
+      id: subjectData.id, // The subject's key/id
+      topics: topicsForSubject,
+      color: subjectData.color // The subject's base color
+    });
+    setIsSubjectHubModalOpen(true);
+  }, [groupedCards]);
+
+  const closeSubjectHubModal = useCallback(() => {
+    setIsSubjectHubModalOpen(false);
+    setSelectedSubjectForHub(null);
+  }, []);
+
+  // Modify handleUpdateTopicPriorityInHub
+  const handleUpdateTopicPriorityInHub = useCallback((subjectName, topicId, newPriority) => {
+    dlog(`[Hub Action] Update priority for topic ID: '${topicId}' in subject '${subjectName}' to: ${newPriority}`);
+    if (onUpdateTopicPriorityProp) {
+      onUpdateTopicPriorityProp(topicId, newPriority, subjectName); // Pass subjectName too if needed by App.js
+    } else {
+      derr("[FlashcardList] onUpdateTopicPriorityProp is missing!");
+    }
+    // Optimistically update the local state for the modal
+    setSelectedSubjectForHub(prev => {
+      if (!prev || !prev.topics) return prev;
+      const updatedTopics = prev.topics.map(t => 
+        t.id === topicId ? { ...t, topicPriority: newPriority } : t
+      );
+      return { ...prev, topics: updatedTopics };
+    });
+  }, [onUpdateTopicPriorityProp, setSelectedSubjectForHub]);
+
+  const handleDeleteTopicInHub = useCallback(async (subjectName, topicIdOrName) => {
+    dlog(`[Hub Action] Delete topic: '${topicIdOrName}' from subject: '${subjectName}'`);
+    // This can reuse the existing handleDeleteTopic logic
+    // We need to ensure handleDeleteTopic can be called with just subject name and topic name/id
+    // For now, we'll call the existing one, which expects subject and topic name.
+    // We might need to adapt how we get the topic name if only ID is available from hub.
+    const topicObject = selectedSubjectForHub?.topics.find(t => t.id === topicIdOrName || t.name === topicIdOrName);
+    if (topicObject) {
+      await handleDeleteTopic(subjectName, topicObject.name);
+      // Refresh subject hub data if modal is still open
+      if (isSubjectHubModalOpen && selectedSubjectForHub) {
+        const updatedTopics = (groupedCards[selectedSubjectForHub.id] || {})
+          ? Object.entries(groupedCards[selectedSubjectForHub.id])
+              .map(([topicName, items]) => ({ name: topicName, id: items[0]?.topicId || `${selectedSubjectForHub.id}-${topicName}`, items }))
+              .filter(t => t.name !== topicObject.name) // Filter out the deleted one
+          : [];
+        setSelectedSubjectForHub(prev => ({ ...prev, topics: updatedTopics }));
+      }
+    } else {
+      dwarn("[Hub Action] Could not find topic to delete:", topicIdOrName);
+    }
+  }, [handleDeleteTopic, isSubjectHubModalOpen, selectedSubjectForHub, groupedCards]); 
+  // <<< END NEW FUNCTIONS >>>
+
   // --- END: HOOK DEFINITIONS ---
 
   // --- START: EVENT HANDLERS & HELPER FUNCTIONS ---
@@ -958,45 +1043,56 @@ useEffect(() => {
     const { itemToDelete, itemType, parentSubject } = deleteConfirmState;
     
     try {
-      // Add debug logging
-      dlog(`[FlashcardList] Attempting to delete ${itemType}. Handlers available:`, {
-        deleteSubject: typeof onDeleteSubject === 'function' ? 'Available' : 'Not available',
-        deleteTopic: typeof onDeleteTopic === 'function' ? 'Available' : 'Not available',
-        itemToDelete,
-        parentSubject
-      });
+      dlog(`[FlashcardList] Attempting to delete ${itemType}: '${itemToDelete}' from subject '${parentSubject}'.`);
+      dlog(`[FlashcardList] onDeleteTopicProp available: ${typeof onDeleteTopicProp === 'function'}`);
+      dlog(`[FlashcardList] onDeleteTopic (original prop) available: ${typeof onDeleteTopic === 'function'}`);
       
       if (itemType === "topic") {
-        if (typeof onDeleteTopic === 'function') {
-          // Use the prop if provided
-          dlog(`[FlashcardList] Calling onDeleteTopic(${itemToDelete}, ${parentSubject})`);
+        if (typeof onDeleteTopicProp === 'function') {
+          // *** Use the new prop from App.js if available ***
+          dlog(`[FlashcardList] Calling onDeleteTopicProp (from App.js) for topic: '${itemToDelete}', subject: '${parentSubject}'`);
+          await onDeleteTopicProp(parentSubject, itemToDelete); // itemToDelete is the topicName here
+        } else if (typeof onDeleteTopic === 'function') {
+          // Fallback to the original onDeleteTopic prop if it exists
+          dlog(`[FlashcardList] Calling onDeleteTopic (original prop) for topic: '${itemToDelete}', subject: '${parentSubject}'`);
           await onDeleteTopic(itemToDelete, parentSubject);
         } else {
-          // Fall back to direct handler
-          dlog(`[FlashcardList] Using direct deleteTopic(${itemToDelete}, ${parentSubject})`);
-          await deleteTopic(itemToDelete, parentSubject);
+          // Fallback to direct import if no props are suitable (should be less common now)
+          dlog(`[FlashcardList] Using direct deleteTopic handler from FlashcardTopicHandler.js for topic: '${itemToDelete}', subject: '${parentSubject}'`);
+          await deleteTopic(itemToDelete, parentSubject); 
         }
-        dlog(`Topic deleted: ${parentSubject} - ${itemToDelete}`);
+        dlog(`[FlashcardList] Topic deletion process initiated for: ${parentSubject} - ${itemToDelete}`);
       } else if (itemType === "subject") {
+        // Subject deletion logic (remains the same, using onDeleteSubject prop or direct import)
         if (typeof onDeleteSubject === 'function') {
-          // Use the prop if provided
           dlog(`[FlashcardList] Calling onDeleteSubject(${itemToDelete})`);
           await onDeleteSubject(itemToDelete);
         } else {
-          // Fall back to direct handler
           dlog(`[FlashcardList] Using direct deleteSubject(${itemToDelete})`);
-          await deleteSubject(itemToDelete);
+          await deleteSubject(itemToDelete); // Direct import
         }
-        dlog(`Subject deleted: ${itemToDelete}`);
+        dlog(`[FlashcardList] Subject deletion process initiated: ${itemToDelete}`);
       } else {
-        throw new Error("No handler available");
+        derr("[FlashcardList] Unknown itemType for deletion:", itemType);
+        throw new Error("Unknown item type for deletion");
       }
     } catch (error) {
-      derr(`Error deleting ${itemType}:`, error);
+      derr(`[FlashcardList] Error deleting ${itemType} '${itemToDelete}':`, error);
       alert(`Error deleting ${itemType}: ${error.message}`);
     } finally {
-      // Close the modal regardless of outcome
       setDeleteConfirmState({ isOpen: false, title: "", message: "", itemToDelete: null, itemType: null, parentSubject: null });
+      
+      // Optimistically update the SubjectHubModal's topic list if it's open and a topic was deleted
+      // This helps the modal reflect the change without a full re-fetch from App.js immediately.
+      if (isSubjectHubModalOpen && itemType === "topic" && parentSubject === selectedSubjectForHub?.name) {
+        const topicIdentifier = itemToDelete; // This is the topicName used in confirmDelete
+        setSelectedSubjectForHub(prev => {
+          if (!prev) return null;
+          const updatedTopics = prev.topics.filter(t => t.name !== topicIdentifier && t.id !== topicIdentifier);
+          return { ...prev, topics: updatedTopics };
+        });
+        dlog(`[FlashcardList] Optimistically updated topics in SubjectHubModal after deleting '${topicIdentifier}'.`);
+      }
     }
   };
   
@@ -1017,16 +1113,17 @@ useEffect(() => {
   }, [onDeleteCard]);
 
   const renderTopic = (subject, topic, items, topicColor) => {
-    // --- Ensure items is an array ---
     const validItems = Array.isArray(items) ? items : [];
-    // --------------------------------
     const topicShell = validItems.find(item => item.type === 'topic' && item.isShell);
     const actualCards = validItems.filter(item => item.type !== 'topic');
     const displayCount = actualCards.length;
-    const textColor = getContrastColor(topicColor);
     const examBoard = topicShell?.examBoard || "General";
     const examType = topicShell?.examType || "Course";
-    const topicKey = `${subject}-${topic}`; // Unique key for state/refs
+    const topicKey = `${subject}-${topic}`;
+
+    // Determine priority display
+    const currentPriorityValue = topicShell?.topicPriority || DEFAULT_PRIORITY;
+    const priorityDisplayInfo = PRIORITY_LEVELS[currentPriorityValue] || PRIORITY_LEVELS[DEFAULT_PRIORITY];
 
     // Handle topic print click
     const handlePrintTopicClick = (e) => {
@@ -1093,16 +1190,24 @@ useEffect(() => {
         key={topicKey} 
         className="topic-container"
         ref={el => topicRefs.current[topicKey] = el}
-        onClick={handleSlideshowTopicClick} // Open slideshow on click of entire topic
+        onClick={handleSlideshowTopicClick} 
       >
         <div
-  className={`topic-header ${displayCount === 0 ? 'empty-shell' : ''}`}
-style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
->
-
+          className={`topic-header ${displayCount === 0 ? 'empty-shell' : ''}`}
+          style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
+        >
           <div className="topic-info">
             <h3>{topic}</h3>
             <div className="topic-meta">
+              {/* Priority Indicator - NEW */}
+              <span 
+                className={`priority-indicator-list ${priorityDisplayInfo.class}`}
+                title={priorityDisplayInfo.label}
+                style={{ backgroundColor: priorityDisplayInfo.color }}
+              >
+                {priorityDisplayInfo.icon}
+                <span className="priority-indicator-label">{priorityDisplayInfo.label}</span>
+              </span>
               <span className="card-count">({displayCount} cards)</span>
               <span className="exam-type">{examType}</span>
               <span className="exam-board">{examBoard}</span>
@@ -1146,6 +1251,7 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
                 <span className="button-icon">🖨️</span>
                 <span className="button-text mobile-only">Print</span>
               </button>
+              {/*
               <button
                 onClick={handleDeleteTopicClick}
                 className="nav-button delete-topic-button"
@@ -1153,7 +1259,7 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
               >
                 <span className="button-icon">🗑️</span>
                 <span className="button-text mobile-only">Delete</span>
-              </button>
+              </button>*/}
             </div>
           </div>
         </div>
@@ -1241,6 +1347,14 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
                 openColorEditor(subject, null, subjectBaseColor, e);
               };
 
+              // <<< NEW BUTTON FOR SUBJECT HUB >>>
+              const handleOpenHubClick = (e) => {
+                e.stopPropagation();
+                // Pass subject object which includes { id, title, cards (topicsData), color }
+                openSubjectHubModal({ id: subject, title, cards: topicsData, color: subjectBaseColor });
+              };
+              // <<< END NEW BUTTON >>>
+
               return (
                 <div
                   key={subjectKey}
@@ -1296,6 +1410,16 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
                           <span className="button-icon">🎨</span>
                           <span className="button-text mobile-only">Color</span>
                         </button>
+                        {/* <<< ADD SUBJECT HUB BUTTON HERE >>> */}
+                        <button
+                          onClick={handleOpenHubClick}
+                          className="nav-button hub-button" 
+                          title="Manage Subject Topics (Subject Hub)"
+                        >
+                          <span className="button-icon">⚙️</span> {/* Or use a hub icon if available */}
+                          <span className="button-text mobile-only">Hub</span>
+                        </button>
+                        {/* <<< END SUBJECT HUB BUTTON >>> */}
                         <button
                           onClick={handleDeleteSubjectClick}
                           className="nav-button delete-button"
@@ -1386,6 +1510,18 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
           />
         </ErrorBoundary>
       )}
+      {/* <<< RENDER SUBJECT HUB MODAL HERE >>> */}
+      {isSubjectHubModalOpen && selectedSubjectForHub && (
+        <SubjectHubModal
+          isOpen={isSubjectHubModalOpen}
+          onClose={closeSubjectHubModal}
+          subjectData={selectedSubjectForHub}
+          onAddTopic={handleAddNewTopicInHub}
+          onUpdateTopicPriority={handleUpdateTopicPriorityInHub}
+          onDeleteTopic={handleDeleteTopicInHub}
+        />
+      )}
+      {/* <<< END RENDER MODAL >>> */}
       <SaveLoadingOverlay />
       <SaveErrorMessage />
     </div>
