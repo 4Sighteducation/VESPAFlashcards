@@ -157,56 +157,6 @@ const SpacedRepetition = ({
   // New useEffect to manage study session state (currentIndex, studyCompleted, flip states)
   // This reacts to changes in `currentCards` (after filtering) and when the study modal opens/closes.
   useEffect(() => {
-    if (!showStudyModal) {
-      // If modal is closed, reset study-specific states
-      setCurrentIndex(0); // Reset for next session
-      setStudyCompleted(false);
-      resetCardVisualState(); // Call this here too
-      // Clear any pending timeouts when modal closes or currentCards change
-      if (feedbackTimeoutRef.current) {
-        clearTimeout(feedbackTimeoutRef.current);
-        feedbackTimeoutRef.current = null;
-      }
-      if (answerFeedbackTimeoutRef.current) {
-        clearTimeout(answerFeedbackTimeoutRef.current);
-        answerFeedbackTimeoutRef.current = null;
-      }
-      return;
-    }
-
-    // If modal is open and currentCards is populated:
-    if (currentCards.length > 0) {
-        let newIndex = currentIndex; // Start with current, may not need to change
-        if (currentIndex >= currentCards.length) { // Current index is out of bounds for the new list
-            newIndex = Math.max(0, currentCards.length - 1); // Go to new last card, or 0 if list just emptied then repopulated with one item
-        } else if (currentIndex < 0) { // Should ideally not happen, but guard it
-             newIndex = 0;
-        }
-        // Only update if necessary
-        if (newIndex !== currentIndex) setCurrentIndex(newIndex); 
-        
-        if (studyCompleted) setStudyCompleted(false); // If we have cards, we are not completed
-    } else { // currentCards is empty
-        if (!studyCompleted) setStudyCompleted(true); // Only set if not already true
-        // setCurrentIndex(0); // Reset index when completed, though no card is shown. Not strictly necessary if studyCompleted handles render.
-    }
-    
-    resetCardVisualState(); // Reset flip state for the new/current card, or for empty state
-
-    // Clear any pending feedback timeout
-    if (feedbackTimeoutRef.current) {
-      clearTimeout(feedbackTimeoutRef.current);
-      feedbackTimeoutRef.current = null;
-    }
-    // Clear the MCQ answer feedback timeout as well
-    if (answerFeedbackTimeoutRef.current) {
-      clearTimeout(answerFeedbackTimeoutRef.current);
-      answerFeedbackTimeoutRef.current = null;
-    }
-  }, [currentCards, showStudyModal]); // Removed currentIndex from dependencies
-
-  // <<< REVISED useEffect for Study Session Management >>>
-  useEffect(() => {
     console.log('[SR Effect] Running. showStudyModal:', showStudyModal, 'currentCards.length:', currentCards.length, 'currentIndex:', currentIndex, 'studyCompleted (before):', studyCompleted);
     if (!showStudyModal) {
       // Modal closed: Reset session states
@@ -547,82 +497,54 @@ const SpacedRepetition = ({
                 </button>
               </div>
 
-              {expandedSubjects[subject] && Object.keys(groupedBoxCards[subject] || {} ).map((topic) => {
-                const topicCardsFlat = groupedBoxCards[subject][topic] || [];
-                const topicColor = topicCardsFlat[0]?.cardColor || '#e0e0e0';
-                const textColorTopic = getContrastColor(topicColor);
-                const topicKey = `${subject}-${topic}`;
-                const topicHasCards = topicCardsFlat.length > 0;
-                
-                return (
-                  <div key={topicKey} className="topic-group">
-                    <div 
-                      className="topic-header"
-                      style={{ 
-                        backgroundColor: topicColor,
-                        color: textColorTopic
-                      }}
-                    >
-                      <div className="topic-content" onClick={() => toggleExpandTopic(topicKey)}>
-                        <div className="topic-info">
-                          <h3>{topic}</h3>
-                        </div>
-                        <div className="topic-meta">
-                          <span className="card-count">
-                            ({topicCardsFlat.length} cards)
-                          </span>
-                          {topicCardsFlat.some(card => card.isReviewable === true) && <span className="topic-reviewable-badge">Ready</span>}
-                        </div>
-                      </div>
-                      <button 
-                        className="review-btn small" 
-                        onClick={() => reviewTopic(subject, topic)}
-                        style={{ color: textColorTopic }}
-                        disabled={!topicHasCards}
-                        title={topicHasCards ? "View cards in this topic" : "No cards in this topic"}
-                      >
-                        <span className="review-icon">👁️</span>
-                      </button>
-                    </div>
-
-                    {expandedTopics[topicKey] && (
-                      <div className="topic-cards expanded-topic">
-                        {(topicCardsFlat).map((card) => {
-                           const todayUTC = new Date(); // Use UTC for check
-                           todayUTC.setUTCHours(0,0,0,0);
-                           const cardIsCurrentlyReviewable = card.isReviewable === true;
-                          return (
-                            <div 
-                              key={card.id} 
-                              className="card-preview"
-                              style={{
-                                backgroundColor: card.cardColor,
-                                color: getContrastColor(card.cardColor)
-                              }}
-                            >
-                              <div className="card-preview-header">
-                                <span className="card-type">{card.questionType}</span>
-                                <div className="card-review-status">
-                                  {cardIsCurrentlyReviewable ? (
-                                    <span className="review-ready">Ready for Review</span>
-                                  ) : (
-                                    <span className="review-waiting">
-                                      Next: {new Date(card.nextReviewDate).toLocaleDateString()}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="card-preview-content">
-                                <div dangerouslySetInnerHTML={{ __html: card.front || card.question }} />
-                              </div>
+              {expandedSubjects[subject] && (
+                <div className="topics-list-container">
+                  {Object.keys(groupedBoxCards[subject] || {} ).map((topic) => {
+                    const topicCardsFlat = groupedBoxCards[subject][topic] || [];
+                    const topicColor = topicCardsFlat[0]?.cardColor || '#e0e0e0';
+                    const textColorTopic = getContrastColor(topicColor);
+                    const topicKey = `${subject}-${topic}`;
+                    const topicHasCards = topicCardsFlat.length > 0;
+                    
+                    return (
+                      <div key={topicKey} className="topic-group">
+                        <div 
+                          className="topic-header"
+                          style={{ 
+                            backgroundColor: topicColor,
+                            color: textColorTopic
+                          }}
+                          onClick={() => topicHasCards ? reviewTopic(subject, topic) : null}
+                        >
+                          <div className="topic-content">
+                            <div className="topic-info">
+                              <h3>{topic}</h3>
                             </div>
-                          );
-                        })}
+                            <div className="topic-meta">
+                              <span className="card-count">
+                                ({topicCardsFlat.length} cards)
+                              </span>
+                              {topicCardsFlat.some(card => card.isReviewable === true) && <span className="topic-reviewable-badge">Ready</span>}
+                            </div>
+                          </div>
+                          <button 
+                            className="review-btn small" 
+                            onClick={(e) => { 
+                              e.stopPropagation();
+                              if (topicHasCards) reviewTopic(subject, topic);
+                            }}
+                            style={{ color: textColorTopic }}
+                            disabled={!topicHasCards}
+                            title={topicHasCards ? "View cards in this topic" : "No cards in this topic"}
+                          >
+                            <span className="review-icon">👁️</span>
+                          </button>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
