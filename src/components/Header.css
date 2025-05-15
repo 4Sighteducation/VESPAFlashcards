@@ -370,3 +370,84 @@
     flex-wrap: wrap;
   }
 }
+
+/* Target Save All button with specificity for color changes, but keep its original dimensions */
+.header-visible-actions .save-button {
+  /* Color changes to match nav-button */
+  background-color: #079baa; 
+  color: white;
+  border-bottom: 3px solid #00e5db;
+
+  /* Original dimensions & other properties from .save-button */
+  padding: 10px 20px;
+  border-left: none; /* Assuming no other borders were intended besides bottom */
+  border-right: none;
+  border-top: none;
+  border-radius: 5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25); /* Original box-shadow */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  width: auto;
+  min-width: 130px; 
+  text-align: center;
+}
+
+.header-visible-actions .save-button:hover {
+  background-color: #068998; /* Hover to match nav-button hover */
+  /* Keep original transform and shadow from .save-button:hover if they were different */
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.header-visible-actions .save-button:disabled {
+  background-color: #cccccc; /* Standard disabled color */
+  color: #666666; /* Standard disabled text color */
+  cursor: not-allowed;
+  border-bottom: 3px solid #aaaaaa; /* Optional: adjust disabled border */
+  box-shadow: none;
+  transform: none;
+}
+
+/* Remove the general .save-button rule if all its aspects are covered above or by .nav-button on mobile */
+/* For now, I will comment it out to ensure the specific one takes precedence */
+
+/*
+.save-button {
+  background-color: #00e5db; 
+  color: #06206e;       
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
+  border-bottom: 3px solid #153aa3; 
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  width: auto;
+  min-width: 130px;
+}
+
+.save-button:hover {
+  background-color: #00cec9; 
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.save-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none; 
+  box-shadow: none; 
+}
+*/
