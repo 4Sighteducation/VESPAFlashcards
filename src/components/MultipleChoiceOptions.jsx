@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { dlog, dwarn, derr } from '../utils/logger';
 import './Flashcard.css';
+import { dlog, dwarn, derr } from '../utils/logger'; 
 
 /**
  * Enhanced MultipleChoiceOptions component

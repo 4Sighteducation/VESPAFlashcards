@@ -3,7 +3,7 @@ import NewTopicModal from "./NewTopicModal";
 import { 
   setupPageUnloadProtection
 } from './TopicsPersistenceManager';
-
+import { dlog, dwarn, derr } from '../utils/logger'; 
 /**
  * TopicListSyncManager - Data layer for topic list management
  * 
