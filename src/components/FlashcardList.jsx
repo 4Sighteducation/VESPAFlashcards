@@ -9,7 +9,7 @@ import { deleteSubject, deleteTopic } from "./FlashcardTopicHandler";
 import FlashcardGeneratorBridge from './FlashcardGeneratorBridge';
 import ErrorBoundary from './ErrorBoundary';
 import { BRIGHT_COLORS, getContrastColor, generateShade, ensureValidColorMapping } from '../utils/ColorUtils';
-
+import { dlog, dwarn, derr } from '../utils/logger'; 
 
 // Helper function to chunk an array
 const chunkArray = (array, size) => {
@@ -82,7 +82,7 @@ const FlashcardModal = ({ card, onClose, onUpdateCard, onDeleteCard }) => {
       onUpdateCard({ ...card, front: editedFront, back: editedBack });
       setIsEditing(false);
     } else {
-      console.error("FlashcardModal: onUpdateCard prop is not a function!");
+      derr("FlashcardModal: onUpdateCard prop is not a function!");
     }
     // onClose(); // Optionally close after save
   };
@@ -94,7 +94,7 @@ const FlashcardModal = ({ card, onClose, onUpdateCard, onDeleteCard }) => {
         onClose(); // Close after delete confirmation
       }
     } else {
-      console.error("FlashcardModal: onDeleteCard prop is not a function!");
+      derr("FlashcardModal: onDeleteCard prop is not a function!");
     }
   };
 
@@ -328,18 +328,18 @@ const FlashcardList = ({
         if (authData) {
           const parsedAuth = JSON.parse(authData);
           if (parsedAuth && parsedAuth.id) {
-            console.log("[FlashcardList] Retrieved userId from localStorage:", parsedAuth.id);
+            dlog("[FlashcardList] Retrieved userId from localStorage:", parsedAuth.id);
             setLocalUserId(parsedAuth.id);
           }
         }
       } catch (error) {
-        console.error("[FlashcardList] Error getting userId from localStorage:", error);
+        derr("[FlashcardList] Error getting userId from localStorage:", error);
       }
     }
   }, [userId, localUserId]);
 
 useEffect(() => {
-  console.log("[FlashcardList] subjectColorMappingFromProps updated in prop, syncing local state:", subjectColorMappingFromProps);
+  dlog("[FlashcardList] subjectColorMappingFromProps updated in prop, syncing local state:", subjectColorMappingFromProps);
   setSubjectColorMapping(ensureValidColorMapping(subjectColorMappingFromProps || {}));
 }, [subjectColorMappingFromProps]);
 
@@ -354,7 +354,7 @@ useEffect(() => {
           topics: { ...(prev[subject]?.topics || {}), ...(newMapping[subject].topics || {}) } // Merge topics
         };
       }
-      console.log("[updateColorMapping] New state:", merged);
+      dlog("[updateColorMapping] New state:", merged);
       return merged;
     });
   }, []);
@@ -390,9 +390,9 @@ useEffect(() => {
 
   // Regroup cards whenever the 'cards' prop changes
   useEffect(() => {
-    console.log("[FlashcardList regroup useEffect] Cards prop changed:", cards);
+    dlog("[FlashcardList regroup useEffect] Cards prop changed:", cards);
     const bySubjectAndTopic = regroupCards(cards);
-    console.log("[FlashcardList regroup useEffect] Setting grouped cards:", bySubjectAndTopic);
+    dlog("[FlashcardList regroup useEffect] Setting grouped cards:", bySubjectAndTopic);
     setGroupedCards(bySubjectAndTopic);
   }, [cards, regroupCards]);
 
@@ -447,21 +447,21 @@ useEffect(() => {
               if (subjectHeader) subjectHeaderBottom = subjectHeader.getBoundingClientRect().bottom;
               const thresholdBelowHeader = 5;
 
-              // console.log(`[Topic: ${topicKey}] Menu Active. BT: ${buttonRect.top.toFixed(2)}, MH: ${menuHeight}, SHB: ${subjectHeaderBottom.toFixed(2)}`);
+              // dlog(`[Topic: ${topicKey}] Menu Active. BT: ${buttonRect.top.toFixed(2)}, MH: ${menuHeight}, SHB: ${subjectHeaderBottom.toFixed(2)}`);
 
               if (menuHeight > 0 && (buttonRect.top - menuHeight) < (subjectHeaderBottom + thresholdBelowHeader)) {
-                // console.log(`%c[Topic: ${topicKey}] Decision: Opening Downwards (clipped by subject header)`, 'color: blue;');
+                // dlog(`%c[Topic: ${topicKey}] Decision: Opening Downwards (clipped by subject header)`, 'color: blue;');
                 menuElement.classList.add('menu-opens-downward');
                 // AGGRESSIVE OVERRIDE FOR TOPICS LIST SCROLLING
                 if (topicsListContainer) topicsListContainer.style.overflowY = 'visible';
               } else {
-                // console.log(`%c[Topic: ${topicKey}] Decision: Opening Upwards`, 'color: green;');
+                // dlog(`%c[Topic: ${topicKey}] Decision: Opening Upwards`, 'color: green;');
                 menuElement.classList.remove('menu-opens-downward');
                 // Ensure topics list is scrollable if menu opens upwards normally
                 if (topicsListContainer) topicsListContainer.style.overflowY = 'auto';
               }
             } else {
-              // console.warn(`[Topic: ${topicKey}] Menu NOT active in setTimeout.`);
+              // dwarn(`[Topic: ${topicKey}] Menu NOT active in setTimeout.`);
             }
           }, 50);
         }
@@ -518,16 +518,16 @@ useEffect(() => {
               const menuHeight = menuElement.offsetHeight;
               const viewportHeight = window.innerHeight;
               const viewportTopThreshold = 10;
-              console.log(`[Subject: ${subjectKey}] Menu Active. ButtonTop: ${buttonRect.top.toFixed(2)}, MenuHeight: ${menuHeight}, ViewportHeight: ${viewportHeight}`);
+              dlog(`[Subject: ${subjectKey}] Menu Active. ButtonTop: ${buttonRect.top.toFixed(2)}, MenuHeight: ${menuHeight}, ViewportHeight: ${viewportHeight}`);
               if (menuHeight > 0 && (buttonRect.top - menuHeight) < viewportTopThreshold) {
-                console.log(`%c[Subject: ${subjectKey}] সিদ্ধান্ত: Opening Downwards`, 'color: blue;');
+                dlog(`%c[Subject: ${subjectKey}] সিদ্ধান্ত: Opening Downwards`, 'color: blue;');
                 menuElement.classList.add('menu-opens-downward');
               } else {
-                console.log(`%c[Subject: ${subjectKey}] সিদ্ধান্ত: Opening Upwards (or menuHeight is 0 or not enough space above)`, 'color: green;');
+                dlog(`%c[Subject: ${subjectKey}] সিদ্ধান্ত: Opening Upwards (or menuHeight is 0 or not enough space above)`, 'color: green;');
                 menuElement.classList.remove('menu-opens-downward');
               }
             } else {
-              console.warn(`[Subject: ${subjectKey}] Menu NOT active or not found in setTimeout when trying to set direction.`);
+              dwarn(`[Subject: ${subjectKey}] Menu NOT active or not found in setTimeout when trying to set direction.`);
             }
           }, 50); // Increased timeout slightly to 50ms
         }
@@ -581,10 +581,10 @@ useEffect(() => {
                   }
               }
           }
-          console.log(`[getExamInfo - ${subject}] Found: Type=${examType}, Board=${examBoard}`);
+          dlog(`[getExamInfo - ${subject}] Found: Type=${examType}, Board=${examBoard}`);
           return { examType, examBoard };
       } catch (error) {
-          console.error(`Error in getExamInfo for subject ${subject}:`, error);
+          derr(`Error in getExamInfo for subject ${subject}:`, error);
           return { examType: "Course", examBoard: "General" }; // Fallback on error
       }
   }, [groupedCards]);
@@ -606,14 +606,14 @@ useEffect(() => {
   
   const sortedSubjects = useMemo(() => {
     if (Object.keys(groupedCards).length === 0) return [];
-    console.log("[FlashcardList] Recalculating sortedSubjects. Current color mapping:", subjectColorMapping);
+    dlog("[FlashcardList] Recalculating sortedSubjects. Current color mapping:", subjectColorMapping);
 
     const subjectsWithDates = Object.keys(groupedCards).map(subject => {
       const { examType, examBoard } = getExamInfo(subject);
       // Use the state directly, provide fallback if needed
       const colorInfo = subjectColorMapping[subject];
       const baseColor = colorInfo?.base || '#f0f0f0'; // Default grey if not mapped
-      console.log(`[sortedSubjects - ${subject}] Color: ${baseColor}, ExamType: ${examType}, ExamBoard: ${examBoard}`);
+      dlog(`[sortedSubjects - ${subject}] Color: ${baseColor}, ExamType: ${examType}, ExamBoard: ${examBoard}`);
       return {
         id: subject,
         title: subject,
@@ -635,11 +635,11 @@ useEffect(() => {
   // 5. useEffect Hooks
   useEffect(() => {
     if (cards && cards.length > 0) {
-      console.log("[FlashcardList] Initial load with cards:", cards);
+      dlog("[FlashcardList] Initial load with cards:", cards);
       
       // Group cards by subject
       const subjects = [...new Set(cards.map(card => card.subject))];
-      console.log("[FlashcardList] Found subjects:", subjects);
+      dlog("[FlashcardList] Found subjects:", subjects);
       
       // Expand the first subject by default
       if (subjects.length > 0) {
@@ -648,7 +648,7 @@ useEffect(() => {
 
       // Force a re-render of the grouped cards
       const newGroupedCards = regroupCards(cards);
-      console.log("[FlashcardList] Grouped cards:", newGroupedCards);
+      dlog("[FlashcardList] Grouped cards:", newGroupedCards);
       setGroupedCards(newGroupedCards);
 
       // Initialize color mapping if not exists
@@ -671,11 +671,11 @@ useEffect(() => {
 
   // Update this useEffect to use the state and update function
  useEffect(() => {
-    console.log("[FlashcardList] Cards prop updated:", cards);
+    dlog("[FlashcardList] Cards prop updated:", cards);
     if (cards && cards.length > 0) {
         // --- 1. Regroup Cards ---
         const newGroupedCards = regroupCards(cards);
-        console.log("[FlashcardList] Regrouped cards:", newGroupedCards);
+        dlog("[FlashcardList] Regrouped cards:", newGroupedCards);
         setGroupedCards(newGroupedCards);
 
         // --- 2. Update Color Mapping --- // THIS SECTION IS NOW GONE
@@ -694,14 +694,14 @@ useEffect(() => {
 
   // --- Modify handleAddGeneratedCards ---
   const handleAddGeneratedCards = useCallback((generatedCards) => {
-    console.log("[FlashcardList] handleAddGeneratedCards called with:", generatedCards);
+    dlog("[FlashcardList] handleAddGeneratedCards called with:", generatedCards);
     if (!recordId) {
-      console.error("[FlashcardList] Cannot add generated cards: Missing recordId.");
+      derr("[FlashcardList] Cannot add generated cards: Missing recordId.");
       alert("Error: Cannot save cards, record ID is missing.");
       return;
     }
     if (!Array.isArray(generatedCards) || generatedCards.length === 0) {
-      console.warn("[FlashcardList] No valid cards received to add.");
+      dwarn("[FlashcardList] No valid cards received to add.");
       return;
     }
 
@@ -712,7 +712,7 @@ useEffect(() => {
     try {
       // --- Use the prop function instead of finding iframe directly ---
       if (typeof propagateSaveToBridge === 'function') {
-        console.log("[FlashcardList] Calling propagateSaveToBridge for ADD_TO_BANK");
+        dlog("[FlashcardList] Calling propagateSaveToBridge for ADD_TO_BANK");
         
         // Call the save bridge method
         propagateSaveToBridge({
@@ -723,7 +723,7 @@ useEffect(() => {
 
         // Set a timeout to auto-refresh the page if we don't get a response
         const timeoutId = setTimeout(() => {
-          console.log("[FlashcardList] Save operation (ADD_TO_BANK) timeout - refreshing page"); // Clarified log
+          dlog("[FlashcardList] Save operation (ADD_TO_BANK) timeout - refreshing page"); // Clarified log
           setIsSaving(false);
           window.location.reload(); // Consider less drastic fallback? Maybe just show error?
         }, 15000); // Increased timeout slightly to 15 seconds
@@ -738,20 +738,20 @@ useEffect(() => {
             setIsSaving(false); // Hide saving indicator
             
             if (event.data.success) {
-              console.log("[FlashcardList] ADD_TO_BANK operation successful. Requesting data refresh.");
+              dlog("[FlashcardList] ADD_TO_BANK operation successful. Requesting data refresh.");
               // --- Request data refresh AFTER successful add --- 
               if (propagateSaveToBridge) {
-                  console.log(`[FlashcardList] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
+                  dlog(`[FlashcardList] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
                   propagateSaveToBridge({
                       type: 'REQUEST_UPDATED_DATA',
                       recordId: recordId // FIX: Ensure recordId is directly on the payload
                   });
               } else {
-                  console.warn("[FlashcardList] Cannot request updated data: propagateSaveToBridge is missing.");
+                  dwarn("[FlashcardList] Cannot request updated data: propagateSaveToBridge is missing.");
               }
               // -------------------------------------------------
             } else {
-              console.error("[FlashcardList] ADD_TO_BANK operation failed:", event.data.error);
+              derr("[FlashcardList] ADD_TO_BANK operation failed:", event.data.error);
               setSaveError(event.data.error || "Failed to add cards to bank"); // Use error from message
             }
           }
@@ -760,13 +760,13 @@ useEffect(() => {
         window.addEventListener('message', handleAddResult); // Use the correct listener name
       } else {
         setIsSaving(false);
-        console.error("[FlashcardList] propagateSaveToBridge function is not available.");
+        derr("[FlashcardList] propagateSaveToBridge function is not available.");
         alert("Error: Could not communicate with the saving mechanism (prop missing).");
       }
     } catch (error) {
       setIsSaving(false);
       setSaveError(error.message || "An error occurred while saving cards");
-      console.error("[FlashcardList] Error in handleAddGeneratedCards:", error);
+      derr("[FlashcardList] Error in handleAddGeneratedCards:", error);
     }
   }, [recordId, propagateSaveToBridge]); // Add propagateSaveToBridge dependency
   // -------------------------------------------
@@ -803,7 +803,7 @@ useEffect(() => {
   // --- START: EVENT HANDLERS & HELPER FUNCTIONS ---
 
   const handleCardClick = (card) => {
-    console.log("Card clicked:", card);
+    dlog("Card clicked:", card);
     setSelectedCardForModal(card);
     setShowCardModal(true);
     if (typeof onCardClick === 'function') {
@@ -864,7 +864,7 @@ useEffect(() => {
     
     // Always create placeholder for empty topics
     if (slideshowCardsToUse.length === 0) {
-      console.log(`No cards found for slideshow: ${slideshowTitleToUse}. Creating placeholder.`);
+      dlog(`No cards found for slideshow: ${slideshowTitleToUse}. Creating placeholder.`);
       slideshowCardsToUse = [
         {
           id: `placeholder-${Date.now()}`,
@@ -921,7 +921,7 @@ useEffect(() => {
           // Pass subject, topic (or null), new color, AND the applyToTopics flag
           onUpdateSubjectColor(subject, topic, newColor, applyToTopics);
       } else {
-          console.warn("onUpdateSubjectColor prop is not defined. Color changes might not persist.");
+          dwarn("onUpdateSubjectColor prop is not defined. Color changes might not persist.");
       }
     }
     closeColorEditor();
@@ -959,7 +959,7 @@ useEffect(() => {
     
     try {
       // Add debug logging
-      console.log(`[FlashcardList] Attempting to delete ${itemType}. Handlers available:`, {
+      dlog(`[FlashcardList] Attempting to delete ${itemType}. Handlers available:`, {
         deleteSubject: typeof onDeleteSubject === 'function' ? 'Available' : 'Not available',
         deleteTopic: typeof onDeleteTopic === 'function' ? 'Available' : 'Not available',
         itemToDelete,
@@ -969,30 +969,30 @@ useEffect(() => {
       if (itemType === "topic") {
         if (typeof onDeleteTopic === 'function') {
           // Use the prop if provided
-          console.log(`[FlashcardList] Calling onDeleteTopic(${itemToDelete}, ${parentSubject})`);
+          dlog(`[FlashcardList] Calling onDeleteTopic(${itemToDelete}, ${parentSubject})`);
           await onDeleteTopic(itemToDelete, parentSubject);
         } else {
           // Fall back to direct handler
-          console.log(`[FlashcardList] Using direct deleteTopic(${itemToDelete}, ${parentSubject})`);
+          dlog(`[FlashcardList] Using direct deleteTopic(${itemToDelete}, ${parentSubject})`);
           await deleteTopic(itemToDelete, parentSubject);
         }
-        console.log(`Topic deleted: ${parentSubject} - ${itemToDelete}`);
+        dlog(`Topic deleted: ${parentSubject} - ${itemToDelete}`);
       } else if (itemType === "subject") {
         if (typeof onDeleteSubject === 'function') {
           // Use the prop if provided
-          console.log(`[FlashcardList] Calling onDeleteSubject(${itemToDelete})`);
+          dlog(`[FlashcardList] Calling onDeleteSubject(${itemToDelete})`);
           await onDeleteSubject(itemToDelete);
         } else {
           // Fall back to direct handler
-          console.log(`[FlashcardList] Using direct deleteSubject(${itemToDelete})`);
+          dlog(`[FlashcardList] Using direct deleteSubject(${itemToDelete})`);
           await deleteSubject(itemToDelete);
         }
-        console.log(`Subject deleted: ${itemToDelete}`);
+        dlog(`Subject deleted: ${itemToDelete}`);
       } else {
         throw new Error("No handler available");
       }
     } catch (error) {
-      console.error(`Error deleting ${itemType}:`, error);
+      derr(`Error deleting ${itemType}:`, error);
       alert(`Error deleting ${itemType}: ${error.message}`);
     } finally {
       // Close the modal regardless of outcome
@@ -1009,10 +1009,10 @@ useEffect(() => {
   const handleCardDeleteInList = useCallback((cardId) => {
     if (typeof onDeleteCard === 'function') {
       // Confirmation might be desired here as well, but for now, directly call onDeleteCard prop
-      console.log(`[FlashcardList] Deleting card ${cardId} from list view.`);
+      dlog(`[FlashcardList] Deleting card ${cardId} from list view.`);
       onDeleteCard(cardId); 
     } else {
-      console.error("[FlashcardList] onDeleteCard prop is not available.");
+      derr("[FlashcardList] onDeleteCard prop is not available.");
     }
   }, [onDeleteCard]);
 
@@ -1031,7 +1031,7 @@ useEffect(() => {
     // Handle topic print click
     const handlePrintTopicClick = (e) => {
       e.stopPropagation();
-      console.log(`Printing ${displayCount} cards for topic: ${topic}`);
+      dlog(`Printing ${displayCount} cards for topic: ${topic}`);
       openPrintModal(actualCards, `${subject} - ${topic}`);
     };
 
@@ -1050,7 +1050,7 @@ useEffect(() => {
       if (!topicShell && validItems.length > 0) {
         // Fallback: If no shell, try to use metadata from the first actual card
         const firstCard = validItems.find(item => item.type === 'card');
-        console.warn(`No topic shell found for regeneration of '${topic}'. Using first card's metadata as fallback.`);
+        dwarn(`No topic shell found for regeneration of '${topic}'. Using first card's metadata as fallback.`);
         setGeneratorTopic({
           subject: subject,
           topic: topic,
@@ -1074,7 +1074,7 @@ useEffect(() => {
           ...topicShell // Include all other topic shell properties
         });
       } else {
-        console.error('No topic shell or cards found to derive metadata for regeneration');
+        derr('No topic shell or cards found to derive metadata for regeneration');
         alert('Cannot generate cards: Topic information is missing.');
         return;
       }
@@ -1179,7 +1179,7 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
                                  subjectColor; 
           
           if (!topicDisplayColor || (typeof topicDisplayColor === 'string' && !topicDisplayColor.startsWith('#') && !topicDisplayColor.toLowerCase().startsWith('hsl'))) {
-              console.warn(`[FlashcardList renderTopics] Invalid topicDisplayColor for ${subject} - ${topic}: '${topicDisplayColor}'. Defaulting to subject color '${subjectColor}'.`);
+              dwarn(`[FlashcardList renderTopics] Invalid topicDisplayColor for ${subject} - ${topic}: '${topicDisplayColor}'. Defaulting to subject color '${subjectColor}'.`);
               topicDisplayColor = subjectColor; 
           }
           
@@ -1355,10 +1355,10 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
           onClose={() => setShowTopicCreationModal(false)}
           onSave={(topicShells) => {
              if (typeof handleSaveTopicShells === 'function') {
-               console.log("[FlashcardList] Calling handleSaveTopicShells from modal save...");
+               dlog("[FlashcardList] Calling handleSaveTopicShells from modal save...");
                handleSaveTopicShells(topicShells, false);
              } else {
-               console.error("handleSaveTopicShells prop is not a function!");
+               derr("handleSaveTopicShells prop is not a function!");
              }
             setShowTopicCreationModal(false);
           }}

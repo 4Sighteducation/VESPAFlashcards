@@ -31,7 +31,7 @@ import {
 import {
   validateCards,
 } from './utils/CardDataProcessor';
-
+import { dlog, dwarn, derr } from './utils/logger'; // Corrected path
 import {
   getRandomColor,
   generateShade,
@@ -60,7 +60,7 @@ const cleanHtmlTags = (str) => {
 // --- ADD THE NEW RECONCILIATION FUNCTION HERE ---
 const reconcileCardColors = (cardsArray, colorMapping) => {
   if (!Array.isArray(cardsArray) || !colorMapping || typeof colorMapping !== 'object') {
-    console.warn('[reconcileCardColors] Invalid input. cardsArray must be an array and colorMapping an object.');
+    dwarn('[reconcileCardColors] Invalid input. cardsArray must be an array and colorMapping an object.');
     return cardsArray || [];
   }
 
@@ -92,7 +92,7 @@ const reconcileCardColors = (cardsArray, colorMapping) => {
     
     // Optional: Log if a card's color was changed during reconciliation for debugging
     // if (item.cardColor !== newItem.cardColor || item.subjectColor !== newItem.subjectColor || item.topicColor !== newItem.topicColor) {
-    //   console.log(`[reconcileCardColors] Card ID ${newItem.id}: Old(card:${item.cardColor},subj:${item.subjectColor},topic:${item.topicColor}) -> New(card:${newItem.cardColor},subj:${newItem.subjectColor},topic:${newItem.topicColor})`);
+    //   dlog(`[reconcileCardColors] Card ID ${newItem.id}: Old(card:${item.cardColor},subj:${item.subjectColor},topic:${item.topicColor}) -> New(card:${newItem.cardColor},subj:${newItem.subjectColor},topic:${newItem.topicColor})`);
     // }
 
     return newItem;
@@ -440,9 +440,9 @@ function App() {
       // Backup multiple choice options
       backupMultipleChoiceOptions(allCards);
       
-      console.log("Saved data to localStorage with versioning and backup");
+      dlog("Saved data to localStorage with versioning and backup");
     } catch (error) {
-      console.error("Error saving to localStorage:", error);
+      derr("Error saving to localStorage:", error);
       dataLogger.logError('localStorage_save', error);
     }
   }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata]);
@@ -455,11 +455,11 @@ function App() {
       return recordId;
     }
     
-    console.log("[Auth Recovery] Record ID missing, attempting to recover...");
+    dlog("[Auth Recovery] Record ID missing, attempting to recover...");
     
     // First try to get it from auth object
     if (auth && auth.recordId) {
-      console.log("[Auth Recovery] Found record ID in auth object:", auth.recordId);
+      dlog("[Auth Recovery] Found record ID in auth object:", auth.recordId);
       return auth.recordId;
     }
     
@@ -469,31 +469,31 @@ function App() {
       if (storedData) {
         const parsedData = JSON.parse(storedData);
         if (parsedData && parsedData.recordId) {
-          console.log("[Auth Recovery] Recovered record ID from localStorage:", parsedData.recordId);
+          dlog("[Auth Recovery] Recovered record ID from localStorage:", parsedData.recordId);
           return parsedData.recordId;
         }
       }
     } catch (e) {
-      console.error("[Auth Recovery] Error reading from localStorage:", e);
+      derr("[Auth Recovery] Error reading from localStorage:", e);
     }
     
     // If we're in an iframe, request it from the parent
     if (window.parent !== window) {
-      console.log("[Auth Recovery] Requesting record ID from parent window");
+      dlog("[Auth Recovery] Requesting record ID from parent window");
       
       // Create a promise that will resolve when we get a response
       return new Promise((resolve) => {
         // Function to handle the response
         const handleRecordIdResponse = (event) => {
           if (event.data && event.data.type === 'RECORD_ID_RESPONSE' && event.data.recordId) {
-            console.log("[Auth Recovery] Received record ID from parent:", event.data.recordId);
+            dlog("[Auth Recovery] Received record ID from parent:", event.data.recordId);
             
             // Store the record ID in localStorage for future recovery
             try {
               const authData = { recordId: event.data.recordId };
               localStorage.setItem('flashcards_auth', JSON.stringify(authData));
             } catch (e) {
-              console.error("[Auth Recovery] Error storing record ID in localStorage:", e);
+              derr("[Auth Recovery] Error storing record ID in localStorage:", e);
             }
             
             // Remove the event listener
@@ -516,14 +516,14 @@ function App() {
         // Set a timeout to avoid hanging indefinitely
         setTimeout(() => {
           window.removeEventListener('message', handleRecordIdResponse);
-          console.error("[Auth Recovery] Timed out waiting for record ID");
+          derr("[Auth Recovery] Timed out waiting for record ID");
           resolve(null);
         }, 5000);
       });
     }
     
     // If all recovery methods fail
-    console.error("[Auth Recovery] Could not recover record ID");
+    derr("[Auth Recovery] Could not recover record ID");
     return null;
   }, [recordId, auth]);
 
@@ -531,7 +531,7 @@ function App() {
   const loadCombinedData = useCallback(async (source = 'auto') => {
       setLoading(true);
       setLoadingMessage(`Loading data from ${source}...`);
-      console.log(`[App Load] Starting data load from ${source}`, {timestamp: new Date().toISOString()});
+      dlog(`[App Load] Starting data load from ${source}`, {timestamp: new Date().toISOString()});
       
       try {
           // Step 1: Load the data from the appropriate source
@@ -540,26 +540,26 @@ function App() {
           
           if (source === 'knack' && isKnack) {
               // If data is coming from Knack, use cached data from message handlers
-              console.log("[App Load] Loading from Knack data cache");
+              dlog("[App Load] Loading from Knack data cache");
               // This data would have been provided through message handlers
               fromKnack = true;
               
               if (window.knackLoadedData) {
                   loadedData = window.knackLoadedData;
-                  console.log("[App Load] Using cached Knack data:", { cardCount: loadedData.cards?.length });
+                  dlog("[App Load] Using cached Knack data:", { cardCount: loadedData.cards?.length });
               } else {
-                  console.warn("[App Load] No cached Knack data available, falling back to localStorage");
+                  dwarn("[App Load] No cached Knack data available, falling back to localStorage");
                   loadedData = localStorageHelpers.loadData('flashcards_app');
               }
           } else {
               // Otherwise load from localStorage
-              console.log("[App Load] Loading from localStorage");
+              dlog("[App Load] Loading from localStorage");
               loadedData = localStorageHelpers.loadData('flashcards_app');
           }
           
           // Step 2: Process the loaded data
           if (loadedData) {
-              console.log("[App Load] Processing loaded data:", { 
+              dlog("[App Load] Processing loaded data:", { 
                   cardCount: loadedData.cards?.length,
                   topicListCount: loadedData.topicLists?.length || 0,
                   source: fromKnack ? 'knack' : 'localStorage'
@@ -586,11 +586,11 @@ function App() {
               
               // Process topic lists with proper reconstruction of relationships
               const topicLists = loadedData.topicLists || [];
-              console.log(`[App Load] Processing ${topicLists.length} topic lists`);
+              dlog(`[App Load] Processing ${topicLists.length} topic lists`);
               
               // Log each topic list for debugging
               topicLists.forEach((list, index) => {
-                  console.log(`[App Load] Topic list ${index + 1}: ${list.subject} with ${list.topics?.length || 0} topics`);
+                  dlog(`[App Load] Topic list ${index + 1}: ${list.subject} with ${list.topics?.length || 0} topics`);
               });
               
               // Update topic lists state
@@ -602,7 +602,7 @@ function App() {
               // Reconcile and verify topics match shells
               const reconcileTopics = () => {
                   const topicShells = processedCards.filter(card => card.type === 'topic' && card.isShell);
-                  console.log(`[App Load] Reconciling ${topicShells.length} topic shells with ${topicLists.length} topic lists`);
+                  dlog(`[App Load] Reconciling ${topicShells.length} topic shells with ${topicLists.length} topic lists`);
                   
                   // Ensure all topic shells have matching entries in topicLists
                   // This is a critical step to fix the subject overwriting issue
@@ -628,7 +628,7 @@ function App() {
                   // Create topic lists for any shells that don't have them
                   shellsBySubject.forEach((shells, subject) => {
                       if (!subjectMap.has(subject) && shells.length > 0) {
-                          console.log(`[App Load] Creating missing topic list for subject: ${subject} with ${shells.length} shells`);
+                          dlog(`[App Load] Creating missing topic list for subject: ${subject} with ${shells.length} shells`);
                           
                           // Create a new topic list for this subject
                           const newTopicList = {
@@ -657,14 +657,14 @@ function App() {
               // Store the timestamp of the loaded localStorage data
               if (loadedData.success && loadedData.data?.metadata?.timestamp) {
                 localStorageDataTimestampRef.current = loadedData.data.metadata.timestamp;
-                console.log('[App Load] Stored localStorage timestamp:', localStorageDataTimestampRef.current);
+                dlog('[App Load] Stored localStorage timestamp:', localStorageDataTimestampRef.current);
               } else {
                 localStorageDataTimestampRef.current = null; // Reset if no valid timestamp from this load
               }
               
-              console.log("[App Load] Data loading complete from " + source);
+              dlog("[App Load] Data loading complete from " + source);
           } else {
-              console.log("[App Load] No data found in " + source);
+              dlog("[App Load] No data found in " + source);
               localStorageDataTimestampRef.current = null; // No data, no timestamp
               setAllCards([]);
               setSubjectColorMapping({});
@@ -672,7 +672,7 @@ function App() {
               setUserTopics({});
           }
       } catch (error) {
-          console.error("[App Load] Error loading data:", error);
+          derr("[App Load] Error loading data:", error);
           showStatus("Error loading data. Using default empty state.");
           setAllCards([]);
           setSubjectColorMapping({});
@@ -699,22 +699,22 @@ function App() {
     // --- FIX: Add check for recordId at the very beginning ---
     const currentRecordId = recordId || (auth && auth.recordId); // Get ID from state or auth object
     if (!currentRecordId && isKnack) { // Only block Knack save if ID is missing
-        console.error("[App] saveData ABORTED: Cannot save to Knack - recordId is missing.");
+        derr("[App] saveData ABORTED: Cannot save to Knack - recordId is missing.");
         showStatus("Save Error: Missing user record ID. Please refresh.");
         setIsSaving(false); // Ensure saving state is reset
         return; // Stop execution
     }
     // --- End Fix ---
 
-    console.log("[App] saveData triggered. IsKnack:", isKnack);
+    dlog("[App] saveData triggered. IsKnack:", isKnack);
     if (!auth) {
-      console.warn("[App] No auth, saving locally only");
+      dwarn("[App] No auth, saving locally only");
       saveToLocalStorage();
       setIsSaving(false);
       return;
     }
     if (isSaving) {
-      console.log("[Save] Already saving, skipping.");
+      dlog("[Save] Already saving, skipping.");
       showStatus("Save in progress...");
       return;
     }
@@ -725,7 +725,7 @@ function App() {
     if (isKnack) {
       let safeRecordId = currentRecordId || await ensureRecordId();
       if (!safeRecordId) {
-        console.error("[Save] No record ID, cannot save to Knack");
+        derr("[Save] No record ID, cannot save to Knack");
         setIsSaving(false);
         showStatus("Error: Missing record ID");
         return;
@@ -748,7 +748,7 @@ function App() {
              JSON.stringify(sourceData);
              return JSON.parse(JSON.stringify(sourceData)); // Deep clone
            } catch (e) {
-              console.error("[Save] Serialization error:", e, "Data:", sourceData);
+              derr("[Save] Serialization error:", e, "Data:", sourceData);
               return Array.isArray(sourceData) ? [] : {};
            }
       };
@@ -780,7 +780,7 @@ function App() {
 
      // <<< NEW LOGGING START >>>
      try {
-       console.log('[SaveData DEBUG] Preparing to queue SAVE_DATA. Data snapshot:', JSON.stringify({
+       dlog('[SaveData DEBUG] Preparing to queue SAVE_DATA. Data snapshot:', JSON.stringify({
          recordId: safeRecordId,
          cardsCount: (dataToSave.cards || allCards || []).length,
          colorsKeys: Object.keys(dataToSave.colorMapping || subjectColorMapping || {}),
@@ -792,14 +792,14 @@ function App() {
          preserveFields: preserveFields
        }, null, 2)); // Pretty print for readability
      } catch(e) {
-        console.error('[SaveData DEBUG] Error logging data snapshot:', e);
+        derr('[SaveData DEBUG] Error logging data snapshot:', e);
      }
      // <<< NEW LOGGING END >>>
 
-      console.log(`[Save] Sending data to Knack. Payload size: ${safeData.cards?.length} items.`);
+      dlog(`[Save] Sending data to Knack. Payload size: ${safeData.cards?.length} items.`);
 
       const saveTimeout = setTimeout(() => {
-          console.log("[Save] Timeout waiting for SAVE_RESULT");
+          dlog("[Save] Timeout waiting for SAVE_RESULT");
           if (window.currentSaveTimeout === saveTimeout) { // Check if it's still the current timeout
               setIsSaving(false);
               showStatus("Save status unknown");
@@ -837,11 +837,11 @@ function App() {
           });
           
           if (discrepancies.length > 0) {
-            console.error("Save verification failed:", discrepancies);
+            derr("Save verification failed:", discrepancies);
             // Retry save with increased delay if verification fails
             setTimeout(() => saveData(null, true), 2000);  // Even longer timeout for retry
           } else {
-            console.log("Save verification passed!");
+            dlog("Save verification passed!");
           }
         }, 2000); // Check 2 seconds after save
       };
@@ -851,7 +851,7 @@ function App() {
 
       saveQueueService.addToQueue({ type: 'SAVE_DATA', payload: safeData })
         .then(() => {
-          console.log("[App] SAVE_DATA processed successfully.");
+          dlog("[App] SAVE_DATA processed successfully.");
           if (window.currentSaveTimeout === saveTimeout) clearTimeout(saveTimeout);
           setIsSaving(false);
           showStatus("Saved successfully!");
@@ -859,7 +859,7 @@ function App() {
           // The state should already be correct due to direct updates
           // in functions like updateColorMapping, addCard, etc.
           // Reloading state from potentially stale payloads here causes overwrites.
-          // console.log("[App] Updating local state after successful save...");
+          // dlog("[App] Updating local state after successful save...");
           // setAllCards(cardsPayload);
           // setSubjectColorMapping(colorMapPayload);
           // setSpacedRepetitionData(spacedRepPayload);
@@ -872,7 +872,7 @@ function App() {
           verifySave(originalMapping);
         })
         .catch(error => {
-          console.error("[App] Error in SAVE_DATA:", error);
+          derr("[App] Error in SAVE_DATA:", error);
           if (window.currentSaveTimeout === saveTimeout) clearTimeout(saveTimeout);
           setIsSaving(false);
           showStatus("Error saving data: " + error.message);
@@ -905,7 +905,7 @@ function App() {
     if (!subject) return;
 
     const colorToUse = color || getRandomColor();
-    console.log(`[App updateColorMapping] For subject: ${subject}, topic: ${topic || "none"}, color: ${colorToUse}, applyToTopics: ${applyToTopics}`);
+    dlog(`[App updateColorMapping] For subject: ${subject}, topic: ${topic || "none"}, color: ${colorToUse}, applyToTopics: ${applyToTopics}`);
 
     let finalColorMapping;
     let finalAllCards;
@@ -926,7 +926,7 @@ function App() {
 
       if (!topic || applyToTopics) { // Subject-level or apply-to-all-topics update
         newMapping[subject].base = colorToUse;
-        console.log(`[App updateColorMapping] Set base color for ${subject} to ${colorToUse}`);
+        dlog(`[App updateColorMapping] Set base color for ${subject} to ${colorToUse}`);
         if (applyToTopics) {
           const topicsForSubject = [...new Set(
             allCards // Use current allCards from state here for topic list generation
@@ -936,12 +936,12 @@ function App() {
           topicsForSubject.forEach((topicName, index) => {
             const shade = generateShade(colorToUse, index, topicsForSubject.length);
             newMapping[subject].topics[topicName] = shade;
-            console.log(`[App updateColorMapping] Applied shade ${shade} to topic ${topicName} under ${subject}`);
+            dlog(`[App updateColorMapping] Applied shade ${shade} to topic ${topicName} under ${subject}`);
           });
         }
       } else if (topic) { // Specific topic-level update
         newMapping[subject].topics[topic] = colorToUse;
-        console.log(`[App updateColorMapping] Set color for topic ${topic} under ${subject} to ${colorToUse}`);
+        dlog(`[App updateColorMapping] Set color for topic ${topic} under ${subject} to ${colorToUse}`);
       }
       
       finalColorMapping = newMapping; // Capture for use outside
@@ -961,7 +961,7 @@ function App() {
     
     // Save to localStorage and then to Knack
     setTimeout(() => {
-      console.log("[updateColorMapping] Calling saveData with explicitly passed colorMapping and allCards.");
+      dlog("[updateColorMapping] Calling saveData with explicitly passed colorMapping and allCards.");
       saveData({
         cards: finalAllCards || allCards, // Use captured if available, else current state
         colorMapping: finalColorMapping || subjectColorMapping, // Use captured if available
@@ -1021,7 +1021,7 @@ function App() {
           setUserTopics(versionedData.userTopics);
         }
         
-        console.log(`Loaded data from localStorage using ${loadResult.source} source`);
+        dlog(`Loaded data from localStorage using ${loadResult.source} source`);
         showStatus(`Data loaded from ${loadResult.source}`);
 
         // Restore multiple choice options
@@ -1031,7 +1031,7 @@ function App() {
       }
       
       // If new format failed, try legacy format as fallback
-      console.log("Falling back to legacy localStorage format");
+      dlog("Falling back to legacy localStorage format");
       
       const savedCards = localStorage.getItem('flashcards');
       const savedColorMapping = localStorage.getItem('colorMapping');
@@ -1047,7 +1047,7 @@ function App() {
           updateSpacedRepetitionData(cleanedCards);
           loadedData = true;
         } else {
-          console.warn("Invalid cards detected, using cleaned cards array");
+          dwarn("Invalid cards detected, using cleaned cards array");
           setAllCards(cleanedCards);
           updateSpacedRepetitionData(cleanedCards);
           loadedData = true;
@@ -1072,13 +1072,13 @@ function App() {
       }
       
       if (loadedData) {
-        console.log("Loaded data from legacy localStorage format");
+        dlog("Loaded data from legacy localStorage format");
         
         // Create a backup in the new format for future use
         setTimeout(() => saveData(), 1000);
       }
     } catch (error) {
-      console.error("Error loading from localStorage:", error);
+      derr("Error loading from localStorage:", error);
       dataLogger.logError('localStorage_load', error);
       showStatus("Error loading data from local storage");
     }
@@ -1091,17 +1091,17 @@ function App() {
   // Add a new card - improved to work with both topics and cards
   const addCard = useCallback(
     (card) => {
-      console.log("[App.addCard] Adding card:", { id: card.id, type: card.type, subject: card.subject, topic: card.topic });
+      dlog("[App.addCard] Adding card:", { id: card.id, type: card.type, subject: card.subject, topic: card.topic });
       
       if (!card || !card.id) {
-        console.error("[App.addCard] Invalid card object:", card);
+        derr("[App.addCard] Invalid card object:", card);
         showStatus("Error: Invalid card data");
         return;
       }
       
       // Special handling for topic shells vs actual cards
       if (card.type === 'topic' && card.isShell) {
-        console.log("[App.addCard] Adding topic shell:", card.name);
+        dlog("[App.addCard] Adding topic shell:", card.name);
         setAllCards((prevCards) => {
           const filteredCards = prevCards.filter(existingCard => 
             !(existingCard.type === 'topic' && existingCard.isShell && existingCard.id === card.id)
@@ -1109,7 +1109,7 @@ function App() {
           return [...filteredCards, {...card}];
         });
       } else {
-        console.log("[App.addCard] Adding flashcard to topic:", card.topic);
+        dlog("[App.addCard] Adding flashcard to topic:", card.topic);
         
         const nowISO = new Date().toISOString();
         const reviewDateForNewCard = new Date(new Date().setUTCHours(0,0,0,0) - 1).toISOString(); // Explicitly 1ms before current UTC day start
@@ -1202,7 +1202,7 @@ function App() {
   // Move a card to a specific box in spaced repetition
   const moveCardToBox = useCallback(
     (cardId, box) => {
-      console.log(`Moving card ${cardId} to box ${box}`);
+      dlog(`Moving card ${cardId} to box ${box}`);
 
       const calculateNextReviewDate = (boxNumber) => {
         const now = new Date(); 
@@ -1238,7 +1238,7 @@ function App() {
       const newNextReviewDateCalculated = calculateNextReviewDate(box);
       const nowISOForMove = new Date().toISOString();
 
-      console.log(`[MoveCard DEBUG] Card ID: ${stringCardId}, Target Box: ${box}, Calculated Next Review: ${newNextReviewDateCalculated}`);
+      dlog(`[MoveCard DEBUG] Card ID: ${stringCardId}, Target Box: ${box}, Calculated Next Review: ${newNextReviewDateCalculated}`);
 
       // Prepare new spacedRepetitionData
       const newSpacedRepetitionState = (() => {
@@ -1268,7 +1268,7 @@ function App() {
       const newAllCardsState = (() => {
         const prevCards = allCards; // Get current state directly
         const cardBeforeUpdate = prevCards.find(c => String(c.id).trim() === stringCardId);
-        console.log(`[MoveCard DEBUG] Card ${stringCardId} state BEFORE update in allCards:`, JSON.stringify({ boxNum: cardBeforeUpdate?.boxNum, nextReviewDate: cardBeforeUpdate?.nextReviewDate, isReviewable: cardBeforeUpdate?.isReviewable }));
+        dlog(`[MoveCard DEBUG] Card ${stringCardId} state BEFORE update in allCards:`, JSON.stringify({ boxNum: cardBeforeUpdate?.boxNum, nextReviewDate: cardBeforeUpdate?.nextReviewDate, isReviewable: cardBeforeUpdate?.isReviewable }));
         
         return prevCards.map(card => {
           if (String(card.id).trim() === stringCardId) {
@@ -1281,7 +1281,7 @@ function App() {
               lastReviewed: nowISOForMove,
               isReviewable: new Date(newNextReviewDateCalculated) <= todayUTC 
             };
-            console.log(`[MoveCard DEBUG] Card ${stringCardId} state AFTER update in allCards:`, JSON.stringify({ boxNum: updatedCardData.boxNum, nextReviewDate: updatedCardData.nextReviewDate, isReviewable: updatedCardData.isReviewable }));
+            dlog(`[MoveCard DEBUG] Card ${stringCardId} state AFTER update in allCards:`, JSON.stringify({ boxNum: updatedCardData.boxNum, nextReviewDate: updatedCardData.nextReviewDate, isReviewable: updatedCardData.isReviewable }));
             return updatedCardData;
           }
           return card;
@@ -1295,7 +1295,7 @@ function App() {
 
       // Save to localStorage immediately with the new states
       Promise.resolve().then(() => {
-        console.log("[MoveCard DEBUG] Attempting immediate saveToLocalStorage with explicitly constructed new states.");
+        dlog("[MoveCard DEBUG] Attempting immediate saveToLocalStorage with explicitly constructed new states.");
         // Temporarily override global state for saveToLocalStorage call
         const originalAllCards = allCards;
         const originalSRData = spacedRepetitionData;
@@ -1324,9 +1324,9 @@ function App() {
       
       // Save to Knack, explicitly passing the new states
       setTimeout(() => {
-        console.log("[MoveCard DEBUG] Calling saveData with explicitly passed new states for cards and SR data.");
-        console.log("[MoveCard DEBUG] newAllCardsState to be saved:", newAllCardsState.find(c => String(c.id).trim() === stringCardId));
-        console.log("[MoveCard DEBUG] newSpacedRepetitionState to be saved (relevant box):", newSpacedRepetitionState[`box${box}`]?.find(item => item.cardId === stringCardId));
+        dlog("[MoveCard DEBUG] Calling saveData with explicitly passed new states for cards and SR data.");
+        dlog("[MoveCard DEBUG] newAllCardsState to be saved:", newAllCardsState.find(c => String(c.id).trim() === stringCardId));
+        dlog("[MoveCard DEBUG] newSpacedRepetitionState to be saved (relevant box):", newSpacedRepetitionState[`box${box}`]?.find(item => item.cardId === stringCardId));
         saveData({
           cards: newAllCardsState,
           spacedRepetition: newSpacedRepetitionState,
@@ -1337,7 +1337,7 @@ function App() {
         }, true); // preserveFields = true is important here
       }, 250); // Slightly increased delay to ensure state updates are processed by React if possible
       
-      console.log(`Card ${cardId} moved to box ${box}. Save operations initiated.`);
+      dlog(`Card ${cardId} moved to box ${box}. Save operations initiated.`);
     },
     [saveData, saveToLocalStorage, allCards, spacedRepetitionData, subjectColorMapping, userTopics, topicLists, topicMetadata] // Added allCards and SRData to deps
   );
@@ -1350,7 +1350,7 @@ function App() {
     if (!auth || !knackFieldsNeedUpdate) return;
     
     try {
-      console.log("Updating Knack box notification fields...");
+      dlog("Updating Knack box notification fields...");
       
       // Check if there are cards ready for review in each box
       const today = new Date();
@@ -1384,7 +1384,7 @@ function App() {
           return false;
         }) || false;
         
-        console.log(`Box ${i} notification status:`, boxStatus[fieldKey]);
+        dlog(`Box ${i} notification status:`, boxStatus[fieldKey]);
       }
       
       // Update Knack object with box status
@@ -1400,17 +1400,17 @@ function App() {
                 boxStatus: boxStatus
               }
             }, "*");
-            console.log("Requested parent window to update Knack box notification fields");
+            dlog("Requested parent window to update Knack box notification fields");
             setKnackFieldsNeedUpdate(false);
           } else {
-            console.log("No parent window available for Knack integration");
+            dlog("No parent window available for Knack integration");
           }
         } catch (error) {
-          console.error("Error sending update request to parent:", error);
+          derr("Error sending update request to parent:", error);
         }
       }
     } catch (error) {
-      console.error("Error updating Knack box notifications:", error);
+      derr("Error updating Knack box notifications:", error);
     }
   }, [auth, knackFieldsNeedUpdate, spacedRepetitionData]);
 
@@ -1424,12 +1424,12 @@ function App() {
 // Define handleSaveTopicShellsAndRefresh before it's used
 const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegeneration = false) => {
     if (!topicShells || topicShells.length === 0) return;
-    console.log(`[App handleSaveTopicShellsAndRefresh] Function called directly, shells: ${topicShells?.length || 0}`);
+    dlog(`[App handleSaveTopicShellsAndRefresh] Function called directly, shells: ${topicShells?.length || 0}`);
 
     try {
         // 1. Extract and ensure we have the subject information from these shells
         const subject = topicShells[0]?.subject || "General";
-        console.log(`[App handleSaveTopicShellsAndRefresh] Processing shells for subject: ${subject}`);
+        dlog(`[App handleSaveTopicShellsAndRefresh] Processing shells for subject: ${subject}`);
 
         // 2. Use the IDs provided by the component, but ensure they're unique
         // We'll assume the IDs from TopicCreationModal already have subject prefixes
@@ -1469,7 +1469,7 @@ const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegene
             (card.subject || "General") !== subject
         );
         
-        console.log(`[App handleSaveTopicShellsAndRefresh] Current card counts by type:
+        dlog(`[App handleSaveTopicShellsAndRefresh] Current card counts by type:
             - This subject cards: ${thisSubjectCards.length}
             - This subject shells: ${thisSubjectShells.length}
             - Other subjects items: ${otherSubjectItems.length}
@@ -1489,7 +1489,7 @@ const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegene
             ...itemsToSave              // New shells for this subject
         ];
         
-        console.log(`[App handleSaveTopicShellsAndRefresh] Final merged cards payload count: ${updatedCardsPayload.length}`);
+        dlog(`[App handleSaveTopicShellsAndRefresh] Final merged cards payload count: ${updatedCardsPayload.length}`);
 
         // 8. Update the topic lists - CRITICAL FIX FOR TOPIC LISTS
         const topicListEntries = itemsToSave.map(shell => ({
@@ -1524,7 +1524,7 @@ const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegene
                 topics: [...filteredTopics, ...topicListEntries]
             };
             
-            console.log(`[App handleSaveTopicShellsAndRefresh] Updated existing topic list for ${subject} with ${topicListEntries.length} new entries`);
+            dlog(`[App handleSaveTopicShellsAndRefresh] Updated existing topic list for ${subject} with ${topicListEntries.length} new entries`);
         } else {
             // Create a new topic list for this subject
             updatedTopicLists = [
@@ -1536,17 +1536,17 @@ const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegene
                 }
             ];
             
-            console.log(`[App handleSaveTopicShellsAndRefresh] Added new topic list for subject: ${subject}`);
+            dlog(`[App handleSaveTopicShellsAndRefresh] Added new topic list for subject: ${subject}`);
         }
         
-        console.log(`[App handleSaveTopicShellsAndRefresh] Final topic lists count: ${updatedTopicLists.length}`);
+        dlog(`[App handleSaveTopicShellsAndRefresh] Final topic lists count: ${updatedTopicLists.length}`);
 
         // 9. Save the data - First update local state
         setAllCards(updatedCardsPayload);
         setTopicLists(updatedTopicLists);
             
         // 10. Then save to storage/backend
-        console.log(`[App handleSaveTopicShellsAndRefresh] Calling saveData with ${updatedCardsPayload.length} total items`);
+        dlog(`[App handleSaveTopicShellsAndRefresh] Calling saveData with ${updatedCardsPayload.length} total items`);
         await saveData({
             cards: updatedCardsPayload,
             colorMapping: subjectColorMapping,
@@ -1558,14 +1558,14 @@ const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegene
          // Make the window.App reference available globally if it isn't already
         if (window.App) {
           window.App.handleSaveTopicShellsAndRefresh = handleSaveTopicShellsAndRefresh;
-          console.log("[App handleSaveTopicShellsAndRefresh] Refreshed global handler reference");
+          dlog("[App handleSaveTopicShellsAndRefresh] Refreshed global handler reference");
         } 
    
-        console.log("[App handleSaveTopicShellsAndRefresh] saveData call completed successfully");
+        dlog("[App handleSaveTopicShellsAndRefresh] saveData call completed successfully");
         showStatus("Topics saved successfully!");
             
     } catch (error) {
-      console.error("[App handleSaveTopicShellsAndRefresh] Error details:", error);
+      derr("[App handleSaveTopicShellsAndRefresh] Error details:", error);
       // Attempt to fix window.App reference if it was lost
       if (window.App) {
         window.App.handleSaveTopicShellsAndRefresh = handleSaveTopicShellsAndRefresh;
@@ -1577,7 +1577,7 @@ const handleSaveTopicShellsAndRefresh = useCallback(async (topicShells, isRegene
 useEffect(() => {
   const handleFallbackShellSave = (event) => {
     if (event.detail && Array.isArray(event.detail.shells)) {
-      console.log("[App] Received fallback saveTopicShells event");
+      dlog("[App] Received fallback saveTopicShells event");
       handleSaveTopicShellsAndRefresh(event.detail.shells);
     }
   };
@@ -1594,16 +1594,16 @@ useEffect(() => {
     // Get the array of card items for the current box
     const boxKey = `box${currentBox}`;
     const boxItems = spacedRepetitionData[boxKey] || [];
-    console.log(`Getting cards for box ${currentBox}:`, boxKey, boxItems);
+    dlog(`Getting cards for box ${currentBox}:`, boxKey, boxItems);
     
     // If we have no cards in this box, return empty array
     if (boxItems.length === 0) {
-      console.log(`No cards found in box ${currentBox}`);
+      dlog(`No cards found in box ${currentBox}`);
       return [];
     }
     
     // Log all card information to help debug
-    console.log("All available cards:", allCards.length, allCards.map(c => c.id).slice(0, 10));
+    dlog("All available cards:", allCards.length, allCards.map(c => c.id).slice(0, 10));
     
     // Current date for review date comparisons
     const todayUTC = new Date();
@@ -1632,7 +1632,7 @@ useEffect(() => {
             // Card is reviewable if the next review date is today or earlier (UTC comparison)
             isReviewable = nextReviewDate <= todayUTC;
           } catch (e) {
-            console.warn(`Invalid date format for nextReviewDate: ${boxItem.nextReviewDate}`);
+            dwarn(`Invalid date format for nextReviewDate: ${boxItem.nextReviewDate}`);
             nextReviewDate = null;
             isReviewable = true; // Fallback to reviewable if date is invalid
           }
@@ -1642,12 +1642,12 @@ useEffect(() => {
           nextReviewDate = null;
         }
       } else {
-        console.warn("Invalid box item, skipping", boxItem);
+        dwarn("Invalid box item, skipping", boxItem);
         continue;
       }
       
       if (!cardId) {
-        console.warn("Empty card ID found in box, skipping");
+        dwarn("Empty card ID found in box, skipping");
         continue;
       }
       
@@ -1668,7 +1668,7 @@ useEffect(() => {
           nextReviewDate: nextReviewDate ? nextReviewDate.toISOString() : null
         };
         
-        console.log(`Found card for ID ${cardId}:`, 
+        dlog(`Found card for ID ${cardId}:`, 
           matchingCard.subject, 
           matchingCard.topic,
           `reviewable: ${isReviewable}`,
@@ -1677,11 +1677,11 @@ useEffect(() => {
         
         cardsForBox.push(cardWithReviewInfo);
       } else {
-        console.warn(`Card with ID ${cardId} not found in allCards (total: ${allCards.length})`);
+        dwarn(`Card with ID ${cardId} not found in allCards (total: ${allCards.length})`);
       }
     }
     
-    console.log(`Found ${cardsForBox.length} valid cards for box ${currentBox} out of ${boxItems.length} IDs`);
+    dlog(`Found ${cardsForBox.length} valid cards for box ${currentBox} out of ${boxItems.length} IDs`);
     return cardsForBox;
   }, [currentBox, spacedRepetitionData, allCards]);
 
@@ -1760,7 +1760,7 @@ useEffect(() => {
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (auth && allCards.length > 0) {
-        console.log("Auto-saving data...");
+        dlog("Auto-saving data...");
         saveData();
       }
     }, 60000); // Every minute
@@ -1781,7 +1781,7 @@ useEffect(() => {
     const handleVerificationMessage = (event) => {
       const { type, success, error, reason } = event.data;
       
-      console.log(`[Verification] Received ${type}`, event.data);
+      dlog(`[Verification] Received ${type}`, event.data);
       
       switch (type) {
         case 'VERIFICATION_COMPLETE':
@@ -1801,24 +1801,24 @@ useEffect(() => {
           
         case 'VERIFICATION_SKIPPED':
           // Just log the reason
-          console.log(`[Verification] Skipped: ${reason}`);
+          dlog(`[Verification] Skipped: ${reason}`);
           break;
           
         case 'VERIFICATION_FAILED':
-          console.error(`[Verification] Failed: ${error}`);
+          derr(`[Verification] Failed: ${error}`);
           showStatus("Warning: Save verification failed");
           break;
           
         default:
           // Unhandled verification message
-          console.log(`[Verification] Unhandled message type: ${type}`);
+          dlog(`[Verification] Unhandled message type: ${type}`);
       }
     };
     
     const handleMessage = (event) => {
       // Avoid logging every message to reduce console spam
       if (event.data && event.data.type !== 'PING') {
-        console.log(`[Message Handler ${new Date().toISOString()}] From parent: ${event.data?.type}`);
+        dlog(`[Message Handler ${new Date().toISOString()}] From parent: ${event.data?.type}`);
       }
 
       if (event.data && event.data.type) {
@@ -1826,13 +1826,13 @@ useEffect(() => {
           case "KNACK_USER_INFO":
             // IMPORTANT: Only process auth once to prevent loops
             if (authProcessedRef.current) {
-              console.log("[User Info] Already processed, ignoring duplicate message");
+              dlog("[User Info] Already processed, ignoring duplicate message");
               return;
             }
             
             // Set the flag immediately to prevent race conditions
             authProcessedRef.current = true;
-            console.log("[User Info] First-time processing of user data");
+            dlog("[User Info] First-time processing of user data");
             
             // Process student data if we have a role of "student"
             const userRole = event.data.data?.role || "";
@@ -1861,9 +1861,9 @@ useEffect(() => {
                   school: schoolData
                 };
                 
-                console.log("[User Info] Processed student data");
+                dlog("[User Info] Processed student data");
               } catch (e) {
-                console.error("[User Info] Error processing student data:", e);
+                derr("[User Info] Error processing student data:", e);
               }
             } else {
               // For non-student users, just extract the school data
@@ -1884,7 +1884,7 @@ useEffect(() => {
             
             // Initialize the centralized AuthManager with the same data
             initializeAuthManager(authDataFromKnack);
-            console.log("[User Info] Initialized AuthManager with user data from Knack.");
+            dlog("[User Info] Initialized AuthManager with user data from Knack.");
 
             // If user data (the JSON blob) was included, process it with timestamp comparison
             if (event.data.data?.userData) {
@@ -1893,16 +1893,16 @@ useEffect(() => {
               const knackRecordTimestampString = knackPayload.knackRecordLastSaved; // Timestamp of the Knack record itself
               const localDataTimestampStringFromRef = localStorageDataTimestampRef.current; // Timestamp from appData.metadata.timestamp
 
-              console.log("[User Info] Processing KNACK_USER_INFO. LocalStorage Timestamp:", localDataTimestampStringFromRef, "Knack Record Timestamp:", knackRecordTimestampString);
+              dlog("[User Info] Processing KNACK_USER_INFO. LocalStorage Timestamp:", localDataTimestampStringFromRef, "Knack Record Timestamp:", knackRecordTimestampString);
 
               if (knackUserDataBlob && knackUserDataBlob.recordId) {
                 setRecordId(knackUserDataBlob.recordId);
-                console.log("[User Info] Stored recordId from Knack userData blob:", knackUserDataBlob.recordId);
+                dlog("[User Info] Stored recordId from Knack userData blob:", knackUserDataBlob.recordId);
                 try {
                   localStorage.setItem('flashcards_auth', JSON.stringify({ recordId: knackUserDataBlob.recordId }));
-                } catch (e) { console.error("[User Info] Error storing record ID in localStorage:", e); }
+                } catch (e) { derr("[User Info] Error storing record ID in localStorage:", e); }
               } else {
-                console.warn("[User Info] recordId not found in Knack userData blob. Relying on ensureRecordId or existing recordId state.");
+                dwarn("[User Info] recordId not found in Knack userData blob. Relying on ensureRecordId or existing recordId state.");
               }
               
               const localTimestamp = localDataTimestampStringFromRef ? new Date(localDataTimestampStringFromRef).getTime() : 0;
@@ -1913,16 +1913,16 @@ useEffect(() => {
 
               if (knackTimestamp === 0 && localTimestamp > 0) {
                 // Knack has no timestamp, but local does. Prioritize local.
-                console.warn(`[App.js] Local data (ts: ${localDataTimestampStringFromRef}) has a timestamp, but Knack data (ts: ${knackRecordTimestampString || 'undefined/null'}) does not. Prioritizing local state.`);
+                dwarn(`[App.js] Local data (ts: ${localDataTimestampStringFromRef}) has a timestamp, but Knack data (ts: ${knackRecordTimestampString || 'undefined/null'}) does not. Prioritizing local state.`);
                 showStatus("Local data prioritized (Knack timestamp missing). Syncing to server...");
                 useKnackData = false;
                 setTimeout(() => {
-                  console.log("[App.js] Pushing prioritized local data to Knack (Knack timestamp was missing).");
+                  dlog("[App.js] Pushing prioritized local data to Knack (Knack timestamp was missing).");
                   const currentLocalCards = allCards; // Use current state
                   const currentLocalColorMapping = subjectColorMapping; // Use current state
                   
                   const reconciledLocalCardsForPush = reconcileCardColors(currentLocalCards, currentLocalColorMapping);
-                  console.log("[App.js] Local data reconciled before pushing to Knack (Knack ts missing).");
+                  dlog("[App.js] Local data reconciled before pushing to Knack (Knack ts missing).");
 
                   const currentSaveData = { 
                     cards: reconciledLocalCardsForPush,
@@ -1932,21 +1932,21 @@ useEffect(() => {
                     topicLists: topicLists,
                     topicMetadata: topicMetadata
                   };
-                  console.log("[App.js] Data being pushed to Knack:", /* Consider logging keys/counts */);
+                  dlog("[App.js] Data being pushed to Knack:", /* Consider logging keys/counts */);
                   saveData(currentSaveData, true); // preserveFields = true
                 }, 2000);
               } else if (localTimestamp > (knackTimestamp + TIME_BUFFER)) {
                 // Both have timestamps, and local is significantly newer.
-                console.warn(`[App.js] Local data (ts: ${localDataTimestampStringFromRef}) is significantly newer than Knack (ts: ${knackRecordTimestampString}). Prioritizing local state for cards, SR, and colors.`);
+                dwarn(`[App.js] Local data (ts: ${localDataTimestampStringFromRef}) is significantly newer than Knack (ts: ${knackRecordTimestampString}). Prioritizing local state for cards, SR, and colors.`);
                 showStatus("Local data is newer. Syncing to server...");
                 useKnackData = false;
                 setTimeout(() => {
-                  console.log("[App.js] Pushing newer local data to Knack.");
+                  dlog("[App.js] Pushing newer local data to Knack.");
                   const currentLocalCards = allCards; // Use current state
                   const currentLocalColorMapping = subjectColorMapping; // Use current state
 
                   const reconciledLocalCardsForPush = reconcileCardColors(currentLocalCards, currentLocalColorMapping);
-                  console.log("[App.js] Local data reconciled before pushing to Knack (local newer).");
+                  dlog("[App.js] Local data reconciled before pushing to Knack (local newer).");
 
                   const currentSaveData = { 
                     cards: reconciledLocalCardsForPush,
@@ -1956,13 +1956,13 @@ useEffect(() => {
                     topicLists: topicLists,
                     topicMetadata: topicMetadata
                   };
-                  console.log("[App.js] Data being pushed to Knack:", /* Consider logging keys/counts */);
+                  dlog("[App.js] Data being pushed to Knack:", /* Consider logging keys/counts */);
                   saveData(currentSaveData, true); // preserveFields = true
                 }, 2000);
               }
 
               if (useKnackData) {
-                console.log(`[App.js] Knack data (ts: ${knackRecordTimestampString}) is newer or similar to local (ts: ${localDataTimestampStringFromRef}). Using Knack data to update state.`);
+                dlog(`[App.js] Knack data (ts: ${knackRecordTimestampString}) is newer or similar to local (ts: ${localDataTimestampStringFromRef}). Using Knack data to update state.`);
                 try {
                   const rawCardsFromKnack = knackUserDataBlob.cards && Array.isArray(knackUserDataBlob.cards) ? knackUserDataBlob.cards : [];
                   const initialRestoredCards = restoreMultipleChoiceOptions(rawCardsFromKnack);
@@ -1971,49 +1971,49 @@ useEffect(() => {
                   
                   // --- Reconciliation Point ---
                   const reconciledCardsFromKnack = reconcileCardColors(initialRestoredCards, initialColorMappingFromKnack);
-                  console.log("[App.js] Cards reconciled with Knack color mapping upon load.");
+                  dlog("[App.js] Cards reconciled with Knack color mapping upon load.");
                   // --- End Reconciliation ---
 
                   setAllCards(reconciledCardsFromKnack); // <--- Use reconciled cards
                   updateSpacedRepetitionData(reconciledCardsFromKnack); // Use reconciled for SR data too
-                  console.log("[App.js] Updated allCards and SR data from Knack (reconciled).");
+                  dlog("[App.js] Updated allCards and SR data from Knack (reconciled).");
                   
                   setSubjectColorMapping(initialColorMappingFromKnack); // Set the mapping
                   
                   if (knackUserDataBlob.spacedRepetition) {
                     setSpacedRepetitionData(knackUserDataBlob.spacedRepetition);
-                    console.log("[App.js] Updated spacedRepetitionData from Knack.");
+                    dlog("[App.js] Updated spacedRepetitionData from Knack.");
                   } else {
-                    console.warn("[User Info] Knack userData.spacedRepetition is missing. SR data might be derived from cards if cards were loaded.");
+                    dwarn("[User Info] Knack userData.spacedRepetition is missing. SR data might be derived from cards if cards were loaded.");
                   }
 
                   if (knackUserDataBlob.userTopics) {
                     setUserTopics(knackUserDataBlob.userTopics);
-                    console.log("[App.js] Updated userTopics from Knack.");
+                    dlog("[App.js] Updated userTopics from Knack.");
                   }
                   if (knackUserDataBlob.topicLists && Array.isArray(knackUserDataBlob.topicLists)) {
                     setTopicLists(knackUserDataBlob.topicLists);
-                    console.log("[App.js] Updated topicLists from Knack.");
+                    dlog("[App.js] Updated topicLists from Knack.");
                   }
                   if (knackUserDataBlob.topicMetadata && Array.isArray(knackUserDataBlob.topicMetadata)) {
                     setTopicMetadata(knackUserDataBlob.topicMetadata);
-                    console.log("[App.js] Updated topicMetadata from Knack.");
+                    dlog("[App.js] Updated topicMetadata from Knack.");
                   }
-                  console.log("[User Info] Successfully processed user data from Knack.");
+                  dlog("[User Info] Successfully processed user data from Knack.");
                 } catch (e) {
-                  console.error("[User Info] Error processing Knack userData JSON:", e);
+                  derr("[User Info] Error processing Knack userData JSON:", e);
                   showStatus("Error loading your data from server. Using local data as fallback.");
                 }
               } else {
-                console.log("[App.js] Retained local state for cards, SR, and colors. Other Knack data (profile, etc.) already set via authDataFromKnack.");
+                dlog("[App.js] Retained local state for cards, SR, and colors. Other Knack data (profile, etc.) already set via authDataFromKnack.");
                 // Even if using local data primarily, ensure it's reconciled with its own mapping
                 setAllCards(prev => reconcileCardColors(prev, subjectColorMapping));
-                console.log("[App.js] Ensured local allCards state is reconciled with local subjectColorMapping.");
+                dlog("[App.js] Ensured local allCards state is reconciled with local subjectColorMapping.");
               }
             } else {
               // If no userData blob from Knack, it implies this might be the first load for the user in Knack
               // or an issue with Knack data. Data loaded from localStorage (if any) will be used.
-              console.log("[User Info] No userData blob received from Knack. App will rely on localStorage data or defaults.");
+              dlog("[User Info] No userData blob received from Knack. App will rely on localStorage data or defaults.");
             }
             
             // setLoading(false) and AUTH_CONFIRMED should be outside this conditional block.
@@ -2021,13 +2021,13 @@ useEffect(() => {
             
             // Confirm receipt of auth info (only do this once)
             if (window.parent !== window) {
-              console.log("[User Info] Sending AUTH_CONFIRMED message");
+              dlog("[User Info] Sending AUTH_CONFIRMED message");
               window.parent.postMessage({ type: "AUTH_CONFIRMED" }, "*");
             }
             break;
 
           case "SAVE_RESULT":
-            console.log("[Save Result] Received:", event.data.success);
+            dlog("[Save Result] Received:", event.data.success);
             
             if (window.currentSaveTimeout) {
               clearTimeout(window.currentSaveTimeout);
@@ -2039,13 +2039,13 @@ useEffect(() => {
               showStatus("Saved successfully!");
               // --- REMOVE AUTOMATIC DATA REFRESH ON SAVE --- 
               // if (isKnack && propagateSaveToBridge && recordId) { 
-              //     console.log(`[App SAVE_RESULT] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
+              //     dlog(`[App SAVE_RESULT] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
               //     propagateSaveToBridge({
               //         type: 'REQUEST_UPDATED_DATA',
               //         recordId: recordId 
               //     });
               // } else if (isKnack) {
-              //     console.warn("[App SAVE_RESULT] Cannot request updated data: propagate function or recordId missing.");
+              //     dwarn("[App SAVE_RESULT] Cannot request updated data: propagate function or recordId missing.");
               // }
               // -------------------------------------------
             } else {
@@ -2054,7 +2054,7 @@ useEffect(() => {
             break;
             
           case "LOAD_SAVED_DATA":
-            console.log("[Load Data] Received updated data from Knack");
+            dlog("[Load Data] Received updated data from Knack");
 
             if (event.data.data) {
               try {
@@ -2063,7 +2063,7 @@ useEffect(() => {
                   const restoredCards = restoreMultipleChoiceOptions(event.data.data.cards);
                   setAllCards(restoredCards);
                   updateSpacedRepetitionData(restoredCards);
-                  console.log("[Load Data] Restored multiple choice options for cards");
+                  dlog("[Load Data] Restored multiple choice options for cards");
                 }
 
                 // Process color mapping
@@ -2084,7 +2084,7 @@ useEffect(() => {
                 // Process topic lists if available
                 if (event.data.data.topicLists) {
                   setTopicLists(safeParseJSON(event.data.data.topicLists));
-                  console.log("[Load Data] Loaded topic lists:", 
+                  dlog("[Load Data] Loaded topic lists:", 
                     Array.isArray(safeParseJSON(event.data.data.topicLists)) ? 
                     safeParseJSON(event.data.data.topicLists).length : 'none');
                 }
@@ -2092,35 +2092,35 @@ useEffect(() => {
                 // Process topic metadata if available
                 if (event.data.data.topicMetadata) {
                   setTopicMetadata(safeParseJSON(event.data.data.topicMetadata));
-                  console.log("[Load Data] Loaded topic metadata:",
+                  dlog("[Load Data] Loaded topic metadata:",
                     Array.isArray(safeParseJSON(event.data.data.topicMetadata)) ?
                     safeParseJSON(event.data.data.topicMetadata).length : 'none');
                 }
                 
                 showStatus("Updated with latest data from server");
               } catch (error) {
-                console.error("[Load Data] Error processing updated data:", error);
+                derr("[Load Data] Error processing updated data:", error);
                 showStatus("Error loading updated data");
               }
             }
             break;
 
           case "ADD_TO_BANK_RESULT":
-            console.log("[Add To Bank Result] Received:", event.data);
+            dlog("[Add To Bank Result] Received:", event.data);
             if (event.data.success) {
               showStatus("Cards added to bank successfully!");
               if (event.data.shouldReload) {
-                console.log("[Add To Bank Result] Requesting updated data...");
+                dlog("[Add To Bank Result] Requesting updated data...");
                 // setLoading(true); // Optional: Re-enable if needed
                 // setLoadingMessage("Refreshing card data...");
                 if (isKnack && propagateSaveToBridge && recordId) { // Check if in Knack & have function/ID
-                    console.log(`[App ADD_TO_BANK_RESULT] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
+                    dlog(`[App ADD_TO_BANK_RESULT] Sending REQUEST_UPDATED_DATA for recordId: ${recordId}`);
                     propagateSaveToBridge({
                         type: 'REQUEST_UPDATED_DATA',
                         recordId: recordId // Correct format
                     });
                 } else {
-                   console.warn("[App ADD_TO_BANK_RESULT] Cannot request updated data: propagate function or recordId missing.");
+                   dwarn("[App ADD_TO_BANK_RESULT] Cannot request updated data: propagate function or recordId missing.");
                    // Fallback: Maybe load from local storage if not in Knack? Or show error.
                    // loadFromLocalStorage(); 
                    // setLoading(false);
@@ -2133,12 +2133,12 @@ useEffect(() => {
             break;
             
           case "TOPIC_SHELLS_CREATED":
-            console.log("[Topic Shells] Created successfully:", event.data);
+            dlog("[Topic Shells] Created successfully:", event.data);
             showStatus(`Created ${event.data.count} topic shells!`);
             
             // If shouldReload flag is set, request updated data instead of full page reload
             if (event.data.shouldReload) {
-              console.log("[Topic Shells] Requesting updated data...");
+              dlog("[Topic Shells] Requesting updated data...");
               setLoading(true);
               setLoadingMessage("Refreshing card data...");
               
@@ -2160,7 +2160,7 @@ useEffect(() => {
             break;
             
           case "RELOAD_APP_DATA":
-            console.log("[Reload] Explicit reload request received");
+            dlog("[Reload] Explicit reload request received");
             showStatus("Refreshing data...");
             
             // Instead of reloading the whole page, use the data refresh mechanism
@@ -2170,7 +2170,7 @@ useEffect(() => {
                 data: { recordId: recordId }
               }, "*");
               
-              console.log("[Reload] Requested updated data instead of full page reload");
+              dlog("[Reload] Requested updated data instead of full page reload");
               
               // Set a brief loading state but don't show full initialization screen
               setLoadingMessage("Refreshing your flashcards...");
@@ -2187,7 +2187,7 @@ useEffect(() => {
             break;
 
           case "REQUEST_REFRESH":
-            console.log("[Refresh] App refresh requested:", event.data);
+            dlog("[Refresh] App refresh requested:", event.data);
             
             // Instead of setting loading state which shows init screen,
             // just reload the data silently
@@ -2197,7 +2197,7 @@ useEffect(() => {
                 data: { recordId: recordId || event.data?.data?.recordId }
               }, "*");
               
-              console.log("[Refresh] Requested data refresh without showing loading screen");
+              dlog("[Refresh] Requested data refresh without showing loading screen");
               
               // Add a timeout to clear loading state in case the response never comes
               setTimeout(() => {
@@ -2215,7 +2215,7 @@ useEffect(() => {
 
           case "SAVE_OPERATION_QUEUED":
             // Data save has been queued on the server
-            console.log("[Message Handler] Save operation queued");
+            dlog("[Message Handler] Save operation queued");
             
             // Don't reset the saving state - keep it active
             // since we're still in the save process
@@ -2224,7 +2224,7 @@ useEffect(() => {
             break;
 
           case "SAVE_OPERATION_FAILED":
-            console.error("[Message Handler] Save operation failed:", event.data.error);
+            derr("[Message Handler] Save operation failed:", event.data.error);
             
             // Clear any save timeouts
             if (window.currentSaveTimeout) {
@@ -2237,15 +2237,15 @@ useEffect(() => {
             break;
             
           case "KNACK_DATA":
-            console.log("Received data from Knack:", event.data);
+            dlog("Received data from Knack:", event.data);
             
             if (event.data.cards && Array.isArray(event.data.cards)) {
               try {
                 // --- Log cards before processing ---
-                console.log(`[KNACK_DATA] Received cards count: ${event.data.cards.length}. Sample options BEFORE processing:`);
+                dlog(`[KNACK_DATA] Received cards count: ${event.data.cards.length}. Sample options BEFORE processing:`);
                 event.data.cards.slice(0, 5).forEach((card, index) => {
                     if (card.questionType === 'multiple_choice' || (Array.isArray(card.options) && card.options.length > 0)) {
-                        console.log(`[KNACK_DATA PRE] Card ${index} (ID: ${card.id}) options:`, JSON.stringify(card.options));
+                        dlog(`[KNACK_DATA PRE] Card ${index} (ID: ${card.id}) options:`, JSON.stringify(card.options));
                     }
                 });
                 // --- End log ---
@@ -2254,40 +2254,40 @@ useEffect(() => {
                 const restoredCards = restoreMultipleChoiceOptions(event.data.cards);
                 
                 // --- Log cards after processing ---
-                console.log(`[KNACK_DATA] Processed cards count: ${restoredCards.length}. Sample options AFTER processing:`);
+                dlog(`[KNACK_DATA] Processed cards count: ${restoredCards.length}. Sample options AFTER processing:`);
                 restoredCards.slice(0, 5).forEach((card, index) => {
                     if (card.questionType === 'multiple_choice' || (Array.isArray(card.options) && card.options.length > 0)) {
-                        console.log(`[KNACK_DATA POST] Card ${index} (ID: ${card.id}) options:`, JSON.stringify(card.options));
+                        dlog(`[KNACK_DATA POST] Card ${index} (ID: ${card.id}) options:`, JSON.stringify(card.options));
                     }
                 });
                 // --- End log ---
                 
                 // Update app state with the loaded cards
                 setAllCards(restoredCards);
-                console.log(`Loaded ${restoredCards.length} cards from Knack and restored multiple choice options`);
+                dlog(`Loaded ${restoredCards.length} cards from Knack and restored multiple choice options`);
                 
                 // Load color mapping
             if (event.data.colorMapping) {
               setSubjectColorMapping(event.data.colorMapping);
-                  console.log("Loaded color mapping from Knack");
+                  dlog("Loaded color mapping from Knack");
                 }
                 
                 // Load spaced repetition data
                 if (event.data.spacedRepetition) {
                   setSpacedRepetitionData(event.data.spacedRepetition);
-                  console.log("Loaded spaced repetition data from Knack");
+                  dlog("Loaded spaced repetition data from Knack");
                 }
                 
                 // Load topic lists
             if (event.data.topicLists && Array.isArray(event.data.topicLists)) {
               setTopicLists(event.data.topicLists);
-                  console.log(`Loaded ${event.data.topicLists.length} topic lists from Knack`);
+                  dlog(`Loaded ${event.data.topicLists.length} topic lists from Knack`);
             }
             
                 // Load topic metadata if available
             if (event.data.topicMetadata && Array.isArray(event.data.topicMetadata)) {
               setTopicMetadata(event.data.topicMetadata);
-                  console.log(`Loaded ${event.data.topicMetadata.length} topic metadata entries from Knack`);
+                  dlog(`Loaded ${event.data.topicMetadata.length} topic metadata entries from Knack`);
                 }
                 
                 // Always ensure loading state is cleared
@@ -2296,12 +2296,12 @@ useEffect(() => {
 
                 // Redirect back to card bank if refresh happened from AI Generator
                 if (view === 'aiGenerator') {
-                  console.log("[KNACK_DATA Handler] Refresh likely completed after AI generation, redirecting to cardBank.");
+                  dlog("[KNACK_DATA Handler] Refresh likely completed after AI generation, redirecting to cardBank.");
                   setView('cardBank');
                 }
 
               } catch (error) {
-                console.error("Error processing Knack data:", error);
+                derr("Error processing Knack data:", error);
                 setLoading(false);
                 setLoadingMessage("");
                 showStatus("Error loading cards. Please refresh the page.");
@@ -2310,7 +2310,7 @@ useEffect(() => {
             break;
 
           case "AUTH_ERROR":
-            console.error("Authentication error received:", event.data.data?.message || "Unknown auth error");
+            derr("Authentication error received:", event.data.data?.message || "Unknown auth error");
             
             // Ensure loading state is cleared first
             setLoading(false);
@@ -2329,7 +2329,7 @@ useEffect(() => {
             break;
 
           case "REQUEST_TOKEN_REFRESH":
-            console.log("[Token] Using AuthManager to handle token refresh");
+            dlog("[Token] Using AuthManager to handle token refresh");
             
             // Call our new centralized token refresh utility
             handleTokenRefreshRequest(
@@ -2339,9 +2339,9 @@ useEffect(() => {
               loadFromLocalStorage
             ).then(success => {
               if (success) {
-                console.log("[Token] Token refresh initiated successfully");
+                dlog("[Token] Token refresh initiated successfully");
               } else {
-                console.warn("[Token] Token refresh could not be initiated");
+                dwarn("[Token] Token refresh could not be initiated");
               }
             });
             break;
@@ -2353,7 +2353,7 @@ useEffect(() => {
             break;
 
           default:
-            console.log("[Message Handler] Unknown message type:", event.data.type);
+            dlog("[Message Handler] Unknown message type:", event.data.type);
         }
       }
     };
@@ -2368,7 +2368,7 @@ useEffect(() => {
     const sendReadyMessage = () => {
       if (!readyMessageSent && window.parent !== window) {
         window.parent.postMessage({ type: "APP_READY" }, "*");
-        console.log("[Init] Sent ready message to parent");
+        dlog("[Init] Sent ready message to parent");
         readyMessageSent = true;
       }
     };
@@ -2378,7 +2378,7 @@ useEffect(() => {
       sendReadyMessage();
       } else {
       // In standalone mode, load from localStorage
-      console.log("[Init] Running in standalone mode");
+      dlog("[Init] Running in standalone mode");
       setAuth({
         id: "test-user",
         email: "test@example.com",
@@ -2448,7 +2448,7 @@ useEffect(() => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const handleTopicRefreshNeeded = () => {
-      console.log("[Topic Refresh] Received topicRefreshNeeded event");
+      dlog("[Topic Refresh] Received topicRefreshNeeded event");
       
       // Show a brief loading message
       showStatus("Refreshing your flashcards...");
@@ -2463,7 +2463,7 @@ useEffect(() => {
           data: { recordId: recordId }
         }, "*");
         
-        console.log("[Topic Refresh] Requested data refresh from parent window");
+        dlog("[Topic Refresh] Requested data refresh from parent window");
       }
     };
     
@@ -2479,7 +2479,7 @@ useEffect(() => {
   // Listen for the FlashcardGeneratorBridge trigger event
   useEffect(() => {
     const handleOpenFlashcardBridge = (event) => {
-      console.log("[FlashcardBridge] Received openFlashcardBridge event", event.detail);
+      dlog("[FlashcardBridge] Received openFlashcardBridge event", event.detail);
       
       if (event.detail && event.detail.topic) {
         // Set the bridge topic data state
@@ -2488,7 +2488,7 @@ useEffect(() => {
         // Show the bridge
         setShowFlashcardBridge(true);
         
-        console.log("[FlashcardBridge] Opening bridge with topic:", event.detail.topic);
+        dlog("[FlashcardBridge] Opening bridge with topic:", event.detail.topic);
       }
     };
     
@@ -2520,10 +2520,10 @@ useEffect(() => {
   // Handler for TopicHub to finalize topics and add shells to main state
   const handleFinalizeTopics = useCallback((topicShells) => {
     if (!Array.isArray(topicShells)) {
-      console.error("handleFinalizeTopics received invalid data:", topicShells);
+      derr("handleFinalizeTopics received invalid data:", topicShells);
       return;
     }
-    console.log("[App.js] Received finalized topic shells:", topicShells);
+    dlog("[App.js] Received finalized topic shells:", topicShells);
     
     let finalMergedItems = []; // To capture the merged state
     
@@ -2544,10 +2544,10 @@ useEffect(() => {
       });
       
       finalMergedItems = [...updatedItems, ...newItems]; // Update the scoped variable
-      console.log(`[App.js] Merged items. Old count: ${existingItems.length}, New count: ${finalMergedItems.length}`);
+      dlog(`[App.js] Merged items. Old count: ${existingItems.length}, New count: ${finalMergedItems.length}`);
       
       // Debug dump of the topic shells being added
-      console.log("[CRITICAL DEBUG] Topic shells AFTER merge logic:", 
+      dlog("[CRITICAL DEBUG] Topic shells AFTER merge logic:", 
         finalMergedItems.filter(item => item.type === 'topic').map(shell => ({
           id: shell.id,
           type: shell.type,
@@ -2563,14 +2563,14 @@ useEffect(() => {
     // Use setTimeout to ensure the setAllCards has likely started processing,
     // but pass the data directly to avoid relying on its completion.
     setTimeout(() => {
-      console.log("[App.js] Triggering save after adding topic shells");
+      dlog("[App.js] Triggering save after adding topic shells");
       // CRITICAL CHANGE: Let saveData use the current state, don't pass potentially stale data
       saveData(null, true); // Pass null for data, preserveFields = true
       showStatus("Topic shells added and save triggered.");
       
       // Keep backup save
       setTimeout(() => {
-        console.log("[App.js] Trigger backup save");
+        dlog("[App.js] Trigger backup save");
         saveData(); // Backup uses current state
       }, 2000);
     }, 200); // Increased delay slightly
@@ -2581,7 +2581,7 @@ useEffect(() => {
   const saveTopicLists = useCallback(() => {
     if (!isKnack || !recordId) return;
     
-    console.log("Saving topic lists to Knack:", topicLists);
+    dlog("Saving topic lists to Knack:", topicLists);
     
     // Use the saveQueueService
     saveQueueService.addToQueue({
@@ -2591,15 +2591,15 @@ useEffect(() => {
         topicLists
       }
     })
-    .then(() => console.log("Topic lists save queued successfully"))
-    .catch(error => console.error("Error queuing topic lists save:", error));
+    .then(() => dlog("Topic lists save queued successfully"))
+    .catch(error => derr("Error queuing topic lists save:", error));
   }, [topicLists, isKnack, recordId]);
 
   // Save topic metadata to Knack when it changes
   const saveTopicMetadata = useCallback(() => {
     if (!isKnack || !recordId) return;
     
-    console.log("Saving topic metadata to Knack:", topicMetadata);
+    dlog("Saving topic metadata to Knack:", topicMetadata);
     
     // Use the saveQueueService
     saveQueueService.addToQueue({
@@ -2609,15 +2609,15 @@ useEffect(() => {
         topicMetadata
       }
     })
-    .then(() => console.log("Topic metadata save queued successfully"))
-    .catch(error => console.error("Error queuing topic metadata save:", error));
+    .then(() => dlog("Topic metadata save queued successfully"))
+    .catch(error => derr("Error queuing topic metadata save:", error));
   }, [topicMetadata, isKnack, recordId]);
 
   // Send a topic event to Knack
   const sendTopicEvent = useCallback((eventType, data) => {
     if (!isKnack || !recordId) return;
     
-    console.log(`Sending topic event to Knack: ${eventType}`, data);
+    dlog(`Sending topic event to Knack: ${eventType}`, data);
     
     // Use the saveQueueService
     saveQueueService.addToQueue({
@@ -2628,15 +2628,15 @@ useEffect(() => {
         data
       }
     })
-    .then(() => console.log("Topic event queued successfully"))
-    .catch(error => console.error("Error queuing topic event:", error));
+    .then(() => dlog("Topic event queued successfully"))
+    .catch(error => derr("Error queuing topic event:", error));
   }, [isKnack, recordId]);
 
   // Notify Knack of card updates
   const notifyCardUpdates = useCallback((updatedCards) => {
     if (!isKnack || !recordId) return;
     
-    console.log("Notifying Knack of card updates:", updatedCards.length);
+    dlog("Notifying Knack of card updates:", updatedCards.length);
     
     // Use the saveQueueService
     saveQueueService.addToQueue({
@@ -2646,32 +2646,32 @@ useEffect(() => {
         cards: updatedCards
       }
     })
-    .then(() => console.log("Card updates notification queued successfully"))
-    .catch(error => console.error("Error queuing card updates notification:", error));
+    .then(() => dlog("Card updates notification queued successfully"))
+    .catch(error => derr("Error queuing card updates notification:", error));
   }, [isKnack, recordId]);
 
 // Fixed function to handle saving topic shells generated by TopicCreationModal
 const handleSaveTopicShells = useCallback(async (generatedShells) => {
   if (!Array.isArray(generatedShells) || generatedShells.length === 0) {
-    console.warn("[App] handleSaveTopicShells called with no shells.");
+    dwarn("[App] handleSaveTopicShells called with no shells.");
     showStatus("No topics to save.");
     return;
   }
 
-  console.log("[App] Handling save for generated topic shells:", generatedShells);
+  dlog("[App] Handling save for generated topic shells:", generatedShells);
   setIsSaving(true);
   showStatus("Saving topic list...");
 
   const theRecordId = await ensureRecordId();
   if (!theRecordId) {
-    console.error("[App] Cannot save topic shells: Missing record ID.");
+    derr("[App] Cannot save topic shells: Missing record ID.");
     setIsSaving(false);
     showStatus("Error: Missing record ID for saving topics.");
     return;
   }
 
   const subjectToUse = generatedShells[0]?.subject || "General";
-  console.log("[App] Processing shells for subject:", subjectToUse);
+  dlog("[App] Processing shells for subject:", subjectToUse);
 
   const timestamp = Date.now();
   const uniqueRandom = Math.random().toString(36).substring(2, 7);
@@ -2691,7 +2691,7 @@ const handleSaveTopicShells = useCallback(async (generatedShells) => {
     } else {
       workingColorMapping[subjectToUse].base = baseSubjectColorForNewShells;
     }
-    console.log(`[handleSaveTopicShells] Assigned/Updated base color for subject '${subjectToUse}': ${baseSubjectColorForNewShells}`);
+    dlog(`[handleSaveTopicShells] Assigned/Updated base color for subject '${subjectToUse}': ${baseSubjectColorForNewShells}`);
     colorMappingWasUpdated = true;
   }
   // --- End of new color handling logic ---
@@ -2741,7 +2741,7 @@ const handleSaveTopicShells = useCallback(async (generatedShells) => {
     return [...otherSubjectCards, ...thisSubjectNonShellCards, ...processedShells];
   })();
   
-  console.log(`[App handleSaveTopicShells] New merged card counts for save: ${newAllCardsState.length}`);
+  dlog(`[App handleSaveTopicShells] New merged card counts for save: ${newAllCardsState.length}`);
 
   const newTopicListForThisSubject = {
     subject: subjectToUse,
@@ -2766,12 +2766,12 @@ const handleSaveTopicShells = useCallback(async (generatedShells) => {
       return [...existingTopicListsCopy, newTopicListForThisSubject];
     }
   })();
-  console.log(`[App handleSaveTopicShells] Final topic lists count for save: ${newTopicListsState.length}`);
+  dlog(`[App handleSaveTopicShells] Final topic lists count for save: ${newTopicListsState.length}`);
 
   try {
     // --- Reconciliation Point ---
     const reconciledCardsForSave = reconcileCardColors(newAllCardsState, workingColorMapping);
-    console.log("[App handleSaveTopicShells] Cards reconciled before saving.");
+    dlog("[App handleSaveTopicShells] Cards reconciled before saving.");
     // --- End Reconciliation ---
 
     // Update React state first IF the color mapping was indeed changed for a new subject
@@ -2801,15 +2801,15 @@ const handleSaveTopicShells = useCallback(async (generatedShells) => {
           preserveFields: true 
         };
         
-        console.log("[App handleSaveTopicShells] Calling saveData with payload:", JSON.stringify(savePayload, null, 2));
+        dlog("[App handleSaveTopicShells] Calling saveData with payload:", JSON.stringify(savePayload, null, 2));
         await saveData(savePayload, true); 
         
-        console.log("[App] Save operations completed successfully for topic shells.");
+        dlog("[App] Save operations completed successfully for topic shells.");
         showStatus("Topic list saved successfully!");
     }, 100); // Small delay
     
   } catch (error) {
-    console.error("[App] Error saving topic data:", error);
+    derr("[App] Error saving topic data:", error);
     showStatus("Error saving topic list: " + error.message);
   } finally {
     setIsSaving(false);
@@ -2851,12 +2851,12 @@ const filteredCards = useMemo(() => {
         if (storedData) {
           const parsedData = JSON.parse(storedData);
           if (parsedData && parsedData.recordId) {
-            console.log("Recovered recordId from localStorage:", parsedData.recordId);
+            dlog("Recovered recordId from localStorage:", parsedData.recordId);
             setRecordId(parsedData.recordId);
           }
         }
       } catch (e) {
-        console.error("Error reading from localStorage:", e);
+        derr("Error reading from localStorage:", e);
       }
     }
   }, [recordId]);
@@ -2864,7 +2864,7 @@ const filteredCards = useMemo(() => {
   // Effect to listen for navigation to AI Generator
   useEffect(() => {
     const handleNavToAIGenerator = (event) => {
-      console.log('Navigation to AI Generator requested with data:', event.detail);
+      dlog('Navigation to AI Generator requested with data:', event.detail);
       
       // Set the selected subject and topic
       if (event.detail.subject) {
@@ -2899,13 +2899,13 @@ const filteredCards = useMemo(() => {
   // Modified to accept and pass the applyToTopics flag
   const handleUpdateSubjectColor = useCallback(async (subject, topic, newColor, applyToTopics = false) => {
       // Call the existing updateColorMapping function which handles state update and saving
-      console.log(`[App handleUpdateSubjectColor] Received update for ${subject} / ${topic || 'Subject Base'} to ${newColor}. ApplyToTopics: ${applyToTopics}. Delegating to updateColorMapping.`);
+      dlog(`[App handleUpdateSubjectColor] Received update for ${subject} / ${topic || 'Subject Base'} to ${newColor}. ApplyToTopics: ${applyToTopics}. Delegating to updateColorMapping.`);
       if (subject && newColor) {
           // Pass the applyToTopics flag (which is the 4th argument to updateColorMapping)
           updateColorMapping(subject, topic, newColor, applyToTopics);
           showStatus(`Color updated for ${topic ? topic : subject}.`);
       } else {
-          console.error("[App handleUpdateSubjectColor] Invalid arguments received:", { subject, topic, newColor, applyToTopics });
+          derr("[App handleUpdateSubjectColor] Invalid arguments received:", { subject, topic, newColor, applyToTopics });
           showStatus("Error: Could not update color.");
       }
       // Removed the incorrect manual state update and saveData call here.
@@ -2920,12 +2920,12 @@ useEffect(() => {
   };
   
   // Initialize the global App reference with our instance
-  console.log("[App] Initializing global App reference with handlers");
+  dlog("[App] Initializing global App reference with handlers");
   initializeAppGlobals(appInstanceRef.current);
   
   return () => {
     // Cleanup on unmount if needed
-    console.log("[App] Cleaning up global App reference");
+    dlog("[App] Cleaning up global App reference");
     appInstanceRef.current = null;
   };
 }, [handleSaveTopicShellsAndRefresh]); // Only re-initialize if the handler changes
@@ -2934,11 +2934,11 @@ useEffect(() => {
   // --- Initial Load useEffect ---
   useEffect(() => {
       // ... (implementation as before, ensuring it calls loadCombinedData) ...
-      console.log("[App useEffect Initial Load] Triggering initial data load.");
+      dlog("[App useEffect Initial Load] Triggering initial data load.");
       loadCombinedData('initial mount');
       // Example: Placeholder if not already implemented
       // if (!hasLoadedInitialData.current) {
-      //  console.log("[App useEffect Initial Load] Calling loadCombinedData.");
+      //  dlog("[App useEffect Initial Load] Calling loadCombinedData.");
       //  loadCombinedData('initial mount');
       //  hasLoadedInitialData.current = true;
       // }
@@ -2967,22 +2967,22 @@ useEffect(() => {
 
   // --- Add function to handle propagating saves ---
   const propagateSaveToBridge = useCallback((messagePayload) => {
-    console.log("[App] propagateSaveToBridge called with payload (before stringify):", messagePayload);
+    dlog("[App] propagateSaveToBridge called with payload (before stringify):", messagePayload);
     
     let payloadToSend = { ...messagePayload };
     if (payloadToSend.cards && typeof payloadToSend.cards === 'object') {
         try {
-            console.log("[App] Stringifying cards array before postMessage");
+            dlog("[App] Stringifying cards array before postMessage");
             // Log a sample before stringifying
             if (Array.isArray(payloadToSend.cards) && payloadToSend.cards.length > 0) {
-              console.log("[App] Sample card OPTIONS before stringify:", payloadToSend.cards[0]?.options);
+              dlog("[App] Sample card OPTIONS before stringify:", payloadToSend.cards[0]?.options);
             }
             const stringifiedCards = JSON.stringify(payloadToSend.cards);
-            console.log("[App] Stringified cards length:", stringifiedCards.length);
+            dlog("[App] Stringified cards length:", stringifiedCards.length);
             payloadToSend.cards = stringifiedCards;
-            console.log("[App] Payload AFTER stringify (sample card field):", payloadToSend.cards?.substring(0, 200)); // Log sample of stringified
+            dlog("[App] Payload AFTER stringify (sample card field):", payloadToSend.cards?.substring(0, 200)); // Log sample of stringified
         } catch (e) {
-            console.error("[App] Failed to stringify cards array:", e);
+            derr("[App] Failed to stringify cards array:", e);
             payloadToSend = { ...messagePayload }; 
         }
     }
@@ -2995,19 +2995,19 @@ useEffect(() => {
     
     // Fallback 1: Try global reference if direct access fails (redundant with above but safe)
     if (!iframeWindow && window.flashcardAppIframeWindow) {
-      console.log("[App] Using fallback global reference for iframe");
+      dlog("[App] Using fallback global reference for iframe");
       iframeWindow = window.flashcardAppIframeWindow;
     }
 
     if (iframeWindow) {
-      console.log(`[App] Posting message type ${payloadToSend.type} to Knack script`);
+      dlog(`[App] Posting message type ${payloadToSend.type} to Knack script`);
       iframeWindow.postMessage(payloadToSend, '*'); // Send the modified payload
     } else {
-      console.error("[App] Cannot send message to bridge: Iframe element or contentWindow not found.");
+      derr("[App] Cannot send message to bridge: Iframe element or contentWindow not found.");
       
       // Fallback 2: Try parent window as last resort
       if (window.parent !== window) {
-        console.log("[App] Attempting to send message via parent window as fallback");
+        dlog("[App] Attempting to send message via parent window as fallback");
         window.parent.postMessage(messagePayload, '*');
       } else {
         showStatus("Error: Could not communicate with the saving mechanism.", 5000);
