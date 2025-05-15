@@ -144,18 +144,20 @@ const Header = ({
           </button>
         )}
         
-        {isInSpacedRep && renderBoxSelectors()}
-        
+        {/* New Save All button, based on nav-button styling */}
         {onSave && (
           <button 
-            className="save-button" 
+            className="nav-button"
             onClick={() => handleNavClick(onSave)} 
             disabled={isSaving}
             title="Save All Changes"
           >
-            {isSaving ? '⏳ Saving...' : '💾 Save All'}
+            <span className="button-icon">��</span>
+            Save All
           </button>
         )}
+
+        {isInSpacedRep && renderBoxSelectors()}
       </div>
       
       {/* Hamburger toggle - REMOVED */}

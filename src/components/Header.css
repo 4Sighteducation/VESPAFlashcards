@@ -198,18 +198,13 @@
     gap: 10px;
   }
   
-  .header-visible-actions .nav-button,
-  .header-visible-actions .save-button {
-    width: 100%;
-    margin-bottom: 5px;
-    padding: 6px 12px;
-    font-size: 13px;
-    box-sizing: border-box;
-    line-height: 1.5;
-  }
-  
-  .header-visible-actions .save-button {
-    order: 3;
+  .header-visible-actions .nav-button {
+    width: 100%; 
+    margin-bottom: 5px; 
+    box-sizing: border-box; 
+    line-height: 1.5;      
+    padding: 6px 12px; 
+    font-size: 13px;   
   }
   
   .header-nav {
@@ -447,7 +442,5 @@
 .save-button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
-  transform: none; 
-  box-shadow: none; 
 }
 */
