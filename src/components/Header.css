@@ -373,21 +373,22 @@
 .header-visible-actions .save-button {
   background-color: #079baa; /* Target color */
   color: white;             /* Match nav-button text color */
-  padding: 10px 20px;       /* Original padding */
+  padding: 6px 12px;        /* Match nav-button padding */
   border: none;
-  border-radius: 5px;       /* Original border-radius */
-  font-weight: 600;         /* Original font-weight */
+  border-radius: 5px;       /* Original border-radius, or match nav-button (4px) */
+  font-weight: 600;         /* Original font-weight (nav-button is 500) - can adjust if needed */
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 16px;          /* Original font-size */
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25); /* Original box-shadow */
+  font-size: 13px;          /* Match nav-button font-size */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25); /* Original box-shadow, or match nav-button (0 2px 4px rgba(0,0,0,0.2)) */
   border-bottom: 3px solid #00e5db; /* Match nav-button border */
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;                 /* Match nav-button gap (was 8px) */
   justify-content: center;
   width: auto;
-  min-width: 130px;        /* Original min-width */
+  min-width: 110px;         /* Match nav-button min-width */
+  text-align: center;         /* Ensure text is centered */
 }
 
 /* Also make hover selector more specific */
