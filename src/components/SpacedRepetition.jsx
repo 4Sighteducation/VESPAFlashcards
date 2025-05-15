@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import ReactDOM from "react-dom";
 import "./SpacedRepetition.css";
 import FlippableCard from './FlippableCard';
+import { dlog, dwarn, derr } from '../utils/logger'; // Import the logger
 
 const SpacedRepetition = ({
   cards,
@@ -157,7 +158,7 @@ const SpacedRepetition = ({
   // New useEffect to manage study session state (currentIndex, studyCompleted, flip states)
   // This reacts to changes in `currentCards` (after filtering) and when the study modal opens/closes.
   useEffect(() => {
-    console.log('[SR Effect] Running. showStudyModal:', showStudyModal, 'currentCards.length:', currentCards.length, 'currentIndex:', currentIndex, 'studyCompleted (before):', studyCompleted);
+    dlog('[SR Effect] Running. showStudyModal:', showStudyModal, 'currentCards.length:', currentCards.length, 'currentIndex:', currentIndex, 'studyCompleted (before):', studyCompleted);
     if (!showStudyModal) {
       // Modal closed: Reset session states
       setCurrentIndex(0);
@@ -180,24 +181,24 @@ const SpacedRepetition = ({
       // If we have cards, and study was marked completed (e.g. by mistake or race condition),
       // reset studyCompleted to false as we are now in an active session with cards.
       if (studyCompleted) {
-        console.log('[SR Effect] Has cards, but studyCompleted was true. Resetting studyCompleted to false.');
+        dlog('[SR Effect] Has cards, but studyCompleted was true. Resetting studyCompleted to false.');
         setStudyCompleted(false);
       }
       setShowHumorousCompletionModal(false); // If we have cards, ensure humorous modal is not shown
-      console.log('[SR Effect] Has cards. newIndex:', newIndex);
+      dlog('[SR Effect] Has cards. newIndex:', newIndex);
     } else { // currentCards.length is 0
       // No cards available for the current filter OR user has finished all cards.
       // If studyCompleted is true (meaning user went through cards and finished),
       // OR if it wasn't completed but now there are no cards (e.g. initial empty set for filter).
       if (studyCompleted || !showHumorousCompletionModal) { // Show if completed OR if not already shown for empty set
-        console.log('[SR Effect] No cards or studyCompleted. Triggering humorous modal. studyCompleted:', studyCompleted);
+        dlog('[SR Effect] No cards or studyCompleted. Triggering humorous modal. studyCompleted:', studyCompleted);
         if (!studyCompleted) setStudyCompleted(true); // Ensure it is marked as completed
         setCurrentIndex(0);
         const message = getRandomEmptyStateMessage();
         setHumorousCompletionMessage(message);
         if (!showHumorousCompletionModal) setShowHumorousCompletionModal(true);
       } else {
-        console.log('[SR Effect] No cards, but humorous modal already shown or not meeting condition. studyCompleted:', studyCompleted);
+        dlog('[SR Effect] No cards, but humorous modal already shown or not meeting condition. studyCompleted:', studyCompleted);
       }
     }
 
@@ -326,6 +327,7 @@ const SpacedRepetition = ({
     if (currentIndex < currentCards.length - 1) {
       setCurrentIndex(prevIndex => prevIndex + 1); // Use functional update
     } else {
+      dlog('[SR nextCard] Reached end of cards, setting studyCompleted to true.');
       setStudyCompleted(true); 
     }
     // Flip state reset will be handled by the useEffect watching currentIndex and currentCard
@@ -363,7 +365,7 @@ const SpacedRepetition = ({
   // The new useEffect watching `currentCards` will then handle UI updates (advancing card, etc.).
   const handleCorrectAnswer = () => {
     if (!isValidCard || !currentCard) {
-      console.error("Cannot move card: No valid card found at index", currentIndex);
+      derr("Cannot move card: No valid card found at index", currentIndex);
       return;
     }
     try {
@@ -377,7 +379,7 @@ const SpacedRepetition = ({
       setShowReviewDateMessage(true);
 
       if (wasLastCard) {
-        console.log('[SR handleCorrectAnswer] Last card answered correctly. Setting studyCompleted=true, currentIndex=0.');
+        dlog('[SR handleCorrectAnswer] Last card answered correctly. Setting studyCompleted=true, currentIndex=0.');
         setStudyCompleted(true);
         setCurrentIndex(0); 
       }
@@ -388,7 +390,7 @@ const SpacedRepetition = ({
         feedbackTimeoutRef.current = null; 
       }, 1500);
     } catch (error) {
-      console.error("Error handling correct answer:", error);
+      derr("Error handling correct answer:", error);
       setFeedbackMessage("Error moving card. Please try again.");
       setShowReviewDateMessage(true);
       setTimeout(() => {
@@ -400,7 +402,7 @@ const SpacedRepetition = ({
 
   const handleIncorrectAnswer = () => {
     if (!isValidCard || !currentCard) {
-      console.error("Cannot move card: No valid card found at index", currentIndex);
+      derr("Cannot move card: No valid card found at index", currentIndex);
       return;
     }
     try {
@@ -414,7 +416,7 @@ const SpacedRepetition = ({
       setShowReviewDateMessage(true);
 
       if (wasLastCard) {
-        console.log('[SR handleIncorrectAnswer] Last card answered incorrectly. Setting studyCompleted=true, currentIndex=0.');
+        dlog('[SR handleIncorrectAnswer] Last card answered incorrectly. Setting studyCompleted=true, currentIndex=0.');
         setStudyCompleted(true);
         setCurrentIndex(0);
       }
@@ -425,7 +427,7 @@ const SpacedRepetition = ({
         feedbackTimeoutRef.current = null; 
       }, 1500);
     } catch (error) {
-      console.error("Error handling incorrect answer:", error);
+      derr("Error handling incorrect answer:", error);
       setFeedbackMessage("Error moving card. Please try again.");
       setShowReviewDateMessage(true);
       setTimeout(() => {
@@ -561,12 +563,12 @@ const SpacedRepetition = ({
 
   // Render the flashcard review interface when a subject/topic is selected
   const renderCardReview = () => {
-    console.log('[SR renderCardReview] Rendering. studyCompleted:', studyCompleted, 'currentCards.length:', currentCards.length, 'currentIndex:', currentIndex);
+    dlog('[SR renderCardReview] Rendering. studyCompleted:', studyCompleted, 'currentCards.length:', currentCards.length, 'currentIndex:', currentIndex);
 
     // PRIORITY CHECK 1: If study is marked as completed (and humorous modal isn't already up), show completion message.
     // The humorous modal takes precedence if it's active.
     if (studyCompleted && !showHumorousCompletionModal) {
-      console.log('[SR renderCardReview] Rendering completion message because studyCompleted is true and humorous modal is not active.');
+      dlog('[SR renderCardReview] Rendering completion message because studyCompleted is true and humorous modal is not active.');
       // This might be redundant if humorous modal is always shown on completion, but good as a fallback.
       return (
         <div className="completion-message">
@@ -591,7 +593,7 @@ const SpacedRepetition = ({
     // This check is important if studyCompleted hasn't been set yet by the effect,
     // or if the humorous modal isn't the desired display for an initially empty filter.
     if ((!currentCards || currentCards.length === 0) && !showHumorousCompletionModal) {
-      console.log('[SR renderCardReview] Rendering empty box message (no currentCards, and humorous modal not active).');
+      dlog('[SR renderCardReview] Rendering empty box message (no currentCards, and humorous modal not active).');
       return (
         <div className="empty-box">
           <h3>Wow! You're keen!!</h3>
@@ -620,7 +622,7 @@ const SpacedRepetition = ({
 
     // PRIORITY CHECK 3: If currentIndex is out of bounds for the currentCards array.
     if (currentIndex < 0 || currentIndex >= currentCards.length || !currentCards[currentIndex]) {
-      console.log('[SR renderCardReview] currentIndex is out of bounds or card is undefined. currentCards.length:', currentCards.length, 'currentIndex:', currentIndex, '. This likely means the last card was just processed.');
+      dlog('[SR renderCardReview] currentIndex is out of bounds or card is undefined. currentCards.length:', currentCards.length, 'currentIndex:', currentIndex, '. This likely means the last card was just processed.');
       return (
         <div className="completion-message"> {/* Using completion message as it's more accurate */}
           <h3>All cards for this selection reviewed!</h3>
@@ -641,11 +643,11 @@ const SpacedRepetition = ({
     }
     
     const currentCardForRender = currentCards[currentIndex]; // Define after checks
-    console.log('[SR renderCardReview] isValidCardCheck: true (implied by passing guards), currentCardForRender ID:', currentCardForRender?.id);
+    dlog('[SR renderCardReview] isValidCardCheck: true (implied by passing guards), currentCardForRender ID:', currentCardForRender?.id);
 
 
     if (!currentCardForRender || (!currentCardForRender.front && !currentCardForRender.question)) {
-      console.log('[SR renderCardReview] Rendering invalid card message. currentCardForRender:', currentCardForRender);
+      dlog('[SR renderCardReview] Rendering invalid card message. currentCardForRender:', currentCardForRender);
       return (
         <div className="empty-box">
           <h3>Invalid Card Detected</h3>
@@ -704,7 +706,7 @@ const SpacedRepetition = ({
             lockedNextReviewDate={currentCardForRender.nextReviewDate}
           />
         )}
-        {console.log('[SR renderCardReview] Proceeding to render FlippableCard for card ID:', currentCardForRender?.id, 'isReviewable:', currentCardForRender.isReviewable)}
+        {dlog('[SR renderCardReview] Proceeding to render FlippableCard for card ID:', currentCardForRender?.id, 'isReviewable:', currentCardForRender.isReviewable)}
 
         <div className="card-navigation">
           <button

@@ -16,7 +16,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
   const calculateButtonWidths = (numOptions, containerWidthPx) => {
     // Placeholder logic - In a real implementation, this would calculate
     // optimal button widths based on container size and number of options.
-    console.log(`[calculateButtonWidths] Placeholder: ${numOptions} options, Container: ${containerWidthPx}px`);
+    dlog(`[calculateButtonWidths] Placeholder: ${numOptions} options, Container: ${containerWidthPx}px`);
     // Example: Set some state based on calculation if needed
     // const newWidth = containerWidthPx / numOptions - 10; // Basic example
     // setButtonWidth(newWidth);
@@ -29,7 +29,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
       
       // First check if valid options were passed directly
       if (options && Array.isArray(options) && options.length > 0) {
-        console.log("MultipleChoiceOptions: Using provided options array:", options.length);
+        dlog("MultipleChoiceOptions: Using provided options array:", options.length);
         setOptionsToDisplay(options);
         return;
       }
@@ -38,21 +38,21 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
       if (card) {
         // Try savedOptions if options are missing
         if (card.savedOptions && Array.isArray(card.savedOptions) && card.savedOptions.length > 0) {
-          console.log("MultipleChoiceOptions: Recovered options from savedOptions:", card.savedOptions.length);
+          dlog("MultipleChoiceOptions: Recovered options from savedOptions:", card.savedOptions.length);
           setOptionsToDisplay(card.savedOptions);
           return;
         }
         
         // Try card.options directly if not passed in props
         if (card.options && Array.isArray(card.options) && card.options.length > 0) {
-          console.log("MultipleChoiceOptions: Using card.options directly:", card.options.length);
+          dlog("MultipleChoiceOptions: Using card.options directly:", card.options.length);
           setOptionsToDisplay(card.options);
           return;
         }
         
         // Try to generate options from correctAnswer if available
         if (card.correctAnswer && typeof card.correctAnswer === 'string') {
-          console.log("MultipleChoiceOptions: Generating options from correctAnswer");
+          dlog("MultipleChoiceOptions: Generating options from correctAnswer");
           const correctAnswer = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
           
           const generatedOptions = [
@@ -75,7 +75,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
         // If answer has "Correct Answer:" format, extract it
         if (card.answer && typeof card.answer === 'string' && 
             card.answer.includes("Correct Answer:")) {
-          console.log("MultipleChoiceOptions: Extracting options from answer format");
+          dlog("MultipleChoiceOptions: Extracting options from answer format");
           const match = card.answer.match(/Correct Answer:\s*([^\n]+)/);
           if (match && match[1]) {
             const correctAnswer = match[1].trim();
@@ -103,7 +103,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
       if ((!optionsToDisplay || optionsToDisplay.length === 0) && 
           card && (card.questionType === 'multiple_choice' || 
                   (card.answer && card.answer.startsWith("Correct Answer:")))) {
-        console.warn("MultipleChoiceOptions: No options available, creating defaults");
+        dwarn("MultipleChoiceOptions: No options available, creating defaults");
         const defaultOptions = [
           "Option A (placeholder)", 
           "Option B (placeholder)", 
@@ -118,7 +118,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
         }
       }
     } catch (error) {
-      console.error("Error processing options in MultipleChoiceOptions:", error);
+      derr("Error processing options in MultipleChoiceOptions:", error);
       setError(error.message || "Error processing options");
       
       // Set fallback options in case of error
@@ -147,7 +147,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
         try {
           option = String(option);
         } catch (e) {
-          console.warn('Failed to convert option to string:', option);
+          dwarn('Failed to convert option to string:', option);
           return '';
         }
       }
@@ -222,7 +222,7 @@ const MultipleChoiceOptions = ({ options, preview = false, isInModal = false, ca
               try {
                 displayOption = String(displayOption);
               } catch (e) {
-                console.warn('Failed to convert option to string:', displayOption);
+                dwarn('Failed to convert option to string:', displayOption);
                 displayOption = `Option ${String.fromCharCode(97 + index)}`;
               }
             }

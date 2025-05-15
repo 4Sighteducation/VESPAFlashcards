@@ -50,7 +50,7 @@ const TopicCreationModal = ({
   initialExamBoard = "",
   initialSubject = "",
 }) => {
-  console.log(`[TopicCreationModal] Initializing`);
+  dlog(`[TopicCreationModal] Initializing`);
 
   // State management
   const [formData, setFormData] = useState({
@@ -100,7 +100,7 @@ const TopicCreationModal = ({
   // Add useEffect to handle subject list updates
   useEffect(() => {
     if (Array.isArray(existingSubjects)) {
-      console.log("[TopicCreationModal] Received existing subjects:", existingSubjects);
+      dlog("[TopicCreationModal] Received existing subjects:", existingSubjects);
       setAvailableSubjects(existingSubjects);
     }
   }, [existingSubjects]);
@@ -111,10 +111,10 @@ const TopicCreationModal = ({
       setIsLoadingBoards(true);
       try {
         const boards = await fetchExamBoards();
-        console.log("[TopicCreationModal] Loaded exam boards from Knack:", boards);
+        dlog("[TopicCreationModal] Loaded exam boards from Knack:", boards);
         setAvailableExamBoards(boards);
       } catch (error) {
-        console.error("[TopicCreationModal] Error loading exam boards:", error);
+        derr("[TopicCreationModal] Error loading exam boards:", error);
         // Use fallback values on error
         setAvailableExamBoards(['AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA', 'SQA']);
       } finally {
@@ -133,7 +133,7 @@ const TopicCreationModal = ({
         // If IB Group is selected, populate subjects from that group
         if (formData.ibGroup) {
           const ibSubjects = getIBSubjects(formData.ibGroup);
-          console.log(`[TopicCreationModal] Using IB subjects for group ${formData.ibGroup}:`, ibSubjects);
+          dlog(`[TopicCreationModal] Using IB subjects for group ${formData.ibGroup}:`, ibSubjects);
           setAvailableSubjects(ibSubjects);
         } else {
           // If no IB group is selected yet, show empty subjects list
@@ -146,15 +146,15 @@ const TopicCreationModal = ({
         setIsLoadingSubjects(true);
         try {
           const subjects = await fetchSubjects(formData.examType, formData.examBoard);
-          console.log(`[TopicCreationModal] Loaded ${subjects.length} subjects for ${formData.examType} ${formData.examBoard}`);
+          dlog(`[TopicCreationModal] Loaded ${subjects.length} subjects for ${formData.examType} ${formData.examBoard}`);
           
           if (subjects && subjects.length > 0) {
             setAvailableSubjects(subjects);
           } else {
-            console.log("[TopicCreationModal] No subjects found in Knack, keeping existing subjects");
+            dlog("[TopicCreationModal] No subjects found in Knack, keeping existing subjects");
           }
         } catch (error) {
-          console.error("[TopicCreationModal] Error loading subjects:", error);
+          derr("[TopicCreationModal] Error loading subjects:", error);
         } finally {
           setIsLoadingSubjects(false);
         }
@@ -183,7 +183,7 @@ const TopicCreationModal = ({
       switch (data.type) {
         case 'status':
           if (data.action === 'generateTopics') {
-            console.log("[TopicCreationModal] Progress update:", data);
+            dlog("[TopicCreationModal] Progress update:", data);
             setProgress(data.progress || 0);
             setProgressMessage(data.message || "");
           }
@@ -191,7 +191,7 @@ const TopicCreationModal = ({
 
         case 'topicResults':
           if (data.action === 'generateTopics' && Array.isArray(data.topics)) {
-            console.log("[TopicCreationModal] Topic results received:", data);
+            dlog("[TopicCreationModal] Topic results received:", data);
             setGeneratedTopics(data.topics);
             setProgress(100);
             setProgressMessage("Topic generation complete!");
@@ -202,7 +202,7 @@ const TopicCreationModal = ({
           break;
 
         case 'error':
-          console.error("[TopicCreationModal] Error from WebSocket:", data);
+          derr("[TopicCreationModal] Error from WebSocket:", data);
           setError(data.message || "An unknown error occurred during topic generation.");
           setIsLoading(false);
           setProgress(0);
@@ -211,16 +211,16 @@ const TopicCreationModal = ({
           break;
 
         default:
-          console.log("[TopicCreationModal] Unhandled message type:", data.type);
+          dlog("[TopicCreationModal] Unhandled message type:", data.type);
       }
     } catch (error) {
-      console.error("[TopicCreationModal] Error parsing WebSocket message:", error);
+      derr("[TopicCreationModal] Error parsing WebSocket message:", error);
     }
   }, [lastMessage]);
 
   // Add this useEffect to log and verify existingSubjects
   useEffect(() => {
-    console.log("Existing subjects in modal:", existingSubjects);
+    dlog("Existing subjects in modal:", existingSubjects);
   }, [existingSubjects]);
 
 // Add this useEffect before the handleChange function
@@ -233,7 +233,7 @@ useEffect(() => {
   // Update handleChange to properly handle subject selection
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log("[TopicCreationModal] handleChange called with:", { name, value });
+    dlog("[TopicCreationModal] handleChange called with:", { name, value });
     
     if (name === 'subject-select') {
       if (value === '--addNew--') {
@@ -286,41 +286,41 @@ useEffect(() => {
 
   // Function to proceed to the next step
   const handleNext = () => {
-    console.log(`[TopicCreationModal] handleNext called. Current step: ${currentStep}, Total steps: ${totalSteps}`);
+    dlog(`[TopicCreationModal] handleNext called. Current step: ${currentStep}, Total steps: ${totalSteps}`);
     setError(null);
 
     // Validation checks
     if (currentStep === 1 && !formData.examType) {
-      console.log("[TopicCreationModal] Validation failed: Exam Type missing.");
+      dlog("[TopicCreationModal] Validation failed: Exam Type missing.");
       setError("Please select an Exam Type.");
       return;
     }
     if (currentStep === 2) {
       if (!formData.examBoard) {
-        console.log("[TopicCreationModal] Validation failed: Exam Board missing.");
+        dlog("[TopicCreationModal] Validation failed: Exam Board missing.");
         setError("Please select an Exam Board.");
         return;
       }
       // For IB, also check if subject group is selected
       if (isIBSelected && !formData.ibGroup) {
-        console.log("[TopicCreationModal] Validation failed: IB Subject Group missing.");
+        dlog("[TopicCreationModal] Validation failed: IB Subject Group missing.");
         setError("Please select an IB Subject Group.");
         return;
       }
     }
     if (currentStep === 3 && !formData.subject) {
-      console.log(`[TopicCreationModal] Validation failed: Subject missing or empty. Value: '${formData.subject}'`);
+      dlog(`[TopicCreationModal] Validation failed: Subject missing or empty. Value: '${formData.subject}'`);
       setError("Please select or enter a Subject.");
       return;
     }
-    console.log("[TopicCreationModal] Validation passed for step", currentStep);
+    dlog("[TopicCreationModal] Validation passed for step", currentStep);
 
     // Check if we can advance
     if (currentStep < totalSteps) {
-      console.log(`[TopicCreationModal] Advancing from step ${currentStep} to ${currentStep + 1}`);
+      dlog(`[TopicCreationModal] Advancing from step ${currentStep} to ${currentStep + 1}`);
       setCurrentStep(currentStep + 1);
     } else {
-      console.log("[TopicCreationModal] Already at the last step or beyond.");
+      dlog("[TopicCreationModal] Already at the last step or beyond.");
     }
   };
 
@@ -353,11 +353,11 @@ useEffect(() => {
       return;
     }
     if (isLoading || pendingOperations.generateTopics) {
-      console.log("Topic generation already in progress or pending.");
+      dlog("Topic generation already in progress or pending.");
       return;
     }
 
-    console.log(`[TopicCreationModal] Triggering topic generation for ${subject}`);
+    dlog(`[TopicCreationModal] Triggering topic generation for ${subject}`);
     setIsLoading(true);
     setError(null);
     setProgress(0);
@@ -377,7 +377,7 @@ useEffect(() => {
         }
       }));
     } catch (error) {
-      console.error("[TopicCreationModal] Error sending WebSocket message:", error);
+      derr("[TopicCreationModal] Error sending WebSocket message:", error);
       setError("Failed to start topic generation. Please try again.");
       setIsLoading(false);
       setPendingOperations(prev => ({ ...prev, generateTopics: false }));
@@ -386,25 +386,25 @@ useEffect(() => {
 
 // Function to handle the finalization and saving of topics from TopicHub - fixed for multi-subject support
 const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
-  console.log(`[TopicCreationModal] Received ${topicShells.length} finalized topic shells from TopicHub.`);
-  console.log(`[TopicCreationModal] Current formData state: ExamType='${formData.examType}', ExamBoard='${formData.examBoard}', Subject='${formData.subject}'`);
+  dlog(`[TopicCreationModal] Received ${topicShells.length} finalized topic shells from TopicHub.`);
+  dlog(`[TopicCreationModal] Current formData state: ExamType='${formData.examType}', ExamBoard='${formData.examBoard}', Subject='${formData.subject}'`);
 
   if (!Array.isArray(topicShells) || topicShells.length === 0) {
-    console.warn("[TopicCreationModal] No topic shells provided for finalization. Closing modal.");
+    dwarn("[TopicCreationModal] No topic shells provided for finalization. Closing modal.");
     if (closeHandlerRef.current) closeHandlerRef.current();
     return;
   }
 
   // CRITICAL: Add lock check to prevent concurrent saves that could cause subject overwriting
   if (isLocked) {
-    console.warn("[TopicCreationModal] Another save operation is in progress, please wait.");
+    dwarn("[TopicCreationModal] Another save operation is in progress, please wait.");
     setError("Save in progress. Please wait a moment before trying again.");
     return;
   }
 
   // Set the lock to prevent concurrent save operations
   setIsLocked(true);
-  console.log("[TopicCreationModal] Lock acquired for save operation");
+  dlog("[TopicCreationModal] Lock acquired for save operation");
 
   try {
     // Get current handlers from refs - always up to date
@@ -413,11 +413,11 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
 
     // Extra verification logging
     if (!saveHandler) {
-      console.error("[TopicCreationModal] CRITICAL ERROR: onSaveTopicShells is null or undefined");
+      derr("[TopicCreationModal] CRITICAL ERROR: onSaveTopicShells is null or undefined");
     } else if (typeof saveHandler !== 'function') {
-      console.error("[TopicCreationModal] CRITICAL ERROR: onSaveTopicShells is not a function, type:", typeof saveHandler);
+      derr("[TopicCreationModal] CRITICAL ERROR: onSaveTopicShells is not a function, type:", typeof saveHandler);
     } else {
-      console.log("[TopicCreationModal] onSaveTopicShells verification passed - it's a function");
+      dlog("[TopicCreationModal] onSaveTopicShells verification passed - it's a function");
     }
 
     // Ensure shells have the necessary metadata before saving
@@ -441,21 +441,21 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
       };
     });
 
-    console.log("[TopicCreationModal] Prepared shellsToSave:", shellsToSave);
+    dlog("[TopicCreationModal] Prepared shellsToSave:", shellsToSave);
 
     try {
       // Final verification before calling save handler
       if (!saveHandler || typeof saveHandler !== 'function') {
-        console.error("[TopicCreationModal] Cannot save - save handler is missing or not a function");
+        derr("[TopicCreationModal] Cannot save - save handler is missing or not a function");
         
         // FALLBACK: If normal prop is missing, try custom event as backup
-        console.warn("[TopicCreationModal] Save handler missing - attempting event fallback");
+        dwarn("[TopicCreationModal] Save handler missing - attempting event fallback");
         try {
           const event = new CustomEvent('saveTopicShells', {
             detail: { shells: shellsToSave }
           });
           window.dispatchEvent(event);
-          console.log("[TopicCreationModal] Dispatched saveTopicShells event as fallback");
+          dlog("[TopicCreationModal] Dispatched saveTopicShells event as fallback");
           
           // Close modal after event dispatch
           if (closeHandler && typeof closeHandler === 'function') {
@@ -465,37 +465,37 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
           }
           return;
         } catch (e) {
-          console.error("[TopicCreationModal] Fallback event dispatch failed:", e);
+          derr("[TopicCreationModal] Fallback event dispatch failed:", e);
           setError("Cannot save topics - all save methods failed");
           return;
         }
       }
 
       // Main path: Use the saveHandler function
-      console.log("[TopicCreationModal] Calling save handler with shells...");
+      dlog("[TopicCreationModal] Calling save handler with shells...");
       await saveHandler(shellsToSave);
-      console.log("[TopicCreationModal] Topic shells passed to onSaveTopicShells handler.");
+      dlog("[TopicCreationModal] Topic shells passed to onSaveTopicShells handler.");
       
       // Close modal immediately after successful save
       if (closeHandler && typeof closeHandler === 'function') {
         closeHandler();
       } else {
-        console.warn("[TopicCreationModal] Close handler is missing or not a function.");
+        dwarn("[TopicCreationModal] Close handler is missing or not a function.");
       }
     } catch (error) {
-      console.error("[TopicCreationModal] Error saving topic shells:", error);
+      derr("[TopicCreationModal] Error saving topic shells:", error);
       setError(`Failed to save topic shells: ${error.message}`);
       
       // FALLBACK ON ERROR: Try event dispatch as a last resort
       try {
-        console.warn("[TopicCreationModal] Save handler failed - attempting event fallback");
+        dwarn("[TopicCreationModal] Save handler failed - attempting event fallback");
         const event = new CustomEvent('saveTopicShells', {
           detail: { shells: shellsToSave }
         });
         window.dispatchEvent(event);
-        console.log("[TopicCreationModal] Dispatched saveTopicShells event as fallback after error");
+        dlog("[TopicCreationModal] Dispatched saveTopicShells event as fallback after error");
       } catch (e) {
-        console.error("[TopicCreationModal] Fallback event dispatch failed:", e);
+        derr("[TopicCreationModal] Fallback event dispatch failed:", e);
       }
     }
   } finally {
@@ -503,7 +503,7 @@ const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {
     // This ensures the lock is always released, even if an error occurs
     setTimeout(() => {
       setIsLocked(false);
-      console.log("[TopicCreationModal] Lock released after save operation");
+      dlog("[TopicCreationModal] Lock released after save operation");
     }, 3000); // 3 second timeout to ensure we don't block subsequent operations indefinitely
   }
 }, [formData, isLocked]); // Add isLocked to dependencies

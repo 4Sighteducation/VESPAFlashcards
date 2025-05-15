@@ -57,7 +57,7 @@ const SimpleCardGeneratorModal = ({
   useEffect(() => {
     return () => {
       isMounted.current = false;
-      console.log("SimpleCardGeneratorModal unmounted, preventing further state updates");
+      dlog("SimpleCardGeneratorModal unmounted, preventing further state updates");
     };
   }, []);
 
@@ -97,7 +97,7 @@ const SimpleCardGeneratorModal = ({
         topicId
       });
       
-      console.log(`[SimpleCardGeneratorModal] Generated ${processedCards.length} cards`);
+      dlog(`[SimpleCardGeneratorModal] Generated ${processedCards.length} cards`);
       
       if (isMounted.current) {
         setGeneratedCards(processedCards);
@@ -105,7 +105,7 @@ const SimpleCardGeneratorModal = ({
         setLoadingStatus(`${processedCards.length} Cards generated successfully.`);
       }
     } catch (error) {
-      console.error("[SimpleCardGeneratorModal] Card generation failed:", error);
+      derr("[SimpleCardGeneratorModal] Card generation failed:", error);
       if (isMounted.current) {
         setError(`AI Generation Error: ${error.message || 'Unknown error'}`);
         setIsGenerating(false);
@@ -117,7 +117,7 @@ const SimpleCardGeneratorModal = ({
   // Handle adding a single card to the bank
   const handleAddCard = useCallback(async (card) => {
     if (!card || !card.id) {
-      console.error("[SimpleCardGeneratorModal] Invalid card data:", card);
+      derr("[SimpleCardGeneratorModal] Invalid card data:", card);
       setError("Cannot add invalid card data.");
       return;
     }
@@ -168,7 +168,7 @@ const SimpleCardGeneratorModal = ({
       
       return true;
     } catch (error) {
-      console.error("[SimpleCardGeneratorModal] Error adding card:", error);
+      derr("[SimpleCardGeneratorModal] Error adding card:", error);
       setError(`Error adding card: ${error.message}`);
       return false;
     }
@@ -227,7 +227,7 @@ const SimpleCardGeneratorModal = ({
       
       return true;
     } catch (error) {
-      console.error("[SimpleCardGeneratorModal] Error adding cards:", error);
+      derr("[SimpleCardGeneratorModal] Error adding cards:", error);
       setError(`Error adding cards: ${error.message}`);
       return false;
     }

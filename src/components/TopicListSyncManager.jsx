@@ -31,7 +31,7 @@ const TopicListSyncManager = ({
   useEffect(() => {
     if (initialTopics && Array.isArray(initialTopics)) {
       setCurrentTopics(initialTopics);
-      console.log(`[TopicListSyncManager] Initialized with ${initialTopics.length} topics from prop.`);
+      dlog(`[TopicListSyncManager] Initialized with ${initialTopics.length} topics from prop.`);
     }
   }, [initialTopics]); // Rerun only when initialTopics prop changes
 
