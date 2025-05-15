@@ -57,25 +57,25 @@ const Header = ({
     ? () => onViewChange("spacedRepetition") 
     : () => onViewChange("cardBank");
 
-  // Card Bank Actions part
-  const cardBankCoreActions = (
-    <>
-      <button
-        className={`nav-button toggle-view-btn`} // This is the "Study" button for Card Bank
-        onClick={() => handleNavClick(alternateViewAction)}
-      >
-        <span className="button-icon">{alternateViewIcon}</span>
-        {alternateViewName}
-      </button>
-      <button
-        className="nav-button print-button"
-        onClick={() => handleNavClick(onPrintAll)}
-      >
-        <span className="button-icon">🖨️</span>
-        Print
-      </button>
-    </>
-  );
+  // Card Bank Actions part - This will be refactored.
+  // const cardBankCoreActions = (
+  //   <>
+  //     <button
+  //       className={`nav-button toggle-view-btn`} // This is the "Study" button for Card Bank
+  //       onClick={() => handleNavClick(alternateViewAction)}
+  //     >
+  //       <span className="button-icon">{alternateViewIcon}</span>
+  //       {alternateViewName}
+  //     </button>
+  //     <button
+  //       className="nav-button print-button"
+  //       onClick={() => handleNavClick(onPrintAll)}
+  //     >
+  //       <span className="button-icon">🖨️</span>
+  //       Print
+  //     </button>
+  //   </>
+  // );
 
   // Render the box selectors for spaced repetition
   const renderBoxSelectors = () => {
@@ -124,9 +124,28 @@ const Header = ({
 
       {/* Wrapper for always-visible actions */}
       <div className="header-visible-actions">
-        {isInCardBank && cardBankCoreActions}
+        {/* Always visible View Toggle Button */}
+        <button
+          className={`nav-button toggle-view-btn`}
+          onClick={() => handleNavClick(alternateViewAction)}
+        >
+          <span className="button-icon">{alternateViewIcon}</span>
+          {alternateViewName}
+        </button>
+
+        {/* Print button - only for Card Bank */}
+        {isInCardBank && (
+          <button
+            className="nav-button print-button"
+            onClick={() => handleNavClick(onPrintAll)}
+          >
+            <span className="button-icon">🖨️</span>
+            Print
+          </button>
+        )}
+        
         {isInSpacedRep && renderBoxSelectors()}
-        {/* Save button: Always visible if onSave is provided, styling will handle mobile stacking */}
+        
         {onSave && (
           <button 
             className="save-button" 
@@ -139,7 +158,8 @@ const Header = ({
         )}
       </div>
       
-      {/* Hamburger toggle - may be hidden by CSS if all items are visible */}
+      {/* Hamburger toggle - REMOVED */}
+      {/* 
       <div className="header-mobile-menu-toggle-container">
         <button 
           className="mobile-menu-toggle" 
@@ -149,18 +169,13 @@ const Header = ({
           ☰
         </button>
       </div>
+      */}
 
-      {/* Hamburger menu content - for any items that are not always visible */}
+      {/* Hamburger menu content - REMOVED */}
+      {/* 
       <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
-        {/* Example: If logout or other secondary actions were to be in hamburger */}
-        {/* For now, it will be empty if all primary actions are moved out */}
-        {/* 
-        <button className="nav-button" onClick={() => handleNavClick(handleLogout)}>
-          <span className="button-icon">↪️</span>
-          Logout
-        </button> 
-        */}
       </div>
+      */}
     </header>
   );
 };
