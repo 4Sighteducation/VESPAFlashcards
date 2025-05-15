@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getContrastColor } from '../utils/ColorUtils';
 import './Flashcard.css'; // Reuse existing CSS
 import ScaledText from './ScaledText'; // Import ScaledText for dynamic text sizing
+import { dlog, dwarn, derr } from './utils/logger';
 
 // --- Detailed Answer Modal --- (Define before FlippableCard)
 const DetailedAnswerModal = ({ isOpen, onClose, title, content }) => {
@@ -60,18 +61,18 @@ const FlippableCard = ({
   
   // <<< ADD LOGGING HERE >>>
   try {
-    console.log(`[FlippableCard Render] Card Prop Received (ID: ${card?.id}):`, JSON.stringify(card));
+    dlog(`[FlippableCard Render] Card Prop Received (ID: ${card?.id}):`, JSON.stringify(card));
     // --- Log card options --- 
     if (card && (card.questionType === 'multiple_choice' || (Array.isArray(card.options) && card.options.length > 0))) {
-        console.log(`[FlippableCard PROP] Card ${card.id} options:`, JSON.stringify(card.options));
+        dlog(`[FlippableCard PROP] Card ${card.id} options:`, JSON.stringify(card.options));
     } else if (card) {
-        console.log(`[FlippableCard PROP] Card ${card.id} is NOT multiple choice or has no options.`);
+        dlog(`[FlippableCard PROP] Card ${card.id} is NOT multiple choice or has no options.`);
     }
     // --- End log ---
-    console.log(`[FlippableCard Render] card.options type: ${typeof card?.options}, isArray: ${Array.isArray(card?.options)}, length: ${card?.options?.length}`);
+    dlog(`[FlippableCard Render] card.options type: ${typeof card?.options}, isArray: ${Array.isArray(card?.options)}, length: ${card?.options?.length}`);
   } catch (e) {
-    console.error(`[FlippableCard Render] Error logging card prop for ID: ${card?.id}`, e);
-    console.log(`[FlippableCard Render] Card Prop Received (ID: ${card?.id}) (Direct Log):`, card);
+    derr(`[FlippableCard Render] Error logging card prop for ID: ${card?.id}`, e);
+    dlog(`[FlippableCard Render] Card Prop Received (ID: ${card?.id}) (Direct Log):`, card);
   }
   // <<< END LOGGING >>>
   
@@ -152,7 +153,7 @@ const FlippableCard = ({
   // Find correct answer index for multiple choice cards
   const getCorrectAnswerIndex = () => {
     if (!card || !card.options || !Array.isArray(card.options) || card.options.length === 0) {
-      console.warn(`[FlippableCard] Cannot determine correct answer index: invalid options array for card ${card?.id}`);
+      dwarn(`[FlippableCard] Cannot determine correct answer index: invalid options array for card ${card?.id}`);
       return 0; // Default to first option
     }
     
@@ -170,7 +171,7 @@ const FlippableCard = ({
           : (option?.text || '').replace(/^[a-d]\)\s*/i, '').trim();
         
         // --- DETAILED LOGGING FOR STRATEGY 1 --- 
-        console.log(`[getCorrectAnswerIndex Strat1 Debug] Comparing: 
+        dlog(`[getCorrectAnswerIndex Strat1 Debug] Comparing: 
           CorrectAns: '${correctAnswerText}' 
           Option:     '${optionText}'`);
         // --- END LOGGING ---
@@ -190,12 +191,12 @@ const FlippableCard = ({
       
       // If match found, return it
       if (correctIndex !== -1) {
-        console.log(`[FlippableCard] Found correct answer by matching correctAnswer: ${correctAnswerText}, index: ${correctIndex}`);
+        dlog(`[FlippableCard] Found correct answer by matching correctAnswer: ${correctAnswerText}, index: ${correctIndex}`);
         return correctIndex;
       }
       
       // Log failure to find matching option
-      console.warn(`[FlippableCard] Card has correctAnswer "${correctAnswerText}" but it doesn't match any option`);
+      dwarn(`[FlippableCard] Card has correctAnswer "${correctAnswerText}" but it doesn't match any option`);
     }
     
     // Strategy 2: Look for option with isCorrect flag
@@ -203,7 +204,7 @@ const FlippableCard = ({
       option && typeof option === 'object' && option.isCorrect === true
     );
     if (correctOptionIndex >= 0) {
-      console.log(`[FlippableCard] Found correct answer via isCorrect flag at index: ${correctOptionIndex}`);
+      dlog(`[FlippableCard] Found correct answer via isCorrect flag at index: ${correctOptionIndex}`);
       return correctOptionIndex;
     }
     
@@ -220,7 +221,7 @@ const FlippableCard = ({
         });
         
         if (matchingOptionIndex !== -1) {
-            console.log(`[FlippableCard] Found correct answer by matching answer text to option index: ${matchingOptionIndex}`);
+            dlog(`[FlippableCard] Found correct answer by matching answer text to option index: ${matchingOptionIndex}`);
             return matchingOptionIndex;
         }
     }
@@ -234,14 +235,14 @@ const FlippableCard = ({
         const letter = correctAnswerMatch[1].toLowerCase();
         const index = letter.charCodeAt(0) - 97; // 'a' => 0, 'b' => 1, etc.
         if (index >= 0 && index < card.options.length) {
-          console.log(`[FlippableCard] Found correct answer by parsing answer string: ${letter}, index: ${index}`);
+          dlog(`[FlippableCard] Found correct answer by parsing answer string: ${letter}, index: ${index}`);
           return index;
         }
       }
     }
     
     // Default to first option if no correct answer found
-    console.warn(`[FlippableCard] Could not definitively determine correct answer for card ${card.id}. Defaulting to index 0.`);
+    dwarn(`[FlippableCard] Could not definitively determine correct answer for card ${card.id}. Defaulting to index 0.`);
     return 0;
   };
   
@@ -249,10 +250,10 @@ const FlippableCard = ({
   const handleDeleteClick = (e) => {
     e.stopPropagation(); // Prevent card flip or other parent actions
     if (onDeleteRequest && card?.id) {
-      console.log(`Requesting delete for card ID: ${card.id}`);
+      dlog(`Requesting delete for card ID: ${card.id}`);
       onDeleteRequest(card.id);
     } else {
-      console.warn("Delete request ignored: onDeleteRequest handler or card ID missing.");
+      dwarn("Delete request ignored: onDeleteRequest handler or card ID missing.");
     }
   };
   // ----------------------------------
