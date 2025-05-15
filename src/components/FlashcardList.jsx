@@ -11,6 +11,16 @@ import ErrorBoundary from './ErrorBoundary';
 import { BRIGHT_COLORS, getContrastColor, generateShade, ensureValidColorMapping } from '../utils/ColorUtils';
 
 
+// Helper function to chunk an array
+const chunkArray = (array, size) => {
+  const chunkedArr = [];
+  if (!Array.isArray(array)) return chunkedArr; // Handle cases where array might not be ready
+  for (let i = 0; i < array.length; i += size) {
+    chunkedArr.push(array.slice(i, i + size));
+  }
+  return chunkedArr;
+};
+
 // ScrollManager component - Now handles subjects AND topics
 const ScrollManager = ({ expandedSubjects, expandedTopics, subjectRefs, topicRefs }) => {
   // Track if the component is mounted
@@ -302,7 +312,7 @@ const FlashcardList = ({
     });
 
     return bySubjectAndTopic;
-  }, []); // Empty dependency array as it doesn't depend on component state/props
+  }, []);
 
   const getExistingSubjectNames = useMemo(() => {
     // Depends on groupedCards which is defined above this point in component flow
@@ -310,7 +320,7 @@ const FlashcardList = ({
   }, [groupedCards]);
   // --- End moved definitions ---
 
-  // Try to get userId from localStorage if not provided as prop
+  // Try to get userId from localStorage if not provided
   useEffect(() => {
     if (!userId && !localUserId) {
       try {
@@ -618,6 +628,9 @@ useEffect(() => {
     // Sort by creation date (earliest first)
     return subjectsWithDates.sort((a, b) => a.creationDate - b.creationDate);
   }, [groupedCards, getExamInfo, getSubjectDate, subjectColorMapping]);
+
+  // Chunk subjects for rendering
+  const subjectChunks = useMemo(() => chunkArray(sortedSubjects, 3), [sortedSubjects]);
 
   // 5. useEffect Hooks
   useEffect(() => {
@@ -1183,9 +1196,9 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
     <div className="flashcard-list">
       <ScrollManager
         expandedSubjects={expandedSubjects}
-        expandedTopics={expandedTopics} // Pass topic state
+        expandedTopics={expandedTopics}
         subjectRefs={subjectRefs} 
-        topicRefs={topicRefs}       // Pass topic refs
+        topicRefs={topicRefs}
       />
       <button
         onClick={() => setShowTopicCreationModal(true)}
@@ -1194,121 +1207,114 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
       >
         <span className="button-icon">⚡</span> <span>Create Topics</span>
       </button>
-      {sortedSubjects.map(({ id: subject, title, cards: topicsData, exam_type, exam_board, color: subjectBaseColor, creationDate }) => {
-        const subjectKey = subject;
-        const isExpanded = expandedSubjects.has(subjectKey);
-        const subjectTextColor = getContrastColor(subjectBaseColor);
 
-        // Count total cards and topics
-        const totalTopics = Object.keys(topicsData || {}).length;
-        const totalCardCount = Object.values(topicsData || {}).reduce((count, items) => {
-          return count + items.filter(item => item.type !== 'topic').length;
-        }, 0);
-        
-        // Handle subject slideshow
-        const handleSlideshowSubject = (e) => {
-          e.stopPropagation();
-          // Start slideshow for the entire subject (all topics)
-          startSlideshow(subject, null, e);
-        };
-        
-        // Handle subject print
-        const handlePrintSubjectClick = (e) => {
-          e.stopPropagation();
-          const subjectCards = [];
-          Object.values(topicsData || {}).forEach(topicCards => {
-            subjectCards.push(...topicCards.filter(item => item.type !== 'topic'));
-          });
-          openPrintModal(subjectCards, subject);
-        };
-        
-        // Handle subject delete
-        const handleDeleteSubjectClick = (e) => {
-          e.stopPropagation();
-          handleDeleteSubject(subject);
-        };
+      <div className="subject-groups-wrapper">
+        {subjectChunks.map((chunk, chunkIndex) => (
+          <div key={`chunk-${chunkIndex}`} className="subject-group-container">
+            {chunk.map(({ id: subject, title, cards: topicsData, exam_type, exam_board, color: subjectBaseColor, creationDate }) => {
+              const subjectKey = subject;
+              const isExpanded = expandedSubjects.has(subjectKey);
+              const subjectTextColor = getContrastColor(subjectBaseColor);
+              const totalTopics = Object.keys(topicsData || {}).length;
+              const totalCardCount = Object.values(topicsData || {}).reduce((count, items) => {
+                return count + items.filter(item => item.type !== 'topic').length;
+              }, 0);
 
-        // Handle subject color click
-        const handleColorSubjectClick = (e) => {
-          e.stopPropagation();
-          openColorEditor(subject, null, subjectBaseColor, e);
-        };
+              const handleSlideshowSubject = (e) => {
+                e.stopPropagation();
+                startSlideshow(subject, null, e);
+              };
+              const handlePrintSubjectClick = (e) => {
+                e.stopPropagation();
+                const subjectCards = [];
+                Object.values(topicsData || {}).forEach(topicCards => {
+                  subjectCards.push(...topicCards.filter(item => item.type !== 'topic'));
+                });
+                openPrintModal(subjectCards, subject);
+              };
+              const handleDeleteSubjectClick = (e) => {
+                e.stopPropagation();
+                handleDeleteSubject(subject);
+              };
+              const handleColorSubjectClick = (e) => {
+                e.stopPropagation();
+                openColorEditor(subject, null, subjectBaseColor, e);
+              };
 
-        return (
-          <div
-            key={subjectKey}
-            className="subject-container"
-            ref={el => subjectRefs.current[subjectKey] = el}
-          >
-            <div
-              className={`subject-header ${isExpanded ? 'expanded' : ''}`}
-              style={{ backgroundColor: subjectBaseColor, color: subjectTextColor }}
-              onClick={() => toggleSubject(subjectKey)}
-            >
-              <div className="subject-info">
-                <h2>{title}</h2>
-                <div className="subject-meta">
-                  <span className="topic-count">({totalTopics} topics)</span>
-                  <span className="card-count">({totalCardCount} cards)</span>
-                  <span className="exam-type">{exam_type}</span>
-                  <span className="exam-board">{exam_board}</span>
-                </div>
-              </div>
-              <div className="subject-actions">
-                 {/* Hamburger Toggle Button - Visible only on mobile via CSS */}
-                <button 
-                  className="subject-actions-toggle mobile-only" 
-                  onClick={(e) => toggleSubjectMenu(subjectKey, e)}
-                  aria-label="Toggle subject actions"
+              return (
+                <div
+                  key={subjectKey}
+                  className="subject-container"
+                  ref={el => subjectRefs.current[subjectKey] = el}
                 >
-                  &#x22EE; {/* Vertical ellipsis */} 
-                </button>
-
-                 {/* Action Buttons Menu - Hidden on mobile unless active */}
-                <div className={`subject-actions-menu ${openSubjectMenus[subjectKey] ? 'active' : ''}`}>
-                  <button
-                    onClick={handleSlideshowSubject}
-                    className="nav-button slideshow-button"
-                    title="Start slideshow with all cards"
-                    disabled={totalCardCount === 0}
+                  <div
+                    className={`subject-header ${isExpanded ? 'expanded' : ''}`}
+                    style={{ backgroundColor: subjectBaseColor, color: subjectTextColor }}
+                    onClick={() => toggleSubject(subjectKey)}
                   >
-                    <span className="button-icon">🔄</span>
-                    <span className="button-text mobile-only">Slideshow</span>
-                  </button>
-                  <button
-                    onClick={handlePrintSubjectClick}
-                    className="nav-button print-button"
-                    title="Print subject cards"
-                    disabled={totalCardCount === 0}
-                  >
-                    <span className="button-icon">🖨️</span>
-                    <span className="button-text mobile-only">Print</span>
-                  </button>
-                  <button
-                    onClick={handleColorSubjectClick}
-                    className="nav-button color-button"
-                    title="Edit subject color"
-                  >
-                    <span className="button-icon">🎨</span>
-                    <span className="button-text mobile-only">Color</span>
-                  </button>
-                  <button
-                    onClick={handleDeleteSubjectClick}
-                    className="nav-button delete-button"
-                    title="Delete subject"
-                  >
-                    <span className="button-icon">🗑️</span>
-                    <span className="button-text mobile-only">Delete</span>
-                  </button>
+                    <div className="subject-info">
+                      <h2>{title}</h2>
+                      <div className="subject-meta">
+                        <span className="topic-count">({totalTopics} topics)</span>
+                        <span className="card-count">({totalCardCount} cards)</span>
+                        <span className="exam-type">{exam_type}</span>
+                        <span className="exam-board">{exam_board}</span>
+                      </div>
+                    </div>
+                    <div className="subject-actions">
+                      <button 
+                        className="subject-actions-toggle mobile-only" 
+                        onClick={(e) => toggleSubjectMenu(subjectKey, e)}
+                        aria-label="Toggle subject actions"
+                      >
+                        &#x22EE; 
+                      </button>
+                      <div className={`subject-actions-menu ${openSubjectMenus[subjectKey] ? 'active' : ''}`}>
+                        <button
+                          onClick={handleSlideshowSubject}
+                          className="nav-button slideshow-button"
+                          title="Start slideshow with all cards"
+                          disabled={totalCardCount === 0}
+                        >
+                          <span className="button-icon">🔄</span>
+                          <span className="button-text mobile-only">Slideshow</span>
+                        </button>
+                        <button
+                          onClick={handlePrintSubjectClick}
+                          className="nav-button print-button"
+                          title="Print subject cards"
+                          disabled={totalCardCount === 0}
+                        >
+                          <span className="button-icon">🖨️</span>
+                          <span className="button-text mobile-only">Print</span>
+                        </button>
+                        <button
+                          onClick={handleColorSubjectClick}
+                          className="nav-button color-button"
+                          title="Edit subject color"
+                        >
+                          <span className="button-icon">🎨</span>
+                          <span className="button-text mobile-only">Color</span>
+                        </button>
+                        <button
+                          onClick={handleDeleteSubjectClick}
+                          className="nav-button delete-button"
+                          title="Delete subject"
+                        >
+                          <span className="button-icon">🗑️</span>
+                          <span className="button-text mobile-only">Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  {isExpanded && renderTopics(subject, subjectBaseColor)}
                 </div>
-              </div>
-            </div>
-            {isExpanded && renderTopics(subject, subjectBaseColor)}
+              );
+            })}
           </div>
-        );
-      })}
+        ))}
+      </div>
       
-      {/* Delete confirmation modal */}
       <DeleteConfirmModal
         isOpen={deleteConfirmState.isOpen}
         title={deleteConfirmState.title}

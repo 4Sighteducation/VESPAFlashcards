@@ -1252,27 +1252,27 @@
 
 /* Subject container view */
 .subjects-container {
-  --subject-gap: 20px; /* Define gap as a CSS variable */
+  --subject-gap: 20px; /* Gap between subject boxes */
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start; /* Align items to the start, good for wrapping */
+  flex-direction: column; /* Stack subjects vertically */
+  align-items: center; /* Center the stack if max-width is less than 100% */
   gap: var(--subject-gap);
-  margin: 20px 0;
+  margin: 20px auto; /* Auto horizontal margins for centering */
   width: 100%;
-  max-width: 1200px; /* Max overall width */
-  padding: 0 10px; /* Padding on the container */
+  max-width: 900px; /* Max width for the entire stack of subjects, adjust as needed */
+  padding: 0 10px;
   box-sizing: border-box;
 }
 
 .subject-box {
   position: relative;
-  flex-grow: 1; /* Allow item to grow if it's alone on a line */
-  flex-shrink: 1; /* Allow item to shrink if needed */
-  flex-basis: 100%; /* Mobile first: default to full width */
-  /* min-width: 280px; /* Adjust or remove if 100% basis is preferred for mobile */
-  max-width: 100%; /* Ensure it doesn't go beyond container if it grows */
+  width: 100%; /* Subject boxes take full width of the centered container */
+  /* flex-grow: 1; /* No longer needed as they are full width */
+  /* flex-shrink: 1; /* No longer needed */
+  /* flex-basis: 100%; /* Covered by width: 100% */
+  /* max-width: 100%; */ /* Covered by width: 100% and parent's max-width */
 
-  margin-bottom: var(--subject-gap);
+  /* margin-bottom: var(--subject-gap); /* Gap is now handled by the parent flex container */
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
@@ -1284,19 +1284,14 @@
   box-sizing: border-box;
 }
 
-/* Media query for 2-column layout on wider screens */
-@media (min-width: 700px) { /* Breakpoint for 2-column view, adjust as needed */
+/* Remove media query that forced two-column layout */
+/* @media (min-width: 700px) { 
   .subject-box {
     flex-basis: calc(50% - (var(--subject-gap) / 2));
-    /* When in 2-column, a single item on the last row might still grow to 100% of this basis,
-       but not exceed 50% of the container if that's the desired strictness.
-       However, usually, we want it to take the full width if it's the only one on the last row.
-       The flex-grow: 1 on the base style handles this. If strict 50% is needed for the last item,
-       max-width could be re-added here, but it often looks odd.
-    */
-    max-width: calc(50% - (var(--subject-gap) / 2)); /* To strictly enforce max 2 columns */
+    max-width: calc(50% - (var(--subject-gap) / 2)); 
   }
-}
+} */
+
 
 /* New styles for the topics list container */
 .topics-list-container {
