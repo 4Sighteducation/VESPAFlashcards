@@ -368,3 +368,37 @@
     flex-wrap: wrap;
   }
 }
+
+/* Make the selector more specific */
+.header-visible-actions .save-button {
+  background-color: #079baa; /* Target color */
+  color: white;             /* Match nav-button text color */
+  padding: 10px 20px;       /* Original padding */
+  border: none;
+  border-radius: 5px;       /* Original border-radius */
+  font-weight: 600;         /* Original font-weight */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;          /* Original font-size */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25); /* Original box-shadow */
+  border-bottom: 3px solid #00e5db; /* Match nav-button border */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  width: auto;
+  min-width: 130px;        /* Original min-width */
+}
+
+/* Also make hover selector more specific */
+.header-visible-actions .save-button:hover {
+  background-color: #068998; /* Match nav-button hover */
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Disabled state should also be specific if needed, but usually less conflict */
+.header-visible-actions .save-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
