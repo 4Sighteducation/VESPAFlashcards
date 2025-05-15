@@ -1255,28 +1255,24 @@
   --subject-gap: 20px; /* Define gap as a CSS variable */
   display: flex;
   flex-wrap: wrap;
-  /* justify-content: space-between; /* Changed for better wrapping control */
-  justify-content: flex-start; /* Or space-around, depending on desired alignment */
+  justify-content: flex-start; /* Align items to the start, good for wrapping */
   gap: var(--subject-gap);
   margin: 20px 0;
   width: 100%;
-  max-width: 1200px;
-  padding: 0 10px; /* Add some padding to the container itself */
+  max-width: 1200px; /* Max overall width */
+  padding: 0 10px; /* Padding on the container */
   box-sizing: border-box;
 }
 
 .subject-box {
   position: relative;
-  /* flex-basis: calc(50% - 15px); /* Old approach */
-  /* flex-grow: 0; */
-  
-  /* New flexible approach */
-  flex: 1 1 calc(50% - (var(--subject-gap) / 2)); /* Grow, Shrink, Basis */
-  min-width: 280px; /* Minimum width before wrapping to a new line / becoming full width */
-                     /* Adjust this based on content and desired look on smaller screens */
-  max-width: calc(50% - (var(--subject-gap) / 2)); /* Ensure it doesn't grow beyond 2 per row if space allows */
+  flex-grow: 1; /* Allow item to grow if it's alone on a line */
+  flex-shrink: 1; /* Allow item to shrink if needed */
+  flex-basis: 100%; /* Mobile first: default to full width */
+  /* min-width: 280px; /* Adjust or remove if 100% basis is preferred for mobile */
+  max-width: 100%; /* Ensure it doesn't go beyond container if it grows */
 
-  margin-bottom: var(--subject-gap); /* Use variable for consistency */
+  margin-bottom: var(--subject-gap);
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
@@ -1285,7 +1281,21 @@
   flex-direction: column;
   background-color: white;
   min-height: 160px; 
-  box-sizing: border-box; /* Important for width calculations with padding/border */
+  box-sizing: border-box;
+}
+
+/* Media query for 2-column layout on wider screens */
+@media (min-width: 700px) { /* Breakpoint for 2-column view, adjust as needed */
+  .subject-box {
+    flex-basis: calc(50% - (var(--subject-gap) / 2));
+    /* When in 2-column, a single item on the last row might still grow to 100% of this basis,
+       but not exceed 50% of the container if that's the desired strictness.
+       However, usually, we want it to take the full width if it's the only one on the last row.
+       The flex-grow: 1 on the base style handles this. If strict 50% is needed for the last item,
+       max-width could be re-added here, but it often looks odd.
+    */
+    max-width: calc(50% - (var(--subject-gap) / 2)); /* To strictly enforce max 2 columns */
+  }
 }
 
 /* New styles for the topics list container */
