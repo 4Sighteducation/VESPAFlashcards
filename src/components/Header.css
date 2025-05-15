@@ -100,8 +100,8 @@
 }
 
 .save-button {
-  background-color: #079baa;
-  color: white;
+  background-color: #00e5db; /* Original color */
+  color: #06206e;       /* Original text color */
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
@@ -110,7 +110,7 @@
   transition: all 0.2s ease;
   font-size: 16px;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
-  border-bottom: 3px solid #00e5db;
+  border-bottom: 3px solid #153aa3; /* Original border */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -120,7 +120,7 @@
 }
 
 .save-button:hover {
-  background-color: #068998;
+  background-color: #00cec9; /* Original hover */
   transform: translateY(-2px);
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
 }
@@ -128,8 +128,6 @@
 .save-button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
 .user-info {
@@ -371,39 +369,4 @@
     gap: 5px;
     flex-wrap: wrap;
   }
-}
-
-/* Make the selector more specific */
-.header-visible-actions .save-button {
-  background-color: #079baa; /* Target color */
-  color: white;             /* Match nav-button text color */
-  padding: 6px 12px;        /* Match nav-button padding */
-  border: none;
-  border-radius: 5px;       /* Original border-radius, or match nav-button (4px) */
-  font-weight: 600;         /* Original font-weight (nav-button is 500) - can adjust if needed */
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 13px;          /* Match nav-button font-size */
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25); /* Original box-shadow, or match nav-button (0 2px 4px rgba(0,0,0,0.2)) */
-  border-bottom: 3px solid #00e5db; /* Match nav-button border */
-  display: flex;
-  align-items: center;
-  gap: 5px;                 /* Match nav-button gap (was 8px) */
-  justify-content: center;
-  width: auto;
-  min-width: 110px;         /* Match nav-button min-width */
-  text-align: center;         /* Ensure text is centered */
-}
-
-/* Also make hover selector more specific */
-.header-visible-actions .save-button:hover {
-  background-color: #068998; /* Match nav-button hover */
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
-}
-
-/* Disabled state should also be specific if needed, but usually less conflict */
-.header-visible-actions .save-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
 }
