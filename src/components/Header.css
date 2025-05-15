@@ -159,11 +159,12 @@
   .header {
     flex-wrap: wrap;
     padding: 0.75rem;
+    justify-content: space-between;
   }
   
   .app-title {
     font-size: 1.2rem;
-    flex-grow: 1;
+    order: 0;
   }
   
   .app-title h1 {
@@ -185,11 +186,28 @@
     order: 1;
   }
   
-  .save-button {
-    padding: 8px 12px;
-    font-size: 14px;
-    min-width: auto;
-    order: 0;
+  .header-mobile-menu-toggle-container {
+    order: 1;
+    margin-left: auto;
+  }
+  
+  .header-visible-actions {
+    order: 2;
+    flex-basis: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 10px;
+    gap: 10px;
+  }
+  
+  .header-visible-actions .nav-button,
+  .header-visible-actions .save-button {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  
+  .header-visible-actions .save-button {
+    order: 3;
   }
   
   .header-nav {
@@ -321,6 +339,26 @@
 
 .stat-item {
   white-space: nowrap;
+}
+
+/* New styles for the always-visible actions container */
+.header-visible-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+/* Ensure individual buttons in this container don't grow excessively */
+.header-visible-actions .nav-button,
+.header-visible-actions .save-button {
+  flex-shrink: 0;
+}
+
+.header-mobile-menu-toggle-container {
+  /* Simple container for the toggle, no specific styles needed unless for positioning */
+  /* display: flex; to align if there were multiple items */
 }
 
 @media (max-width: 768px) {

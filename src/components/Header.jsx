@@ -57,6 +57,26 @@ const Header = ({
     ? () => onViewChange("spacedRepetition") 
     : () => onViewChange("cardBank");
 
+  // Card Bank Actions part
+  const cardBankCoreActions = (
+    <>
+      <button
+        className={`nav-button toggle-view-btn`} // This is the "Study" button for Card Bank
+        onClick={() => handleNavClick(alternateViewAction)}
+      >
+        <span className="button-icon">{alternateViewIcon}</span>
+        {alternateViewName}
+      </button>
+      <button
+        className="nav-button print-button"
+        onClick={() => handleNavClick(onPrintAll)}
+      >
+        <span className="button-icon">🖨️</span>
+        Print
+      </button>
+    </>
+  );
+
   // Render the box selectors for spaced repetition
   const renderBoxSelectors = () => {
     return (
@@ -102,60 +122,11 @@ const Header = ({
         </div>
       </div>
 
-      <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
-        {/* Toggle button for switching between Card Bank and Spaced Repetition */}
-        <button
-          className={`nav-button toggle-view-btn`}
-          onClick={() => handleNavClick(alternateViewAction)}
-        >
-          <span className="button-icon">{alternateViewIcon}</span>
-          {alternateViewName}
-        </button>
-        
-        {/* Only show Print button in Card Bank view. Create and Logout are removed. */}
-        {isInCardBank && (
-          <>
-            {/* Create button is removed from here, assuming onCreateCard is handled elsewhere (e.g. modal) */}
-            {/* <button
-              className="nav-button create-card-btn"
-              onClick={() => handleNavClick(onCreateCard)}
-            >
-              <span className="button-icon">➕</span>
-              Create
-            </button> */}
-            
-            <button
-              className="nav-button print-button"
-              onClick={() => handleNavClick(onPrintAll)}
-            >
-              <span className="button-icon">🖨️</span>
-              Print
-            </button>
-            
-            {/* Logout button is removed */}
-            {/* <button
-              className="nav-button logout-button"
-              onClick={() => handleNavClick(handleLogout)}
-            >
-              <span className="button-icon">↪️</span>
-              Logout
-            </button> */}
-          </>
-        )}
-        
-        {/* Only show box selectors in Spaced Repetition view */}
+      {/* Wrapper for always-visible actions */}
+      <div className="header-visible-actions">
+        {isInCardBank && cardBankCoreActions}
         {isInSpacedRep && renderBoxSelectors()}
-      </div>
-
-      <div className="header-actions">
-        <button 
-          className="mobile-menu-toggle" 
-          onClick={toggleMobileMenu}
-          aria-label="Toggle menu"
-        >
-          ☰
-        </button>
-        {/* Save button moved here to be on the right, always visible if onSave is provided */}
+        {/* Save button: Always visible if onSave is provided, styling will handle mobile stacking */}
         {onSave && (
           <button 
             className="save-button" 
@@ -166,6 +137,29 @@ const Header = ({
             {isSaving ? '⏳ Saving...' : '💾 Save All'}
           </button>
         )}
+      </div>
+      
+      {/* Hamburger toggle - may be hidden by CSS if all items are visible */}
+      <div className="header-mobile-menu-toggle-container">
+        <button 
+          className="mobile-menu-toggle" 
+          onClick={toggleMobileMenu}
+          aria-label="Toggle menu"
+        >
+          ☰
+        </button>
+      </div>
+
+      {/* Hamburger menu content - for any items that are not always visible */}
+      <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
+        {/* Example: If logout or other secondary actions were to be in hamburger */}
+        {/* For now, it will be empty if all primary actions are moved out */}
+        {/* 
+        <button className="nav-button" onClick={() => handleNavClick(handleLogout)}>
+          <span className="button-icon">↪️</span>
+          Logout
+        </button> 
+        */}
       </div>
     </header>
   );

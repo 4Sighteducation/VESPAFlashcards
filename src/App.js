@@ -3034,7 +3034,7 @@ useEffect(() => {
             userInfo={getUserInfo()}
             currentView={view}
             onViewChange={setView}
-            onSave={saveData}
+            onSave={view === "cardBank" ? saveData : null} // Conditionally pass saveData
             isSaving={isSaving}
             onPrintAll={handlePrintAllCards}
             onCreateCard={() => setCardCreationModalOpen(true)}
@@ -3136,6 +3136,17 @@ useEffect(() => {
                       {isSaving ? '⏳' : '💾'}
                     </button> */}
                   </div>
+                  
+                  {/* "Create Topics" Button - REMOVING THIS ADDED BUTTON 
+                  {allCards.length > 0 && ( 
+                    <button 
+                      className="primary-button create-topics-btn" 
+                      onClick={() => setIsTopicCreationModalOpen(true)}
+                    >
+                      <span className="button-icon">➕</span> Create Topics
+                    </button>
+                  )}
+                  */}
                   
                   {/* Show empty state or card list based on whether there are cards */}                  
                   {allCards.length === 0 ? (
