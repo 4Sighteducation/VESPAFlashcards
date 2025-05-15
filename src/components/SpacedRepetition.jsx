@@ -162,8 +162,8 @@ const SpacedRepetition = ({
       // Modal closed: Reset session states
       setCurrentIndex(0);
       setStudyCompleted(false);
+      setShowHumorousCompletionModal(false); // Ensure modal is hidden when study modal closes
       resetCardVisualState();
-      // Clear any pending timeouts
       if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
       if (answerFeedbackTimeoutRef.current) clearTimeout(answerFeedbackTimeoutRef.current);
       feedbackTimeoutRef.current = null;
@@ -173,29 +173,36 @@ const SpacedRepetition = ({
 
     // Modal is open: Adjust state based on currentCards
     if (currentCards.length > 0) {
-      // If index is out of bounds, reset to 0 or last valid index
       const newIndex = Math.min(Math.max(currentIndex, 0), currentCards.length - 1);
       if (newIndex !== currentIndex) {
-        setCurrentIndex(newIndex); 
+        setCurrentIndex(newIndex);
       }
-      if (studyCompleted) setStudyCompleted(false); // If we have cards, study is not completed
-      console.log('[SR Effect] Has cards. newIndex:', newIndex, 'studyCompleted potentially set to false.');
-    } else {
-      // No cards available for the current filter
-      if (!studyCompleted) { // Only update if not already completed
-        setStudyCompleted(true);
-        setCurrentIndex(0); // Reset index when completed/empty
+      // If we have cards, and study was marked completed (e.g. by mistake or race condition),
+      // reset studyCompleted to false as we are now in an active session with cards.
+      if (studyCompleted) {
+        console.log('[SR Effect] Has cards, but studyCompleted was true. Resetting studyCompleted to false.');
+        setStudyCompleted(false);
+      }
+      setShowHumorousCompletionModal(false); // If we have cards, ensure humorous modal is not shown
+      console.log('[SR Effect] Has cards. newIndex:', newIndex);
+    } else { // currentCards.length is 0
+      // No cards available for the current filter OR user has finished all cards.
+      // If studyCompleted is true (meaning user went through cards and finished),
+      // OR if it wasn't completed but now there are no cards (e.g. initial empty set for filter).
+      if (studyCompleted || !showHumorousCompletionModal) { // Show if completed OR if not already shown for empty set
+        console.log('[SR Effect] No cards or studyCompleted. Triggering humorous modal. studyCompleted:', studyCompleted);
+        if (!studyCompleted) setStudyCompleted(true); // Ensure it is marked as completed
+        setCurrentIndex(0);
         const message = getRandomEmptyStateMessage();
         setHumorousCompletionMessage(message);
-        setShowHumorousCompletionModal(true);
-        console.log('[SR Effect] No cards. studyCompleted set to true, humorous modal triggered.');
+        if (!showHumorousCompletionModal) setShowHumorousCompletionModal(true);
+      } else {
+        console.log('[SR Effect] No cards, but humorous modal already shown or not meeting condition. studyCompleted:', studyCompleted);
       }
     }
 
-    // Reset visual state for the current card (or empty view)
     resetCardVisualState();
 
-    // Clear pending feedback timeouts
     if (feedbackTimeoutRef.current) {
       clearTimeout(feedbackTimeoutRef.current);
       feedbackTimeoutRef.current = null;
@@ -204,7 +211,7 @@ const SpacedRepetition = ({
       clearTimeout(answerFeedbackTimeoutRef.current);
       answerFeedbackTimeoutRef.current = null;
     }
-  }, [currentCards, showStudyModal, currentIndex]); // Add currentIndex back as it's used for adjustment
+  }, [currentCards, showStudyModal, currentIndex, studyCompleted]); // Added studyCompleted to dependencies
 
   
   // Toggle expansion of a subject
