@@ -204,6 +204,8 @@
   .header-visible-actions .save-button {
     width: 100%;
     margin-bottom: 5px;
+    padding: 6px 12px;
+    font-size: 13px;
   }
   
   .header-visible-actions .save-button {
