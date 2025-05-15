@@ -841,6 +841,69 @@ useEffect(() => {
     setSelectedSubjectForHub(null);
   }, []);
 
+  const handleAddNewTopicInHub = useCallback((subjectName, newTopicName) => {
+    dlog(`[FlashcardList - Hub Action] Add new topic: '${newTopicName}' to subject: '${subjectName}'`);
+    if (!onAddTopicShell) { // This prop comes from App.js
+      derr("[FlashcardList] onAddTopicShell prop is missing! Cannot add new topic from Hub.");
+      // Optionally, show a user-facing error message here
+      return;
+    }
+
+    // Prepare a preliminary ID. App.js (via onAddTopicShell) might finalize or re-generate it.
+    const preliminaryId = `hubtopic_${subjectName.replace(/\s+/g, '_')}_${newTopicName.replace(/\s+/g, '_')}_${Date.now()}`;
+    
+    // Determine the color for the new topic shell
+    // Use the subject's base color and generate a new shade for this new topic
+    let newTopicCardColor = '#cccccc'; // Default color
+    if (selectedSubjectForHub?.color) {
+      const existingTopicsCount = selectedSubjectForHub.topics?.length || 0;
+      // Use generateShade if it's available in this file's scope (imported from ColorUtils)
+      newTopicCardColor = generateShade(selectedSubjectForHub.color, existingTopicsCount % 5, 5); 
+    }
+
+    const newShell = {
+      id: preliminaryId,
+      subject: subjectName,
+      topic: newTopicName, // This is the actual topic name
+      name: `${subjectName}: ${newTopicName}`, // Conventional longer name
+      type: 'topic',
+      isShell: true,
+      isEmpty: true,
+      cards: [], // New shells have no cards
+      topicPriority: 3, // Default priority as per your spec
+      
+      // Color properties
+      cardColor: newTopicCardColor,
+      subjectColor: selectedSubjectForHub?.color || '#cccccc', // Base color of the subject
+      topicColor: newTopicCardColor, // Specific color for this topic
+
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      
+      // Attempt to carry over examBoard and examType from the subject context if available
+      examBoard: selectedSubjectForHub?.examBoard || 'General', 
+      examType: selectedSubjectForHub?.examType || 'Course',
+    };
+
+    dlog("[FlashcardList - Hub Action] Constructed new shell:", newShell);
+    onAddTopicShell(newShell); // Call the function passed from App.js
+
+    // Optimistically update the modal's topic list so the user sees the new topic immediately
+    setSelectedSubjectForHub(prev => {
+      if (!prev) return null; // Should not happen if modal is open
+      const newDisplayTopic = { 
+        name: newTopicName, 
+        id: newShell.id, // Use the ID we created for consistency in the UI
+        items: [], // New topic has no items yet
+        topicPriority: newShell.topicPriority // Reflect priority in optimistic update
+      };
+      const updatedTopics = [...(prev.topics || []), newDisplayTopic];
+      return { ...prev, topics: updatedTopics };
+    });
+
+  }, [onAddTopicShell, selectedSubjectForHub, generateShade]); // Added generateShade to dependencies
+
+
   // Modify handleUpdateTopicPriorityInHub
   const handleUpdateTopicPriorityInHub = useCallback((subjectName, topicId, newPriority) => {
     dlog(`[Hub Action] Update priority for topic ID: '${topicId}' in subject '${subjectName}' to: ${newPriority}`);

@@ -12,13 +12,23 @@ const PRIORITY_LEVELS = {
 const DEFAULT_PRIORITY = 3;
 
 const SubjectHubModal = ({ isOpen, onClose, subjectData, onAddTopic, onUpdateTopicPriority, onDeleteTopic }) => {
+  // <<< MOVE HOOKS HERE, BEFORE THE EARLY RETURN >>>
+  const [newTopicName, setNewTopicName] = useState('');
+  const [editingPriorityForTopic, setEditingPriorityForTopic] = useState(null);
+
+  // Effect to close priority editor if modal closes or subject changes
+  useEffect(() => {
+    if (!isOpen) {
+      setEditingPriorityForTopic(null);
+    }
+  }, [isOpen]);
+  // <<< END OF MOVED HOOKS >>>
+
   if (!isOpen || !subjectData) return null;
 
   const { name, topics = [], color } = subjectData;
-  const [newTopicName, setNewTopicName] = useState('');
-
-  // State to manage which topic's priority editor is open
-  const [editingPriorityForTopic, setEditingPriorityForTopic] = useState(null);
+  // const [newTopicName, setNewTopicName] = useState(''); // MOVED UP
+  // const [editingPriorityForTopic, setEditingPriorityForTopic] = useState(null); // MOVED UP
 
   const handleAddTopicClick = () => {
     if (newTopicName.trim() && onAddTopic) {
@@ -34,12 +44,7 @@ const SubjectHubModal = ({ isOpen, onClose, subjectData, onAddTopic, onUpdateTop
     setEditingPriorityForTopic(null); // Close editor after selection
   };
 
-  // Effect to close priority editor if modal closes or subject changes
-  useEffect(() => {
-    if (!isOpen) {
-      setEditingPriorityForTopic(null);
-    }
-  }, [isOpen]);
+  // useEffect(() => { ... }); // MOVED UP
 
   return (
     <div className="subject-hub-modal-overlay" onClick={onClose}>
