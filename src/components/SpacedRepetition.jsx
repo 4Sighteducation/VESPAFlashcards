@@ -91,19 +91,22 @@ const SpacedRepetition = ({
       const topicsForSubject = grouped[selectedSubject] || {};
       cardsToStudy = Object.values(topicsForSubject).flat();
     } else {
+      // If no subject is selected, we might be in the main box view,
+      // or this function might be called in a context where "all cards" means all in the current box.
+      // For the study modal, a subject/topic will typically be selected.
+      // If we want to study "all cards in the box", this needs specific handling.
+      // For now, assume if a subject/topic isn't selected, we are not in the study modal context
+      // or the cards are already appropriately filtered by the parent `cards` prop.
       cardsToStudy = Object.values(grouped)
         .map(topicMap => Object.values(topicMap).flat())
         .flat();
     }
 
-    const todayUTC = new Date();
-    todayUTC.setUTCHours(0, 0, 0, 0); // Start of current day in UTC
-
-    const filteredReviewableCards = cardsToStudy.filter(card => {
-      return !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC;
-    });
-    
-    setCurrentCards(filteredReviewableCards);
+    // We no longer filter by reviewability here.
+    // The 'isReviewable' and 'nextReviewDate' properties on each card object
+    // (passed via the `cards` prop, likely from App.js's getCardsForCurrentBox)
+    // will be used by FlippableCard to determine its locked/display state.
+    setCurrentCards(cardsToStudy);
     // DO NOT reset currentIndex, isFlipped, etc. here. This will be handled by a new useEffect.
 
   }, [selectedSubject, selectedTopic]); // Removed showStudyModal as it's not directly used for filtering logic here
@@ -272,22 +275,17 @@ const SpacedRepetition = ({
   
   // Select all cards in a subject for review
   const reviewSubject = (subject) => {
-    // Directly use props.cards (named 'cards' in this component's scope) to get the most up-to-date card list
-    const currentPropsCards = cards || []; // 'cards' is from props
+    const currentPropsCards = cards || [];
     const subjectCards = currentPropsCards.filter(card => (card.subject || "General") === subject);
 
-    const todayUTC = new Date();
-    todayUTC.setUTCHours(0,0,0,0);
-    const hasAnyReviewable = subjectCards.some(card =>
-      !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC
-    );
-
-    if (hasAnyReviewable) {
-      setSelectedSubject(subject); // Set state to trigger re-render for the modal
+    // Check if there are *any* cards in this subject, not just reviewable ones
+    if (subjectCards.length > 0) {
+      setSelectedSubject(subject);
       setSelectedTopic(null);
       setShowStudyModal(true); // This will trigger the useEffect to filter currentCards for study
     } else {
-      alert(`No cards in "${subject}" are ready for review today. Check back tomorrow!`);
+      // Keep an alert if the subject is truly empty, or handle as desired
+      alert(`There are no cards in the subject "${subject}".`);
     }
   };
   
@@ -299,18 +297,14 @@ const SpacedRepetition = ({
         (card.topic || "General") === topic
     );
 
-    const todayUTC = new Date();
-    todayUTC.setUTCHours(0,0,0,0);
-    const hasAnyReviewable = topicCards.some(card =>
-      !card.nextReviewDate || new Date(card.nextReviewDate) <= todayUTC
-    );
-
-    if (hasAnyReviewable) {
+    // Check if there are *any* cards in this topic
+    if (topicCards.length > 0) {
       setSelectedSubject(subject);
       setSelectedTopic(topic);
       setShowStudyModal(true);
     } else {
-      alert(`No cards in "${topic}" are ready for review today. Check back tomorrow!`);
+      // Keep an alert if the topic is truly empty, or handle as desired
+      alert(`There are no cards in the topic "${topic}" under "${subject}".`);
     }
   };
   
@@ -516,12 +510,10 @@ const SpacedRepetition = ({
     return (
       <div className="subjects-container">
         {boxSubjects.map((subject) => {
-          // Get subject color for styling
-          const subjectCards = Object.values(groupedBoxCards[subject] || {} ).flat();
-          const subjectColor = subjectCards[0]?.baseColor || subjectCards[0]?.cardColor || '#e0e0e0';
+          const subjectCardsFlat = Object.values(groupedBoxCards[subject] || {} ).flat();
+          const subjectColor = subjectCardsFlat[0]?.baseColor || subjectCardsFlat[0]?.cardColor || '#e0e0e0';
           const textColor = getContrastColor(subjectColor);
-          const isReviewable = reviewableCards.subjects[subject];
-          const anySubjectCardReviewable = subjectCards.some(card => card.isReviewable === true);
+          const subjectHasCards = subjectCardsFlat.length > 0;
           
           return (
             <div key={subject} className="subject-box">
@@ -537,31 +529,30 @@ const SpacedRepetition = ({
                     <h2>{subject}</h2>
                     <div className="subject-meta">
                       <span className="box-badge">Box {currentBox}</span>
-                      {anySubjectCardReviewable && <span className="reviewable-badge">Ready for Review</span>}
+                      {subjectCardsFlat.some(card => card.isReviewable === true) && <span className="reviewable-badge">Ready for Review</span>}
                     </div>
                   </div>
                   <span className="card-count">
-                    ({Object.values(groupedBoxCards[subject] || {} ).flat().length} cards)
+                    ({subjectCardsFlat.length} cards)
                   </span>
                 </div>
                 <button 
                   className="review-btn" 
                   onClick={() => reviewSubject(subject)}
                   style={{ color: textColor }}
-                  disabled={!anySubjectCardReviewable}
-                  title={anySubjectCardReviewable ? "Review this subject" : "No cards ready for review in this subject"}
+                  disabled={!subjectHasCards}
+                  title={subjectHasCards ? "View cards in this subject" : "No cards in this subject"}
                 >
                   <span className="review-icon">👁️</span>
                 </button>
               </div>
 
               {expandedSubjects[subject] && Object.keys(groupedBoxCards[subject] || {} ).map((topic) => {
-                // Get the first card's color for the topic
-                const topicColor = groupedBoxCards[subject][topic]?.[0]?.cardColor || '#e0e0e0';
-                const textColorTopic = getContrastColor(topicColor); // Renamed to avoid conflict
+                const topicCardsFlat = groupedBoxCards[subject][topic] || [];
+                const topicColor = topicCardsFlat[0]?.cardColor || '#e0e0e0';
+                const textColorTopic = getContrastColor(topicColor);
                 const topicKey = `${subject}-${topic}`;
-                const isTopicReviewable = reviewableCards.topics[topicKey];
-                const anyTopicCardReviewable = (groupedBoxCards[subject][topic] || []).some(card => card.isReviewable === true);
+                const topicHasCards = topicCardsFlat.length > 0;
                 
                 return (
                   <div key={topicKey} className="topic-group">
@@ -569,7 +560,7 @@ const SpacedRepetition = ({
                       className="topic-header"
                       style={{ 
                         backgroundColor: topicColor,
-                        color: textColorTopic // Use renamed variable
+                        color: textColorTopic
                       }}
                     >
                       <div className="topic-content" onClick={() => toggleExpandTopic(topicKey)}>
@@ -578,17 +569,17 @@ const SpacedRepetition = ({
                         </div>
                         <div className="topic-meta">
                           <span className="card-count">
-                            ({(groupedBoxCards[subject][topic] || []).length} cards)
+                            ({topicCardsFlat.length} cards)
                           </span>
-                          {anyTopicCardReviewable && <span className="topic-reviewable-badge">Ready</span>}
+                          {topicCardsFlat.some(card => card.isReviewable === true) && <span className="topic-reviewable-badge">Ready</span>}
                         </div>
                       </div>
                       <button 
                         className="review-btn small" 
                         onClick={() => reviewTopic(subject, topic)}
-                        style={{ color: textColorTopic }} // Use renamed variable
-                        disabled={!anyTopicCardReviewable}
-                        title={anyTopicCardReviewable ? "Review this topic" : "No cards ready for review in this topic"}
+                        style={{ color: textColorTopic }}
+                        disabled={!topicHasCards}
+                        title={topicHasCards ? "View cards in this topic" : "No cards in this topic"}
                       >
                         <span className="review-icon">👁️</span>
                       </button>
@@ -596,7 +587,7 @@ const SpacedRepetition = ({
 
                     {expandedTopics[topicKey] && (
                       <div className="topic-cards expanded-topic">
-                        {(groupedBoxCards[subject][topic] || []).map((card) => {
+                        {(topicCardsFlat).map((card) => {
                            const todayUTC = new Date(); // Use UTC for check
                            todayUTC.setUTCHours(0,0,0,0);
                            const cardIsCurrentlyReviewable = card.isReviewable === true;

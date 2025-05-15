@@ -1,0 +1,51 @@
+App Header - <header id="kn-app-header">
+    <div class="kn-container"><div id="google_translate_element"></div>
+
+      <!---->
+
+      <div id="kn-app-mobile-container">
+        <h1 id="knack-logo" style="margin-left: 0px;" class="logo-img">
+          <a href="#flashcards" class="kn-title" address="true"><img src="https://s3-eu-west-1.amazonaws.com/assets.knack-eu.com/assets/5ee90912c38ae7001510c1a9/logos/vespa_logo_.png" alt="VESPA ACADEMY" style="border: 0"></a>
+        </h1>
+
+        <div class="kn-mobile-controls">
+          <label class="kn-mobile-nav-toggle" for="menu-show-dropdown">
+            <i class="fa fa-bars"></i>
+          </label>
+          <input type="checkbox" id="menu-show-dropdown">
+        </div>
+      </div>
+
+      <section id="app-menu-container">
+        <div class="kn-menu-arrow is-left"></div>
+        <div id="kn-app-menu" style="display: none;" class="visible"></div> <!-- Injected by SceneView.js -->
+        <div class="kn-menu-arrow is-right"></div>
+      </section>
+    </div>
+  </header> info bar - <div class="kn-info-bar" style="">
+  <div class="kn-info kn-container"><div class="kn-crumbtrail" style="visibility: hidden;">
+  
+
+  
+    <a href="#flashcards?" address="true">FLASHCARDS</a>
+    
+  
+<div class="kn-info-bar" style="">
+  <div class="kn-info kn-container"><div class="kn-crumbtrail" style="visibility: hidden;">
+  
+
+  
+    <a href="#flashcards?" address="true">FLASHCARDS</a>
+    
+  
+Info Bar - </div>
+<div class="kn-current_user" id="630510eb3c91500021a8fad2">
+
+
+<span class="kn-current-user-intro">Logged in as</span> <span class="first">Alena</span> <span class="last">Ramsey</span> -
+
+ <a href="#account-settings" data-kn-slug="#account-settings"><span>Account Settings</span></a> - <a href="#language" data-kn-slug="#language"><span>Language</span></a> -
+
+ <a href="#" class="kn-log-out">Log Out</a>
+</div></div> <!-- .kn-info appended to via SceneView.js -->
+</div>

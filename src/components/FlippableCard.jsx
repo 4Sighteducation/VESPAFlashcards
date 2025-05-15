@@ -505,9 +505,12 @@ const FlippableCard = ({
           
           {isLocked && (
             <div className="locked-card-overlay">
-              <h4>Card already studied today</h4>
+              <h4>This card is unavailable</h4>
               {lockedNextReviewDate && (
-                <p>Next review: {new Date(lockedNextReviewDate).toLocaleDateString()}</p>
+                <p>Next review date: {new Date(lockedNextReviewDate).toLocaleDateString()}</p>
+              )}
+              {!lockedNextReviewDate && (
+                <p>Review date not set.</p> // Fallback if date is somehow missing
               )}
             </div>
           )}
