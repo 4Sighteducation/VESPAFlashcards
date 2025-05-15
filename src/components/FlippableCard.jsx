@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getContrastColor } from '../utils/ColorUtils';
 import './Flashcard.css'; // Reuse existing CSS
 import ScaledText from './ScaledText'; // Import ScaledText for dynamic text sizing
-import { dlog, dwarn, derr } from './utils/logger';
+import { dlog, dwarn, derr } from '../utils/logger';
 
 // --- Detailed Answer Modal --- (Define before FlippableCard)
 const DetailedAnswerModal = ({ isOpen, onClose, title, content }) => {
