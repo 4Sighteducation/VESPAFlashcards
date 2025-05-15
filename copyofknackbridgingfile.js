@@ -1,6 +1,29 @@
 // knack-integration.js - Safe for public GitHub repository
 // Version: 5x (Introduces SaveQueue and corrected message handling)
 (function () {
+  // --- Debug Mode & Logger for this specific Knack script ---
+  const KNACK_DEBUG_MODE = true; // Set to false to disable logs in this specific file
+
+  const dlog = (...args) => {
+    if (KNACK_DEBUG_MODE) {
+      console.log('[KNACK_SCRIPT_DEBUG]', ...args);
+    }
+  };
+  const dwarn = (...args) => {
+    if (KNACK_DEBUG_MODE) {
+      console.warn('[KNACK_SCRIPT_DEBUG]', ...args);
+    }
+  };
+  const derr = (...args) => {
+    if (KNACK_DEBUG_MODE) {
+      console.error('[KNACK_SCRIPT_DEBUG]', ...args);
+    }
+  };
+  // Add dinfo, dtable here if you replaced console.info/table in this file.
+  // For example:
+  // const dinfo = (...args) => { if (KNACK_DEBUG_MODE) { console.info('[KNACK_SCRIPT_DEBUG]', ...args); } };
+  // const dtable = (data, cols) => { if (KNACK_DEBUG_MODE) { console.table(data, cols); } };
+
   // --- Configuration and Constants ---
   // Moved config-dependent constants into initializeFlashcardApp
   const KNACK_API_URL = 'https://api.knack.com/v1';
@@ -51,14 +74,14 @@ try {
   // Handle plus signs as spaces which sometimes occur
   return decodeURIComponent(str.replace(/\+/g, ' '));
 } catch (error) {
-  console.error("Flashcard app: Error decoding URI component:", error, "String:", String(str).substring(0, 100));
+  derr("Flashcard app: Error decoding URI component:", error, "String:", String(str).substring(0, 100));
   
   try {
     // First attempt to fix potentially invalid % sequences
     const cleaned = String(str).replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
     return decodeURIComponent(cleaned.replace(/\+/g, ' '));
   } catch (secondError) {
-    console.error("Flashcard app: Second attempt to decode failed:", secondError);
+    derr("Flashcard app: Second attempt to decode failed:", secondError);
     
     try {
       // Third attempt: Try more aggressive cleaning - handle truncated URIs by removing trailing %
@@ -69,7 +92,7 @@ try {
       
       return decodeURIComponent(aggressiveCleaned.replace(/\+/g, ' '));
     } catch (thirdError) {
-      console.error("Flashcard app: Third attempt to decode failed:", thirdError);
+      derr("Flashcard app: Third attempt to decode failed:", thirdError);
       
       // Last resort - try to extract any valid JSON
       try {
@@ -77,12 +100,12 @@ try {
         const jsonPattern = /\[(.*)\]|\{(.*)\}/;
         const match = String(str).match(jsonPattern);
         if (match) {
-          console.warn("Flashcard app: Attempting JSON extraction from corrupted URI");
+          dwarn("Flashcard app: Attempting JSON extraction from corrupted URI");
           const extracted = match[0];
           return extracted;
         }
       } catch (e) {
-        console.error("Flashcard app: JSON extraction attempt failed");
+        derr("Flashcard app: JSON extraction attempt failed");
       }
       
       // Give up and return the original string
@@ -98,7 +121,7 @@ try {
     try {
       return encodeURIComponent(String(str));
     } catch (e) {
-      console.error("Error encoding URI component:", e, "Input:", str);
+      derr("Error encoding URI component:", e, "Input:", str);
       return String(str);
     }
   }
@@ -112,7 +135,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
       // Attempt standard parsing
       return JSON.parse(jsonString);
   } catch (error) {
-      console.warn("Flashcard app: Initial JSON parse failed:", error, "String:", String(jsonString).substring(0, 100));
+      dwarn("Flashcard app: Initial JSON parse failed:", error, "String:", String(jsonString).substring(0, 100));
       
       // Attempt recovery for common issues
       try {
@@ -127,14 +150,14 @@ function safeParseJSON(jsonString, defaultVal = null) {
               .replace(/\t/g, ' '); // Remove tabs
           
           const result = JSON.parse(recovered);
-          console.log("Flashcard app: JSON recovery successful.");
+          dlog("Flashcard app: JSON recovery successful.");
           return result;
       } catch (secondError) {
-          console.error("Flashcard app: JSON recovery failed:", secondError);
+          derr("Flashcard app: JSON recovery failed:", secondError);
           
           // More aggressive approach - try to extract anything that looks like JSON
           try {
-              console.warn("Flashcard app: Attempting aggressive JSON extraction");
+              dwarn("Flashcard app: Attempting aggressive JSON extraction");
               
               // Try to extract array or object pattern
               let extractedJson = null;
@@ -154,11 +177,11 @@ function safeParseJSON(jsonString, defaultVal = null) {
               if (extractedJson) {
                   // Try parsing the extracted pattern
                   const result = JSON.parse(extractedJson);
-                  console.log("Flashcard app: Aggressive JSON recovery successful");
+                  dlog("Flashcard app: Aggressive JSON recovery successful");
                   return result;
               }
           } catch (thirdError) {
-              console.error("Flashcard app: Aggressive JSON recovery failed:", thirdError);
+              derr("Flashcard app: Aggressive JSON recovery failed:", thirdError);
           }
           
           // Return the default value if all parsing fails
@@ -184,18 +207,18 @@ function safeParseJSON(jsonString, defaultVal = null) {
     }
     const str = String(idString); // Ensure it's a string
     if (str.includes('<')) {
-      console.warn("Cleaning HTML from potential ID:", str);
+      dwarn("Cleaning HTML from potential ID:", str);
       // Match Knack's span format: <span class="kn-tag ..."><a href=...>ID</a></span>
       // Or simpler formats like <span class="...">ID</span>
       const spanMatch = str.match(/<span[^>]*>([^<]+)<\/span>/) || str.match(/<a[^>]*>([^<]+)<\/a>/);
       if (spanMatch && spanMatch[1]) {
          const potentialId = spanMatch[1].trim();
-         console.log("Extracted potential ID from HTML:", potentialId);
+         dlog("Extracted potential ID from HTML:", potentialId);
          return potentialId;
       }
       // Fallback: strip all HTML tags
       const stripped = str.replace(/<[^>]+>/g, '').trim();
-       console.log("Stripped HTML:", stripped);
+       dlog("Stripped HTML:", stripped);
       return stripped;
     }
     return str; // Return as is if no HTML detected
@@ -261,12 +284,12 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
   // Debug logging helper
   function debugLog(title, data) {
-    console.log(`%c[Knack Script] ${title}`, 'color: #5d00ff; font-weight: bold; font-size: 12px;');
+    dlog(`%c[Knack Script] ${title}`, 'color: #5d00ff; font-weight: bold; font-size: 12px;');
     // Attempt to deep clone for logging to avoid showing proxies or complex objects directly
     try {
-       console.log(JSON.parse(JSON.stringify(data, null, 2)));
+       dlog(JSON.parse(JSON.stringify(data, null, 2)));
     } catch (e) {
-       console.log("Data could not be fully serialized for logging:", data); // Log original if clone fails
+       dlog("Data could not be fully serialized for logging:", data); // Log original if clone fails
     }
     return data; // Return data for chaining
   }
@@ -280,16 +303,16 @@ function safeParseJSON(jsonString, defaultVal = null) {
           .then(resolve)
           .catch((error) => {
             const attemptsMade = retryCount + 1;
-            console.warn(`API call failed (Attempt ${attemptsMade}/${maxRetries}):`, error.status, error.statusText, error.responseText);
+            dwarn(`API call failed (Attempt ${attemptsMade}/${maxRetries}):`, error.status, error.statusText, error.responseText);
 
             // Check for specific error conditions if needed (e.g., 401/403 for auth)
             // For now, retry on any failure up to maxRetries
             if (retryCount < maxRetries -1) { // Retry maxRetries-1 times
               const retryDelay = delay * Math.pow(2, retryCount); // Exponential backoff
-              console.log(`Retrying API call in ${retryDelay}ms...`);
+              dlog(`Retrying API call in ${retryDelay}ms...`);
               setTimeout(() => attempt(retryCount + 1), retryDelay);
             } else {
-               console.error(`API call failed after ${maxRetries} attempts.`);
+               derr(`API call failed after ${maxRetries} attempts.`);
               reject(error); // Max retries reached
             }
           });
@@ -304,14 +327,14 @@ function safeParseJSON(jsonString, defaultVal = null) {
        try {
          const currentToken = Knack.getUserToken();
          if (currentToken) {
-           console.log(`Auth token available via Knack.getUserToken()`);
+           dlog(`Auth token available via Knack.getUserToken()`);
            resolve(currentToken);
          } else {
-           console.error(`Cannot get auth token - Knack.getUserToken() returned null`);
+           derr(`Cannot get auth token - Knack.getUserToken() returned null`);
            reject(new Error("Auth token not available"));
          }
        } catch (error) {
-         console.error(`Error getting auth token:`, error);
+         derr(`Error getting auth token:`, error);
          reject(error);
        }
      });
@@ -319,20 +342,20 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
    // Handle token refresh request from React app
    function handleTokenRefresh(iframeWindow) { // Added iframeWindow param
-     console.log("Handling token refresh request from React app");
+     dlog("Handling token refresh request from React app");
      try {
        const currentToken = Knack.getUserToken();
        if (!currentToken) {
-         console.error("Cannot get token from Knack");
+         derr("Cannot get token from Knack");
          if (iframeWindow) iframeWindow.postMessage({ type: "AUTH_REFRESH_RESULT", success: false, error: "Token not available from Knack" }, "*");
          return;
        }
        // Send the current token back
        if (iframeWindow) iframeWindow.postMessage({ type: "AUTH_REFRESH_RESULT", success: true, token: currentToken }, "*");
-       console.log("Successfully sent current token for refresh");
+       dlog("Successfully sent current token for refresh");
 
      } catch (error) {
-       console.error("Error refreshing token:", error);
+       derr("Error refreshing token:", error);
        if (iframeWindow) iframeWindow.postMessage({ type: "AUTH_REFRESH_RESULT", success: false, error: error.message || "Unknown error refreshing token" }, "*");
      }
    }
@@ -353,7 +376,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
       return new Promise((resolve, reject) => {
          // Basic validation of operation
          if (!operation.type || !operation.recordId) {
-            console.error("[SaveQueue] Invalid operation added:", operation);
+            derr("[SaveQueue] Invalid operation added:", operation);
             return reject(new Error("Invalid save operation: missing type or recordId"));
          }
 
@@ -364,7 +387,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
           timestamp: new Date().toISOString()
         };
         this.queue.push(queuedOperation);
-        console.log(`[SaveQueue] Added operation to queue: ${operation.type} for record ${operation.recordId}. Queue length: ${this.queue.length}`);
+        dlog(`[SaveQueue] Added operation to queue: ${operation.type} for record ${operation.recordId}. Queue length: ${this.queue.length}`);
         this.processQueue(); // Attempt to process immediately
       });
     }
@@ -372,35 +395,35 @@ function safeParseJSON(jsonString, defaultVal = null) {
     // Processes the next operation in the queue if not already saving
     async processQueue() {
       if (this.isSaving || this.queue.length === 0) {
-        // console.log(`[SaveQueue] Skipping processQueue. isSaving: ${this.isSaving}, Queue length: ${this.queue.length}`);
+        // dlog(`[SaveQueue] Skipping processQueue. isSaving: ${this.isSaving}, Queue length: ${this.queue.length}`);
         return;
       }
 
       this.isSaving = true;
       const operation = this.queue[0]; // Get the first operation (FIFO)
-      console.log(`[SaveQueue] Processing operation: ${operation.type} for record ${operation.recordId}`);
+      dlog(`[SaveQueue] Processing operation: ${operation.type} for record ${operation.recordId}`);
 
       try {
         const updateData = await this.prepareSaveData(operation);
         // --- DEBUG: Log prepared data before save attempt ---
-        console.log(`[SaveQueue DEBUG] Data prepared for API PUT (Record ${operation.recordId}):`, JSON.stringify(updateData));
+        dlog(`[SaveQueue DEBUG] Data prepared for API PUT (Record ${operation.recordId}):`, JSON.stringify(updateData));
         debugLog("[SaveQueue] Prepared update data (Detailed)", updateData); // Keep detailed log too
         // --- END DEBUG ---
         const response = await this.performSave(updateData, operation.recordId);
         // --- DEBUG: Log API response on success --- 
-        console.log(`[SaveQueue DEBUG] API PUT success response (Record ${operation.recordId}):`, JSON.stringify(response));
+        dlog(`[SaveQueue DEBUG] API PUT success response (Record ${operation.recordId}):`, JSON.stringify(response));
         debugLog("[SaveQueue] API Save successful (Detailed)", response); // Keep detailed log
         // --- END DEBUG ---
         this.handleSaveSuccess(operation);
       } catch (error) {
          // Error should be the original error object from performSave or prepareSaveData
-         console.error(`[SaveQueue] Error during processing for ${operation.type} (record ${operation.recordId}):`, error);
+         derr(`[SaveQueue] Error during processing for ${operation.type} (record ${operation.recordId}):`, error);
          this.handleSaveError(operation, error); // Pass the actual error object
       } finally {
           // Ensure isSaving is reset ONLY if the queue is empty or the next attempt failed immediately
            if (this.queue.length === 0 || !this.isSaving) { // Check isSaving again in case retry logic reset it
               this.isSaving = false;
-              // console.log("[SaveQueue] Reset isSaving flag.");
+              // dlog("[SaveQueue] Reset isSaving flag.");
            }
       }
     }
@@ -409,7 +432,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
      async prepareSaveData(operation) {
          const { type, data, recordId, preserveFields } = operation;
          // 'data' here is the object received from postMessage, containing raw JS objects/arrays
-         console.log(`[SaveQueue] Preparing save data for type: ${type}, record: ${recordId}, preserveFields: ${preserveFields}`);
+         dlog(`[SaveQueue] Preparing save data for type: ${type}, record: ${recordId}, preserveFields: ${preserveFields}`);
          debugLog("[SaveQueue] Raw data received by prepareSaveData:", data);
 
          // Start with the mandatory lastSaved field
@@ -421,17 +444,17 @@ function safeParseJSON(jsonString, defaultVal = null) {
               // Fetch existing data ONLY if preserving fields
              let existingData = null;
              if (preserveFields) {
-                 console.log(`[SaveQueue] Preserving fields for ${type}, fetching existing data...`);
+                 dlog(`[SaveQueue] Preserving fields for ${type}, fetching existing data...`);
                  try {
                       existingData = await this.getExistingData(recordId);
                       debugLog("[SaveQueue] Fetched existing data for preservation", existingData ? `Record ${recordId} found` : `Record ${recordId} NOT found`);
                  } catch (fetchError) {
-                      console.error(`[SaveQueue] Failed to fetch existing data for field preservation (record ${recordId}):`, fetchError);
+                      derr(`[SaveQueue] Failed to fetch existing data for field preservation (record ${recordId}):`, fetchError);
                       // If fetch fails, we cannot reliably preserve. Should we fail the operation?
                       // Option 1: Fail the operation
                       // throw new Error(`Failed to fetch existing data for preservation: ${fetchError.message}`);
                       // Option 2: Proceed without preservation (potentially overwriting data)
-                      console.warn("[SaveQueue] Proceeding with save WITHOUT field preservation due to fetch error.");
+                      dwarn("[SaveQueue] Proceeding with save WITHOUT field preservation due to fetch error.");
                       existingData = null; // Ensure existingData is null so preserve logic skips
                  }
              }
@@ -445,7 +468,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
                      );
                      // Encode after stringifying
                      updateData[FIELD_MAPPING.cardBankData] = safeEncodeURIComponent(updateData[FIELD_MAPPING.cardBankData]);
-                     console.log("[SaveQueue] Stringified cardBankData for 'cards' save.");
+                     dlog("[SaveQueue] Stringified cardBankData for 'cards' save.");
                      break;
                  case 'colors': // Assuming this type might still be used elsewhere?
                      updateData[FIELD_MAPPING.colorMapping] = JSON.stringify(
@@ -453,17 +476,17 @@ function safeParseJSON(jsonString, defaultVal = null) {
                      );
                      // Encode after stringifying
                      updateData[FIELD_MAPPING.colorMapping] = safeEncodeURIComponent(updateData[FIELD_MAPPING.colorMapping]);
-                     console.log("[SaveQueue] Stringified colorMapping for 'colors' save.");
+                     dlog("[SaveQueue] Stringified colorMapping for 'colors' save.");
                      break;
                  // REMOVED 'topics' case as topicLists are no longer saved separately
                  /* case 'topics': 
                      updateData[FIELD_MAPPING.topicLists] = JSON.stringify(
                          this.ensureSerializable(data.topicLists || [])
                      );
-                     console.log("[SaveQueue] Stringified topicLists for 'topics' save.");
+                     dlog("[SaveQueue] Stringified topicLists for 'topics' save.");
                      break; */
                  case 'full': // This is the primary case used now
-                     console.log("[SaveQueue] Preparing 'full' save data by stringifying fields.");
+                     dlog("[SaveQueue] Preparing 'full' save data by stringifying fields.");
                      // 'data' contains the raw JS objects/arrays (cards, colorMapping, etc.)
                      
                      // --- Restoring processing of actual data --- 
@@ -499,24 +522,24 @@ function safeParseJSON(jsonString, defaultVal = null) {
                      // --- End restoring processing --- 
                      break;
                  default:
-                     console.error(`[SaveQueue] Unknown save operation type: ${type}`);
+                     derr(`[SaveQueue] Unknown save operation type: ${type}`);
                      throw new Error(`Unknown save operation type: ${type}`);
              }
              // --- END REVISION ---
 
              // If preserving fields and we successfully fetched existing data, merge
              if (preserveFields && existingData) {
-                  console.log(`[SaveQueue] Merging prepared data with existing data for record ${recordId}`);
+                  dlog(`[SaveQueue] Merging prepared data with existing data for record ${recordId}`);
                  this.preserveExistingFields(updateData, existingData);
                  debugLog("[SaveQueue] Merged data after preservation", updateData);
              } else if (preserveFields && !existingData) {
-                 console.warn(`[SaveQueue] Cannot preserve fields for record ${recordId} because existing data could not be fetched.`);
+                 dwarn(`[SaveQueue] Cannot preserve fields for record ${recordId} because existing data could not be fetched.`);
              }
 
              return updateData; // Return the final payload
 
          } catch (error) {
-              console.error(`[SaveQueue] Error in prepareSaveData for type ${type}:`, error);
+              derr(`[SaveQueue] Error in prepareSaveData for type ${type}:`, error);
              throw error; // Re-throw the error to be caught by processQueue
          }
      }
@@ -524,7 +547,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
     // Fetches current record data from Knack
     async getExistingData(recordId) {
-       console.log(`[SaveQueue] Fetching existing data for record ${recordId}`);
+       dlog(`[SaveQueue] Fetching existing data for record ${recordId}`);
        const apiCall = () => {
            return new Promise((resolve, reject) => {
                $.ajax({
@@ -533,12 +556,12 @@ function safeParseJSON(jsonString, defaultVal = null) {
                  headers: this.getKnackHeaders(), // Use headers method
                   data: { format: 'raw' }, // Request raw format if needed for connections
                  success: function(response) {
-                   console.log(`[SaveQueue] Successfully fetched existing data for record ${recordId}`);
+                   dlog(`[SaveQueue] Successfully fetched existing data for record ${recordId}`);
                    resolve(response);
                  },
                  error: function(jqXHR, textStatus, errorThrown) {
                     // Log more detailed error info
-                    console.error(`[SaveQueue] Error fetching existing data for record ${recordId}: Status ${jqXHR.status} - ${errorThrown}`, jqXHR.responseText);
+                    derr(`[SaveQueue] Error fetching existing data for record ${recordId}: Status ${jqXHR.status} - ${errorThrown}`, jqXHR.responseText);
                     // Create a more informative error object
                     const error = new Error(`Failed to fetch record ${recordId}: ${jqXHR.status} ${errorThrown}`);
                     error.status = jqXHR.status;
@@ -555,7 +578,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
     // Merges updateData with existingData, preserving specific fields if they aren't explicitly included in updateData
     preserveExistingFields(updateData, existingData) {
-        console.log(`[SaveQueue] Preserving fields for record. Fields in updateData: ${Object.keys(updateData).join(', ')}`);
+        dlog(`[SaveQueue] Preserving fields for record. Fields in updateData: ${Object.keys(updateData).join(', ')}`);
        // Define all fields managed by the app that could be preserved
        const allAppFieldIds = [
           FIELD_MAPPING.cardBankData, FIELD_MAPPING.colorMapping, FIELD_MAPPING.topicLists,
@@ -568,7 +591,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
           // If the update payload *does not* already include this field,
           // but the existing record *does* have data for it, preserve it.
           if (updateData[fieldId] === undefined && existingData[fieldId] !== undefined && existingData[fieldId] !== null) {
-             console.log(`[SaveQueue] Preserving existing data for field ID: ${fieldId}`);
+             dlog(`[SaveQueue] Preserving existing data for field ID: ${fieldId}`);
              updateData[fieldId] = existingData[fieldId]; // Copy existing value
           }
        });
@@ -578,12 +601,12 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
     // Performs the actual Knack API PUT request
     async performSave(updateData, recordId) {
-       console.log(`[SaveQueue] Performing API save for record ${recordId}`);
+       dlog(`[SaveQueue] Performing API save for record ${recordId}`);
        if (!recordId) {
            throw new Error("Cannot perform save: recordId is missing.");
        }
         if (Object.keys(updateData).length <= 1 && updateData[FIELD_MAPPING.lastSaved]) {
-            console.warn(`[SaveQueue] Save payload for record ${recordId} only contains lastSaved timestamp. Skipping API call.`);
+            dwarn(`[SaveQueue] Save payload for record ${recordId} only contains lastSaved timestamp. Skipping API call.`);
             return { message: "Save skipped, only timestamp update." }; // Return a success-like response
         }
 
@@ -597,17 +620,17 @@ function safeParseJSON(jsonString, defaultVal = null) {
                  data: JSON.stringify(updateData), // Send prepared data
                  success: function(response) {
                     // --- DEBUG: Log success directly --- 
-                    console.log(`[SaveQueue DEBUG] AJAX PUT success for record ${recordId}`);
+                    dlog(`[SaveQueue DEBUG] AJAX PUT success for record ${recordId}`);
                     // --- END DEBUG ---
-                    console.log(`[SaveQueue] API PUT successful for record ${recordId}`);
+                    dlog(`[SaveQueue] API PUT successful for record ${recordId}`);
                     resolve(response);
                  },
                  error: function(jqXHR, textStatus, errorThrown) {
                      // --- DEBUG: Log error directly --- 
-                     console.error(`[SaveQueue DEBUG] AJAX PUT failed for record ${recordId}. Status: ${jqXHR.status}, Error: ${errorThrown}`);
+                     derr(`[SaveQueue DEBUG] AJAX PUT failed for record ${recordId}. Status: ${jqXHR.status}, Error: ${errorThrown}`);
                      // --- END DEBUG ---
                      // Log more detailed error info
-                    console.error(`[SaveQueue] API PUT failed for record ${recordId}: Status ${jqXHR.status} - ${errorThrown}`, jqXHR.responseText);
+                    derr(`[SaveQueue] API PUT failed for record ${recordId}: Status ${jqXHR.status} - ${errorThrown}`, jqXHR.responseText);
                      // Create a more informative error object
                     const error = new Error(`API Save failed for record ${recordId}: ${jqXHR.status} ${errorThrown}`);
                     error.status = jqXHR.status;
@@ -626,13 +649,13 @@ function safeParseJSON(jsonString, defaultVal = null) {
     handleSaveSuccess(operation) {
       const completedOperation = this.queue.shift(); // Remove the completed operation
       if (completedOperation !== operation) {
-          console.error("[SaveQueue] Mismatch between completed operation and head of queue!", operation, completedOperation);
+          derr("[SaveQueue] Mismatch between completed operation and head of queue!", operation, completedOperation);
           // Attempt recovery - find and remove the operation if possible
           const opIndex = this.queue.findIndex(op => op === operation);
           if(opIndex > -1) this.queue.splice(opIndex, 1);
       }
       this.retryAttempts.delete(operation); // Clear retry attempts for this operation
-      console.log(`[SaveQueue] Operation ${operation.type} succeeded for record ${operation.recordId}. Queue length: ${this.queue.length}`);
+      dlog(`[SaveQueue] Operation ${operation.type} succeeded for record ${operation.recordId}. Queue length: ${this.queue.length}`);
       operation.resolve(true); // Resolve the promise associated with the operation
       this.isSaving = false; // Allow next operation
       this.processQueue(); // Process next item if any
@@ -642,7 +665,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
      handleSaveError(operation, error) {
          // Ensure operation is still at the head of the queue before retrying/failing
          if (this.queue[0] !== operation) {
-            console.warn(`[SaveQueue] Stale error encountered for operation ${operation.type} (record ${operation.recordId}). Operation no longer at head of queue. Ignoring error.`);
+            dwarn(`[SaveQueue] Stale error encountered for operation ${operation.type} (record ${operation.recordId}). Operation no longer at head of queue. Ignoring error.`);
              // We might not want to reset isSaving here if another operation is now processing
              // Check if another save is now in progress
              if (!this.isSaving && this.queue.length > 0) {
@@ -653,23 +676,23 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
          const attempts = (this.retryAttempts.get(operation) || 0) + 1; // Increment attempt count
          const errorMessage = error instanceof Error ? error.message : String(error);
-         console.error(`[SaveQueue] Save error for ${operation.type} (record ${operation.recordId}, Attempt ${attempts}/${this.maxRetries}):`, errorMessage, error);
+         derr(`[SaveQueue] Save error for ${operation.type} (record ${operation.recordId}, Attempt ${attempts}/${this.maxRetries}):`, errorMessage, error);
 
          if (attempts < this.maxRetries) {
              this.retryAttempts.set(operation, attempts);
              const delay = this.retryDelay * Math.pow(2, attempts - 1); // Exponential backoff
-             console.log(`[SaveQueue] Retrying operation ${operation.type} (record ${operation.recordId}) in ${delay}ms...`);
+             dlog(`[SaveQueue] Retrying operation ${operation.type} (record ${operation.recordId}) in ${delay}ms...`);
              // IMPORTANT: Reset isSaving BEFORE the timeout to allow processing to restart
              this.isSaving = false;
              setTimeout(() => {
-                 console.log(`[SaveQueue] Attempting retry for ${operation.type} (record ${operation.recordId}) after delay.`);
+                 dlog(`[SaveQueue] Attempting retry for ${operation.type} (record ${operation.recordId}) after delay.`);
                  this.processQueue(); // Attempt to process the queue again
              }, delay);
          } else {
-             console.error(`[SaveQueue] Max retries reached for operation ${operation.type} (record ${operation.recordId}). Aborting.`);
+             derr(`[SaveQueue] Max retries reached for operation ${operation.type} (record ${operation.recordId}). Aborting.`);
              const failedOperation = this.queue.shift(); // Remove the failed operation
              if (failedOperation !== operation) {
-                 console.error("[SaveQueue] Mismatch during failure handling!", operation, failedOperation);
+                 derr("[SaveQueue] Mismatch during failure handling!", operation, failedOperation);
              }
              this.retryAttempts.delete(operation); // Clear retry attempts
              // Reject the promise with the last error
@@ -684,13 +707,13 @@ function safeParseJSON(jsonString, defaultVal = null) {
     getKnackHeaders() {
       // Ensure Knack and getUserToken are available
        if (typeof Knack === 'undefined' || typeof Knack.getUserToken !== 'function') {
-          console.error("[SaveQueue] Knack object or getUserToken function not available.");
+          derr("[SaveQueue] Knack object or getUserToken function not available.");
           // Handle this scenario, maybe by rejecting operations immediately
           throw new Error("Knack authentication context not available.");
        }
        const token = Knack.getUserToken();
        if (!token) {
-           console.warn("[SaveQueue] Knack user token is null or undefined. API calls may fail.");
+           dwarn("[SaveQueue] Knack user token is null or undefined. API calls may fail.");
             // Consider throwing an error if token is mandatory
             // throw new Error("Knack user token is missing.");
        }
@@ -706,14 +729,14 @@ function safeParseJSON(jsonString, defaultVal = null) {
     ensureSerializable(data) {
       try {
         // *** NEW LOG: Log input data ***
-        console.log(`[ensureSerializable] Input data:`, JSON.stringify(data));
+        dlog(`[ensureSerializable] Input data:`, JSON.stringify(data));
         // Test serialization
         JSON.stringify(data);
         // *** NEW LOG: Log output data (if no error) ***
-        console.log(`[ensureSerializable] Output data (no change):`, JSON.stringify(data));
+        dlog(`[ensureSerializable] Output data (no change):`, JSON.stringify(data));
         return data;
       } catch (e) {
-        console.warn('[SaveQueue] Data contains circular references or non-serializable values. Stripping them.', e);
+        dwarn('[SaveQueue] Data contains circular references or non-serializable values. Stripping them.', e);
         const cache = new Set();
         try {
            const strippedData = JSON.parse(JSON.stringify(data, (key, value) => {
@@ -728,12 +751,12 @@ function safeParseJSON(jsonString, defaultVal = null) {
              return value;
            }));
            // *** NEW LOG: Log stripped data ***
-           console.log(`[ensureSerializable] Output data (stripped):`, JSON.stringify(strippedData));
+           dlog(`[ensureSerializable] Output data (stripped):`, JSON.stringify(strippedData));
            return strippedData;
         } catch (parseError) {
-           console.error("[SaveQueue] Failed to serialize data even after attempting to strip circular references:", parseError);
+           derr("[SaveQueue] Failed to serialize data even after attempting to strip circular references:", parseError);
            // *** NEW LOG: Log original data on final failure ***
-           console.log(`[ensureSerializable] Output data (error, returning original):`, JSON.stringify(data));
+           dlog(`[ensureSerializable] Output data (error, returning original):`, JSON.stringify(data));
            return data; // Return original data as a last resort
         }
       }
@@ -755,11 +778,11 @@ function safeParseJSON(jsonString, defaultVal = null) {
   // Initialize the React app
   // Expose this function globally for the loader script (v3.16+)
   window.initializeFlashcardApp = function() {
-    console.log("Initializing Flashcard React app (Version 5x with SaveQueue - Loader Compatible)"); // Updated log
+    dlog("Initializing Flashcard React app (Version 5x with SaveQueue - Loader Compatible)"); // Updated log
 
     // --- Initialize Config-Dependent Constants HERE ---
     if (!window.VESPA_CONFIG) {
-        console.error("Flashcard app: Critical Error - window.VESPA_CONFIG is not defined!");
+        derr("Flashcard app: Critical Error - window.VESPA_CONFIG is not defined!");
         // Optionally, display an error message to the user in the placeholder
         const container = document.querySelector('.kn-rich-text') || document.getElementById('view_3005') || document.getElementById('kn-scene_1206');
         if (container) container.innerHTML = '<p style="color: red;">Error: Flashcard App Configuration Missing.</p>';
@@ -770,32 +793,32 @@ function safeParseJSON(jsonString, defaultVal = null) {
     FLASHCARD_APP_URL = window.VESPA_CONFIG.appUrl || 'https://default-fallback-url-if-needed.com'; // Get App URL directly
     APP_CONTAINER_SELECTOR = window.VESPA_CONFIG.elementSelector || '.kn-rich-text'; // Get selector from config, fallback
     // Log the derived constants
-    console.log(`Flashcard app: Using knackAppId: ${knackAppId ? 'Set' : 'Not Set'}`);
-    console.log(`Flashcard app: Using knackApiKey: ${knackApiKey ? 'Set' : 'Not Set'}`);
-    console.log(`Flashcard app: Using FLASHCARD_APP_URL: ${FLASHCARD_APP_URL}`);
-    console.log(`Flashcard app: Using APP_CONTAINER_SELECTOR: ${APP_CONTAINER_SELECTOR}`);
+    dlog(`Flashcard app: Using knackAppId: ${knackAppId ? 'Set' : 'Not Set'}`);
+    dlog(`Flashcard app: Using knackApiKey: ${knackApiKey ? 'Set' : 'Not Set'}`);
+    dlog(`Flashcard app: Using FLASHCARD_APP_URL: ${FLASHCARD_APP_URL}`);
+    dlog(`Flashcard app: Using APP_CONTAINER_SELECTOR: ${APP_CONTAINER_SELECTOR}`);
     // ----------------------------------------------------
 
     // Check if necessary config exists directly on window.VESPA_CONFIG (redundant check, but safe)
     // The check above for window.VESPA_CONFIG is the primary one.
     if (!knackAppId || !knackApiKey || !FLASHCARD_APP_URL) {
-        console.error("Flashcard app: Missing required configuration values (appId, apiKey, or appUrl) after checking VESPA_CONFIG.");
+        derr("Flashcard app: Missing required configuration values (appId, apiKey, or appUrl) after checking VESPA_CONFIG.");
         return;
     }
 
     // Check if user is authenticated
     if (typeof Knack === 'undefined' || !Knack.getUserToken) {
-        console.error("Flashcard app: Knack context or getUserToken not available.");
+        derr("Flashcard app: Knack context or getUserToken not available.");
         return; // Cannot proceed without Knack context
     }
 
     if (Knack.getUserToken()) {
-      console.log("Flashcard app: User is authenticated");
+      dlog("Flashcard app: User is authenticated");
       const userToken = Knack.getUserToken();
       const appId = Knack.application_id;
       const user = Knack.getUserAttributes();
 
-      console.log("Flashcard app: Basic user info:", user);
+      dlog("Flashcard app: Basic user info:", user);
       window.currentKnackUser = user; // Store basic info globally first
 
       // Get complete user data (async)
@@ -805,7 +828,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
           window.currentKnackUser = Object.assign({}, user, completeUserData);
           debugLog("Enhanced global user object", window.currentKnackUser);
         } else {
-          console.warn("Flashcard app: Could not get complete user data, continuing with basic info");
+          dwarn("Flashcard app: Could not get complete user data, continuing with basic info");
         }
         // Proceed with initialization using the (potentially enhanced) global user object
         // Remove the undefined 'config' variable from this call
@@ -814,7 +837,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
       });
 
     } else {
-      console.error("Flashcard app: User is not authenticated (Knack.getUserToken() returned null/false).");
+      derr("Flashcard app: User is not authenticated (Knack.getUserToken() returned null/false).");
        // Handle cases where user might be logged out or session expired
        // Maybe display a message or attempt re-login if applicable
     }
@@ -823,30 +846,30 @@ function safeParseJSON(jsonString, defaultVal = null) {
   // --- PASTE THE INITIALIZATION BLOCK HERE ---
   // Ensure Knack context and jQuery might be ready, or handle checks inside initializeFlashcardApp
   /* // START COMMENT BLOCK
-  console.log("Flashcards1h.js: Reached execution point after initializeFlashcardApp definition."); // Updated Log
-  console.log("Flashcards1h.js: Type of initializeFlashcardApp:", typeof initializeFlashcardApp); // Check type here
+  dlog("Flashcards1h.js: Reached execution point after initializeFlashcardApp definition."); // Updated Log
+  dlog("Flashcards1h.js: Type of initializeFlashcardApp:", typeof initializeFlashcardApp); // Check type here
 
   if (typeof $ !== 'undefined' && typeof Knack !== 'undefined') {
-      console.log("Flashcards1h.js: Knack and $ ready. Type of initializeFlashcardApp:", typeof "initializeFlashcardApp");
+      dlog("Flashcards1h.js: Knack and $ ready. Type of initializeFlashcardApp:", typeof "initializeFlashcardApp");
       if (typeof initializeFlashcardApp === 'function') {
           initializeFlashcardApp(); // CALL IT HERE
       } else {
-           console.error("Flashcards1h.js: initializeFlashcardApp is NOT a function here!");
+           derr("Flashcards1h.js: initializeFlashcardApp is NOT a function here!");
       }
   } else {
        // Fallback: Wait a very short moment
-       console.error("Flashcards1h.js: Knack or $ not immediately ready, delaying init slightly.");
+       derr("Flashcards1h.js: Knack or $ not immediately ready, delaying init slightly.");
        setTimeout(() => {
-           console.log("Flashcards1h.js: Delayed check. Type of initializeFlashcardApp:", typeof initializeFlashcardApp);
+           dlog("Flashcards1h.js: Delayed check. Type of initializeFlashcardApp:", typeof initializeFlashcardApp);
            if (typeof $ !== 'undefined' && typeof Knack !== 'undefined') {
-               console.log("Flashcards1h.js: Delayed initialization starting.");
+               dlog("Flashcards1h.js: Delayed initialization starting.");
                if (typeof initializeFlashcardApp === 'function') {
                    initializeFlashcardApp(); // CALL IT HERE (Delayed)
                } else {
-                    console.error("Flashcards1h.js: initializeFlashcardApp is NOT a function after delay!");
+                    derr("Flashcards1h.js: initializeFlashcardApp is NOT a function after delay!");
                }
            } else {
-                console.error("Flashcards1h.js: Knack or $ still not ready after delay. Initialization failed.");
+                derr("Flashcards1h.js: Knack or $ still not ready after delay. Initialization failed.");
            }
        }, 100);
   }
@@ -879,7 +902,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
         if (!container) {
             const viewElement = document.getElementById('view_3005') || document.querySelector('.view_3005');
             if (viewElement) {
-                console.log("Creating container inside view_3005");
+                dlog("Creating container inside view_3005");
                 container = document.createElement('div');
                 container.id = 'flashcard-app-container-generated';
                 viewElement.appendChild(container);
@@ -889,12 +912,12 @@ function safeParseJSON(jsonString, defaultVal = null) {
         if (!container) {
              const sceneElement = document.getElementById('kn-scene_1206');
              if (sceneElement) {
-                 console.log("Creating container inside scene_1206");
+                 dlog("Creating container inside scene_1206");
                  container = document.createElement('div');
                  container.id = 'flashcard-app-container-generated';
                  sceneElement.appendChild(container);
              } else {
-                 console.error("Flashcard app: Cannot find any suitable container for the app.");
+                 derr("Flashcard app: Cannot find any suitable container for the app.");
                  return; // Stop if no container found
              }
         }
@@ -927,7 +950,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
         const messageHandler = function(event) {
             // --- DEBUG: Log raw event and data --- 
-            console.log("[Knack Script] Raw Message Event Received:", event); 
+            dlog("[Knack Script] Raw Message Event Received:", event); 
             try {
                 // Attempt to log event.data safely, handling potential circular refs
                 const dataString = JSON.stringify(event.data, (key, value) => {
@@ -937,24 +960,24 @@ function safeParseJSON(jsonString, defaultVal = null) {
                     }
                     return value;
                 }, 2); 
-                console.log("[Knack Script] Raw event.data:", dataString);
+                dlog("[Knack Script] Raw event.data:", dataString);
             } catch (e) {
-                console.error("[Knack Script] Error stringifying event.data:", e);
-                console.log("[Knack Script] Raw event.data (logging directly):", event.data);
+                derr("[Knack Script] Error stringifying event.data:", e);
+                dlog("[Knack Script] Raw event.data (logging directly):", event.data);
             }
             // --- END DEBUG ---
 
             // IMPORTANT: Check origin for security if appUrl is known and consistent
             // const expectedOrigin = new URL(config.appUrl).origin;
             // if (event.origin !== expectedOrigin) {
-            //   console.warn("Ignoring message from unexpected origin:", event.origin, "Expected:", expectedOrigin);
+            //   dwarn("Ignoring message from unexpected origin:", event.origin, "Expected:", expectedOrigin);
             //   return;
             // }
 
             // Only accept messages from the created iframe's contentWindow
             // --- ADDED CHECK: Ensure iframe and iframe.contentWindow exist --- 
             if (!iframe || !iframe.contentWindow || event.source !== iframe.contentWindow) { 
-                // console.log("Ignoring message not from iframe source or iframe invalid."); 
+                // dlog("Ignoring message not from iframe source or iframe invalid."); 
                 return;
             }
             // --- END ADDED CHECK --- 
@@ -967,17 +990,17 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
             // Log message receipt
             if (messageType !== 'PING') { // Use messageType
-                console.log(`[Knack Script] Received message type: ${messageType}`);
+                dlog(`[Knack Script] Received message type: ${messageType}`);
                 // debugLog("[Knack Script] Message data:", data); // Optional: Log data for debugging
             }
 
             // Handle APP_READY separately to send initial data
              if (messageType === 'APP_READY') { // Use messageType
               window.flashcardAppIframeWindow = iframe.contentWindow; // Store reference globally
-                 console.log("Flashcard app: React app reported APP_READY.");
+                 dlog("Flashcard app: React app reported APP_READY.");
                   // Double check if user object is ready
                   if (!window.currentKnackUser || !window.currentKnackUser.id) {
-                      console.error("Cannot send initial info: Current Knack user data not ready.");
+                      derr("Cannot send initial info: Current Knack user data not ready.");
                       return;
                   }
 
@@ -1012,9 +1035,9 @@ function safeParseJSON(jsonString, defaultVal = null) {
                          // Show iframe after sending initial data
                          loadingDiv.style.display = 'none';
                          iframe.style.display = 'block';
-                          console.log("Flashcard app initialized and visible.");
+                          dlog("Flashcard app initialized and visible.");
                      } else {
-                          console.warn("[Knack Script] Iframe window no longer valid when sending initial data.");
+                          dwarn("[Knack Script] Iframe window no longer valid when sending initial data.");
                      }
                  });
              } else {
@@ -1028,7 +1051,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
        window.addEventListener('message', messageHandler);
        // Store handler reference if needed for removal later: window.flashcardMessageHandler = messageHandler;
 
-       console.log("Flashcard app initialization sequence complete. Waiting for APP_READY from iframe.");
+       dlog("Flashcard app initialization sequence complete. Waiting for APP_READY from iframe.");
    }
 
 
@@ -1037,16 +1060,16 @@ function safeParseJSON(jsonString, defaultVal = null) {
   function handleMessageRouter(type, data, iframeWindow) { // 'data' here IS the full messageData object
     // Basic validation
     if (!type) {
-        console.warn("[Knack Script] Received message without type.");
+        dwarn("[Knack Script] Received message without type.");
         return;
     }
      if (!iframeWindow) {
-         console.error("[Knack Script] iframeWindow is missing in handleMessageRouter. Cannot send response.");
+         derr("[Knack Script] iframeWindow is missing in handleMessageRouter. Cannot send response.");
          return;
      }
 
 
-    console.log(`[Knack Script] Routing message type: ${type}`);
+    dlog(`[Knack Script] Routing message type: ${type}`);
 
     switch (type) {
       case 'SAVE_DATA':
@@ -1068,7 +1091,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
          handleDataUpdateRequest(data, iframeWindow); // Pass iframeWindow
          break;
        case 'AUTH_CONFIRMED': // React confirms it received auth
-           console.log("[Knack Script] React App confirmed auth.");
+           dlog("[Knack Script] React App confirmed auth.");
            // Could hide loading indicator here if it wasn't already hidden
            const loadingIndicator = document.getElementById('flashcard-loading-indicator');
             if (loadingIndicator) loadingIndicator.style.display = 'none';
@@ -1080,7 +1103,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
            break;
            case 'KNACK_REQUEST':
               // Log the request for debugging
-              console.log(`[Knack Script] Received KNACK_REQUEST:`, data);
+              dlog(`[Knack Script] Received KNACK_REQUEST:`, data);
               
               // Reconstruct the full message structure that handleKnackRequest expects
               handleKnackRequest({
@@ -1097,7 +1120,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
           break;
       // Add other cases for messages from React app as needed
       default:
-        console.warn(`[Knack Script] Unhandled message type: ${type}`);
+        dwarn(`[Knack Script] Unhandled message type: ${type}`);
     }
   }
 
@@ -1107,14 +1130,14 @@ function safeParseJSON(jsonString, defaultVal = null) {
   // Handles 'SAVE_DATA' request from React app
   // --- RENAMED PARAMETER from 'data' to 'saveDataMessage' ---
   async function handleSaveDataRequest(saveDataMessage, iframeWindow) { 
-    console.log("[Knack Script] Handling SAVE_DATA request");
+    dlog("[Knack Script] Handling SAVE_DATA request");
     // --- Added Detailed Logging ---
     // This should now log the actual object received
-    console.log("[Knack Script] Received SAVE_DATA payload:", JSON.stringify(saveDataMessage, null, 2)); 
+    dlog("[Knack Script] Received SAVE_DATA payload:", JSON.stringify(saveDataMessage, null, 2)); 
     // --- End Added Logging ---
     // --- Use RENAMED PARAMETER --- 
     if (!saveDataMessage || !saveDataMessage.recordId) { 
-        console.error("[Knack Script] SAVE_DATA request missing recordId.");
+        derr("[Knack Script] SAVE_DATA request missing recordId.");
          // CORRECTION: Target iframeWindow for response
         if (iframeWindow) iframeWindow.postMessage({ type: 'SAVE_RESULT', success: false, error: "Missing recordId" }, '*');
         return;
@@ -1126,10 +1149,10 @@ function safeParseJSON(jsonString, defaultVal = null) {
       // --- FIX: Parse cards if stringified --- 
       if (saveDataMessage.cards && typeof saveDataMessage.cards === 'string') {
           try {
-              console.log("[Knack Script] Parsing stringified cards data in SAVE_DATA");
+              dlog("[Knack Script] Parsing stringified cards data in SAVE_DATA");
               saveDataMessage.cards = JSON.parse(saveDataMessage.cards);
           } catch (e) {
-              console.error("[Knack Script] Failed to parse stringified cards data:", e);
+              derr("[Knack Script] Failed to parse stringified cards data:", e);
               throw new Error("Invalid card data format received.");
           }
       }
@@ -1137,7 +1160,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
       // Validate and structure colorMapping before saving
       if (saveDataMessage.colorMapping) {
-        console.log("[Knack Script] Validating color mapping structure before save");
+        dlog("[Knack Script] Validating color mapping structure before save");
         saveDataMessage.colorMapping = ensureValidColorMapping(saveDataMessage.colorMapping);
       }
       
@@ -1150,29 +1173,29 @@ function safeParseJSON(jsonString, defaultVal = null) {
         preserveFields: saveDataMessage.preserveFields || false // Default preserveFields to false if not provided
       });
 
-      console.log(`[Knack Script] SAVE_DATA for record ${saveDataMessage.recordId} completed successfully.`);
+      dlog(`[Knack Script] SAVE_DATA for record ${saveDataMessage.recordId} completed successfully.`);
       // --- FIX: Re-get iframe reference before sending result back --- 
       const iframeEl = document.getElementById('flashcard-app-iframe');
       if (iframeEl && iframeEl.contentWindow) { 
-          console.log("[Knack Script] Attempting to send SAVE_RESULT back to React app.");
+          dlog("[Knack Script] Attempting to send SAVE_RESULT back to React app.");
           iframeEl.contentWindow.postMessage({ type: 'SAVE_RESULT', success: true, timestamp: new Date().toISOString() }, '*'); // Send success
-          console.log("[Knack Script] SAVE_RESULT sent.");
+          dlog("[Knack Script] SAVE_RESULT sent.");
       } else {
-          console.error("[Knack Script] Cannot send SAVE_RESULT: iframe or contentWindow not found.");
+          derr("[Knack Script] Cannot send SAVE_RESULT: iframe or contentWindow not found.");
       }
       // --- END FIX ---
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`[Knack Script] SAVE_DATA failed for record ${saveDataMessage.recordId}:`, errorMessage);
+      derr(`[Knack Script] SAVE_DATA failed for record ${saveDataMessage.recordId}:`, errorMessage);
       // --- FIX: Re-get iframe reference before sending result back --- 
       const iframeEl = document.getElementById('flashcard-app-iframe');
       if (iframeEl && iframeEl.contentWindow) { 
-          console.log("[Knack Script] Attempting to send SAVE_RESULT (failure) back to React app.");
+          dlog("[Knack Script] Attempting to send SAVE_RESULT (failure) back to React app.");
           iframeEl.contentWindow.postMessage({ type: 'SAVE_RESULT', success: false, error: errorMessage || 'Unknown save error' }, '*'); // Send failure
-          console.log("[Knack Script] SAVE_RESULT (failure) sent.");
+          dlog("[Knack Script] SAVE_RESULT (failure) sent.");
       } else {
-          console.error("[Knack Script] Cannot send SAVE_RESULT (failure): iframe or contentWindow not found.");
+          derr("[Knack Script] Cannot send SAVE_RESULT (failure): iframe or contentWindow not found.");
       }
       // --- END FIX ---
     }
@@ -1180,9 +1203,9 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
   // Handles 'ADD_TO_BANK' request from React app
   async function handleAddToBankRequest(data, iframeWindow) {
-    console.log("[Knack Script] Handling ADD_TO_BANK request");
+    dlog("[Knack Script] Handling ADD_TO_BANK request");
      if (!data || !data.recordId || !data.cards) {
-         console.error("[Knack Script] ADD_TO_BANK request missing recordId or cards.");
+         derr("[Knack Script] ADD_TO_BANK request missing recordId or cards.");
           // CORRECTION: Target iframeWindow for response
          if (iframeWindow) iframeWindow.postMessage({ type: 'ADD_TO_BANK_RESULT', success: false, error: "Missing recordId or cards" }, '*');
          return;
@@ -1192,25 +1215,25 @@ function safeParseJSON(jsonString, defaultVal = null) {
      // --- FIX: Parse cards if stringified --- 
      if (data.cards && typeof data.cards === 'string') {
          try {
-             console.log("[Knack Script] Parsing stringified cards data in ADD_TO_BANK (string length:", data.cards.length, ")");
+             dlog("[Knack Script] Parsing stringified cards data in ADD_TO_BANK (string length:", data.cards.length, ")");
              // Log sample before parse
-             console.log("[Knack Script] Stringified cards sample BEFORE parse:", data.cards.substring(0, 200));
+             dlog("[Knack Script] Stringified cards sample BEFORE parse:", data.cards.substring(0, 200));
              data.cards = JSON.parse(data.cards);
              // Log sample after parse
-             console.log("[Knack Script] Parsed cards successfully. Sample card OPTIONS:", data.cards[0]?.options);
+             dlog("[Knack Script] Parsed cards successfully. Sample card OPTIONS:", data.cards[0]?.options);
          } catch (e) {
-             console.error("[Knack Script] Failed to parse stringified cards data:", e);
+             derr("[Knack Script] Failed to parse stringified cards data:", e);
              throw new Error("Invalid card data format received."); // Re-throw to be caught below
          }
      } else if (data.cards) {
        // Log if cards were already an object (shouldn't happen often now but good to know)
-       console.log("[Knack Script] Cards data received as object in ADD_TO_BANK. Sample card OPTIONS:", data.cards[0]?.options);
+       dlog("[Knack Script] Cards data received as object in ADD_TO_BANK. Sample card OPTIONS:", data.cards[0]?.options);
      }
      // --------------------------------------
 
      // --- Merge with existing card bank data BEFORE queuing ---
      try {
-         console.log(`[Knack Script] Fetching existing data before ADD_TO_BANK for record ${data.recordId}`);
+         dlog(`[Knack Script] Fetching existing data before ADD_TO_BANK for record ${data.recordId}`);
          const existingData = await saveQueue.getExistingData(data.recordId); // Use SaveQueue's fetcher
 
          // Ensure existingData is valid before proceeding
@@ -1222,13 +1245,13 @@ function safeParseJSON(jsonString, defaultVal = null) {
          const newCardsStandardized = standardizeCards(data.cards);
          const newCardCount = newCardsStandardized.length;
          if (newCardCount === 0) {
-             console.log("[Knack Script] No valid new cards to add.");
+             dlog("[Knack Script] No valid new cards to add.");
              if (iframeWindow) iframeWindow.postMessage({ type: 'ADD_TO_BANK_RESULT', success: true, shouldReload: false, message: "No new cards to add." }, '*');
              return; // Nothing to do
          }
 
          // Log standardized cards to debug any issues
-         console.log("[Knack Script] Standardized cards to add:", newCardsStandardized.map(card => ({
+         dlog("[Knack Script] Standardized cards to add:", newCardsStandardized.map(card => ({
              id: card.id,
              type: card.type,
              subject: card.subject,
@@ -1247,7 +1270,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
                   }
                  existingItems = safeParseJSON(bankDataStr, []); // Default to empty array on parse failure
              } catch (parseError) {
-                 console.error("[Knack Script] Error parsing existing card bank data for ADD_TO_BANK:", parseError);
+                 derr("[Knack Script] Error parsing existing card bank data for ADD_TO_BANK:", parseError);
                  existingItems = []; // Start fresh if parsing fails critically
              }
          }
@@ -1256,7 +1279,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
          const { topics: existingTopicShells, cards: existingCards } = splitByType(existingItems);
 
          // Log topic shells to verify they exist
-         console.log("[Knack Script] Existing topic shells:", existingTopicShells.map(shell => ({
+         dlog("[Knack Script] Existing topic shells:", existingTopicShells.map(shell => ({
              id: shell.id,
              type: shell.type,
              subject: shell.subject,
@@ -1269,10 +1292,10 @@ function safeParseJSON(jsonString, defaultVal = null) {
          const cardsToAdd = newCardsStandardized.filter(nc => !existingCardIds.has(nc.id));
          const skippedCount = newCardCount - cardsToAdd.length;
          if (skippedCount > 0) {
-             console.log(`[Knack Script] Skipped ${skippedCount} cards already present in the bank.`);
+             dlog(`[Knack Script] Skipped ${skippedCount} cards already present in the bank.`);
          }
           if (cardsToAdd.length === 0) {
-               console.log("[Knack Script] All new cards were duplicates or invalid.");
+               dlog("[Knack Script] All new cards were duplicates or invalid.");
                 if (iframeWindow) iframeWindow.postMessage({ type: 'ADD_TO_BANK_RESULT', success: true, shouldReload: false, message: "All submitted cards already exist." }, '*');
                 return; // Nothing to add
           }
@@ -1295,7 +1318,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
          // Combine existing shells/cards with the NEW, deduplicated cards
          const finalBankData = [...updatedTopicShells, ...existingCards, ...cardsToAdd];
-         console.log(`[Knack Script] Merged ${cardsToAdd.length} new cards with ${existingCards.length} existing cards and ${updatedTopicShells.length} shells.`);
+         dlog(`[Knack Script] Merged ${cardsToAdd.length} new cards with ${existingCards.length} existing cards and ${updatedTopicShells.length} shells.`);
 
          // --- Prepare Box 1 Update ---
           let box1Data = [];
@@ -1307,7 +1330,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
                  }
                  box1Data = safeParseJSON(box1String, []); // Default to empty array
              } catch(parseError) {
-                console.error("[Knack Script] Error parsing Box 1 data:", parseError);
+                derr("[Knack Script] Error parsing Box 1 data:", parseError);
                 box1Data = [];
              }
           }
@@ -1334,7 +1357,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
             }));
 
           const updatedBox1 = [...box1Data, ...newBox1Entries];
-          console.log(`[Knack Script] Added ${newBox1Entries.length} new entries to Box 1 with nextReviewDate: ${reviewDateForNewCard}`); // Log the correct date
+          dlog(`[Knack Script] Added ${newBox1Entries.length} new entries to Box 1 with nextReviewDate: ${reviewDateForNewCard}`); // Log the correct date
 
          // --- Queue a 'full' save operation with merged data ---
          const fullSaveData = {
@@ -1349,13 +1372,13 @@ function safeParseJSON(jsonString, defaultVal = null) {
            preserveFields: true
          });
 
-         console.log(`[Knack Script] ADD_TO_BANK for record ${data.recordId} completed successfully.`);
+         dlog(`[Knack Script] ADD_TO_BANK for record ${data.recordId} completed successfully.`);
          // CORRECTION: Target iframeWindow for response
          if (iframeWindow) iframeWindow.postMessage({ type: 'ADD_TO_BANK_RESULT', success: true, shouldReload: true }, '*'); // Signal reload might be needed
 
      } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
-         console.error(`[Knack Script] ADD_TO_BANK failed during data preparation or queuing for record ${data.recordId}:`, errorMessage, error);
+         derr(`[Knack Script] ADD_TO_BANK failed during data preparation or queuing for record ${data.recordId}:`, errorMessage, error);
          // CORRECTION: Target iframeWindow for response
          if (iframeWindow) iframeWindow.postMessage({ type: 'ADD_TO_BANK_RESULT', success: false, error: errorMessage || 'Unknown add to bank error' }, '*');
      }
@@ -1364,9 +1387,9 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
   // Handles 'TOPIC_LISTS_UPDATED' request from React app
   async function handleTopicListsUpdatedRequest(data, iframeWindow) {
-     console.log("[Knack Script] Handling TOPIC_LISTS_UPDATED request");
+     dlog("[Knack Script] Handling TOPIC_LISTS_UPDATED request");
       if (!data || !data.recordId || !data.topicLists) {
-          console.error("[Knack Script] TOPIC_LISTS_UPDATED request missing recordId or topicLists.");
+          derr("[Knack Script] TOPIC_LISTS_UPDATED request missing recordId or topicLists.");
            // CORRECTION: Target iframeWindow for response
           if (iframeWindow) iframeWindow.postMessage({ type: 'TOPIC_LISTS_UPDATE_RESULT', success: false, error: "Missing recordId or topicLists" }, '*');
           return;
@@ -1375,28 +1398,28 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
       try {
          // Step 1: Save the topicLists data itself using the queue
-         console.log(`[Knack Script] Queuing save for topicLists field (${FIELD_MAPPING.topicLists}) for record ${data.recordId}`);
+         dlog(`[Knack Script] Queuing save for topicLists field (${FIELD_MAPPING.topicLists}) for record ${data.recordId}`);
          await saveQueue.addToQueue({
             type: 'topics', // Specific type for saving just the topic lists field
             data: data.topicLists, // The array of topic lists
             recordId: data.recordId,
             preserveFields: true // Preserve other fields like card bank, colors etc.
          });
-         console.log(`[Knack Script] Successfully queued save for topicLists for record ${data.recordId}.`);
+         dlog(`[Knack Script] Successfully queued save for topicLists for record ${data.recordId}.`);
 
          // Step 2: Trigger topic shell creation/update based on the *just saved* lists.
-         console.log(`[Knack Script] Triggering topic shell creation/update based on updated lists for record ${data.recordId}.`);
+         dlog(`[Knack Script] Triggering topic shell creation/update based on updated lists for record ${data.recordId}.`);
          // This function handles fetching existing data, generating/merging shells, and queuing the final save.
          await createTopicShellsFromLists(data.topicLists, data.recordId, iframeWindow); // Pass iframeWindow for potential feedback within shell creation
 
-         console.log(`[Knack Script] TOPIC_LISTS_UPDATED for record ${data.recordId} processed.`);
+         dlog(`[Knack Script] TOPIC_LISTS_UPDATED for record ${data.recordId} processed.`);
          // Notify React app - Success here means the process was *initiated* successfully
           // CORRECTION: Target iframeWindow for response
          if (iframeWindow) iframeWindow.postMessage({ type: 'TOPIC_LISTS_UPDATE_RESULT', success: true, timestamp: new Date().toISOString() }, '*');
 
       } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
-         console.error(`[Knack Script] TOPIC_LISTS_UPDATED failed for record ${data.recordId}:`, errorMessage, error);
+         derr(`[Knack Script] TOPIC_LISTS_UPDATED failed for record ${data.recordId}:`, errorMessage, error);
          // CORRECTION: Target iframeWindow for response
          if (iframeWindow) iframeWindow.postMessage({ type: 'TOPIC_LISTS_UPDATE_RESULT', success: false, error: errorMessage || 'Unknown topic list update error' }, '*');
       }
@@ -1404,10 +1427,10 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
    // Handle RELOAD_APP_DATA request
    async function handleReloadRequest(data, iframeWindow) {
-       console.log("[Knack Script] Handling RELOAD_APP_DATA request");
+       dlog("[Knack Script] Handling RELOAD_APP_DATA request");
        const userId = window.currentKnackUser?.id;
        if (!userId) {
-           console.error("[Knack Script] Cannot reload data - user ID not found.");
+           derr("[Knack Script] Cannot reload data - user ID not found.");
            if (iframeWindow) iframeWindow.postMessage({ type: 'DATA_REFRESH_ERROR', error: 'User ID not found' }, '*');
            return;
        }
@@ -1415,7 +1438,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
        loadFlashcardUserData(userId, function(userData) {
            // CORRECTION: Target iframeWindow for response
            if (userData && iframeWindow) {
-               console.log("[Knack Script] Sending refreshed data to React app (on reload request)");
+               dlog("[Knack Script] Sending refreshed data to React app (on reload request)");
                iframeWindow.postMessage({
                    type: 'KNACK_DATA', // Send as KNACK_DATA type
                    cards: userData.cards || [],
@@ -1428,7 +1451,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
                    timestamp: new Date().toISOString()
                }, '*');
            } else if (iframeWindow) {
-               console.error("[Knack Script] Error loading updated data for reload");
+               derr("[Knack Script] Error loading updated data for reload");
                iframeWindow.postMessage({ type: 'DATA_REFRESH_ERROR', error: 'Failed to load data for reload' }, '*');
            }
        });
@@ -1436,20 +1459,20 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
     // Handle REQUEST_UPDATED_DATA request
     async function handleDataUpdateRequest(data, iframeWindow) {
-        console.log("[Knack Script] Handling REQUEST_UPDATED_DATA request");
+        dlog("[Knack Script] Handling REQUEST_UPDATED_DATA request");
         const userId = window.currentKnackUser?.id;
         // --- FIX: Extract recordId robustly --- 
         const recordId = data?.recordId || data?.data?.recordId; // Check both direct and nested
         // ---------------------------------------
 
         if (!userId) {
-            console.error("[Knack Script] Cannot refresh data - user ID not found.");
+            derr("[Knack Script] Cannot refresh data - user ID not found.");
              // CORRECTION: Target iframeWindow for response
             if (iframeWindow) iframeWindow.postMessage({ type: 'DATA_REFRESH_ERROR', error: 'User ID not found' }, '*');
             return;
         }
          if (!recordId) { // Check the extracted recordId
-             console.error("[Knack Script] Cannot refresh data - missing record ID in request");
+             derr("[Knack Script] Cannot refresh data - missing record ID in request");
               // CORRECTION: Target iframeWindow for response
              if (iframeWindow) iframeWindow.postMessage({ type: 'DATA_REFRESH_ERROR', error: 'Missing record ID in request' }, '*');
              return;
@@ -1461,7 +1484,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
             if (userData && iframeWindow) {
                 // Ensure the loaded data corresponds to the requested recordId
                 if (userData.recordId === recordId) {
-                   console.log("[Knack Script] Sending refreshed data to React app (on request)");
+                   dlog("[Knack Script] Sending refreshed data to React app (on request)");
                    iframeWindow.postMessage({
                        type: 'KNACK_DATA',
                        cards: userData.cards || [],
@@ -1475,7 +1498,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
                    }, '*');
                 } else {
                    // This case should be rare if the React app correctly maintains the recordId
-                   console.warn(`[Knack Script] Loaded data record ID (${userData.recordId}) does not match requested record ID (${recordId}). This might indicate an issue. Sending loaded data anyway.`);
+                   dwarn(`[Knack Script] Loaded data record ID (${userData.recordId}) does not match requested record ID (${recordId}). This might indicate an issue. Sending loaded data anyway.`);
                     iframeWindow.postMessage({
                        type: 'KNACK_DATA', // Still send data
                        cards: userData.cards || [],
@@ -1489,7 +1512,7 @@ function safeParseJSON(jsonString, defaultVal = null) {
                    }, '*');
                 }
             } else if (iframeWindow) {
-                console.error("[Knack Script] Error loading updated data (on request)");
+                derr("[Knack Script] Error loading updated data (on request)");
                 iframeWindow.postMessage({ type: 'DATA_REFRESH_ERROR', error: 'Failed to load data' }, '*');
             }
         });
@@ -1497,10 +1520,10 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
      // Handle REQUEST_RECORD_ID request
      async function handleRecordIdRequest(data, iframeWindow) {
-         console.log("[Knack Script] Handling REQUEST_RECORD_ID request");
+         dlog("[Knack Script] Handling REQUEST_RECORD_ID request");
          const userId = window.currentKnackUser?.id;
          if (!userId) {
-             console.error("[Knack Script] Cannot get record ID - user ID not found.");
+             derr("[Knack Script] Cannot get record ID - user ID not found.");
               // CORRECTION: Target iframeWindow for response
               if (iframeWindow) iframeWindow.postMessage({ type: 'RECORD_ID_ERROR', error: 'User ID not found' }, '*'); // Removed backslash before closing quote
              return;
@@ -1510,14 +1533,14 @@ function safeParseJSON(jsonString, defaultVal = null) {
          loadFlashcardUserData(userId, function(userData) {
               // CORRECTION: Target iframeWindow for response
              if (userData && userData.recordId && iframeWindow) {
-                 console.log(`[Knack Script] Found record ID: ${userData.recordId}`);
+                 dlog(`[Knack Script] Found record ID: ${userData.recordId}`);
                  iframeWindow.postMessage({
                      type: 'RECORD_ID_RESPONSE',
                      recordId: userData.recordId,
                      timestamp: new Date().toISOString()
                  }, '*');
              } else if (iframeWindow) {
-                 console.error(`[Knack Script] Could not find record ID for user ${userId}`);
+                 derr(`[Knack Script] Could not find record ID for user ${userId}`);
                  iframeWindow.postMessage({
                      type: 'RECORD_ID_ERROR',
                      error: 'Record ID not found',
@@ -1530,10 +1553,10 @@ function safeParseJSON(jsonString, defaultVal = null) {
 
 // Handles requests to Knack's object_109 for curriculum data
 async function handleKnackRequest(data, iframeWindow) {
-  console.log("[Knack Script] Handling KNACK_REQUEST:", data.action);
+  dlog("[Knack Script] Handling KNACK_REQUEST:", data.action);
   
   if (!data || !data.action || !data.requestId) {
-    console.error("[Knack Script] Invalid KNACK_REQUEST: Missing action or requestId");
+    derr("[Knack Script] Invalid KNACK_REQUEST: Missing action or requestId");
     if (iframeWindow) iframeWindow.postMessage({ 
       type: 'KNACK_RESPONSE', 
       requestId: data?.requestId || 'unknown',
@@ -1551,7 +1574,7 @@ async function handleKnackRequest(data, iframeWindow) {
         await handleGetTopicsRequest(data, iframeWindow);
         break;
       default:
-        console.warn(`[Knack Script] Unhandled KNACK_REQUEST action: ${data.action}`);
+        dwarn(`[Knack Script] Unhandled KNACK_REQUEST action: ${data.action}`);
         if (iframeWindow) iframeWindow.postMessage({ 
           type: 'KNACK_RESPONSE', 
           requestId: data.requestId,
@@ -1559,7 +1582,7 @@ async function handleKnackRequest(data, iframeWindow) {
         }, '*');
     }
   } catch (error) {
-    console.error(`[Knack Script] Error handling ${data.action} request:`, error);
+    derr(`[Knack Script] Error handling ${data.action} request:`, error);
     if (iframeWindow) iframeWindow.postMessage({ 
       type: 'KNACK_RESPONSE', 
       requestId: data.requestId,
@@ -1570,7 +1593,7 @@ async function handleKnackRequest(data, iframeWindow) {
 
 // Handles GET_SUBJECTS requests to get subjects for a given exam type and board
 async function handleGetSubjectsRequest(data, iframeWindow) {
-  console.log(`[Knack Script] Handling GET_SUBJECTS for ${data.data.examType}, ${data.data.examBoard}`);
+  dlog(`[Knack Script] Handling GET_SUBJECTS for ${data.data.examType}, ${data.data.examBoard}`);
   
   const { examType, examBoard } = data.data;
   if (!examType || !examBoard) {
@@ -1613,7 +1636,7 @@ async function handleGetSubjectsRequest(data, iframeWindow) {
         .filter(subject => subject) // Filter out null/undefined/empty
     )];
     
-    console.log(`[Knack Script] Found ${subjects.length} subjects for ${examType}, ${examBoard}`);
+    dlog(`[Knack Script] Found ${subjects.length} subjects for ${examType}, ${examBoard}`);
     
     // Send response back to React app
     if (iframeWindow) iframeWindow.postMessage({ 
@@ -1633,7 +1656,7 @@ async function handleGetSubjectsRequest(data, iframeWindow) {
 
 // Handles GET_TOPICS requests to get topics for a given subject, exam type, and board
 async function handleGetTopicsRequest(data, iframeWindow) {
-  console.log(`[Knack Script] Handling GET_TOPICS for ${data.data.subject}, ${data.data.examType}, ${data.data.examBoard}`);
+  dlog(`[Knack Script] Handling GET_TOPICS for ${data.data.subject}, ${data.data.examType}, ${data.data.examBoard}`);
   
   const { subject, examType, examBoard } = data.data;
   if (!subject || !examType || !examBoard) {
@@ -1680,7 +1703,7 @@ async function handleGetTopicsRequest(data, iframeWindow) {
       return result;
     });
     
-    console.log(`[Knack Script] Found ${topicsData.length} topics for ${subject}, ${examType}, ${examBoard}`);
+    dlog(`[Knack Script] Found ${topicsData.length} topics for ${subject}, ${examType}, ${examBoard}`);
     
     // Send response back to React app
     if (iframeWindow) iframeWindow.postMessage({ 
@@ -1702,7 +1725,7 @@ async function handleGetTopicsRequest(data, iframeWindow) {
 
   // Get complete user data from Knack (Object_3)
   function getCompleteUserData(userId, callback) {
-    console.log("[Knack Script] Getting complete user data for:", userId);
+    dlog("[Knack Script] Getting complete user data for:", userId);
     const apiCall = () => new Promise((resolve, reject) => {
         $.ajax({
             url: `${KNACK_API_URL}/objects/object_3/records/${userId}`, // Assuming object_3 is user object
@@ -1716,22 +1739,22 @@ async function handleGetTopicsRequest(data, iframeWindow) {
 
     retryApiCall(apiCall)
         .then(response => {
-            console.log("[Knack Script] Complete user data received.");
+            dlog("[Knack Script] Complete user data received.");
             debugLog("[Knack Script] Raw Complete User Data:", response);
             callback(response); // Pass raw response
         })
         .catch(error => {
-            console.error("[Knack Script] Error retrieving complete user data:", error);
+            derr("[Knack Script] Error retrieving complete user data:", error);
             callback(null); // Indicate failure
         });
   }
 
    // Load user's flashcard data (Object_102) - Enhanced for multi-subject support
 function loadFlashcardUserData(userId, callback) {
-console.log(`[Knack Script] Loading flashcard user data for user ID: ${userId}`);
+dlog(`[Knack Script] Loading flashcard user data for user ID: ${userId}`);
 const findRecordApiCall = () => new Promise((resolve, reject) => {
     // --- DEBUG: Log API call details ---
-    console.log(`[loadFlashcardUserData DEBUG] Making GET request to ${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records with filter for userId: ${userId}`);
+    dlog(`[loadFlashcardUserData DEBUG] Making GET request to ${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records with filter for userId: ${userId}`);
     // --- END DEBUG ---
     $.ajax({
         url: `${KNACK_API_URL}/objects/${FLASHCARD_OBJECT}/records`,
@@ -1746,13 +1769,13 @@ const findRecordApiCall = () => new Promise((resolve, reject) => {
         },
         success: (response) => { // Changed to arrow function for consistent logging context
             // --- DEBUG: Log success --- 
-            console.log(`[loadFlashcardUserData DEBUG] GET request succeeded. Response records count: ${response?.records?.length || 0}`);
+            dlog(`[loadFlashcardUserData DEBUG] GET request succeeded. Response records count: ${response?.records?.length || 0}`);
             // --- END DEBUG ---
             resolve(response);
         },
         error: (jqXHR, textStatus, errorThrown) => { // Changed to arrow function
            // --- DEBUG: Log failure --- 
-           console.error(`[loadFlashcardUserData DEBUG] GET request failed. Status: ${jqXHR.status}, Error: ${errorThrown}`);
+           derr(`[loadFlashcardUserData DEBUG] GET request failed. Status: ${jqXHR.status}, Error: ${errorThrown}`);
            // --- END DEBUG ---
            const error = new Error(`Failed find record for user ${userId}: ${jqXHR.status} ${errorThrown}`);
            error.status = jqXHR.status;
@@ -1765,12 +1788,12 @@ const findRecordApiCall = () => new Promise((resolve, reject) => {
 retryApiCall(findRecordApiCall)
   .then((response) => {
     // --- DEBUG: Log the response received after retries --- 
-    console.log("[loadFlashcardUserData DEBUG] Response object AFTER retryApiCall:", response); 
+    dlog("[loadFlashcardUserData DEBUG] Response object AFTER retryApiCall:", response); 
     debugLog("[loadFlashcardUserData DEBUG] Flashcard User data search response (Detailed):", response);
     // --- END DEBUG ---
     if (response && response.records && response.records.length > 0) {
       const record = response.records[0];
-      console.log(`[Knack Script] Found existing flashcard record: ${record.id}`);
+      dlog(`[Knack Script] Found existing flashcard record: ${record.id}`);
       
       try {
           // Use enhanced data processing from MultiSubjectBridge
@@ -1789,7 +1812,7 @@ retryApiCall(findRecordApiCall)
           if (rawCardData) {
               try {
                   // --- Log raw card data ---
-                  console.log(`[loadFlashcardUserData DEBUG] Raw cardBankData string (length: ${String(rawCardData).length}):`, String(rawCardData).substring(0, 500)); 
+                  dlog(`[loadFlashcardUserData DEBUG] Raw cardBankData string (length: ${String(rawCardData).length}):`, String(rawCardData).substring(0, 500)); 
                   // --- End log ---
                   
                   // First try to decode if needed
@@ -1798,20 +1821,20 @@ retryApiCall(findRecordApiCall)
                       try {
                           decodedData = safeDecodeURIComponent(rawCardData);
                       } catch (decodeError) {
-                          console.error('[Knack Script] Error with primary decode, trying backup method:', decodeError);
+                          derr('[Knack Script] Error with primary decode, trying backup method:', decodeError);
                           // Try handling broken encodings
                           decodedData = String(rawCardData)
                               .replace(/%(?![0-9A-Fa-f]{2})/g, '%25'); // Fix invalid % sequences
                           try {
                               decodedData = decodeURIComponent(decodedData);
                           } catch (secondError) {
-                              console.error('[Knack Script] Advanced URI decode failed, using original:', secondError);
+                              derr('[Knack Script] Advanced URI decode failed, using original:', secondError);
                           }
                       }
                   }
                   
                   // --- Log decoded data ---
-                  console.log(`[loadFlashcardUserData DEBUG] Decoded card data string (length: ${String(decodedData).length}):`, String(decodedData).substring(0, 500)); 
+                  dlog(`[loadFlashcardUserData DEBUG] Decoded card data string (length: ${String(decodedData).length}):`, String(decodedData).substring(0, 500)); 
                   // --- End log ---
                   
                   // Parse the JSON safely
@@ -1820,19 +1843,19 @@ retryApiCall(findRecordApiCall)
                   userData.cards = standardizeCards(userData.cards); // Standardize structure
                   
                   // --- Log parsed cards with options ---
-                  console.log(`[loadFlashcardUserData DEBUG] Parsed userData.cards count: ${userData.cards.length}`);
+                  dlog(`[loadFlashcardUserData DEBUG] Parsed userData.cards count: ${userData.cards.length}`);
                   userData.cards.slice(0, 5).forEach((card, index) => {
                       if (card.questionType === 'multiple_choice' || (Array.isArray(card.options) && card.options.length > 0)) {
-                          console.log(`[loadFlashcardUserData DEBUG] Card ${index} (ID: ${card.id}) options:`, JSON.stringify(card.options));
+                          dlog(`[loadFlashcardUserData DEBUG] Card ${index} (ID: ${card.id}) options:`, JSON.stringify(card.options));
                       }
                   });
                   // --- End log ---
               } catch (cardError) {
-                  console.error('[Knack Script] Fatal error processing cards:', cardError);
+                  derr('[Knack Script] Fatal error processing cards:', cardError);
                   userData.cards = []; // Reset to empty array
               }
           }
-          console.log(`[Knack Script] Loaded ${userData.cards.length} cards/shells from bank.`);
+          dlog(`[Knack Script] Loaded ${userData.cards.length} cards/shells from bank.`);
           
           // Enhanced parsing for spaced repetition
           for (let i = 1; i <= 5; i++) {
@@ -1845,7 +1868,7 @@ retryApiCall(findRecordApiCall)
                           try {
                               decodedBox = safeDecodeURIComponent(boxData);
                           } catch (e) {
-                              console.error(`[Knack Script] Error decoding box${i} data:`, e);
+                              derr(`[Knack Script] Error decoding box${i} data:`, e);
                           }
                       }
                       userData.spacedRepetition[`box${i}`] = safeParseJSON(decodedBox, []);
@@ -1853,11 +1876,11 @@ retryApiCall(findRecordApiCall)
                       userData.spacedRepetition[`box${i}`] = [];
                   }
               } catch (boxError) {
-                  console.error(`[Knack Script] Error processing box${i}:`, boxError);
+                  derr(`[Knack Script] Error processing box${i}:`, boxError);
                   userData.spacedRepetition[`box${i}`] = [];
               }
           }
-          console.log(`[Knack Script] Loaded spaced repetition data.`);
+          dlog(`[Knack Script] Loaded spaced repetition data.`);
           
           // Enhanced parsing for topic lists - CRITICAL for multi-subject
           const rawTopicLists = record[FIELD_MAPPING.topicLists];
@@ -1868,12 +1891,12 @@ retryApiCall(findRecordApiCall)
                       try {
                           decodedLists = safeDecodeURIComponent(rawTopicLists);
                       } catch (decodeError) {
-                          console.error('[Knack Script] Topic lists decode error, trying backup:', decodeError);
+                          derr('[Knack Script] Topic lists decode error, trying backup:', decodeError);
                           // Try to recover with pattern matching
                           const jsonPattern = /\[\s*\{.*\}\s*\]/s;
                           const match = String(rawTopicLists).match(jsonPattern);
                           if (match) {
-                              console.log('[Knack Script] Found JSON pattern in topic lists');
+                              dlog('[Knack Script] Found JSON pattern in topic lists');
                               decodedLists = match[0];
                           }
                       }
@@ -1895,10 +1918,10 @@ retryApiCall(findRecordApiCall)
                   }).filter(Boolean) : [];
               }
           } catch (listError) {
-              console.error('[Knack Script] Error processing topic lists:', listError);
+              derr('[Knack Script] Error processing topic lists:', listError);
               userData.topicLists = [];
           }
-          console.log(`[Knack Script] Loaded ${userData.topicLists.length} topic lists.`);
+          dlog(`[Knack Script] Loaded ${userData.topicLists.length} topic lists.`);
           
           // Enhanced parsing for color mapping
           const rawColorData = record[FIELD_MAPPING.colorMapping];
@@ -1909,7 +1932,7 @@ retryApiCall(findRecordApiCall)
                       try {
                           decodedColor = safeDecodeURIComponent(rawColorData);
                       } catch (e) {
-                          console.error('[Knack Script] Error decoding color mapping:', e);
+                          derr('[Knack Script] Error decoding color mapping:', e);
                       }
                   }
                   userData.colorMapping = safeParseJSON(decodedColor, {});
@@ -1919,10 +1942,10 @@ retryApiCall(findRecordApiCall)
                   }
               }
           } catch (colorError) {
-              console.error('[Knack Script] Error processing color mapping:', colorError);
+              derr('[Knack Script] Error processing color mapping:', colorError);
               userData.colorMapping = {};
           }
-          console.log(`[Knack Script] Loaded color mapping.`);
+          dlog(`[Knack Script] Loaded color mapping.`);
           
           // Enhanced parsing for topic metadata
           const rawMetaData = record[FIELD_MAPPING.topicMetadata];
@@ -1933,7 +1956,7 @@ retryApiCall(findRecordApiCall)
                       try {
                           decodedMeta = safeDecodeURIComponent(rawMetaData);
                       } catch (e) {
-                          console.error('[Knack Script] Error decoding topic metadata:', e);
+                          derr('[Knack Script] Error decoding topic metadata:', e);
                       }
                   }
                   userData.topicMetadata = safeParseJSON(decodedMeta, []);
@@ -1943,15 +1966,15 @@ retryApiCall(findRecordApiCall)
                   }
               }
           } catch (metaError) {
-              console.error('[Knack Script] Error processing topic metadata:', metaError);
+              derr('[Knack Script] Error processing topic metadata:', metaError);
               userData.topicMetadata = [];
           }
-          console.log(`[Knack Script] Loaded ${userData.topicMetadata.length} topic metadata items.`);
+          dlog(`[Knack Script] Loaded ${userData.topicMetadata.length} topic metadata items.`);
 
           debugLog("[Knack Script] ASSEMBLED USER DATA from loaded record", userData);
           callback(userData);
       } catch (e) {
-          console.error("[Knack Script] Error processing user data fields:", e);
+          derr("[Knack Script] Error processing user data fields:", e);
           // Return partially assembled data or fallback
           callback({ 
               recordId: record.id,
@@ -1964,11 +1987,11 @@ retryApiCall(findRecordApiCall)
 
     } else {
       // No existing data, create a new record
-      console.log(`[loadFlashcardUserData DEBUG] No existing record found (or response invalid/empty), proceeding to create new record for user ${userId}.`);
-      console.log(`[Knack Script] No existing flashcard record found for user ${userId}, creating new one...`);
+      dlog(`[loadFlashcardUserData DEBUG] No existing record found (or response invalid/empty), proceeding to create new record for user ${userId}.`);
+      dlog(`[Knack Script] No existing flashcard record found for user ${userId}, creating new one...`);
       createFlashcardUserRecord(userId, function(success, newRecordId, creationError) { // Modify callback to accept error
         if (success && newRecordId) {
-           console.log(`[Knack Script] New record created with ID: ${newRecordId}`);
+           dlog(`[Knack Script] New record created with ID: ${newRecordId}`);
           // Return the default empty structure with the new record ID
           callback({
             recordId: newRecordId,
@@ -1979,15 +2002,15 @@ retryApiCall(findRecordApiCall)
             colorMapping: {}
           });
         } else {
-            console.error(`[Knack Script] Failed to create new flashcard record for user ${userId}. Initial Error:`, creationError);
+            derr(`[Knack Script] Failed to create new flashcard record for user ${userId}. Initial Error:`, creationError);
             // --- If creation failed due to unique constraint, retry the GET --- 
             const isUniqueError = creationError?.responseText?.includes('must be unique');
             if (isUniqueError) {
-                console.warn(`[Knack Script] Record creation failed due to unique constraint. Retrying GET request for user ${userId}...`);
+                dwarn(`[Knack Script] Record creation failed due to unique constraint. Retrying GET request for user ${userId}...`);
                 retryApiCall(findRecordApiCall) // Retry the original GET call
                   .then(retryResponse => {
                       if (retryResponse && retryResponse.records && retryResponse.records.length > 0) {
-                          console.log("[Knack Script] Successfully found record on retry GET.");
+                          dlog("[Knack Script] Successfully found record on retry GET.");
                           const record = retryResponse.records[0];
                           // Process the found record (similar logic to the main .then block)
                           try {
@@ -1996,19 +2019,19 @@ retryApiCall(findRecordApiCall)
                               userData.recordId = record.id;
                               userData.cards = safeParseJSON(record[FIELD_MAPPING.cardBankData] || '[]');
                               // ... parse other fields ... 
-                              console.log("[Knack Script] Assembled user data from retry GET.");
+                              dlog("[Knack Script] Assembled user data from retry GET.");
                               callback(userData);
                           } catch (parseError) {
-                              console.error("[Knack Script] Error parsing record data on retry GET:", parseError);
+                              derr("[Knack Script] Error parsing record data on retry GET:", parseError);
                               callback(null);
                           }
                       } else {
-                          console.error("[Knack Script] Retry GET failed to find record for user ${userId} even after unique constraint error.");
+                          derr("[Knack Script] Retry GET failed to find record for user ${userId} even after unique constraint error.");
                           callback(null);
                       }
                   })
                   .catch(retryError => {
-                      console.error("[Knack Script] Error during retry GET request:", retryError);
+                      derr("[Knack Script] Error during retry GET request:", retryError);
                       callback(null);
                   });
             } else {
@@ -2021,8 +2044,8 @@ retryApiCall(findRecordApiCall)
     }
   })
   .catch((error) => {
-    console.error("[loadFlashcardUserData DEBUG] Overall error after findRecordApiCall retries failed:", error);
-    console.error("[Knack Script] Error loading flashcard user data after retries:", error.status, error.responseText || error.message);
+    derr("[loadFlashcardUserData DEBUG] Overall error after findRecordApiCall retries failed:", error);
+    derr("[Knack Script] Error loading flashcard user data after retries:", error.status, error.responseText || error.message);
     callback(null); // Indicate failure
   });
 }
@@ -2030,11 +2053,11 @@ retryApiCall(findRecordApiCall)
    // Create a new flashcard user record in Object_102
    // --- Modified to pass error object to callback --- 
    function createFlashcardUserRecord(userId, callback) {
-       console.log("[Knack Script] Creating new flashcard user record for:", userId);
+       dlog("[Knack Script] Creating new flashcard user record for:", userId);
        const user = window.currentKnackUser; // Assumes global user object is populated
 
         if (!user) {
-            console.error("[Knack Script] Cannot create record: window.currentKnackUser is not defined.");
+            derr("[Knack Script] Cannot create record: window.currentKnackUser is not defined.");
             callback(false, null, new Error("User object is not defined."));
             return;
         }
@@ -2114,11 +2137,11 @@ retryApiCall(findRecordApiCall)
 
        retryApiCall(apiCall)
           .then(response => {
-             console.log("[Knack Script] Successfully created user record:", response);
+             dlog("[Knack Script] Successfully created user record:", response);
              callback(true, response.id, null); // Pass null for error on success
           })
           .catch(error => {
-             console.error("[Knack Script] Error creating user record:", error);
+             derr("[Knack Script] Error creating user record:", error);
              callback(false, null, error); // Pass the error object to the callback
           });
    }
@@ -2127,12 +2150,12 @@ retryApiCall(findRecordApiCall)
    // Standardize card data before saving or processing
    function standardizeCards(cards) {
        if (!Array.isArray(cards)) {
-            console.warn("[Knack Script] standardizeCards called with non-array:", cards);
+            dwarn("[Knack Script] standardizeCards called with non-array:", cards);
            return [];
        }
        return cards.map(card => {
            if (!card || typeof card !== 'object') {
-                console.warn("[Knack Script] Skipping invalid item in cards array:", card);
+                dwarn("[Knack Script] Skipping invalid item in cards array:", card);
                return null; // Handle null/undefined/non-object entries
            }
            try {
@@ -2205,9 +2228,9 @@ retryApiCall(findRecordApiCall)
                     }
                     // --- End Normalization ---
                     
-                    console.log(`[Standardize PreCheck] Card ID: ${standardCard.id}, questionType: ${standardCard.questionType}, Type: ${typeof standardCard.questionType}`); // Log before call
+                    dlog(`[Standardize PreCheck] Card ID: ${standardCard.id}, questionType: ${standardCard.questionType}, Type: ${typeof standardCard.questionType}`); // Log before call
                     const isMC = isMultipleChoiceCard(standardCard);
-                    console.log(`[Standardize PostCheck] Card ID: ${standardCard.id}, isMultipleChoiceCard result: ${isMC}`); // Log result of call
+                    dlog(`[Standardize PostCheck] Card ID: ${standardCard.id}, isMultipleChoiceCard result: ${isMC}`); // Log result of call
                     if (isMC) {
                         standardCard.questionType = 'multiple_choice';
                         
@@ -2216,14 +2239,14 @@ retryApiCall(findRecordApiCall)
                           // Check if the FIRST option is an object (heuristic)
                           if (typeof standardCard.options[0] === 'object' && standardCard.options[0] !== null) {
                              // Format existing options objects
-                             console.log(`[Standardize] Formatting object-based options for card ${standardCard.id}`);
+                             dlog(`[Standardize] Formatting object-based options for card ${standardCard.id}`);
                              standardCard.options = standardCard.options.map(opt => ({
                                  text: sanitizeField(opt?.text || ''), 
                                  isCorrect: Boolean(opt?.isCorrect)  
                              }));
                           } else {
                              // Options are likely strings, keep them as is for now
-                             console.log(`[Standardize] Keeping string-based options for card ${standardCard.id}`);
+                             dlog(`[Standardize] Keeping string-based options for card ${standardCard.id}`);
                              // Ensure it's an array of strings (basic check)
                              standardCard.options = standardCard.options.map(opt => String(opt || ''));
                           }
@@ -2231,16 +2254,16 @@ retryApiCall(findRecordApiCall)
                           // Backup logic remains the same: backup whatever format options are in now
                           try {
                               if (JSON.stringify(standardCard.options) !== JSON.stringify(standardCard.savedOptions)) {
-                                  console.log(`[Standardize] Backing up options to savedOptions for card ${standardCard.id}`);
+                                  dlog(`[Standardize] Backing up options to savedOptions for card ${standardCard.id}`);
                                   standardCard.savedOptions = [...standardCard.options];
                               }
                           } catch (e) {
-                              console.warn(`[Standardize] Error comparing options for backup on card ${standardCard.id}`, e);
+                              dwarn(`[Standardize] Error comparing options for backup on card ${standardCard.id}`, e);
                               standardCard.savedOptions = [...standardCard.options];
                           }
                         } else if (standardCard.savedOptions && standardCard.savedOptions.length > 0) {
                             // If options were empty, but savedOptions exist, restore from savedOptions
-                            console.log(`[Standardize] Restoring options from savedOptions for card ${standardCard.id}`);
+                            dlog(`[Standardize] Restoring options from savedOptions for card ${standardCard.id}`);
                             standardCard.options = [...standardCard.savedOptions]; 
                             // Re-run the backup check just in case
                             if (!standardCard.savedOptions || standardCard.savedOptions.length === 0) {
@@ -2250,7 +2273,7 @@ retryApiCall(findRecordApiCall)
                         // --- END MODIFIED LOGIC ---
 
                     } else { // If not MC, ensure questionType is appropriate
-                       console.log(`[Standardize Else Block] Card ID: ${standardCard.id} determined NOT MC. Options BEFORE clearing:`, JSON.stringify(standardCard.options)); // Log options before clearing
+                       dlog(`[Standardize Else Block] Card ID: ${standardCard.id} determined NOT MC. Options BEFORE clearing:`, JSON.stringify(standardCard.options)); // Log options before clearing
                        standardCard.questionType = standardCard.questionType === 'multiple_choice' ? 'short_answer' : standardCard.questionType; // Reset if wrongly marked MC
                         // Clear options if it's not an MC card
                         standardCard.options = [];
@@ -2262,7 +2285,7 @@ retryApiCall(findRecordApiCall)
                return standardCard;
 
            } catch (error) {
-               console.error("[Knack Script] Error standardizing card:", error, "Card data:", card);
+               derr("[Knack Script] Error standardizing card:", error, "Card data:", card);
                return null; // Return null for cards that cause errors during standardization
            }
        }).filter(card => card !== null); // Filter out any null results from errors
@@ -2276,19 +2299,19 @@ retryApiCall(findRecordApiCall)
      const typeToCheck = card.questionType ? String(card.questionType).toLowerCase() : null;
      const targetLiteral = 'multiple choice'; // <-- CORRECTED: Use space instead of underscore
 
-     console.log(`[isMC Check] ID: ${card.id}, Original Type: '${card.questionType}', Lowercase Type: '${typeToCheck}'`);
+     dlog(`[isMC Check] ID: ${card.id}, Original Type: '${card.questionType}', Lowercase Type: '${typeToCheck}'`);
 
      // Log character codes for detailed comparison
      const typeToCheckCodes = typeToCheck ? Array.from(typeToCheck).map(c => c.charCodeAt(0)) : null;
      const targetLiteralCodes = Array.from(targetLiteral).map(c => c.charCodeAt(0));
-     console.log(`[isMC Check Codes] ID: ${card.id}, typeToCheck: [${typeToCheckCodes}], targetLiteral: [${targetLiteralCodes}]`);
+     dlog(`[isMC Check Codes] ID: ${card.id}, typeToCheck: [${typeToCheckCodes}], targetLiteral: [${targetLiteralCodes}]`);
 
      if (typeToCheck === targetLiteral) { // Compare against the literal with a space
-       console.log(`[isMC Check] ID: ${card.id} - MATCHED '${targetLiteral}'`);
+       dlog(`[isMC Check] ID: ${card.id} - MATCHED '${targetLiteral}'`);
        return true; 
      }
 
-     console.log(`[isMC Check] ID: ${card.id} - DID NOT MATCH '${targetLiteral}'`); 
+     dlog(`[isMC Check] ID: ${card.id} - DID NOT MATCH '${targetLiteral}'`); 
      return false; // Default to false
    }
 
@@ -2306,7 +2329,7 @@ retryApiCall(findRecordApiCall)
            if (newData.type === 'multiple_choice' || newData.type === 'short_answer') {
                 // Only migrate if 'questionType' isn't already set or is different
                if (!newData.questionType || newData.questionType !== newData.type) {
-                   console.log(`[Migration] Migrating legacy type ('${newData.type}') to questionType for item: ${newData.id || 'unknown'}`);
+                   dlog(`[Migration] Migrating legacy type ('${newData.type}') to questionType for item: ${newData.id || 'unknown'}`);
                    newData.questionType = newData.type;
                }
                // IMPORTANT: Reset the 'type' field to 'card' as the legacy value is now redundant for type classification
@@ -2336,7 +2359,7 @@ retryApiCall(findRecordApiCall)
     // Helper to split items into topics (shells) and cards based on 'type' or 'isShell'
     function splitByType(items) {
        if (!Array.isArray(items)) {
-            console.warn("[Knack Script] splitByType called with non-array:", items);
+            dwarn("[Knack Script] splitByType called with non-array:", items);
            return { topics: [], cards: [] };
        }
 
@@ -2350,7 +2373,7 @@ retryApiCall(findRecordApiCall)
 
 
        // Log counts for debugging
-        // console.log(`[SplitByType] Input: ${items.length}, Output: ${topics.length} topics, ${cards.length} cards`);
+        // dlog(`[SplitByType] Input: ${items.length}, Output: ${topics.length} topics, ${cards.length} cards`);
 
        return { topics, cards };
     }
@@ -2359,9 +2382,9 @@ retryApiCall(findRecordApiCall)
    // --- Topic Shell Creation Logic (Adapted from 5w) ---
    // Handles fetching existing data, generating/merging shells & metadata, and QUEUING the final save.
    async function createTopicShellsFromLists(topicLists, recordId, iframeWindow) {
-       console.log(`[Knack Script] Initiating topic shell creation/update for record ${recordId}`);
+       dlog(`[Knack Script] Initiating topic shell creation/update for record ${recordId}`);
        if (!Array.isArray(topicLists) || topicLists.length === 0 || !recordId) {
-           console.warn("[Knack Script] Skipping shell creation: No topic lists or recordId provided.");
+           dwarn("[Knack Script] Skipping shell creation: No topic lists or recordId provided.");
            // Optionally notify React app if needed
             if (iframeWindow) iframeWindow.postMessage({ type: 'TOPIC_SHELLS_PROCESSED', success: true, count: 0, message: "No lists provided." }, '*');
            return;
@@ -2369,7 +2392,7 @@ retryApiCall(findRecordApiCall)
 
        try {
            // 1. Fetch existing user data (includes cardBank, colorMapping, topicMetadata)
-           console.log(`[Knack Script] Fetching existing data for shell creation (record ${recordId})`);
+           dlog(`[Knack Script] Fetching existing data for shell creation (record ${recordId})`);
            const existingData = await saveQueue.getExistingData(recordId); // Use queue's fetcher
 
             // Ensure existingData is valid
@@ -2389,7 +2412,7 @@ retryApiCall(findRecordApiCall)
                    colorDataStr = safeDecodeURIComponent(colorDataStr);
                 }
                 subjectColors = safeParseJSON(colorDataStr, {}); // Default to empty object
-            } catch (e) { console.error("Error parsing existing subject colors:", e); subjectColors = {}; }
+            } catch (e) { derr("Error parsing existing subject colors:", e); subjectColors = {}; }
 
            try {
                let metaDataStr = existingData[FIELD_MAPPING.topicMetadata];
@@ -2397,7 +2420,7 @@ retryApiCall(findRecordApiCall)
                    metaDataStr = safeDecodeURIComponent(metaDataStr);
                }
                existingTopicMetadata = safeParseJSON(metaDataStr, []); // Default to empty array
-            } catch (e) { console.error("Error parsing existing topic metadata:", e); existingTopicMetadata = [];}
+            } catch (e) { derr("Error parsing existing topic metadata:", e); existingTopicMetadata = [];}
 
            try {
                let bankDataStr = existingData[FIELD_MAPPING.cardBankData];
@@ -2405,11 +2428,11 @@ retryApiCall(findRecordApiCall)
                    bankDataStr = safeDecodeURIComponent(bankDataStr);
                }
                existingItems = safeParseJSON(bankDataStr, []); // Default to empty array
-            } catch(e) { console.error("Error parsing existing card bank data:", e); existingItems = [];}
+            } catch(e) { derr("Error parsing existing card bank data:", e); existingItems = [];}
 
            // Split existing items from card bank
            const { topics: existingTopicShells, cards: existingCards } = splitByType(existingItems);
-           console.log(`[Knack Script] Existing data parsed: ${existingTopicShells.length} shells, ${existingCards.length} cards, ${existingTopicMetadata.length} metadata items.`);
+           dlog(`[Knack Script] Existing data parsed: ${existingTopicShells.length} shells, ${existingCards.length} cards, ${existingTopicMetadata.length} metadata items.`);
 
 
            // 3. Generate New Topic Shells and update Colors/Metadata based on topicLists
@@ -2418,12 +2441,12 @@ retryApiCall(findRecordApiCall)
                subjectColors, // Pass current colors
                existingTopicMetadata // Pass current metadata
            );
-           console.log(`[Knack Script] Generated ${newShells.length} new shells based on topic lists.`);
+           dlog(`[Knack Script] Generated ${newShells.length} new shells based on topic lists.`);
 
 
            // 4. Merge new shells with existing shells (preserves card arrays in existing shells)
            const finalTopicShells = mergeTopicShells(existingTopicShells, newShells);
-           console.log(`[Knack Script] Merged shells. Total shells: ${finalTopicShells.length}`);
+           dlog(`[Knack Script] Merged shells. Total shells: ${finalTopicShells.length}`);
 
            // 5. Combine final shells with existing cards for the new cardBankData payload
            const finalBankData = [...finalTopicShells, ...existingCards];
@@ -2439,7 +2462,7 @@ retryApiCall(findRecordApiCall)
            };
 
            // 7. Queue the save operation using 'full' type as multiple fields are potentially updated
-           console.log(`[Knack Script] Queuing 'full' save for topic shell creation/update for record ${recordId}.`);
+           dlog(`[Knack Script] Queuing 'full' save for topic shell creation/update for record ${recordId}.`);
            await saveQueue.addToQueue({
                type: 'full',
                data: saveDataPayload, // Pass the object containing the fields to update
@@ -2447,7 +2470,7 @@ retryApiCall(findRecordApiCall)
                preserveFields: true // CRITICAL: preserve fields not explicitly in saveDataPayload (like boxes, topicLists field)
            });
 
-           console.log(`[Knack Script] Successfully queued save after topic shell processing for record ${recordId}.`);
+           dlog(`[Knack Script] Successfully queued save after topic shell processing for record ${recordId}.`);
 
            // Notify React app immediately that shells were processed and save is queued
            if (iframeWindow) iframeWindow.postMessage({ type: 'TOPIC_SHELLS_PROCESSED', success: true, count: newShells.length }, '*');
@@ -2455,7 +2478,7 @@ retryApiCall(findRecordApiCall)
 
        } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-           console.error("[Knack Script] Error during createTopicShellsFromLists:", errorMessage, error);
+           derr("[Knack Script] Error during createTopicShellsFromLists:", errorMessage, error);
            // Notify React app of the failure
             if (iframeWindow) iframeWindow.postMessage({ type: 'TOPIC_SHELLS_PROCESSED', success: false, error: errorMessage }, '*');
        }
@@ -2516,7 +2539,7 @@ retryApiCall(findRecordApiCall)
         // --- Process Lists ---
         topicLists.forEach(list => {
             if (!list || !Array.isArray(list.topics)) {
-                 console.warn("[Shell Gen] Skipping invalid topic list:", list);
+                 dwarn("[Shell Gen] Skipping invalid topic list:", list);
                 return;
             }
 
@@ -2533,7 +2556,7 @@ retryApiCall(findRecordApiCall)
             list.topics.forEach((topic, index) => {
                 // Basic validation for topic object
                 if (!topic || (typeof topic !== 'object' && typeof topic !== 'string') || (!topic.id && !topic.name && !topic.topic && typeof topic !== 'string')) {
-                     console.warn("[Shell Gen] Skipping invalid topic item:", topic);
+                     dwarn("[Shell Gen] Skipping invalid topic item:", topic);
                     return;
                 }
 
@@ -2546,7 +2569,7 @@ retryApiCall(findRecordApiCall)
                      : (topic.id || `topic_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
 
                 if (idMap.has(topicId)) {
-                     console.log(`[Shell Gen] Skipping duplicate topic ID in this run: ${topicId}`);
+                     dlog(`[Shell Gen] Skipping duplicate topic ID in this run: ${topicId}`);
                     return; // Skip duplicates within this generation run
                 }
 
@@ -2601,7 +2624,7 @@ retryApiCall(findRecordApiCall)
                         updatedMetadata.push(newMetadataEntry);
                     }
                 } else {
-                      console.warn(`[Shell Gen] Failed to standardize shell for topic:`, topic);
+                      dwarn(`[Shell Gen] Failed to standardize shell for topic:`, topic);
                 }
             });
         });
@@ -2615,7 +2638,7 @@ retryApiCall(findRecordApiCall)
      // Helper function to generate color variations
       function generateShadeVariations(baseColorHex, count) {
           if (!baseColorHex || typeof baseColorHex !== 'string' || !baseColorHex.startsWith('#')) {
-              console.warn("Invalid baseColorHex for generateShadeVariations:", baseColorHex);
+              dwarn("Invalid baseColorHex for generateShadeVariations:", baseColorHex);
               return Array(count).fill('#f0f0f0'); // Updated default to neutral light gray
           }
            if (count <= 0) return [];
@@ -2683,7 +2706,7 @@ retryApiCall(findRecordApiCall)
               }
 
           } catch (error) {
-              console.error("Error generating shade variations:", error);
+              derr("Error generating shade variations:", error);
               // Fallback to repeating base color or default grey
               return Array(count).fill(baseColorHex || '#cccccc');
           }
@@ -2693,7 +2716,7 @@ retryApiCall(findRecordApiCall)
 
     // Merges existing topic shells with newly generated ones, preserving card arrays
     function mergeTopicShells(existingShells, newShells) {
-        console.log(`[Merge Shells] Merging ${existingShells.length} existing with ${newShells.length} new shells.`);
+        dlog(`[Merge Shells] Merging ${existingShells.length} existing with ${newShells.length} new shells.`);
         const finalShells = [];
         const existingMap = new Map();
          // Ensure existing shells are valid objects with IDs before adding to map
@@ -2701,7 +2724,7 @@ retryApiCall(findRecordApiCall)
              if (shell && typeof shell === 'object' && shell.id) {
                  existingMap.set(shell.id, shell);
              } else {
-                  console.warn("[Merge Shells] Skipping invalid existing shell:", shell);
+                  dwarn("[Merge Shells] Skipping invalid existing shell:", shell);
              }
          });
 
@@ -2710,7 +2733,7 @@ retryApiCall(findRecordApiCall)
         // Process new shells: update existing or add if new
         newShells.forEach(newShell => {
             if (!newShell || !newShell.id) {
-                 console.warn("[Merge Shells] Skipping invalid new shell:", newShell);
+                 dwarn("[Merge Shells] Skipping invalid new shell:", newShell);
                 return; // Skip invalid shells
             }
 
@@ -2730,7 +2753,7 @@ retryApiCall(findRecordApiCall)
                  if (stdMergedArray.length > 0) {
                     finalShells.push(stdMergedArray[0]);
                  } else {
-                      console.warn(`[Merge Shells] Failed to standardize merged shell for ID: ${newShell.id}`);
+                      dwarn(`[Merge Shells] Failed to standardize merged shell for ID: ${newShell.id}`);
                  }
             } else {
                 // Add new shell (it should already be standardized)
@@ -2746,13 +2769,13 @@ retryApiCall(findRecordApiCall)
                  const stdExistingArray = standardizeCards([existingShell]);
                  if (stdExistingArray.length > 0) {
                      finalShells.push(stdExistingArray[0]);
-                      console.log(`[Merge Shells] Kept existing shell not present in new list: ${id}`);
+                      dlog(`[Merge Shells] Kept existing shell not present in new list: ${id}`);
                  } else {
-                     console.warn(`[Merge Shells] Failed to standardize existing shell being kept: ${id}`);
+                     dwarn(`[Merge Shells] Failed to standardize existing shell being kept: ${id}`);
                  }
             }
         });
-         console.log(`[Merge Shells] Final shell count: ${finalShells.length}`);
+         dlog(`[Merge Shells] Final shell count: ${finalShells.length}`);
         return finalShells;
     }
 
@@ -2767,10 +2790,10 @@ retryApiCall(findRecordApiCall)
 
 // Handle request to delete a subject
 async function handleDeleteSubjectRequest(data, iframeWindow) {
-console.log("[Knack Script] Handling DELETE_SUBJECT request", data);
+dlog("[Knack Script] Handling DELETE_SUBJECT request", data);
 
 if (!data || !data.recordId || !data.subject) {
-    console.error("[Knack Script] DELETE_SUBJECT request missing recordId or subject name");
+    derr("[Knack Script] DELETE_SUBJECT request missing recordId or subject name");
     if (iframeWindow) iframeWindow.postMessage({ 
         type: 'DELETE_SUBJECT_RESULT', 
         success: false, 
@@ -2804,7 +2827,7 @@ try {
             item && item.subject !== data.subject
         );
     } catch (e) {
-        console.error("[Knack Script] Error processing card bank during subject deletion:", e);
+        derr("[Knack Script] Error processing card bank during subject deletion:", e);
         // Continue with empty array if parsing failed
         bankData = [];
     }
@@ -2822,7 +2845,7 @@ try {
             list && list.subject !== data.subject
         );
     } catch (e) {
-        console.error("[Knack Script] Error processing topic lists during subject deletion:", e);
+        derr("[Knack Script] Error processing topic lists during subject deletion:", e);
         topicLists = [];
     }
     
@@ -2839,7 +2862,7 @@ try {
             delete colorMapping[data.subject];
         }
     } catch (e) {
-        console.error("[Knack Script] Error processing color mapping during subject deletion:", e);
+        derr("[Knack Script] Error processing color mapping during subject deletion:", e);
         colorMapping = {};
     }
     
@@ -2868,7 +2891,7 @@ try {
         preserveFields: true // Preserve other fields not included here
     });
     
-    console.log(`[Knack Script] Successfully deleted subject: ${data.subject}`);
+    dlog(`[Knack Script] Successfully deleted subject: ${data.subject}`);
     
     // 6. Send success response
     if (iframeWindow) {
@@ -2882,7 +2905,7 @@ try {
     
 } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[Knack Script] Error deleting subject ${data.subject}:`, errorMessage);
+    derr(`[Knack Script] Error deleting subject ${data.subject}:`, errorMessage);
     
     // Send error response
     if (iframeWindow) {
@@ -2898,10 +2921,10 @@ try {
 
 // Handle request to delete a topic
 async function handleDeleteTopicRequest(data, iframeWindow) {
-console.log("[Knack Script] Handling DELETE_TOPIC request", data);
+dlog("[Knack Script] Handling DELETE_TOPIC request", data);
 
 if (!data || !data.recordId || !data.subject || !data.topic) {
-    console.error("[Knack Script] DELETE_TOPIC request missing recordId, subject name, or topic name");
+    derr("[Knack Script] DELETE_TOPIC request missing recordId, subject name, or topic name");
     if (iframeWindow) iframeWindow.postMessage({ 
         type: 'DELETE_TOPIC_RESULT', 
         success: false, 
@@ -2937,7 +2960,7 @@ try {
               item.topic === data.topic)
         );
     } catch (e) {
-        console.error("[Knack Script] Error processing card bank during topic deletion:", e);
+        derr("[Knack Script] Error processing card bank during topic deletion:", e);
         // Continue with empty array if parsing failed
         bankData = [];
     }
@@ -2970,7 +2993,7 @@ try {
             return list; // Return other lists unchanged
         });
     } catch (e) {
-        console.error("[Knack Script] Error processing topic lists during topic deletion:", e);
+        derr("[Knack Script] Error processing topic lists during topic deletion:", e);
         topicLists = [];
     }
     
@@ -2990,7 +3013,7 @@ try {
             delete colorMapping[data.subject].topics[data.topic];
         }
     } catch (e) {
-        console.error("[Knack Script] Error processing color mapping during topic deletion:", e);
+        derr("[Knack Script] Error processing color mapping during topic deletion:", e);
         colorMapping = {};
     }
     
@@ -3019,7 +3042,7 @@ try {
         preserveFields: true // Preserve other fields not included here
     });
     
-    console.log(`[Knack Script] Successfully deleted topic: ${data.topic} from subject: ${data.subject}`);
+    dlog(`[Knack Script] Successfully deleted topic: ${data.topic} from subject: ${data.subject}`);
     
     // 6. Send success response
     if (iframeWindow) {
@@ -3034,7 +3057,7 @@ try {
     
 } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[Knack Script] Error deleting topic ${data.topic} from subject ${data.subject}:`, errorMessage);
+    derr(`[Knack Script] Error deleting topic ${data.topic} from subject ${data.subject}:`, errorMessage);
     
     // Send error response
     if (iframeWindow) {
@@ -3074,7 +3097,7 @@ try {
         entry && entry.cardId && remainingCardIds.has(entry.cardId)
     );
 } catch (e) {
-    console.error("[Knack Script] Error processing SR box for deletion:", e);
+    derr("[Knack Script] Error processing SR box for deletion:", e);
     return []; // Return empty array on error
 }
 }
@@ -3122,7 +3145,7 @@ function assignSubjectColorPalette(subject, colorMapping) {
               mapping[subject].topics = {};
           }
       }
-      console.log(`[Knack Script] Assigned color ${baseColor} to subject: ${subject}`);
+      dlog(`[Knack Script] Assigned color ${baseColor} to subject: ${subject}`);
   }
   
   return mapping;
@@ -3131,7 +3154,7 @@ function assignSubjectColorPalette(subject, colorMapping) {
 // Helper to ensure colorMapping has the correct structure
 function ensureValidColorMapping(colorMapping) {
   if (!colorMapping || typeof colorMapping !== 'object') {
-      console.log("[Knack Script] Creating new colorMapping object.");
+      dlog("[Knack Script] Creating new colorMapping object.");
       return {}; // Return empty object if invalid
   }
   
@@ -3144,7 +3167,7 @@ function ensureValidColorMapping(colorMapping) {
       
       // Convert string values to proper structure
       if (typeof subjectData === 'string') {
-          console.log(`[Knack Script] Converting string color value for ${subject} to proper structure.`);
+          dlog(`[Knack Script] Converting string color value for ${subject} to proper structure.`);
           updatedMapping[subject] = {
               base: subjectData,
               topics: {}
@@ -3153,17 +3176,17 @@ function ensureValidColorMapping(colorMapping) {
       // Ensure each subject has 'base' and 'topics' properties
       else if (typeof subjectData === 'object' && subjectData !== null) {
           if (!subjectData.base) {
-              console.log(`[Knack Script] Adding default base color for ${subject}.`);
+              dlog(`[Knack Script] Adding default base color for ${subject}.`);
               subjectData.base = '#f0f0f0'; // Default base color
           }
           if (!subjectData.topics || typeof subjectData.topics !== 'object') {
-              console.log(`[Knack Script] Creating topics object for ${subject}.`);
+              dlog(`[Knack Script] Creating topics object for ${subject}.`);
               subjectData.topics = {};
           }
       }
       // Replace invalid values with proper structure
       else {
-          console.log(`[Knack Script] Replacing invalid value for ${subject} with proper structure.`);
+          dlog(`[Knack Script] Replacing invalid value for ${subject} with proper structure.`);
           updatedMapping[subject] = {
               base: '#f0f0f0', // Default base color
               topics: {}
