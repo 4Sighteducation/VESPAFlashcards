@@ -41,21 +41,52 @@
 
 .video-modal-content h3 {
   margin-top: 0;
-  margin-bottom: 15px;
+  margin-bottom: 20px; /* Increased margin */
   color: #333;
   text-align: center;
 }
 
-.video-container {
-  margin-bottom: 20px; /* Space below video */
-  background-color: #000; /* Black background for letterboxing */
-  border-radius: 4px;
-  overflow: hidden; /* Ensures iframe respects border-radius */
+/* Removed .video-container styles as iframe is gone */
+
+/* Styles for the new video placeholder and play button */
+.video-placeholder-section {
+  text-align: center;
+  padding: 20px 0;
+  margin-bottom: 25px;
 }
 
-/* Responsive iframe container */
-.video-container iframe {
-  display: block; /* Removes bottom space under iframe */
+.video-placeholder-section p {
+  margin-bottom: 15px;
+  font-size: 1rem;
+  color: #555;
+}
+
+.modal-play-video-btn {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600; /* Bolder */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1.05rem; /* Slightly larger */
+  background-color: #079baa; /* Main app button color */
+  color: white;
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.2);
+  border-bottom: 3px solid #007c8b; /* Darker shade for depth */
+  display: inline-flex; /* To align icon and text nicely */
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-play-video-btn:hover {
+  background-color: #068998; /* Darker on hover */
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
+}
+
+.modal-play-video-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 /* Styles for the QR code section in the VideoTutorialModal */

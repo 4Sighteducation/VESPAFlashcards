@@ -8,10 +8,11 @@ const VideoTutorialModal = ({ isOpen, onClose, videoId = "fUYd2Z6" }) => {
     return null;
   }
 
-  const currentVideo = {
-    id: videoId,
-    title: "Welcome to VESPA Flashcards!",
-    embedUrl: `https://muse.ai/embed/${videoId}?links=0` // For the iframe
+  const videoWatchUrl = `https://muse.ai/embed/${videoId}?links=0`; // Using embed URL directly, can be changed to a specific /watch URL
+  const videoTitle = "Welcome to VESPA Flashcards!";
+
+  const handlePlayVideo = () => {
+    window.open(videoWatchUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -20,19 +21,15 @@ const VideoTutorialModal = ({ isOpen, onClose, videoId = "fUYd2Z6" }) => {
         <button className="video-modal-close-btn" onClick={onClose}>
           &times;
         </button>
-        <h3>{currentVideo.title}</h3>
-        <div className="video-container">
-          {/* Switched back to iframe embed */}
-          <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', maxWidth: '100%' }}>
-            <iframe
-              src={currentVideo.embedUrl}
-              style={{ width: '100%', height: '100%', position: 'absolute', left: 0, top: 0 }}
-              frameBorder="0"
-              allowFullScreen // Standard attribute for fullscreen
-              title={currentVideo.title}
-            ></iframe>
-          </div>
+        <h3>{videoTitle}</h3>
+        
+        <div className="video-placeholder-section">
+          <p>Click the button below to watch our quick welcome tutorial!</p>
+          <button className="modal-play-video-btn" onClick={handlePlayVideo}>
+            🎬 Watch Welcome Tutorial
+          </button>
         </div>
+
         <div className="qr-code-section">
           <h4>Get the Mobile App!</h4>
           <img src={qrCodeImageFromFile} alt="Download Mobile App QR Code" className="qr-code-image" />
