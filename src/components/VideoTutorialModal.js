@@ -8,7 +8,8 @@ const VideoTutorialModal = ({ isOpen, onClose, videoId = "fUYd2Z6" }) => {
     return null;
   }
 
-  const videoWatchUrl = `https://muse.ai/embed/${videoId}?links=0`; // Using embed URL directly, can be changed to a specific /watch URL
+  // Use the direct video content URL provided by the user
+  const videoWatchUrl = `https://muse.ai/vc/${videoId}`;
   const videoTitle = "Welcome to VESPA Flashcards!";
 
   const handlePlayVideo = () => {
