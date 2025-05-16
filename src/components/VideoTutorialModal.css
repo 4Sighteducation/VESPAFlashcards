@@ -58,6 +58,36 @@
   display: block; /* Removes bottom space under iframe */
 }
 
+/* Styles for the QR code section in the VideoTutorialModal */
+.qr-code-section {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  text-align: center;
+}
+
+.qr-code-section h4 {
+  margin-bottom: 12px;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.qr-code-image {
+  max-width: 160px; /* Slightly larger */
+  height: auto;
+  margin-bottom: 8px;
+  border: 1px solid #ccc;
+  padding: 6px;
+  border-radius: 6px;
+  background-color: #fff; /* Ensure QR is clear if modal bg changes */
+}
+
+.qr-code-section p {
+  font-size: 0.95rem;
+  color: #555;
+  margin-top: 0;
+}
+
 /* Future playlist styling (example) */
 .video-playlist {
   margin-top: 20px;

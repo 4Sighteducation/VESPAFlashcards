@@ -34,10 +34,8 @@
 
 .header-nav {
   display: flex;
-  justify-content: center;
   align-items: center;
   gap: 0.75rem;
-  margin: 0 auto;
 }
 
 .nav-button {
@@ -144,83 +142,131 @@
 
 /* Mobile menu toggle styling */
 .mobile-menu-toggle {
-  display: none;
+  display: none; /* Hidden by default, shown in media query */
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 24px; /* Adjust as needed */
   cursor: pointer;
   color: white;
+  padding: 0.5rem;
+  margin-left: auto; /* Pushes it to the right if other items are in its container */
+}
+
+.header-mobile-menu-toggle-container {
+  display: none; /* Hidden by default, shown in media query for layout control */
+  order: 1; /* To position it after the app title on mobile */
+  margin-left: auto; /* Pushes toggle to the right */
+}
+
+/* header-nav is now the primary container for actions on both desktop and mobile */
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  /* On desktop, it will be a row. On mobile, it becomes a column. */
 }
 
 /* Mobile styling */
 @media (max-width: 768px) {
   .header {
     flex-wrap: wrap;
-    padding: 0.75rem;
-    justify-content: space-between;
+    justify-content: space-between; /* app-title and toggle container */
   }
-  
+
   .app-title {
-    font-size: 1.2rem;
+    /* app-title styles for mobile remain similar */
     order: 0;
   }
-  
-  .app-title h1 {
-    font-size: 1.1rem;
-  }
-  
-  .logo {
-    height: 28px;
-  }
-  
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .mobile-menu-toggle {
-    display: block;
-    order: 1;
-  }
-  
+
   .header-mobile-menu-toggle-container {
-    order: 1;
-    margin-left: auto;
+    display: flex; /* Show the container for the toggle */
   }
-  
-  .header-visible-actions {
-    order: 2;
-    flex-basis: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    margin-top: 10px;
-    gap: 10px;
+
+  .mobile-menu-toggle {
+    display: block; /* Show the toggle button */
   }
-  
-  .header-visible-actions .nav-button {
-    width: 100%; 
-    margin-bottom: 5px; 
-    box-sizing: border-box; 
-    line-height: 1.5;      
-    padding: 6px 12px; 
-    font-size: 13px;   
-  }
-  
+
+  /* header-nav becomes the full-width dropdown menu */
   .header-nav {
     flex-basis: 100%;
     flex-direction: column;
+    align-items: stretch; /* Make buttons take full width */
     gap: 10px;
-    margin-top: 15px;
-    display: none;
+    margin-top: 10px;
+    padding: 10px 0; /* Add some padding when open */
+    background-color: #052b80; /* Slightly darker shade for open menu, or match header */
+    border-top: 1px solid #073dc2; /* Separator */
+    display: none; /* Hidden by default */
   }
-  
+
   .header-nav.open {
-    display: flex;
+    display: flex; /* Show when open */
+  }
+
+  .header-nav .nav-button,
+  .header-nav .box-selectors-container /* Ensure box selectors also stack well */
+  {
+    width: 100%;
+    margin-bottom: 8px;
+    box-sizing: border-box;
   }
   
-  .nav-button, .print-button {
-    width: 100%;
+  .header-nav .box-selectors-container .header-box-selectors {
+    flex-direction: column; /* Stack box buttons vertically */
+    align-items: stretch;
+  }
+
+  .header-nav .box-selectors-container .box-selector {
+     width: 100%; /* Make individual box selectors full width */
+     margin-bottom: 5px;
+  }
+
+  .header-nav .box-selectors-label {
+    text-align: center; /* Center label */
+    margin-bottom: 8px;
+  }
+
+  /* Hide the old .header-visible-actions if it exists and was not removed from JSX */
+  .header-visible-actions {
+    display: none !important; /* Ensure it's hidden on mobile */
+  }
+}
+
+/* Desktop styles (ensure nav items are in a row if not already default) */
+@media (min-width: 769px) {
+  .header-nav {
+    flex-direction: row; /* Explicitly row for desktop */
+    flex-basis: auto;
+    margin-top: 0;
+    padding: 0;
+    background-color: transparent;
+    border-top: none;
+    display: flex !important; /* Ensure it's visible */
+  }
+
+  .header-mobile-menu-toggle-container,
+  .mobile-menu-toggle {
+    display: none !important; /* Hide hamburger on desktop */
+  }
+}
+
+/* Ensure save button styling is applied correctly within header-nav if needed */
+.header-nav > .nav-button[title="Save All Changes"] { 
+  /* Adjust if save button needs distinct styling from other nav-buttons */
+}
+
+.header-nav > .nav-button[title="Save All Changes"]:hover {
+  /* Adjust hover style if needed */
+}
+
+/* Make sure the .header-box-selectors-container within .header-nav on desktop is row-flexed */
+@media (min-width: 769px) {
+  .header-nav .header-box-selectors-container {
+    flex-direction: column; 
+    align-items: center; 
+  }
+  .header-nav .header-box-selectors-container .header-box-selectors {
+    flex-direction: row; 
   }
 }
 
@@ -352,95 +398,3 @@
 .header-visible-actions .save-button {
   flex-shrink: 0;
 }
-
-.header-mobile-menu-toggle-container {
-  /* Simple container for the toggle, no specific styles needed unless for positioning */
-  /* display: flex; to align if there were multiple items */
-}
-
-@media (max-width: 768px) {
-  .card-stats {
-    font-size: 0.7rem;
-    gap: 5px;
-    flex-wrap: wrap;
-  }
-}
-
-/* Target Save All button with specificity for color changes, but keep its original dimensions */
-.header-visible-actions .save-button {
-  /* Color changes to match nav-button */
-  background-color: #079baa; 
-  color: white;
-  border-bottom: 3px solid #00e5db;
-
-  /* Original dimensions & other properties from .save-button */
-  padding: 10px 20px;
-  border-left: none; /* Assuming no other borders were intended besides bottom */
-  border-right: none;
-  border-top: none;
-  border-radius: 5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 16px;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25); /* Original box-shadow */
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  width: auto;
-  min-width: 130px; 
-  text-align: center;
-}
-
-.header-visible-actions .save-button:hover {
-  background-color: #068998; /* Hover to match nav-button hover */
-  /* Keep original transform and shadow from .save-button:hover if they were different */
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
-}
-
-.header-visible-actions .save-button:disabled {
-  background-color: #cccccc; /* Standard disabled color */
-  color: #666666; /* Standard disabled text color */
-  cursor: not-allowed;
-  border-bottom: 3px solid #aaaaaa; /* Optional: adjust disabled border */
-  box-shadow: none;
-  transform: none;
-}
-
-/* Remove the general .save-button rule if all its aspects are covered above or by .nav-button on mobile */
-/* For now, I will comment it out to ensure the specific one takes precedence */
-
-/*
-.save-button {
-  background-color: #00e5db; 
-  color: #06206e;       
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 16px;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
-  border-bottom: 3px solid #153aa3; 
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  width: auto;
-  min-width: 130px;
-}
-
-.save-button:hover {
-  background-color: #00cec9; 
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
-}
-
-.save-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-*/

@@ -124,8 +124,20 @@ const Header = ({
         </div>
       </div>
 
-      {/* Wrapper for always-visible actions */}
-      <div className="header-visible-actions">
+      {/* Hamburger toggle - REINSTATED */}
+      <div className="header-mobile-menu-toggle-container">
+        <button 
+          className="mobile-menu-toggle" 
+          onClick={toggleMobileMenu}
+          aria-label="Toggle menu"
+          aria-expanded={mobileMenuOpen}
+        >
+          {mobileMenuOpen ? '✕' : '☰'} {/* Change icon based on state */}
+        </button>
+      </div>
+
+      {/* Navigation items - will be hidden on desktop and shown in menu on mobile */}
+      <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
         {/* Always visible View Toggle Button */}
         <button
           className={`nav-button toggle-view-btn`}
@@ -176,25 +188,14 @@ const Header = ({
           </button>
         )}
 
+        {/* Spaced Repetition Box Selectors - also moved into nav for mobile */}
         {isInSpacedRep && renderBoxSelectors()}
       </div>
       
-      {/* Hamburger toggle - REMOVED */}
+      {/* Wrapper for always-visible actions - THIS WILL BE HIDDEN ON MOBILE and its contents moved to header-nav */}
       {/* 
-      <div className="header-mobile-menu-toggle-container">
-        <button 
-          className="mobile-menu-toggle" 
-          onClick={toggleMobileMenu}
-          aria-label="Toggle menu"
-        >
-          ☰
-        </button>
-      </div>
-      */}
-
-      {/* Hamburger menu content - REMOVED */}
-      {/* 
-      <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
+      <div className="header-visible-actions">
+       // ... content previously here is now in header-nav ...
       </div>
       */}
     </header>
