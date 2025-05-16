@@ -14,6 +14,7 @@ import FlashcardGeneratorBridge from './components/FlashcardGeneratorBridge';
 import PrintModal from './components/PrintModal';
 import TopicListSyncManager from './components/TopicListSyncManager';
 import TopicCreationModal from './components/TopicCreationModal';
+import VideoTutorialModal from './components/VideoTutorialModal'; // Added import
 import { WebSocketProvider } from './contexts/WebSocketContext'; // Corrected import path
 import { 
   initializeAuthManager, 
@@ -38,6 +39,7 @@ import {
   ensureValidColorMapping,
   BRIGHT_COLORS // Import BRIGHT_COLORS
 } from './utils/ColorUtils';
+import { generateId } from './utils/UnifiedDataModel'; // Make sure this import exists or is added
 
 
 // API Keys and constants
@@ -113,6 +115,10 @@ function App() {
 
   // App view state
   const [view, setView] = useState("cardBank"); // cardBank, createCard, spacedRepetition
+
+  // Video Modal State
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [currentVideoId, setCurrentVideoId] = useState("fUYd2Z6"); // Default intro video
 
   const appInstanceRef = useRef(null);
   const localStorageDataTimestampRef = useRef(null); // For storing timestamp of localStorage data
@@ -885,6 +891,8 @@ function App() {
     }
   }, [auth, recordId, allCards, subjectColorMapping, spacedRepetitionData, userTopics, topicLists, topicMetadata, isSaving, saveToLocalStorage, showStatus, ensureRecordId, loadCombinedData]);
 
+
+  
   // Generate a random vibrant color
   const getRandomColor = useCallback(() => {
     // Default bright colors palette
@@ -976,14 +984,194 @@ function App() {
 );
 
 
-  // Function to refresh subject and topic colors
-  // Removed unused refreshSubjectAndTopicColors useCallback
+const addTopicShell = useCallback((newShellObject) => {
+  dlog("[App.js addTopicShell] Adding new shell:", newShellObject);
+  if (!newShellObject || !newShellObject.subject || !newShellObject.topic) {
+    derr("[App.js addTopicShell] Invalid shell object received.");
+    showStatus("Error: Could not add topic due to invalid data.");
+    return;
+  }
+  const finalShell = {
+    ...newShellObject,
+    id: newShellObject.id || generateId('topic'), 
+    updatedAt: new Date().toISOString(),
+    topicPriority: newShellObject.topicPriority !== undefined ? newShellObject.topicPriority : 3, 
+    type: 'topic',
+    isShell: true,
+    isEmpty: true,
+    cards: [], 
+    question: '', 
+    answer: '',
+    keyPoints: [],
+    detailedAnswer: '',
+    additionalInfo: '',
+    options: [],
+    savedOptions: [],
+    correctAnswer: '',
+    // Ensure other necessary fields from your schema are present with defaults if needed
+    examBoard: newShellObject.examBoard || 'General',
+    examType: newShellObject.examType || 'Course',
+    cardColor: newShellObject.cardColor || '#cccccc',
+    subjectColor: newShellObject.subjectColor || '#cccccc',
+    topicColor: newShellObject.topicColor || newShellObject.cardColor || '#cccccc',
+    createdAt: newShellObject.createdAt || new Date().toISOString(),
+  };
 
-  // Generate a color for a subject or topic - MOVED EARLIER IN THE FILE
-  // This function has been moved to line ~250 to fix initialization order
+  setAllCards(prevAllCards => {
+    if (prevAllCards.some(card => card.id === finalShell.id)) {
+      dwarn(`[App.js addTopicShell] Duplicate topic shell ID detected: ${finalShell.id}. Not adding.`);
+      showStatus("Topic with this ID already exists."); // User feedback
+      return prevAllCards;
+    }
+    const updatedCards = [...prevAllCards, finalShell];
+    dlog("[App.js addTopicShell] Updated allCards state with new shell. Total items:", updatedCards.length);
+    return updatedCards;
+  });
 
-  // Cards and data operations - these depend on the above functions
-  // Load data from localStorage with enhanced error recovery
+  setTopicLists(prevTopicLists => {
+    const subjectName = finalShell.subject;
+    const existingListIndex = prevTopicLists.findIndex(list => list.subject === subjectName);
+    let newTopicLists = [...prevTopicLists];
+    const newTopicEntryForList = {
+      id: finalShell.id,
+      name: finalShell.topic,
+      examBoard: finalShell.examBoard || '',
+      examType: finalShell.examType || '',
+      color: finalShell.topicColor || finalShell.cardColor || '#cccccc',
+      subjectColor: finalShell.subjectColor || '#cccccc'
+    };
+    if (existingListIndex >= 0) {
+      const currentList = newTopicLists[existingListIndex];
+      const currentTopicsInList = Array.isArray(currentList.topics) ? currentList.topics : [];
+      if (!currentTopicsInList.some(t => t.id === newTopicEntryForList.id)) {
+        newTopicLists[existingListIndex] = {
+          ...currentList,
+          topics: [...currentTopicsInList, newTopicEntryForList]
+        };
+      }
+    } else {
+      newTopicLists.push({
+        subject: subjectName,
+        topics: [newTopicEntryForList],
+        color: finalShell.subjectColor || (subjectColorMapping && subjectColorMapping[subjectName]?.base) || getRandomColor()
+      });
+    }
+    dlog("[App.js addTopicShell] Updated topicLists state.");
+    return newTopicLists;
+  });
+
+  setTimeout(() => {
+    dlog("[App.js addTopicShell] Calling saveData after adding new shell.");
+    saveData(null, true); 
+  }, 250); 
+
+  showStatus(`Topic "${finalShell.topic}" added to ${finalShell.subject}.`);
+
+}, [saveData, showStatus, subjectColorMapping, getRandomColor, generateId, setAllCards, setTopicLists]); // Added setAllCards, setTopicLists
+
+const handleDeleteTopicFromApp = useCallback(async (subjectName, topicNameOrId) => {
+  dlog(`[App.js handleDeleteTopicFromApp] Deleting topic: '${topicNameOrId}' from subject: '${subjectName}'`);
+  
+  let topicNameToDelete = topicNameOrId;
+  // Try to find the canonical topic name using ID if an ID was passed
+  const foundTopicFromAllCards = allCards.find(item => item.id === topicNameOrId && item.subject === subjectName && (item.type === 'topic' || item.isShell === true));
+  
+  if (foundTopicFromAllCards && foundTopicFromAllCards.topic) {
+    topicNameToDelete = foundTopicFromAllCards.topic; 
+    dlog(`[App.js handleDeleteTopicFromApp] Resolved ID '${topicNameOrId}' to topic name '${topicNameToDelete}'`);
+  } else {
+    // If not found by ID, assume topicNameOrId is the name (for broader compatibility if ID isn't always available)
+    dlog(`[App.js handleDeleteTopicFromApp] Using provided name/ID '${topicNameOrId}' directly as topic name for filtering.`);
+  }
+
+  // Collect IDs of actual flashcards belonging to the topic to be deleted
+  const cardsOfDeletedTopicIds = allCards
+    .filter(c => c.subject === subjectName && c.topic === topicNameToDelete && c.type !== 'topic' && !c.isShell)
+    .map(c => c.id);
+
+  dlog(`[App.js handleDeleteTopicFromApp] Will remove ${cardsOfDeletedTopicIds.length} flashcards associated with topic '${topicNameToDelete}'. IDs:`, cardsOfDeletedTopicIds);
+
+  // Filter out the topic shell itself and all its associated flashcards from allCards
+  setAllCards(prevAllCards => 
+    prevAllCards.filter(item => 
+      !(item.subject === subjectName && 
+        ( (item.topic === topicNameToDelete && (item.type === 'topic' || item.isShell === true)) || // Matches the shell
+          (item.topic === topicNameToDelete && item.type !== 'topic' && !item.isShell)             // Matches cards of that topic
+        )
+      )
+    )
+  );
+
+  setTopicLists(prevTopicLists => 
+    prevTopicLists.map(list => {
+      if (list.subject === subjectName) {
+        return {
+          ...list,
+          // Filter topics from the list by name or ID
+          topics: list.topics.filter(t => t.name !== topicNameToDelete && t.id !== topicNameOrId)
+        };
+      }
+      return list;
+    // Remove the subject from topicLists if it no longer has any topics after this deletion
+    }).filter(list => list.subject !== subjectName || list.topics.length > 0) 
+  );
+  
+  // Update Spaced Repetition: Remove cards belonging to the deleted topic
+  setSpacedRepetitionData(prevSRData => {
+    const newSRData = JSON.parse(JSON.stringify(prevSRData)); // Deep clone
+    for (let i = 1; i <= 5; i++) {
+      const boxKey = `box${i}`;
+      if (newSRData[boxKey]) {
+        newSRData[boxKey] = newSRData[boxKey].filter(item => !cardsOfDeletedTopicIds.includes(item.cardId || item));
+      }
+    }
+    return newSRData;
+  });
+
+  setTimeout(() => {
+    saveData(null, true); 
+  }, 150); // Slight delay for state updates
+
+  showStatus(`Topic "${topicNameToDelete}" and its cards deleted from ${subjectName}.`);
+}, [allCards, saveData, showStatus, setAllCards, setTopicLists, setSpacedRepetitionData]); // Ensure all dependencies
+
+
+const updateTopicShellPriority = useCallback((topicId, newPriority, subjectName) => { // Added subjectName for logging clarity
+  dlog(`[App.js updateTopicShellPriority] Updating priority for topic ID: '${topicId}' in subject '${subjectName}' to ${newPriority}`);
+  
+  let cardUpdated = false;
+  setAllCards(prevAllCards => {
+    const updatedCards = prevAllCards.map(item => {
+      if (item.id === topicId && (item.type === 'topic' || item.isShell === true)) {
+        cardUpdated = true;
+        return { ...item, topicPriority: newPriority, updatedAt: new Date().toISOString() };
+      }
+      return item;
+    });
+    if (cardUpdated) {
+       dlog(`[App.js updateTopicShellPriority] Priority updated in allCards state for topic ID: ${topicId}`);
+    } else {
+       dwarn(`[App.js updateTopicShellPriority] Topic shell with ID ${topicId} not found in allCards.`);
+    }
+    return updatedCards;
+  });
+
+  // Optionally, if your topicLists also store priority directly (though less likely needed if cards is source of truth)
+  // setTopicLists(prevTopicLists => ... ); 
+
+  if (cardUpdated) {
+      setTimeout(() => {
+        dlog("[App.js updateTopicShellPriority] Calling saveData after updating priority.");
+        saveData(null, true); // Save with preserveFields true
+      }, 100);
+      showStatus(`Priority updated for topic.`);
+  } else {
+      showStatus(`Could not find topic to update priority.`);
+  }
+
+}, [setAllCards, saveData, showStatus]); // Dependencies
+
+// Load data from localStorage with enhanced error recovery
   const loadFromLocalStorage = useCallback(() => {
     try {
       // First try to load the new versioned data format
@@ -2936,6 +3124,13 @@ useEffect(() => {
       // ... (implementation as before, ensuring it calls loadCombinedData) ...
       dlog("[App useEffect Initial Load] Triggering initial data load.");
       loadCombinedData('initial mount');
+      
+      // Check for first-time video view
+      const hasSeenVideo = localStorage.getItem('hasSeenIntroVideo');
+      if (!hasSeenVideo) {
+        dlog("[App useEffect Initial Load] First time user or video not seen. Opening video modal.");
+        setIsVideoModalOpen(true);
+      }
       // Example: Placeholder if not already implemented
       // if (!hasLoadedInitialData.current) {
       //  dlog("[App useEffect Initial Load] Calling loadCombinedData.");
@@ -3022,6 +3217,21 @@ useEffect(() => {
   // --- Early returns for loading/error --- 
   // ...
 
+  const openVideoModal = (videoId = "fUYd2Z6") => {
+    setCurrentVideoId(videoId);
+    setIsVideoModalOpen(true);
+  };
+
+  const closeVideoModal = () => {
+    setIsVideoModalOpen(false);
+    // Set flag in localStorage so it doesn't open automatically next time
+    const hasSeenVideo = localStorage.getItem('hasSeenIntroVideo');
+    if(!hasSeenVideo) {
+        localStorage.setItem('hasSeenIntroVideo', 'true');
+        dlog("[Video Modal] User has now seen the intro video. Flag set in localStorage.");
+    }
+  };
+
   // --- Main Return ---
   return (
     <WebSocketProvider> {/* Wrap the entire app content */}
@@ -3042,6 +3252,7 @@ useEffect(() => {
             onSelectBox={setCurrentBox}
             spacedRepetitionData={spacedRepetitionData}
             cardCounts={getCardCounts()} // Add this line to pass the counts
+            onOpenVideoModal={openVideoModal} // Pass the function to open video modal
           />
           
           {/* Temporarily hiding UserProfile */}
@@ -3180,6 +3391,9 @@ useEffect(() => {
                       propagateSaveToBridge={propagateSaveToBridge} // Pass the new function
                       // -------------------------------------------
                       handleSaveTopicShells={handleSaveTopicShellsAndRefresh} // Pass the new function
+                      onAddTopicShell={addTopicShell} // <<< PASS THE NEW FUNCTION HERE
+                      onDeleteTopicProp={handleDeleteTopicFromApp} // Pass the new handler
+                      onUpdateTopicPriorityProp={updateTopicShellPriority} // <<< ADD THIS PROP
                     />
                   )}
                 </div>
@@ -3243,6 +3457,13 @@ useEffect(() => {
               recordId={recordId}
             />
           )}
+
+          {/* Render the VideoTutorialModal */}
+          <VideoTutorialModal
+            isOpen={isVideoModalOpen}
+            onClose={closeVideoModal}
+            videoId={currentVideoId}
+          />
         </>
       )}
     </div>

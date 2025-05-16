@@ -1,0 +1,87 @@
+.video-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050; /* Higher than header */
+}
+
+.video-modal-content {
+  background-color: #fff;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 800px; /* Adjust as needed */
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.video-modal-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #555;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.video-modal-close-btn:hover {
+  color: #000;
+}
+
+.video-modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+  text-align: center;
+}
+
+.video-container {
+  margin-bottom: 20px; /* Space below video */
+  background-color: #000; /* Black background for letterboxing */
+  border-radius: 4px;
+  overflow: hidden; /* Ensures iframe respects border-radius */
+}
+
+/* Responsive iframe container */
+.video-container iframe {
+  display: block; /* Removes bottom space under iframe */
+}
+
+/* Future playlist styling (example) */
+.video-playlist {
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 15px;
+}
+
+.video-playlist h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #444;
+}
+
+.video-playlist ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.video-playlist li {
+  padding: 8px 0;
+  cursor: pointer;
+  color: #007bff;
+}
+
+.video-playlist li:hover {
+  text-decoration: underline;
+} 

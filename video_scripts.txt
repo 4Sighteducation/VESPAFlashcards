@@ -1,0 +1,350 @@
+VIDEO SCRIPT DRAFTS FOR VESPA FLASHCARDS
+
+--------------------------------------------------
+Script 1: Welcome - Main - General Overview
+--------------------------------------------------
+
+Length: Approx. 60 seconds
+Target Audience: First-time users
+Goal: Provide a complete overview of the app and its main functionalities.
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals: App logo with a welcoming animation, then transition to the main dashboard/card bank view (even if initially empty).
+Voiceover: "Welcome to VESPA Flashcards! Your smart way to create, manage, and master your study materials."
+
+(5-15 seconds)
+Visuals: Briefly pan across the main sections if visible (e.g., sidebar for subjects, main area for cards). If empty, show the button to create the first subject.
+Voiceover: "Whether you're prepping for exams or learning something new, we're here to help you organize your knowledge and boost your recall."
+
+(15-30 seconds)
+Visuals:
+- Quick shot of clicking a "Create Subject" or "Add New" button.
+- Show the Topic Creation Modal, quickly adding a subject and a couple of topics.
+- Briefly highlight the AI Topic Generator option.
+Voiceover: "Getting started is easy! Create subjects for your different courses or areas of study, then add your topics manually, or let our AI Topic Generator give you a head start."
+
+(30-45 seconds)
+Visuals:
+- Show a subject with a few topics listed.
+- Click on a topic, then quickly show the AI Card Generator interface.
+- Transition to a view of a few generated flashcards in the Card Bank.
+Voiceover: "Once you have your topics, you can instantly generate flashcards using our AI Card Generator, or create them manually. All your cards are neatly organized in your Card Bank."
+
+(45-55 seconds)
+Visuals:
+- Show the "Study Mode" or "Spaced Repetition" section icon/button.
+- Briefly show the boxes interface.
+Voiceover: "Ready to study? Our Spaced Repetition system helps you review cards at the optimal time, moving them through study boxes as you master them."
+
+(55-60 seconds)
+Visuals: End on a clean shot of the Card Bank, perhaps with a few colorful cards. App logo subtly in a corner.
+Voiceover: "Explore the features, create your first set of cards, and get ready to supercharge your learning. Let's get started!"
+
+--- SCRIPT END ---
+
+--------------------------------------------------
+Script 2: Creating Subjects & Topics (Topic Modal)
+--------------------------------------------------
+
+Length: Approx. 15-20 seconds
+Target Audience: Users learning to add their own content structure.
+Goal: Show how to open the Topic Creation Modal, add a subject, and add a few topics to it manually.
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals: Start in the Card Bank. Mouse clicks the "Create Topics" (or similar) button. The Topic Creation Modal opens.
+Voiceover: "Need to set up your study structure? Click 'Create Topics' to open the Topic Hub."
+
+(5-15 seconds)
+Visuals:
+- Inside the modal, type a new subject name (e.g., "Biology").
+- Click "Add Subject" (or how it's initiated).
+- Subject appears. Then, type a topic name (e.g., "Cell Structure") under that subject and add it.
+- Quickly add another topic (e.g., "Photosynthesis").
+Voiceover: "Here, you can easily add new subjects, and then list all the topics you need to cover for each one."
+
+(15-20 seconds)
+Visuals: Show the subject with its newly added topics in the modal. Click "Save" or "Done". Modal closes, and the new subject/topics are visible in the main Card Bank (if applicable).
+Voiceover: "Once you're done, save your list, and you're ready to add flashcards!"
+
+--- SCRIPT END ---
+
+--------------------------------------------------
+Script 3: AI Topic Generator (How it creates)
+--------------------------------------------------
+
+Length: Approx. 15-20 seconds
+Target Audience: Users who want a quick way to populate topics.
+Goal: Briefly show the AI Topic Generation feature within the Topic Creation Modal.
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals: Topic Creation Modal is open. A subject (e.g., "History") is already added or selected. Focus on the AI generation part of the modal.
+Voiceover: "Short on time or need ideas? Let our AI help generate your topic list!"
+
+(5-15 seconds)
+Visuals:
+- User types in a subject (if not already there) or confirms the selected one.
+- User might select an exam board/level if that's part of your AI prompt.
+- Click the "Generate with AI" button.
+- Show a brief "generating..." state, then the modal populates with a list of AI-suggested topics for that subject.
+Voiceover: "Just provide your subject, and our AI will suggest a comprehensive list of topics for you to review and use."
+
+(15-20 seconds)
+Visuals: User quickly scans the AI-generated topics, perhaps deselects one or two (if that's a feature), then clicks "Save" or "Add Topics."
+Voiceover: "Review the suggestions, make any tweaks, and add them to your subject instantly!"
+
+--- SCRIPT END ---
+
+--------------------------------------------------
+Script 4: Adding / Deleting Topics & Prioritising in Subject Hub
+--------------------------------------------------
+
+Length: Approx. 20-25 seconds
+Target Audience: Users wanting to manage topics within an existing subject.
+Goal: Show how to use the Subject Hub to add a new manual topic, delete a topic, and set a priority.
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals: Start in the Card Bank, with an existing subject visible. Mouse clicks the "Hub" icon (⚙️) on a subject header. The Subject Hub modal opens for that subject.
+Voiceover: "Need to manage topics for an existing subject? Click the Hub icon!"
+
+(5-12 seconds)
+Visuals: Inside the Subject Hub modal:
+- Scroll to the "Add New Topic" section. Type a new topic name (e.g., "Forgotten Concept"). Click "Add Topic".
+- Show the new topic appearing in the "Existing Topics" list.
+Voiceover: "In the Hub, you can easily add any new topics you've missed or thought of later."
+
+(12-20 seconds)
+Visuals:
+- Hover over a topic in the list, then click its "Delete" button. Show it being removed.
+- Click on the priority display of another topic (e.g., the brain icon and number). The priority editor appears.
+- Click a different priority (e.g., the fire icon 🔥 for level 5). The display updates.
+Voiceover: "Quickly delete topics you no longer need, and set priorities to focus your study sessions."
+
+(20-25 seconds)
+Visuals: Show the updated list of topics with the new priority. Click "Done". The modal closes.
+Voiceover: "Keep your topic lists perfectly organized and prioritized from the Subject Hub!"
+
+--- SCRIPT END ---
+
+--------------------------------------------------
+Script 5: Adding Flashcards - AI Card Generator
+--------------------------------------------------
+
+Length: Approx. 15-20 seconds
+Target Audience: Users ready to create flashcards.
+Goal: Show how to use the AI Card Generator for a specific topic.
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals: In the Card Bank, a subject and topics are visible. Mouse hovers over a topic, and a "Generate Cards" or lightning bolt (⚡) icon appears and is clicked. The AI Card Generator interface/modal opens, pre-filled with the subject and topic.
+Voiceover: "Ready to make flashcards? Select your topic and hit 'Generate Cards' to let AI do the heavy lifting!"
+
+(5-15 seconds)
+Visuals:
+- Briefly show the AI Card Generator options (e.g., number of cards, card types).
+- User clicks "Generate."
+- Show a "generating..." animation/message.
+- A list of newly generated flashcard previews appears within the generator.
+Voiceover: "Our AI will craft questions and answers for you. You can preview them, choose your card types, and decide how many you need."
+
+(15-20 seconds)
+Visuals: User clicks "Add to Bank" (or similar). Cards are shown being added to the Card Bank under the correct topic.
+Voiceover: "Add your new AI-generated flashcards to your bank with a single click!"
+
+--- SCRIPT END ---
+
+--------------------------------------------------
+Script 6: Types of Card / Card Information
+--------------------------------------------------
+
+Length: Approx. 15-20 seconds
+Target Audience: Users exploring flashcard details.
+Goal: Briefly show different card types (if distinct visual types like MCQs exist) and where to find card info (like the info button or detailed answer).
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals: Show a flashcard in the Card Bank. Zoom in slightly or highlight it. If you have visually distinct card types (e.g., a multiple-choice card looks different from a short-answer card on its face), show one.
+Voiceover: "Our flashcards are designed for clarity. You'll find different types to suit your learning style."
+
+(5-12 seconds)
+Visuals:
+- If showing a multiple-choice card, highlight the options.
+- Show the "front" (question) and then flip to the "back" (answer/key points/detailed answer).
+- Point out the "info" button (ℹ️) if it exists on the card.
+Voiceover: "From standard question & answer, to multiple choice, each card holds the key information you need."
+
+(12-20 seconds)
+Visuals:
+- If the info button was clicked, show the modal with "Additional Information" or "Detailed Answer."
+- Alternatively, if no info button, just show the back of the card clearly displaying where detailed answers or key points are.
+Voiceover: "And for more depth, look for detailed answers or additional info to really understand the concepts."
+
+--- SCRIPT END ---
+
+--------------------------------------------------
+Script 7: Reviewing Cards in Card Bank (Slideshow, etc.)
+--------------------------------------------------
+
+Length: Approx. 10-15 seconds
+Target Audience: Users wanting to quickly review cards without formal study mode.
+Goal: Show the slideshow feature for a topic/subject.
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals: In the Card Bank, hover over a topic or subject header. Highlight the "Slideshow" button (🔄). Click it.
+Voiceover: "Want a quick review? Use the slideshow feature for any topic or subject."
+
+(5-12 seconds)
+Visuals: The slideshow modal opens.
+- Show a card. Click "Flip" to show the back.
+- Click "Next" to show another card.
+Voiceover: "Flip through your cards one by one, see the answers, and refresh your memory at your own pace."
+
+(12-15 seconds)
+Visuals: Close the slideshow modal.
+Voiceover: "A perfect way to quickly recap before a test!"
+
+--- SCRIPT END ---
+
+--------------------------------------------------
+Script 8: Printing Cards
+--------------------------------------------------
+
+Length: Approx. 10-15 seconds
+Target Audience: Users who want physical copies of their cards.
+Goal: Show how to print cards for a topic/subject or all cards.
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals:
+- Show the main header with a "Print All" button, or
+- Hover over a subject/topic and highlight a "Print" icon (🖨️). Click it.
+Voiceover: "Prefer to study offline? You can easily print your flashcards."
+
+(5-12 seconds)
+Visuals: The Print Modal opens, showing a preview of flashcards formatted for printing (e.g., multiple cards per page). Briefly show print options if any (like layout).
+Voiceover: "Choose to print cards for a specific topic, a whole subject, or your entire collection. They're formatted for easy cutting."
+
+(12-15 seconds)
+Visuals: User clicks the "Print" button in the modal, which would typically open the browser's print dialog.
+Voiceover: "Get your physical cards ready for study, anytime, anywhere!"
+
+--- SCRIPT END ---
+
+--------------------------------------------------
+Script 9: Saving Cards - Card Colors
+--------------------------------------------------
+
+Length: Approx. 10-15 seconds
+Target Audience: All users.
+Goal: Briefly explain auto-save and show how to customize subject/topic colors.
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals: Show a card being edited or a new card being added. A small, subtle "Saving..." or "Saved" indicator appears briefly (if your app has one).
+Voiceover: "Your work is saved automatically as you go, so you never lose a thing!"
+
+(5-12 seconds)
+Visuals:
+- Hover over a subject header. Click the "Color" or palette icon (🎨).
+- The Color Editor/picker opens. Select a new color for the subject. The subject header color changes.
+Voiceover: "Personalize your workspace! You can change the color for each subject to make them visually distinct."
+
+(12-15 seconds)
+Visuals: (Optional, if you have topic-specific colors distinct from subject base color) Show the color picker applying to a specific topic, or show topics having different shades.
+Voiceover: "Colors help you quickly identify subjects and topics at a glance."
+
+--- SCRIPT END ---
+
+--------------------------------------------------
+Script 10: Study / Spaced Repetition (Navigating and overview)
+--------------------------------------------------
+
+Length: Approx. 15-20 seconds
+Target Audience: Users ready to start studying their cards.
+Goal: Introduce the Spaced Repetition section and how to navigate the study boxes.
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals: From the Card Bank or main header, click on the "Study Mode" or "Spaced Repetition" tab/button. Transition to the Spaced Repetition view.
+Voiceover: "Time to test your knowledge? Head over to Study Mode, powered by Spaced Repetition."
+
+(5-15 seconds)
+Visuals:
+- Show the different study boxes (Box 1, Box 2, etc.) perhaps with card counts in them.
+- User clicks on "Box 1" (or the first box with cards).
+- A flashcard from that box appears, ready for review.
+Voiceover: "Your cards are organized into study boxes. Start with Box 1 for new or tricky cards. As you get them right, they'll move to higher boxes, reviewed less often."
+
+(15-20 seconds)
+Visuals: Briefly show clicking another box, or returning to the box selection view.
+Voiceover: "This smart system ensures you focus on what you need to learn most, making your study time super effective!"
+
+--- SCRIPT END ---
+
+--------------------------------------------------
+Script 11: Reviewing Cards in Study Mode
+--------------------------------------------------
+
+Length: Approx. 15-20 seconds
+Target Audience: Users actively in a study session.
+Goal: Show the process of reviewing a card and marking it correct/incorrect in Study Mode.
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals: In Study Mode, a flashcard is displayed (front side).
+Voiceover: "When reviewing a card, first try to recall the answer."
+
+(5-12 seconds)
+Visuals:
+- User clicks "Flip Card" or the card itself to reveal the answer.
+- Show the back of the card clearly.
+Voiceover: "Then, flip the card to check your accuracy."
+
+(12-20 seconds)
+Visuals:
+- User clicks a "Correct" (or similar, e.g., "Got it!") button. The card animates or disappears, and the next card/box summary appears.
+- Alternatively, show clicking "Incorrect" (or "Review Again"), and how the card might be handled (e.g., stays in the current box or moves to Box 1).
+Voiceover: "If you got it right, it moves up! If not, no worries, you'll review it again soon to reinforce your learning."
+
+--- SCRIPT END ---
+
+--------------------------------------------------
+Script 12: Notifications
+--------------------------------------------------
+
+Length: Approx. 10-15 seconds
+Target Audience: All users.
+Goal: Explain that the app provides notifications for study reminders (if this is a feature).
+
+--- SCRIPT START ---
+
+(0-5 seconds)
+Visuals: Show a subtle notification icon in the app's header, perhaps with a badge. Or, if notifications are external (email/system), show a mock-up of such a notification.
+Voiceover: "Stay on track with your study goals! VESPA Flashcards helps remind you when it's time to review."
+
+(5-12 seconds)
+Visuals: If the in-app icon was clicked, show a dropdown/area listing which study boxes are due for review (e.g., "Box 2 is ready for review!"). If external, show the content of the reminder.
+Voiceover: "You'll get notifications when cards in your study boxes are due, so you won't miss an optimal review session."
+
+(12-15 seconds)
+Visuals: User clicks on a notification, and is taken directly to the relevant study box/session.
+Voiceover: "Never forget to study – let the notifications guide you!"
+
+*(Note: This script assumes you have a notification system. If not, this one might need to be skipped or adapted based on actual features, like if the boxes themselves visually indicate they are due.)*
+
+--- SCRIPT END --- 

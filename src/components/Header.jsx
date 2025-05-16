@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./Header.css";
+import { dlog, dwarn, derr } from '../utils/logger'; 
 
 const Header = ({ 
   userInfo, 
@@ -13,7 +14,8 @@ const Header = ({
   currentBox = 1,
   onSelectBox = () => {},
   spacedRepetitionData = {},
-  cardCounts = { subjects: 0, topics: 0, flashcards: 0 }
+  cardCounts = { subjects: 0, topics: 0, flashcards: 0 },
+  onOpenVideoModal = () => {}
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -131,6 +133,16 @@ const Header = ({
         >
           <span className="button-icon">{alternateViewIcon}</span>
           {alternateViewName}
+        </button>
+
+        {/* Video Tutorial Button */}
+        <button
+          className="nav-button video-tutorial-button"
+          onClick={() => handleNavClick(onOpenVideoModal)}
+          title="Watch Tutorial"
+        >
+          <span className="button-icon">📹</span>
+          Tutorial
         </button>
 
         {/* Print button - only for Card Bank */}
