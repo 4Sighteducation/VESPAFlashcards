@@ -144,13 +144,6 @@ const FlashcardSlideshowModal = ({
             
             <button 
               className="nav-button" 
-              onClick={handleFlip}
-            >
-              Flip
-            </button>
-            
-            <button 
-              className="nav-button" 
               onClick={handleNext}
               disabled={currentIndex === cards.length - 1}
             >

@@ -279,19 +279,27 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.75); /* From App.css, ensure consistency or override if needed */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 1000; /* Base z-index from App.css */
+  padding: 10px; /* Added padding for small screen edges */
+  box-sizing: border-box;
 }
 
-.modal-content {
+.modal-content { /* Styles the box within the overlay */
   background-color: white;
-  padding: 25px;
+  padding: 20px;
   border-radius: 8px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   position: relative;
+  width: 90%; /* Default width */
+  max-width: 550px; /* Default max-width for slideshow */
+  display: flex; /* For internal layout */
+  flex-direction: column; /* Stack header, content, actions */
+  max-height: 90vh; /* Default max-height */
+  overflow: hidden; /* Main modal content shouldn't scroll; internal parts will */
 }
 
 .close-button {
@@ -497,4 +505,77 @@
 .locked-card-overlay p {
   font-size: 1rem;
   margin: 0;
+}
+
+/* Slideshow specific modal adjustments - these classes are on FlashcardSlideshowModal */
+.card-modal-overlay { /* Can be used to override .modal-overlay if needed, or just rely on .modal-overlay */
+  /* If FlashcardSlideshowModal uses this, z-index is set by FlashcardSlideshowModal via inline style */
+}
+
+.card-modal-content { /* Specific to slideshow modal's content box */
+  max-width: 500px; /* Override general modal-content if needed */
+  /* Ensure it can take up more vertical space */
+  height: auto; 
+  min-height: 70vh; /* Try a larger min-height for slideshow */
+  max-height: 95vh; /* Allow it to be quite tall */
+}
+
+.card-modal-card-container { /* Container of the FlippableCard in slideshow */
+  flex-grow: 1; 
+  display: flex;
+  align-items: center; 
+  justify-content: center;
+  width: 100%;
+  padding: 10px 5px; 
+  min-height: 0; /* Allow flex item to shrink properly */
+}
+
+.card-modal-card-container .flashcard { /* The FlippableCard inside slideshow */
+  width: 95%; 
+  max-width: 400px; 
+  height: auto; 
+  min-height: 55vh; /* Adjust min-height for the card itself */
+  aspect-ratio: unset; 
+  margin: 0 auto; 
+}
+
+.card-modal-actions { /* Container for nav buttons and card info */
+  padding: 10px 5px;
+  flex-shrink: 0; /* Prevent actions area from shrinking too much */
+}
+
+.card-modal-actions .nav-buttons {
+  display: flex;
+  justify-content: space-around; 
+  width: 100%;
+  padding: 5px 0; 
+}
+
+.card-modal-actions .nav-button {
+  padding: 10px 12px; /* Adjusted padding */
+  font-size: 0.9rem;  /* Adjusted font size */
+  min-width: 70px; 
+  flex-grow: 1; 
+  margin: 0 5px;
+}
+
+.card-modal-actions .card-info {
+  text-align: center;
+  font-size: 0.8rem;
+  margin-top: 8px;
+}
+
+/* Specific media query for very tall/slim screens (like Fold portrait) */
+@media (max-width: 450px) and (min-height: 700px) {
+  .card-modal-content { /* Slideshow modal content */
+    min-height: 80vh;
+  }
+  .card-modal-card-container .flashcard {
+    min-height: 60vh; /* Make card even taller */
+    width: 98%;
+  }
+  .card-modal-actions .nav-button {
+    font-size: 0.75rem;
+    padding: 8px 10px;
+  }
 }
