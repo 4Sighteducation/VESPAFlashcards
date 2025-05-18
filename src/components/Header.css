@@ -208,12 +208,20 @@
     flex-grow: 0; 
     flex-shrink: 1; 
     flex-basis: auto; 
-    margin: 0 4px; 
-    font-size: 12px; 
-    padding: 6px 8px; 
-    line-height: 1.3; 
+    margin: 0 2px; /* Reduced margin between buttons */
+    font-size: 10px; /* AGGRESSIVELY REDUCED FONT SIZE */
+    padding: 5px 3px; /* AGGRESSIVELY REDUCED PADDING */
+    line-height: 1.2; /* Maintain tight line height */
     text-align: center; 
-    max-width: calc(50% - 8px); 
+    max-width: calc(50% - 4px); /* Max width, adjust gap if margin changes */
+    overflow: hidden; /* Hide overflow if text is still too long */
+    text-overflow: ellipsis; /* Show ... if text overflows */
+    white-space: nowrap; /* Try nowrap again with smaller font */
+  }
+  /* Reduce icon size specifically for these persistent buttons */
+  .header-mobile-persistent-actions .nav-button .button-icon {
+    font-size: 0.9em; /* Relative to button's new font-size (10px * 0.9 = 9px) */
+    margin-right: 2px; /* Smaller margin for icon */
   }
 
   .mobile-menu-toggle {

@@ -145,9 +145,9 @@ const Header = ({
           <button
             className="nav-button create-topics-header-button mobile-persistent-button"
             onClick={() => handleNavClick(onOpenCreateTopicModal)}
-            title="Create New Topics"
+            title="Create New Subjects/Topics"
           >
-            <span className="button-icon">⚡</span> Create Topics
+            <span className="button-icon">⚡</span> SUBJECTS
           </button>
         )}
         <button
@@ -165,9 +165,9 @@ const Header = ({
           <button
             className="nav-button create-topics-header-button desktop-menu-button"
             onClick={() => handleNavClick(onOpenCreateTopicModal)}
-            title="Create New Topics"
+            title="Create New Subjects/Topics"
           >
-            <span className="button-icon">⚡</span> Create Topics
+            <span className="button-icon">⚡</span> SUBJECTS
           </button>
         )}
 
