@@ -206,12 +206,14 @@
   .header-mobile-persistent-actions .nav-button {
     width: auto; 
     flex-grow: 0; 
-    flex-basis: calc(50% - 8px); 
+    flex-shrink: 1; 
+    flex-basis: auto; 
     margin: 0 4px; 
-    font-size: 11px; /* FURTHER REDUCED FONT SIZE */
-    padding: 6px 4px; /* FURTHER REDUCED PADDING */
-    line-height: 1.2; /* Adjust line height for smaller font */
-    white-space: nowrap; /* Prevent text wrapping if possible, or adjust text */
+    font-size: 12px; 
+    padding: 6px 8px; 
+    line-height: 1.3; 
+    text-align: center; 
+    max-width: calc(50% - 8px); 
   }
 
   .mobile-menu-toggle {
@@ -260,10 +262,14 @@
   .header-mobile-persistent-actions .nav-button {
     width: auto; /* Allow persistent buttons to size based on content + padding */
     flex-grow: 0; /* DO NOT allow them to grow excessively */
-    flex-basis: calc(50% - 8px); /* Approx 50% width minus some gap, adjust as needed */
+    flex-shrink: 1; /* Allow them to shrink if needed */
+    flex-basis: auto; /* Let content + padding define initial size */
     margin: 0 4px; 
-    font-size: 13px; /* Ensure this specific size if needed */
-    padding: 8px 5px; /* Adjust padding for these specific buttons */
+    font-size: 12px; /* Adjusted font size slightly up */
+    padding: 6px 8px; /* Adjusted padding slightly up */
+    line-height: 1.3; /* Adjusted line height */
+    text-align: center; /* Ensure text is centered if it wraps */
+    max-width: calc(50% - 8px); /* Ensure they don't get TOO wide, still roughly half */
   }
   
   .header-nav .box-selectors-container .header-box-selectors {
