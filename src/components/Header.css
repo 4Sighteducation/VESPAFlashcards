@@ -177,33 +177,39 @@
 @media (max-width: 768px) {
   .header {
     flex-wrap: wrap;
-    justify-content: space-between; /* app-title and toggle container */
-    align-items: center; /* Align items vertically */
+    /* justify-content: space-between; Already set, ensure app-title and toggle align */
+    align-items: center; /* Align items on the cross axis (vertically) */
   }
 
   .app-title {
-    order: 0;
-    margin-bottom: 8px; /* Add some space below title on mobile if actions wrap */
-    flex-basis: 100%; /* Allow title to take full width initially */
-  }
-
-  /* Show persistent mobile actions and arrange them */
-  .header-mobile-persistent-actions {
-    display: flex; /* Show these buttons */
-    order: 1; /* Place them after the title */
-    width: 100%; /* Take full width to arrange buttons */
-    justify-content: space-around; /* Distribute buttons */
-    margin-bottom: 8px; /* Space below these buttons */
-  }
-  .header-mobile-persistent-actions .nav-button {
-    flex-grow: 1; /* Allow buttons to grow and share space */
-    margin: 0 4px; /* Small margin between them */
+    order: 0; /* Remains first visually on the top line */
+    /* margin-bottom: 8px; /* Remove or adjust if persistent actions are on new line */
+    flex-basis: auto; /* Allow it to take natural width */
+    margin-right: auto; /* Pushes toggle to the far right */
   }
 
   .header-mobile-menu-toggle-container {
     display: flex; 
-    order: 2; /* Hamburger toggle comes after persistent actions */
-    margin-left: auto; /* Push to right if space allows, but might be on new line */
+    order: 1; /* Comes after title on the same line */
+    /* margin-left: auto; /* Removed, app-title with margin-right: auto will push it */
+  }
+
+  /* Show persistent mobile actions and arrange them on a new line */
+  .header-mobile-persistent-actions {
+    display: flex; 
+    order: 2; /* Place them after the title/hamburger line */
+    width: 100%; 
+    justify-content: space-around; 
+    margin-top: 8px; /* Add margin above these buttons */
+    margin-bottom: 8px; 
+  }
+  .header-mobile-persistent-actions .nav-button {
+    width: auto; 
+    flex-grow: 0; 
+    flex-basis: calc(50% - 8px); 
+    margin: 0 4px; 
+    font-size: 13px; 
+    padding: 8px 5px; 
   }
 
   .mobile-menu-toggle {
@@ -235,23 +241,27 @@
 
   /* Reduce font size and padding for ALL nav-buttons on mobile, 
      including those in header-mobile-persistent-actions and inside open header-nav */
-  .header .nav-button { /* Target all nav-buttons within the header on mobile */
-    font-size: 14px; /* Reduced font size */
-    padding: 8px 10px; /* Reduced padding */
-    min-width: auto; /* Allow them to shrink if needed */
+  .header .nav-button { 
+    font-size: 13px; /* Slightly smaller base font for mobile buttons */
+    padding: 6px 8px; /* Slightly smaller base padding */
+    min-width: auto; 
   }
 
   .header-nav .nav-button, /* Buttons inside the collapsed menu */
-  .header-mobile-persistent-actions .nav-button /* Always visible mobile buttons */
+  .header-mobile-persistent-actions .nav-button 
   {
-    width: 100%; /* Make buttons in menu take full width */
-    margin-bottom: 5px; /* Spacing for buttons stacked in menu */
+    width: 100%; 
+    margin-bottom: 5px; 
     box-sizing: border-box;
   }
+
   .header-mobile-persistent-actions .nav-button {
     width: auto; /* Allow persistent buttons to size based on content + padding */
-    flex-grow: 1; /* Make them share space in their flex container */
-    margin: 0 4px; /* Keep small margin between persistent buttons */
+    flex-grow: 0; /* DO NOT allow them to grow excessively */
+    flex-basis: calc(50% - 8px); /* Approx 50% width minus some gap, adjust as needed */
+    margin: 0 4px; 
+    font-size: 13px; /* Ensure this specific size if needed */
+    padding: 8px 5px; /* Adjust padding for these specific buttons */
   }
   
   .header-nav .box-selectors-container .header-box-selectors {

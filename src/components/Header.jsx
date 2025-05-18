@@ -127,7 +127,19 @@ const Header = ({
         </div>
       </div>
 
-      {/* Container for always-visible mobile buttons */}
+      {/* Hamburger toggle - MOVED UP to be a direct child for top-line layout */}
+      <div className="header-mobile-menu-toggle-container">
+        <button 
+          className="mobile-menu-toggle" 
+          onClick={toggleMobileMenu}
+          aria-label="Toggle menu"
+          aria-expanded={mobileMenuOpen}
+        >
+          {mobileMenuOpen ? '✕' : '☰'} 
+        </button>
+      </div>
+
+      {/* Container for always-visible mobile buttons - This will now be on a new line below title/hamburger */}
       <div className="header-mobile-persistent-actions">
         {isInCardBank && (
           <button
@@ -143,18 +155,6 @@ const Header = ({
           onClick={() => handleNavClick(alternateViewAction)}
         >
           <span className="button-icon">{alternateViewIcon}</span> {alternateViewName}
-        </button>
-      </div>
-
-      {/* Hamburger toggle */}
-      <div className="header-mobile-menu-toggle-container">
-        <button 
-          className="mobile-menu-toggle" 
-          onClick={toggleMobileMenu}
-          aria-label="Toggle menu"
-          aria-expanded={mobileMenuOpen}
-        >
-          {mobileMenuOpen ? '✕' : '☰'} 
         </button>
       </div>
 
