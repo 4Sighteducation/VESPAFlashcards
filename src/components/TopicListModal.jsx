@@ -16,7 +16,6 @@ const TopicListModal = ({
   const [slideshowData, setSlideshowData] = useState({ cards: [], title: '' });
 
   useEffect(() => {
-    // Reset slideshow state if modal reopens for a new subject or closes
     if (!isOpen) {
       setShowTopicSlideshow(false);
     }
@@ -27,30 +26,35 @@ const TopicListModal = ({
   const subjectColor = subjectData.color || '#333333';
   const subjectTextColor = getContrastColor(subjectColor);
 
-  const handleTopicAction = (actionType, topicData, e) => {
+  // This function will now primarily handle non-slideshow actions or be called by the item click
+  const handleGenericTopicAction = (actionType, topicData, e) => {
     e.stopPropagation();
-    if (actionType === 'slideshow') {
-      const cardsForSlideshow = topicsForSubject?.find(t => t.id === topicData.id)?.cards || [];
-      if (cardsForSlideshow.length === 0) {
-          dlog(`No cards for slideshow in topic: ${topicData.name}. Adding placeholder.`);
-          setSlideshowData({
-            cards: [{ id: 'placeholder', front: `No cards for ${topicData.name} yet.`, back: 'Try generating some!' }],
-            title: `${subjectData.name} - ${topicData.name}`
-          });
-      } else {
-          setSlideshowData({
-            cards: cardsForSlideshow,
-            title: `${subjectData.name} - ${topicData.name}`
-          });
-      }
-      setShowTopicSlideshow(true);
-    } else if (onTopicAction) {
+    if (onTopicAction) {
       onTopicAction(actionType, subjectData.name, topicData);
     }
   };
+
+  const handleTopicClickForSlideshow = (topicData) => {
+    const cardsForSlideshow = topicsForSubject?.find(t => t.id === topicData.id)?.cards || [];
+    if (cardsForSlideshow.length === 0) {
+        dlog(`No cards for slideshow in topic: ${topicData.name}. Adding placeholder.`);
+        setSlideshowData({
+          cards: [{ id: 'placeholder', front: `No cards for ${topicData.name} yet.`, back: 'Try generating some!' }],
+          title: `${subjectData.name} - ${topicData.name}`
+        });
+    } else {
+        setSlideshowData({
+          cards: cardsForSlideshow,
+          title: `${subjectData.name} - ${topicData.name}`
+        });
+    }
+    setShowTopicSlideshow(true);
+  };
   
   const getTopicCards = (topicId) => {
-    const topic = topicsForSubject.find(t => t.id === topicId);
+    // Ensure topicsForSubject is an array before calling find
+    const topicsArray = Array.isArray(topicsForSubject) ? topicsForSubject : [];
+    const topic = topicsArray.find(t => t.id === topicId);
     return topic?.cards || [];
   }
 
@@ -68,15 +72,20 @@ const TopicListModal = ({
               <p className="no-topics-message">No topics found for this subject.</p>
             )}
             {topicsForSubject && topicsForSubject.map((topic) => {
-              const topicDisplayColor = topic.color || subjectColor; // Fallback to subject color
+              const topicDisplayColor = topic.color || subjectColor; 
               const topicTextColor = getContrastColor(topicDisplayColor);
               const cardCount = topic.cardCount || getTopicCards(topic.id).length || 0;
 
               return (
+                // Make the entire item a button or add onClick here
                 <div
                   key={topic.id || topic.name}
-                  className="topic-list-item"
+                  className="topic-list-item clickable-topic"
                   style={{ backgroundColor: topicDisplayColor, color: topicTextColor }}
+                  onClick={() => handleTopicClickForSlideshow(topic)} // Trigger slideshow on click
+                  role="button"
+                  tabIndex={0}
+                  onKeyPress={(e) => e.key === 'Enter' && handleTopicClickForSlideshow(topic)} // Accessibility
                 >
                   <div className="topic-list-item-info">
                     <span className="topic-list-item-name">{topic.name}</span>
@@ -85,10 +94,10 @@ const TopicListModal = ({
                     </span>
                   </div>
                   <div className="topic-list-item-actions">
-                    <button title="AI Generate Cards" onClick={(e) => handleTopicAction('ai_generate', topic, e)}>⚡</button>
-                    <button title="Slideshow" onClick={(e) => handleTopicAction('slideshow', topic, e)} disabled={cardCount === 0}>🔄</button>
-                    <button title="Print Topic" onClick={(e) => handleTopicAction('print', topic, e)} disabled={cardCount === 0}>🖨️</button>
-                    <button title="Delete Topic" className="delete" onClick={(e) => handleTopicAction('delete', topic, e)}>🗑️</button>
+                    <button title="AI Generate Cards" onClick={(e) => handleGenericTopicAction('ai_generate', topic, e)}>⚡</button>
+                    {/* Slideshow button removed */}
+                    <button title="Print Topic" onClick={(e) => handleGenericTopicAction('print', topic, e)} disabled={cardCount === 0}>🖨️</button>
+                    <button title="Delete Topic" className="delete" onClick={(e) => handleGenericTopicAction('delete', topic, e)}>🗑️</button>
                   </div>
                 </div>
               );

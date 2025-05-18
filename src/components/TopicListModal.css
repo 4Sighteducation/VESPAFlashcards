@@ -60,6 +60,11 @@
   transition: transform 0.15s ease-in-out;
 }
 
+/* Add cursor pointer for clickable topic items */
+.topic-list-item.clickable-topic {
+  cursor: pointer;
+}
+
 .topic-list-item:hover {
   transform: scale(1.015);
 }
