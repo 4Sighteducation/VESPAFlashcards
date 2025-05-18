@@ -35,9 +35,14 @@ const TopicListModal = ({
   };
 
   const handleTopicClickForSlideshow = (topicData) => {
-    const cardsForSlideshow = topicsForSubject?.find(t => t.id === topicData.id)?.cards || [];
+    dlog("[TopicListModal] handleTopicClickForSlideshow triggered for topic:", topicData);
+    const topicDetails = topicsForSubject?.find(t => t.id === topicData.id);
+    dlog("[TopicListModal] Found topic details in topicsForSubject:", topicDetails);
+    const cardsForSlideshow = topicDetails?.cards || [];
+    dlog("[TopicListModal] Cards determined for slideshow:", cardsForSlideshow);
+
     if (cardsForSlideshow.length === 0) {
-        dlog(`No cards for slideshow in topic: ${topicData.name}. Adding placeholder.`);
+        dlog(`[TopicListModal] No cards for slideshow in topic: ${topicData.name}. Adding placeholder.`);
         setSlideshowData({
           cards: [{ id: 'placeholder', front: `No cards for ${topicData.name} yet.`, back: 'Try generating some!' }],
           title: `${subjectData.name} - ${topicData.name}`
