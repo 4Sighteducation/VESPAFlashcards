@@ -1,8 +1,8 @@
 .flashcard-list {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  /* max-width: 1200px; */ /* REMOVED to allow full width */
+  /* margin: 0 auto; */ /* REMOVED to allow full width */
+  padding: 20px; /* Keep padding for content inside */
   overflow-y: auto;
   display: flex;
   flex-direction: column;

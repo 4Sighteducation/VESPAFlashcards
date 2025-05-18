@@ -158,6 +158,13 @@
   margin-left: auto; /* Pushes toggle to the right */
 }
 
+/* New container for always-visible mobile actions */
+.header-mobile-persistent-actions {
+  display: none; /* Hidden by default, shown on mobile */
+  gap: 8px;
+  align-items: center;
+}
+
 /* header-nav is now the primary container for actions on both desktop and mobile */
 .header-nav {
   display: flex;
@@ -171,44 +178,80 @@
   .header {
     flex-wrap: wrap;
     justify-content: space-between; /* app-title and toggle container */
+    align-items: center; /* Align items vertically */
   }
 
   .app-title {
-    /* app-title styles for mobile remain similar */
     order: 0;
+    margin-bottom: 8px; /* Add some space below title on mobile if actions wrap */
+    flex-basis: 100%; /* Allow title to take full width initially */
+  }
+
+  /* Show persistent mobile actions and arrange them */
+  .header-mobile-persistent-actions {
+    display: flex; /* Show these buttons */
+    order: 1; /* Place them after the title */
+    width: 100%; /* Take full width to arrange buttons */
+    justify-content: space-around; /* Distribute buttons */
+    margin-bottom: 8px; /* Space below these buttons */
+  }
+  .header-mobile-persistent-actions .nav-button {
+    flex-grow: 1; /* Allow buttons to grow and share space */
+    margin: 0 4px; /* Small margin between them */
   }
 
   .header-mobile-menu-toggle-container {
-    display: flex; /* Show the container for the toggle */
+    display: flex; 
+    order: 2; /* Hamburger toggle comes after persistent actions */
+    margin-left: auto; /* Push to right if space allows, but might be on new line */
   }
 
   .mobile-menu-toggle {
-    display: block; /* Show the toggle button */
+    display: block; 
+  }
+
+  /* Hide the versions of Create Topics & Study meant for desktop/open menu */
+  .header-nav .desktop-menu-button {
+    display: none !important;
   }
 
   /* header-nav becomes the full-width dropdown menu */
   .header-nav {
     flex-basis: 100%;
+    order: 3; /* Menu comes last */
     flex-direction: column;
-    align-items: stretch; /* Make buttons take full width */
-    gap: 10px;
+    align-items: stretch; 
+    gap: 8px; /* Reduced gap for mobile menu items */
     margin-top: 10px;
-    padding: 10px 0; /* Add some padding when open */
-    background-color: #052b80; /* Slightly darker shade for open menu, or match header */
-    border-top: 1px solid #073dc2; /* Separator */
-    display: none; /* Hidden by default */
+    padding: 10px 0; 
+    background-color: #052b80; 
+    border-top: 1px solid #073dc2; 
+    display: none; 
   }
 
   .header-nav.open {
-    display: flex; /* Show when open */
+    display: flex; 
   }
 
-  .header-nav .nav-button,
-  .header-nav .box-selectors-container /* Ensure box selectors also stack well */
+  /* Reduce font size and padding for ALL nav-buttons on mobile, 
+     including those in header-mobile-persistent-actions and inside open header-nav */
+  .header .nav-button { /* Target all nav-buttons within the header on mobile */
+    font-size: 14px; /* Reduced font size */
+    padding: 8px 10px; /* Reduced padding */
+    min-width: auto; /* Allow them to shrink if needed */
+  }
+
+  .header-nav .nav-button, /* Buttons inside the collapsed menu */
+  .header-mobile-persistent-actions .nav-button /* Always visible mobile buttons */
   {
-    width: 100%;
-    margin-bottom: 8px;
+    width: 100%; /* Make buttons in menu take full width */
+    margin-bottom: 5px; /* Spacing for buttons stacked in menu */
     box-sizing: border-box;
+  }
+  .header-mobile-persistent-actions .nav-button {
+    width: auto; /* Allow persistent buttons to size based on content + padding */
+    flex-grow: 1; /* Make them share space in their flex container */
+    margin: 0 4px; /* Keep small margin between persistent buttons */
   }
   
   .header-nav .box-selectors-container .header-box-selectors {
@@ -235,13 +278,23 @@
 /* Desktop styles (ensure nav items are in a row if not already default) */
 @media (min-width: 769px) {
   .header-nav {
-    flex-direction: row; /* Explicitly row for desktop */
+    flex-direction: row; 
     flex-basis: auto;
     margin-top: 0;
     padding: 0;
     background-color: transparent;
     border-top: none;
-    display: flex !important; /* Ensure it's visible */
+    display: flex !important; 
+  }
+
+  /* Hide the mobile-specific persistent actions on desktop */
+  .header-mobile-persistent-actions {
+    display: none !important;
+  }
+
+  /* Ensure desktop/menu versions of Create Topics & Study are visible */
+  .header-nav .desktop-menu-button {
+    display: flex !important; /* Or inline-flex, depending on nav-button base style */
   }
 
   .header-mobile-menu-toggle-container,

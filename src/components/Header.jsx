@@ -110,11 +110,13 @@ const Header = ({
   return (
     <header className="header">
       <div className="app-title">
+        {/* LOGO REMOVED 
         <img
           src="https://www.vespa.academy/assets/images/full-trimmed-transparent-customcolor-1-832x947.png"
           alt="Vespa Academy Logo"
           className="logo"
         />
+        */}
         <div className="app-info">
           <h1>VESPA Flashcards</h1>
           <div className="card-stats">
@@ -125,7 +127,26 @@ const Header = ({
         </div>
       </div>
 
-      {/* Hamburger toggle - REINSTATED */}
+      {/* Container for always-visible mobile buttons */}
+      <div className="header-mobile-persistent-actions">
+        {isInCardBank && (
+          <button
+            className="nav-button create-topics-header-button mobile-persistent-button"
+            onClick={() => handleNavClick(onOpenCreateTopicModal)}
+            title="Create New Topics"
+          >
+            <span className="button-icon">⚡</span> Create Topics
+          </button>
+        )}
+        <button
+          className={`nav-button toggle-view-btn mobile-persistent-button`}
+          onClick={() => handleNavClick(alternateViewAction)}
+        >
+          <span className="button-icon">{alternateViewIcon}</span> {alternateViewName}
+        </button>
+      </div>
+
+      {/* Hamburger toggle */}
       <div className="header-mobile-menu-toggle-container">
         <button 
           className="mobile-menu-toggle" 
@@ -133,31 +154,29 @@ const Header = ({
           aria-label="Toggle menu"
           aria-expanded={mobileMenuOpen}
         >
-          {mobileMenuOpen ? '✕' : '☰'} {/* Change icon based on state */}
+          {mobileMenuOpen ? '✕' : '☰'} 
         </button>
       </div>
 
-      {/* Navigation items - will be hidden on desktop and shown in menu on mobile */}
+      {/* Navigation items - for desktop and inside mobile dropdown */}
       <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
-        {/* NEW "Create Topics" Button - MOVED TO THE LEFT */}
-        {isInCardBank && ( // Only show in Card Bank view for now, can be adjusted
+        {/* "Create Topics" Button - for desktop and inside open mobile menu */}
+        {isInCardBank && (
           <button
-            className="nav-button create-topics-header-button" // New class for styling
+            className="nav-button create-topics-header-button desktop-menu-button"
             onClick={() => handleNavClick(onOpenCreateTopicModal)}
             title="Create New Topics"
           >
-            <span className="button-icon">⚡</span> {/* Sparkle icon */}
-            Create Topics
+            <span className="button-icon">⚡</span> Create Topics
           </button>
         )}
 
-        {/* Always visible View Toggle Button */}
+        {/* View Toggle Button - for desktop and inside open mobile menu */}
         <button
-          className={`nav-button toggle-view-btn`}
+          className={`nav-button toggle-view-btn desktop-menu-button`}
           onClick={() => handleNavClick(alternateViewAction)}
         >
-          <span className="button-icon">{alternateViewIcon}</span>
-          {alternateViewName}
+          <span className="button-icon">{alternateViewIcon}</span> {alternateViewName}
         </button>
 
         {/* Video Tutorial Button */}
