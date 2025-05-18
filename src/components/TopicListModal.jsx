@@ -93,9 +93,14 @@ const TopicListModal = ({
                   onKeyPress={(e) => e.key === 'Enter' && handleTopicClickForSlideshow(topic)} // Accessibility
                 >
                   <div className="topic-list-item-info">
-                    <span className="topic-list-item-name">{topic.name}</span>
+                    <span className="topic-list-item-name">
+                      {topic.name}
+                      {cardCount > 0 && (
+                        <span className="topic-card-notification">{cardCount}</span>
+                      )}
+                    </span>
                     <span className="topic-list-item-meta">
-                      Cards: {cardCount} | {topic.examType || 'N/A'} - {topic.examBoard || 'N/A'}
+                      {topic.examType || 'N/A'} - {topic.examBoard || 'N/A'}
                     </span>
                   </div>
                   <div className="topic-list-item-actions">

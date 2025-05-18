@@ -56,7 +56,10 @@
 
 .flashcard-front {
   z-index: 2;
-  justify-content: space-between;
+  justify-content: flex-start;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
 }
 
 .flashcard-back {
@@ -93,20 +96,23 @@
 }
 
 .card-question-area {
-  flex: 0 1 auto;
-  margin-bottom: 10px;
+  flex-shrink: 0;
+  margin-bottom: 8px;
   overflow-y: auto;
-  max-height: 40%;
-  font-size: clamp(1em, 3vw, 1.3em);
+  max-height: 30%;
+  font-size: clamp(0.9em, 2.5vw, 1.2em);
   font-weight: bold;
   word-wrap: break-word;
 }
 
 .card-options-area {
-  flex: 1 1 auto;
-  overflow: hidden;
+  flex-grow: 1;
+  flex-shrink: 1;
+  overflow-y: auto;
   display: flex;
+  flex-direction: column;
   min-height: 0;
+  padding-bottom: 5px;
 }
 
 .options-list {
@@ -114,42 +120,42 @@
   padding: 0;
   margin: 0;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  height: 100%;
 }
 
 .option-item {
-  margin: 3px 0;
-  padding: 5px 10px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 4px 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 5px;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
   display: flex;
-  align-items: center;
-  font-size: clamp(0.8em, 2vw, 1em);
+  align-items: flex-start;
+  font-size: clamp(0.75em, 1.8vw, 0.95em);
   background-color: transparent !important;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  height: auto;
   white-space: normal;
   word-wrap: break-word;
-  line-height: 1.3;
+  word-break: break-word;
 }
 
 .option-item:hover {
   border-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0,0,0,0.03);
 }
 
 .option-letter {
   font-weight: bold;
-  margin-right: 8px;
+  margin-right: 6px;
   flex-shrink: 0;
+  padding-top: 1px;
 }
 
 .option-text {
   flex-grow: 1;
+  word-wrap: break-word;
+  white-space: normal;
 }
 
 .option-item.selected {
@@ -604,9 +610,21 @@
 
 /* Specific media query for very tall/slim screens (like Fold portrait) */
 @media (max-width: 450px) and (min-height: 700px) {
-  .modal-content { 
+  .card-modal-content { 
     min-height: 85vh; 
-    width: 98%; /* Almost full width on very narrow */
+    width: 98%; 
   }
-  /* .card-modal-card-container .flashcard will adapt to this */
+  .card-modal-card-container .flashcard {
+     min-height: 70vh; /* Allow card to be even taller if content pushes it */
+     /* If card content (question + options) is less than this, it will still be centered. 
+        If more, the card will expand up to its container's limits, and internal areas should scroll. */
+  }
+  .card-modal-card-container .flashcard .card-question-area {
+    max-height: 25%; /* Even less for question on tall screens to give max to options */
+  }
+  .card-modal-actions .nav-button {
+    font-size: 0.85rem;
+    padding: 8px;
+    min-width: 80px;
+  }
 }
