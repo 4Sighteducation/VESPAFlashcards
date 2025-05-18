@@ -288,7 +288,7 @@
   box-sizing: border-box;
 }
 
-.modal-content { /* General modal styling */
+.modal-content { /* General modal styling - applies to card-modal-content too unless overridden */
   background-color: white;
   padding: 0; /* Remove padding if header/body/actions have their own */
   border-radius: 8px;
@@ -299,7 +299,7 @@
   display: flex; 
   flex-direction: column; 
   max-height: 90vh; 
-  overflow: hidden; 
+  overflow: hidden; /* Prevent main modal from scrolling, let children scroll */
 }
 
 .close-button {
@@ -514,74 +514,107 @@
 
 .card-modal-content { /* Specific to slideshow modal's content box */
   max-width: 500px; 
-  min-height: 75vh; /* Increased min-height for slideshow modal box itself */
+  min-height: 75vh; 
   max-height: 95vh; 
-  /* Ensure it's a flex container to manage its children */
-  display: flex;
-  flex-direction: column; /* Stack card container and actions vertically */
-  padding: 0; /* Remove padding here, apply to children if needed */
+  padding: 0; /* Remove padding if children (header, card-container, actions) handle it */
+  /* display: flex; flex-direction: column; are inherited or can be re-stated */
 }
 
 .card-modal-card-container { /* Container of the FlippableCard in slideshow */
-  flex-grow: 1; /* Allow this to take up most of the vertical space */
+  flex-grow: 1; /* CRUCIAL: Allow this to take up available vertical space */
   display: flex;
-  align-items: center; 
-  justify-content: center;
+  align-items: center; /* Vertically center the card */
+  justify-content: center; /* Horizontally center the card */
   width: 100%;
-  padding: 10px 5px; 
-  min-height: 0; /* Important for flex children */
-  overflow: hidden; /* Prevent card itself from causing overflow if it misbehaves */
+  padding: 5px; /* Minimal padding */
+  min-height: 0; /* Necessary for flex children to shrink/grow properly */
+  overflow: hidden; /* In case card tries to overflow this container */
 }
 
 .card-modal-card-container .flashcard { /* The FlippableCard inside slideshow */
   width: 95%; 
-  max-width: 400px; 
-  height: 100%; /* Attempt to fill the container height */
-  max-height: 70vh; /* But cap its own max height */
-  min-height: unset; /* Remove fixed min-height for the card, let container dictate */
+  max-width: 450px; /* Default max-width, good for portrait mobile */
+  height: auto;    
+  max-height: 100%;
+  min-height: unset;
   aspect-ratio: unset; 
   margin: 0 auto; 
-  display: flex; /* Ensure flashcard itself is a flex container */
-  flex-direction: column; /* So its internal content flows correctly */
+  display: flex; 
+  flex-direction: column; 
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
 }
 
-.card-modal-actions { /* Container for nav buttons and card info */
-  padding: 10px 5px;
-  flex-shrink: 0; /* Prevent actions area from shrinking too much */
+.card-modal-actions { 
+  padding: 8px 5px; /* Adjusted padding */
+  flex-shrink: 0; 
+  background-color: #f8f9fa; /* Light background for actions area */
+  border-top: 1px solid #e9ecef; /* Separator line */
 }
 
 .card-modal-actions .nav-buttons {
   display: flex;
-  justify-content: space-around; 
+  justify-content: space-evenly; /* Evenly space buttons */
   width: 100%;
-  padding: 5px 0; 
 }
 
 .card-modal-actions .nav-button {
-  padding: 10px 12px; /* Adjusted padding */
-  font-size: 0.9rem;  /* Adjusted font size */
-  min-width: 70px; 
-  flex-grow: 1; 
-  margin: 0 5px;
+  padding: 10px; /* Slightly more padding for easier tapping */
+  font-size: 0.9rem;  
+  min-width: 90px; /* Ensure decent tap target */
+  flex-grow: 0; /* Don't let them grow excessively */
+  flex-basis: auto; /* Let content and padding define base size */
+  margin: 0 4px;
+  border-radius: 5px;
 }
 
 .card-modal-actions .card-info {
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.75rem; /* Smaller card counter text */
   margin-top: 8px;
+  color: #6c757d;
 }
 
 /* Specific media query for very tall/slim screens (like Fold portrait) */
 @media (max-width: 450px) and (min-height: 700px) {
-  .card-modal-content { /* Slideshow modal content */
-    min-height: 80vh;
+  .card-modal-content { 
+    min-height: 85vh; /* Allow modal to be taller */
   }
   .card-modal-card-container .flashcard {
-    min-height: 60vh; /* Make card even taller */
-    width: 98%;
+    /* min-height could be removed if height:auto and max-height:100% work well */
+    width: 98%; /* Use almost full width */
   }
   .card-modal-actions .nav-button {
-    font-size: 0.75rem;
-    padding: 8px 10px;
+    font-size: 0.85rem;
+    padding: 8px;
+    min-width: 80px;
+  }
+}
+
+/* Tablet Landscape and larger */
+@media (min-width: 768px) and (orientation: landscape) {
+  .card-modal-content { /* Slideshow modal content box */
+    max-width: 700px; /* Allow modal itself to be wider */
+    min-height: 60vh;
+  }
+  .card-modal-card-container .flashcard {
+    max-width: 650px; /* Allow card to be significantly wider */
+    min-height: 400px; /* Ensure a decent height */
+     /* You might want a specific aspect-ratio for landscape here if content varies too much */
+    /* aspect-ratio: 16/10; or 4/3; */
+  }
+  .card-modal-actions .nav-button {
+    padding: 12px 15px;
+    font-size: 1rem;
+  }
+}
+
+/* Larger desktop screens */
+@media (min-width: 1024px) and (orientation: landscape) {
+  .card-modal-content { /* Slideshow modal content box */
+    max-width: 800px; 
+  }
+  .card-modal-card-container .flashcard {
+    max-width: 700px; 
+    min-height: 450px;
   }
 }
