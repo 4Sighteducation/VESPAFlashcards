@@ -10,6 +10,8 @@ import FlashcardGeneratorBridge from './FlashcardGeneratorBridge';
 import ErrorBoundary from './ErrorBoundary';
 import { BRIGHT_COLORS, getContrastColor, generateShade, ensureValidColorMapping } from '../utils/ColorUtils';
 import { dlog, dwarn, derr } from '../utils/logger'; 
+import SubjectButton from './SubjectButton'; // <-- Import SubjectButton
+import TopicListModal from './TopicListModal'; // <-- Import TopicListModal
 
 // Helper function to chunk an array
 const chunkArray = (array, size) => {
@@ -287,32 +289,73 @@ const FlashcardList = ({
   // State to track open subject action menus
   const [openSubjectMenus, setOpenSubjectMenus] = useState({});
 
+  // New state for TopicListModal
+  const [isTopicListModalOpen, setIsTopicListModalOpen] = useState(false);
+  const [activeSubjectForModal, setActiveSubjectForModal] = useState(null);
+
   // 2. useRef Hooks
   const subjectRefs = useRef({});
   const topicRefs = useRef({}); // Refs for topic elements
 
   // --- Define regroupCards and getExistingSubjectNames earlier --- 
-  const regroupCards = useCallback((cards) => {
-    const bySubjectAndTopic = {};
-    if (!Array.isArray(cards)) return {};
+  const regroupCards = useCallback((allCardsData, currentSubjectColorMapping) => {
+    const bySubject = {};
+    if (!Array.isArray(allCardsData)) return {};
 
-    cards.forEach(item => {
+    allCardsData.forEach(item => {
       if (!item || typeof item !== 'object' || !item.id || !item.subject) return;
-      
-        const subject = item.subject || "General";
-        const topic = item.topic || "General";
-        
-        if (!bySubjectAndTopic[subject]) {
-          bySubjectAndTopic[subject] = {};
-        }
-        if (!bySubjectAndTopic[subject][topic]) {
-          bySubjectAndTopic[subject][topic] = [];
-        }
-        bySubjectAndTopic[subject][topic].push(item);
-    });
 
-    return bySubjectAndTopic;
-  }, []);
+      const subjectName = item.subject || "General";
+      const topicName = item.topic || "General";
+
+      // Ensure subject entry exists
+      if (!bySubject[subjectName]) {
+        const subjectColorInfo = currentSubjectColorMapping[subjectName];
+        bySubject[subjectName] = {
+          name: subjectName,
+          color: subjectColorInfo?.base || BRIGHT_COLORS[Object.keys(bySubject).length % BRIGHT_COLORS.length],
+          examBoard: item.examBoard || "General", // Take from first item, or improve later
+          examType: item.examType || "Course",   // Take from first item, or improve later
+          totalCardsInSubject: 0,
+          topics: {}
+        };
+      }
+
+      // Ensure topic entry exists within subject
+      if (!bySubject[subjectName].topics[topicName]) {
+        const topicShell = allCardsData.find(shell => 
+          shell.type === 'topic' && 
+          shell.isShell && 
+          shell.subject === subjectName && 
+          (shell.topic === topicName || shell.name === topicName)
+        );
+        const subjectColorInfo = currentSubjectColorMapping[subjectName];
+        let topicDisplayColor = topicShell?.topicColor || 
+                                topicShell?.cardColor || 
+                                (subjectColorInfo?.topics?.[topicName]) ||
+                                subjectColorInfo?.base ||
+                                bySubject[subjectName].color; // Fallback to subject base
+
+        bySubject[subjectName].topics[topicName] = {
+          id: topicShell?.id || `temp_topic_${subjectName}_${topicName}`.replace(/\s+/g, '_'),
+          name: topicName,
+          color: topicDisplayColor,
+          examBoard: topicShell?.examBoard || bySubject[subjectName].examBoard,
+          examType: topicShell?.examType || bySubject[subjectName].examType,
+          cardCount: 0,
+          cards: []
+        };
+      }
+
+      // Add card to topic and update counts if it's not a topic shell
+      if (item.type !== 'topic' && !item.isShell) {
+        bySubject[subjectName].topics[topicName].cards.push(item);
+        bySubject[subjectName].topics[topicName].cardCount++;
+        bySubject[subjectName].totalCardsInSubject++;
+      }
+    });
+    return bySubject;
+  }, [BRIGHT_COLORS]); // subjectColorMapping will be passed in useEffect
 
   const getExistingSubjectNames = useMemo(() => {
     // Depends on groupedCards which is defined above this point in component flow
@@ -391,10 +434,11 @@ useEffect(() => {
   // Regroup cards whenever the 'cards' prop changes
   useEffect(() => {
     dlog("[FlashcardList regroup useEffect] Cards prop changed:", cards);
-    const bySubjectAndTopic = regroupCards(cards);
+    // Pass the current subjectColorMapping to regroupCards
+    const bySubjectAndTopic = regroupCards(cards, subjectColorMapping);
     dlog("[FlashcardList regroup useEffect] Setting grouped cards:", bySubjectAndTopic);
     setGroupedCards(bySubjectAndTopic);
-  }, [cards, regroupCards]);
+  }, [cards, regroupCards, subjectColorMapping]); // Add subjectColorMapping dependency
 
   // --- START: Function to toggle topic menus ---
   const toggleTopicMenu = useCallback((topicKey, e) => {
@@ -606,28 +650,22 @@ useEffect(() => {
   
   const sortedSubjects = useMemo(() => {
     if (Object.keys(groupedCards).length === 0) return [];
-    dlog("[FlashcardList] Recalculating sortedSubjects. Current color mapping:", subjectColorMapping);
+    dlog("[FlashcardList] Recalculating sortedSubjects. Current groupedCards:", groupedCards);
 
-    const subjectsWithDates = Object.keys(groupedCards).map(subject => {
-      const { examType, examBoard } = getExamInfo(subject);
-      // Use the state directly, provide fallback if needed
-      const colorInfo = subjectColorMapping[subject];
-      const baseColor = colorInfo?.base || '#f0f0f0'; // Default grey if not mapped
-      dlog(`[sortedSubjects - ${subject}] Color: ${baseColor}, ExamType: ${examType}, ExamBoard: ${examBoard}`);
-      return {
-        id: subject,
-        title: subject,
-        cards: groupedCards[subject],
-        exam_type: examType, // Use corrected names
-        exam_board: examBoard, // Use corrected names
-        color: baseColor, // Use base color from mapping
-        creationDate: getSubjectDate(subject)
-      };
-    });
+    const subjectsArray = Object.values(groupedCards).map(subjectDetails => ({
+      id: subjectDetails.name,
+      title: subjectDetails.name,
+      color: subjectDetails.color,
+      exam_type: subjectDetails.examType,
+      exam_board: subjectDetails.examBoard,
+      totalTopics: Object.keys(subjectDetails.topics).length,
+      totalCards: subjectDetails.totalCardsInSubject,
+      // creationDate can be derived if needed, or we can simplify this part
+      // For now, let's sort by name for predictability
+    }));
 
-    // Sort by creation date (earliest first)
-    return subjectsWithDates.sort((a, b) => a.creationDate - b.creationDate);
-  }, [groupedCards, getExamInfo, getSubjectDate, subjectColorMapping]);
+    return subjectsArray.sort((a, b) => a.title.localeCompare(b.title));
+  }, [groupedCards]);
 
   // Chunk subjects for rendering
   const subjectChunks = useMemo(() => chunkArray(sortedSubjects, 3), [sortedSubjects]);
@@ -647,7 +685,7 @@ useEffect(() => {
       }
 
       // Force a re-render of the grouped cards
-      const newGroupedCards = regroupCards(cards);
+      const newGroupedCards = regroupCards(cards, subjectColorMapping);
       dlog("[FlashcardList] Grouped cards:", newGroupedCards);
       setGroupedCards(newGroupedCards);
 
@@ -674,7 +712,7 @@ useEffect(() => {
     dlog("[FlashcardList] Cards prop updated:", cards);
     if (cards && cards.length > 0) {
         // --- 1. Regroup Cards ---
-        const newGroupedCards = regroupCards(cards);
+        const newGroupedCards = regroupCards(cards, subjectColorMapping);
         dlog("[FlashcardList] Regrouped cards:", newGroupedCards);
         setGroupedCards(newGroupedCards);
 
@@ -689,7 +727,7 @@ useEffect(() => {
     } else {
         setGroupedCards({});
     }
-}, [cards, regroupCards, expandedSubjects.size]); // REMOVED subjectColorMapping and updateColorMapping from dependencies here
+}, [cards, regroupCards, expandedSubjects.size, subjectColorMapping]); // REMOVED subjectColorMapping and updateColorMapping from dependencies here
 
 
   // --- Modify handleAddGeneratedCards ---
@@ -846,26 +884,34 @@ useEffect(() => {
     openPrintModal(topicCards, `${subject} - ${topic}`);
   };
 
-  const startSlideshow = useCallback((subject, topic, e) => {
-    if (e) e.stopPropagation();
-    let slideshowCardsToUse = [];
+  const startSlideshow = useCallback((subject, topic, e, cardsForSlideshow = null) => {
+    if (e) e.stopPropagation(); // Keep this if called from event handlers
+
+    let actualCards = cardsForSlideshow;
     let slideshowTitleToUse = "Slideshow";
-    if (topic) {
-      slideshowCardsToUse = (groupedCards?.[subject]?.[topic] || []).filter(item => item.type !== 'topic');
-      slideshowTitleToUse = subject; // Only use subject for title
-    } else {
-      const allTopics = Object.keys(groupedCards?.[subject] || {});
-      slideshowCardsToUse = allTopics.reduce((all, currentTopic) => {
-        const topicCardsOnly = (groupedCards[subject]?.[currentTopic] || []).filter(item => item.type !== 'topic');
-        return all.concat(topicCardsOnly);
-      }, []);
-      slideshowTitleToUse = subject;
+
+    if (!actualCards) { // If cards not directly passed, derive them
+        if (topic && subject && groupedCards?.[subject]?.topics?.[topic]) {
+            actualCards = (groupedCards[subject].topics[topic].cards || []).filter(item => item.type !== 'topic');
+            slideshowTitleToUse = subject; // Only subject name for title as per previous request
+        } else if (subject && groupedCards?.[subject]) {
+            actualCards = [];
+            Object.values(groupedCards[subject].topics).forEach(topicDetails => {
+                actualCards.push(...(topicDetails.cards || []).filter(item => item.type !== 'topic'));
+            });
+            slideshowTitleToUse = subject;
+        } else {
+            actualCards = []; // Fallback
+        }
+    } else { // Cards were passed directly, use them
+        slideshowTitleToUse = subject; // Still only subject for title
+        if(topic) slideshowTitleToUse = subject; // Keep it as subject even if topic context was there
     }
     
-    // Always create placeholder for empty topics
-    if (slideshowCardsToUse.length === 0) {
+    // Always create placeholder for empty topics/subjects
+    if (actualCards.length === 0) {
       dlog(`No cards found for slideshow: ${slideshowTitleToUse}. Creating placeholder.`);
-      slideshowCardsToUse = [
+      actualCards = [
         {
           id: `placeholder-${Date.now()}`,
           front: `No cards generated for this topic yet.`, 
@@ -876,7 +922,7 @@ useEffect(() => {
       ];
     }
     
-    setSlideshowCards(slideshowCardsToUse);
+    setSlideshowCards(actualCards);
     setSlideshowTitle(slideshowTitleToUse);
     setShowSlideshow(true);
   }, [groupedCards]);
@@ -1191,15 +1237,107 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
     );
   };
 
+  const handleOpenTopicListModal = useCallback((subjectDataForModal) => {
+    dlog("[FlashcardList] Opening TopicListModal for subject:", subjectDataForModal);
+    // The subjectDataForModal should be the rich object from sortedSubjects
+    // We need to find the full subject detail from groupedCards to pass all topics
+    const fullSubjectDetails = groupedCards[subjectDataForModal.id];
+    if (fullSubjectDetails) {
+      setActiveSubjectForModal(fullSubjectDetails); // Pass the full subject object with its topics
+      setIsTopicListModalOpen(true);
+    } else {
+      derr("Could not find full details for subject to open modal:", subjectDataForModal.id);
+    }
+  }, [groupedCards]);
+
+  const handleCloseTopicListModal = useCallback(() => {
+    setIsTopicListModalOpen(false);
+    setActiveSubjectForModal(null);
+  }, []);
+
+  const handleSubjectAction = useCallback((actionType, subjectName) => {
+    dlog(`[FlashcardList] Subject Action: ${actionType} for ${subjectName}`);
+    const subjectDetails = groupedCards[subjectName];
+    if (!subjectDetails) {
+      derr(`Cannot perform action ${actionType}, subject ${subjectName} not found in groupedCards.`);
+      return;
+    }
+
+    switch (actionType) {
+      case 'slideshow':
+        // Collect all cards from all topics of this subject
+        let allCardsForSubjectSlideshow = [];
+        Object.values(subjectDetails.topics).forEach(topic => {
+          allCardsForSubjectSlideshow.push(...(topic.cards || []));
+        });
+        startSlideshow(subjectName, null, null, allCardsForSubjectSlideshow); // Pass cards directly
+        break;
+      case 'print':
+        const allCardsForSubjectPrint = [];
+        Object.values(subjectDetails.topics).forEach(topic => {
+          allCardsForSubjectPrint.push(...(topic.cards || []));
+        });
+        openPrintModal(allCardsForSubjectPrint, subjectName);
+        break;
+      case 'color':
+        openColorEditor(subjectName, null, subjectDetails.color, { stopPropagation: () => {} });
+        break;
+      case 'delete':
+        handleDeleteSubject(subjectName);
+        break;
+      default:
+        dwarn("Unknown subject action:", actionType);
+    }
+  }, [groupedCards, startSlideshow, openPrintModal, openColorEditor, handleDeleteSubject]);
+
+  const handleTopicActionInModal = useCallback((actionType, subjectName, topicData) => {
+    dlog(`[FlashcardList] Topic Action from Modal: ${actionType} for ${subjectName} - ${topicData.name}`);
+    const subjectDetails = groupedCards[subjectName];
+    const targetTopic = subjectDetails?.topics[topicData.name];
+
+    if (!targetTopic) {
+      derr(`Cannot perform action ${actionType}, topic ${topicData.name} not found in subject ${subjectName}.`);
+      return;
+    }
+
+    switch (actionType) {
+      case 'ai_generate':
+        // This might need to open the FlashcardGeneratorBridge or navigate.
+        // For now, let's assume it triggers a global event or a function passed from App.js
+        // For simplicity, we can reuse setGeneratorTopic and setShowCardGenerator if they are still relevant
+        // Or pass this up to App.js to handle navigation/modal opening for AI generator.
+        // Let's open FlashcardGeneratorBridge directly for now
+        setGeneratorTopic({ // Assuming setGeneratorTopic and setShowCardGenerator are still available
+            subject: subjectName,
+            topic: topicData.name,
+            name: topicData.name,
+            color: topicData.color,
+            cardColor: topicData.color,
+            examBoard: topicData.examBoard,
+            examType: topicData.examType,
+            id: topicData.id,
+            cards: topicData.cards || []
+        });
+        setShowCardGenerator(true);
+        setIsTopicListModalOpen(false); // Close topic list modal
+        break;
+      // Slideshow is handled internally by TopicListModal now.
+      // case 'slideshow':
+      //   startSlideshow(subjectName, topicData.name, null, targetTopic.cards);
+      //   break;
+      case 'print':
+        openPrintModal(targetTopic.cards || [], `${subjectName} - ${topicData.name}`);
+        break;
+      case 'delete':
+        handleDeleteTopic(subjectName, topicData.name); // Existing handler
+        break;
+      default:
+        dwarn("Unknown topic action from modal:", actionType);
+    }
+  }, [groupedCards, /*startSlideshow,*/ openPrintModal, handleDeleteTopic, setGeneratorTopic, setShowCardGenerator]);
 
   return (
     <div className="flashcard-list">
-      <ScrollManager
-        expandedSubjects={expandedSubjects}
-        expandedTopics={expandedTopics}
-        subjectRefs={subjectRefs} 
-        topicRefs={topicRefs}
-      />
       <button
         onClick={() => setShowTopicCreationModal(true)}
         className="create-topic-list-button button-primary floating-create-button"
@@ -1208,111 +1346,35 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
         <span className="button-icon">⚡</span> <span>Create Topics</span>
       </button>
 
-      <div className="subject-groups-wrapper">
-        {subjectChunks.map((chunk, chunkIndex) => (
-          <div key={`chunk-${chunkIndex}`} className="subject-group-container">
-            {chunk.map(({ id: subject, title, cards: topicsData, exam_type, exam_board, color: subjectBaseColor, creationDate }) => {
-              const subjectKey = subject;
-              const isExpanded = expandedSubjects.has(subjectKey);
-              const subjectTextColor = getContrastColor(subjectBaseColor);
-              const totalTopics = Object.keys(topicsData || {}).length;
-              const totalCardCount = Object.values(topicsData || {}).reduce((count, items) => {
-                return count + items.filter(item => item.type !== 'topic').length;
-              }, 0);
+      <div className="subject-buttons-grid"> {/* New container for subject buttons */}
+        {sortedSubjects.map(subjectDisplayData => {
+          // Find the full subject data from groupedCards using the id/title from sortedSubjects
+          const fullSubjectDataFromGrouped = groupedCards[subjectDisplayData.id];
+          if (!fullSubjectDataFromGrouped) {
+            derr("Mismatch: Subject in sortedSubjects not found in groupedCards:", subjectDisplayData.id);
+            return null;
+          }
+          
+          // Prepare a data object specifically for SubjectButton props
+          const subjectButtonPropsData = {
+            name: fullSubjectDataFromGrouped.name,
+            color: fullSubjectDataFromGrouped.color,
+            totalTopics: Object.keys(fullSubjectDataFromGrouped.topics).length,
+            totalCards: fullSubjectDataFromGrouped.totalCardsInSubject,
+            examBoard: fullSubjectDataFromGrouped.examBoard,
+            examType: fullSubjectDataFromGrouped.examType,
+            id: fullSubjectDataFromGrouped.name // Use name as ID for button key if no other unique ID
+          };
 
-              const handleSlideshowSubject = (e) => {
-                e.stopPropagation();
-                startSlideshow(subject, null, e);
-              };
-              const handlePrintSubjectClick = (e) => {
-                e.stopPropagation();
-                const subjectCards = [];
-                Object.values(topicsData || {}).forEach(topicCards => {
-                  subjectCards.push(...topicCards.filter(item => item.type !== 'topic'));
-                });
-                openPrintModal(subjectCards, subject);
-              };
-              const handleDeleteSubjectClick = (e) => {
-                e.stopPropagation();
-                handleDeleteSubject(subject);
-              };
-              const handleColorSubjectClick = (e) => {
-                e.stopPropagation();
-                openColorEditor(subject, null, subjectBaseColor, e);
-              };
-
-              return (
-                <div
-                  key={subjectKey}
-                  className="subject-container"
-                  ref={el => subjectRefs.current[subjectKey] = el}
-                >
-                  <div
-                    className={`subject-header ${isExpanded ? 'expanded' : ''}`}
-                    style={{ backgroundColor: subjectBaseColor, color: subjectTextColor }}
-                    onClick={() => toggleSubject(subjectKey)}
-                  >
-                    <div className="subject-info">
-                      <h2>{title}</h2>
-                      <div className="subject-meta">
-                        <span className="topic-count">({totalTopics} topics)</span>
-                        <span className="card-count">({totalCardCount} cards)</span>
-                        <span className="exam-type">{exam_type}</span>
-                        <span className="exam-board">{exam_board}</span>
-                      </div>
-                    </div>
-                    <div className="subject-actions">
-                      <button 
-                        className="subject-actions-toggle mobile-only" 
-                        onClick={(e) => toggleSubjectMenu(subjectKey, e)}
-                        aria-label="Toggle subject actions"
-                      >
-                        &#x22EE; 
-                      </button>
-                      <div className={`subject-actions-menu ${openSubjectMenus[subjectKey] ? 'active' : ''}`}>
-                        <button
-                          onClick={handleSlideshowSubject}
-                          className="nav-button slideshow-button"
-                          title="Start slideshow with all cards"
-                          disabled={totalCardCount === 0}
-                        >
-                          <span className="button-icon">🔄</span>
-                          <span className="button-text mobile-only">Slideshow</span>
-                        </button>
-                        <button
-                          onClick={handlePrintSubjectClick}
-                          className="nav-button print-button"
-                          title="Print subject cards"
-                          disabled={totalCardCount === 0}
-                        >
-                          <span className="button-icon">🖨️</span>
-                          <span className="button-text mobile-only">Print</span>
-                        </button>
-                        <button
-                          onClick={handleColorSubjectClick}
-                          className="nav-button color-button"
-                          title="Edit subject color"
-                        >
-                          <span className="button-icon">🎨</span>
-                          <span className="button-text mobile-only">Color</span>
-                        </button>
-                        <button
-                          onClick={handleDeleteSubjectClick}
-                          className="nav-button delete-button"
-                          title="Delete subject"
-                        >
-                          <span className="button-icon">🗑️</span>
-                          <span className="button-text mobile-only">Delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  {isExpanded && renderTopics(subject, subjectBaseColor)}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+          return (
+            <SubjectButton
+              key={subjectButtonPropsData.id}
+              subjectData={subjectButtonPropsData}
+              onClick={() => handleOpenTopicListModal(subjectButtonPropsData)} // Pass the display data, modal will use activeSubjectForModal
+              onAction={handleSubjectAction}
+            />
+          );
+        })}
       </div>
       
       <DeleteConfirmModal
@@ -1370,6 +1432,19 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
           cards={slideshowCards}
           title={slideshowTitle}
           onClose={() => setShowSlideshow(false)}
+        />
+      )}
+      {activeSubjectForModal && (
+        <TopicListModal
+          isOpen={isTopicListModalOpen}
+          onClose={handleCloseTopicListModal}
+          subjectData={{ // Pass basic subject info for modal header
+            name: activeSubjectForModal.name,
+            color: activeSubjectForModal.color,
+          }}
+          // Convert topics object to array for easier mapping in modal
+          topicsForSubject={Object.values(activeSubjectForModal.topics || {})}
+          onTopicAction={handleTopicActionInModal}
         />
       )}
       {showCardGenerator && generatorTopic && (

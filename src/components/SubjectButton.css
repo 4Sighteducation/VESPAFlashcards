@@ -1,0 +1,120 @@
+.subject-button-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  position: relative; /* For accent border positioning */
+}
+
+.subject-button-container:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.subject-button-main-content {
+  flex-grow: 1;
+  margin-right: 15px;
+}
+
+.subject-button-name {
+  margin: 0 0 8px 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.subject-button-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 15px; /* Row gap, Column gap */
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.subject-button-meta span {
+  padding: 3px 6px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.subject-button-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subject-button-actions .action-icon {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: inherit; /* Uses text color from container */
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subject-button-actions .action-icon:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.35);
+  transform: scale(1.1);
+}
+
+.subject-button-actions .action-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.subject-button-actions .action-icon.delete:hover:not(:disabled) {
+  background-color: rgba(255, 82, 82, 0.3); /* Light red for delete hover */
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .subject-button-container {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 15px;
+  }
+
+  .subject-button-main-content {
+    margin-right: 0;
+    margin-bottom: 12px;
+    width: 100%;
+  }
+
+  .subject-button-name {
+    font-size: 1.2rem;
+  }
+
+  .subject-button-meta {
+    font-size: 0.75rem;
+    gap: 4px 10px;
+  }
+  
+  .subject-button-meta span {
+    padding: 2px 5px;
+  }
+
+  .subject-button-actions {
+    width: 100%;
+    justify-content: space-around; /* Distribute actions on mobile */
+  }
+
+  .subject-button-actions .action-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+} 

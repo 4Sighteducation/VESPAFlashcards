@@ -3,11 +3,25 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  height: calc(100vh - 100px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 15px;
+}
+
+/* New grid for Subject Buttons */
+.subject-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Responsive grid */
+  gap: 20px;
+  padding: 10px 0; /* Add some padding around the grid */
+}
+
+/* Adjustments for very small screens if necessary */
+@media (max-width: 350px) {
+  .subject-buttons-grid {
+    grid-template-columns: 1fr; /* Single column on very small screens */
+  }
 }
 
 /* New: Wrapper for all subject group containers */
@@ -2260,23 +2274,22 @@ html {
 
 /* Ensure the Create Topics button is full width and in normal flow */
 .floating-create-button {
-  width: 100% !important; /* Ensure override */
-  display: block !important; /* Ensure override if it was inline-block or flex */
-  position: relative !important; /* Override fixed/absolute */
+  width: auto !important; /* Allow button to size to content + padding */
+  max-width: 300px; /* Optional: Set a max-width */
+  display: block !important;
+  position: relative !important;
   bottom: auto !important;
   right: auto !important;
   left: auto !important;
   top: auto !important;
-  margin: 10px 0 15px 0 !important; /* Add some margin: top/bottom 15px, left/right 0 or auto if parent centers */
-  /* If it uses .button-primary, padding and font-size should be okay. */
-  /* Centering text if it's display: block */
+  margin: 10px auto 20px auto !important; /* Center button and add more bottom margin */
+  padding: 12px 25px; /* Adjust padding for better appearance */
+  font-size: 1rem;
   text-align: center;
-  /* Remove transform if it was used for floating positioning */
   transform: none !important; 
 }
 
-/* If it has an icon and text, and display: block makes them stack, adjust if needed */
 .floating-create-button span {
-  /* display: inline-block; /* or other styling to keep them inline if necessary */
-  /* vertical-align: middle; */
+   /* display: inline-block; */
+   /* vertical-align: middle; */
 }

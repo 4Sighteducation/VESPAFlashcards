@@ -1,0 +1,115 @@
+.study-topic-modal-overlay {
+  z-index: 1060; /* Slightly higher than TopicListModal if they could ever overlap (unlikely here) */
+}
+
+.study-topic-modal-content {
+  width: 90%;
+  max-width: 550px; /* Slightly smaller for selection focus */
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+
+.study-topic-modal-header {
+  padding: 15px 20px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  text-align: center;
+}
+
+.study-topic-modal-header h2 {
+  margin: 0 0 5px 0;
+  font-size: 1.4rem;
+}
+.study-topic-modal-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.study-topic-close-button {
+  z-index: 10;
+  color: inherit;
+  background-color: rgba(0,0,0,0.1);
+}
+.study-topic-close-button:hover {
+  background-color: rgba(0,0,0,0.2);
+}
+
+.study-topic-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Space between topic buttons */
+}
+
+.no-study-topics-message {
+  text-align: center;
+  color: #777;
+  padding: 20px 0;
+  font-style: italic;
+}
+
+.study-topic-item-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: 6px;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s ease-in-out, background-color 0.2s;
+}
+
+.study-topic-item-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.study-topic-item-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #e9ecef !important; /* More distinct disabled style */
+  color: #6c757d !important;
+}
+
+.study-topic-item-name {
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.study-topic-item-cards-due {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .study-topic-modal-content {
+    max-width: 95%;
+  }
+  .study-topic-modal-header h2 {
+    font-size: 1.2rem;
+  }
+  .study-topic-modal-header h4 {
+    font-size: 0.9rem;
+  }
+  .study-topic-modal-body {
+    padding: 15px;
+  }
+  .study-topic-item-button {
+    padding: 10px 15px;
+  }
+  .study-topic-item-name {
+    font-size: 1rem;
+  }
+} 

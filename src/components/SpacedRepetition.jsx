@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import ReactDOM from "react-dom";
 import "./SpacedRepetition.css";
 import FlippableCard from './FlippableCard';
 import { dlog, dwarn, derr } from '../utils/logger'; // Import the logger
+import StudySubjectDisplay from './StudySubjectDisplay'; // <-- Import
+import StudyTopicSelectionModal from './StudyTopicSelectionModal'; // <-- Import
 
 const SpacedRepetition = ({
   cards,
@@ -52,6 +54,62 @@ const SpacedRepetition = ({
   // Refs for timeouts
   const feedbackTimeoutRef = useRef(null);
   const answerFeedbackTimeoutRef = useRef(null); // For MCQ immediate feedback
+
+  // New state for Study Topic Selection Modal
+  const [isStudyTopicModalOpen, setIsStudyTopicModalOpen] = useState(false);
+  const [activeStudySubjectForModal, setActiveStudySubjectForModal] = useState(null); // { name, color, topicsWithDueCards }
+
+  // Data grouping for study section
+  const groupedSubjectsForStudy = useMemo(() => {
+    if (!cards || cards.length === 0) {
+      return [];
+    }
+    dlog("[SpacedRepetition] Grouping cards for study view. Total cards in box:", cards.length);
+
+    const subjectsMap = new Map();
+
+    cards.forEach(card => {
+      if (!card || !card.subject) return; // Skip cards without a subject
+
+      const subjectName = card.subject;
+      const topicName = card.topic || 'General'; // Default topic if undefined
+
+      if (!subjectsMap.has(subjectName)) {
+        subjectsMap.set(subjectName, {
+          name: subjectName,
+          color: card.subjectColor || '#808080', // Fallback color
+          cardsDueInSubject: 0,
+          topics: new Map()
+        });
+      }
+
+      const currentSubject = subjectsMap.get(subjectName);
+      currentSubject.cardsDueInSubject++;
+
+      if (!currentSubject.topics.has(topicName)) {
+        currentSubject.topics.set(topicName, {
+          id: card.topicId || `${subjectName}_${topicName}`.replace(/\s+/g, '_'), // Use topicId or generate one
+          name: topicName,
+          color: card.topicColor || card.cardColor || currentSubject.color, // Topic color, card color, or subject color
+          cardsDueInTopicCount: 0,
+          // cards: [] // We don't need to store full cards here, just counts for the modal
+        });
+      }
+      currentSubject.topics.get(topicName).cardsDueInTopicCount++;
+      // currentSubject.topics.get(topicName).cards.push(card); // Storing cards not strictly needed for this structure
+    });
+
+    // Convert maps to arrays for rendering
+    const result = Array.from(subjectsMap.values()).map(subject => ({
+      ...subject,
+      topics: Array.from(subject.topics.values()).sort((a, b) => a.name.localeCompare(b.name)) // Sort topics alphabetically
+    }));
+    
+    // Sort subjects alphabetically
+    result.sort((a,b) => a.name.localeCompare(b.name));
+    dlog("[SpacedRepetition] Grouped subjects for study:", result);
+    return result;
+  }, [cards]);
 
   // Add this array of humorous empty state messages
   const emptyStateMessages = [
@@ -752,104 +810,137 @@ const SpacedRepetition = ({
     );
   };
 
-  // Render the study interface
+  // Handlers for the new Study Subject/Topic selection flow
+  const handleOpenStudyTopicsModal = useCallback((subjectData) => {
+    dlog("[SpacedRepetition] Opening study topics modal for:", subjectData.name);
+    setActiveStudySubjectForModal(subjectData); // subjectData comes from groupedSubjectsForStudy
+    setIsStudyTopicModalOpen(true);
+  }, []);
+
+  const handleCloseStudyTopicsModal = useCallback(() => {
+    setIsStudyTopicModalOpen(false);
+    setActiveStudySubjectForModal(null);
+  }, []);
+
+  const startReviewSession = useCallback((cardsToReview) => {
+    if (cardsToReview && cardsToReview.length > 0) {
+      dlog("[SpacedRepetition] Starting review session with", cardsToReview.length, "cards.");
+      setShuffledCards(shuffleArray([...cardsToReview]));
+      setCurrentIndex(0);
+      setSessionStats({ correct: 0, incorrect: 0, reviewedCount: 0 });
+      setShowSummary(false);
+      setIsStudyTopicModalOpen(false); // Ensure modal is closed
+      setActiveStudySubjectForModal(null); // Reset active subject for modal
+    } else {
+      dwarn("[SpacedRepetition] Attempted to start review session with no cards.");
+      // Optionally, show a message to the user
+    }
+  }, [shuffleArray]); // Added shuffleArray dependency
+
+  const handleReviewAllSubjectCardsInBox = useCallback((subjectName) => {
+    dlog("[SpacedRepetition] Reviewing all cards in box for subject:", subjectName);
+    const subjectData = groupedSubjectsForStudy.find(s => s.name === subjectName);
+    if (subjectData) {
+      // Filter props.cards to get all cards for this subject that are in the current box
+      const cardsForSubjectInBox = cards.filter(card => card.subject === subjectName);
+      startReviewSession(cardsForSubjectInBox);
+    } else {
+      derr("[SpacedRepetition] Subject data not found for:", subjectName);
+    }
+  }, [cards, groupedSubjectsForStudy, startReviewSession]);
+
+  const handleReviewTopicCardsFromModal = useCallback((subjectName, topicData) => {
+    dlog("[SpacedRepetition] Reviewing cards from modal for topic:", topicData.name, "in subject:", subjectName);
+    // Filter props.cards for this specific subject and topic that are in the current box
+    const cardsForTopicInBox = cards.filter(card => card.subject === subjectName && card.topic === topicData.name);
+    startReviewSession(cardsForTopicInBox);
+    // Modal is closed by its own selection handler
+  }, [cards, startReviewSession]);
+
+  // Main return statement
   return (
-    <div className="spaced-repetition">
-      {/* Box Info */}
-      <div className={`box-info box-info-${currentBox}`}>
-        <h2>Box {currentBox}</h2>
-        <p>
-          {currentBox === 1 && "Review daily."}
-          {currentBox === 2 && "Review every 2 days."}
-          {currentBox === 3 && "Review every 3 days."}
-          {currentBox === 4 && "Review every 7 days."}
-          {currentBox === 5 && "These cards are mastered. Occasional review."}
-        </p>
-      </div>
+    <div className="spaced-repetition-container">
+      {!showSummary && shuffledCards.length > 0 && currentIndex < shuffledCards.length ? (
+        // Active Review Session View
+        <div className="review-session-active">
+          <div className="card-progression-header">
+            <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button">&larr; Back to Bank</button>
+            <div className="card-counter">
+              Card {currentIndex + 1} of {shuffledCards.length} (Box {currentBox})
+            </div>
+            <div className="session-stats-display">
+              Correct: {sessionStats.correct} | Incorrect: {sessionStats.incorrect}
+            </div>
+          </div>
+          
+          {isLoadingNextCard ? (
+            <div className="loading-next-card">
+              <div className="spinner"></div>
+              <p>Loading next card...</p>
+            </div>
+          ) : (
+            shuffledCards[currentIndex] && (
+              <FlippableCard
+                key={shuffledCards[currentIndex].id} // Key for re-mount on card change
+                card={shuffledCards[currentIndex]}
+                onAnswer={handleAnswer}
+                isLocked={shuffledCards[currentIndex].isLocked} // Pass lock status
+                lockedNextReviewDate={shuffledCards[currentIndex].nextReviewDate} // Pass review date for locked cards
+              />
+            )
+          )}
+          
+          {/* Feedback and controls are handled within FlippableCard or by handleAnswer now */}
+        </div>
+      ) : !showSummary && shuffledCards.length === 0 ? (
+        // Initial View: Select Subject/Topic or No Cards View
+        <div className="study-selection-view">
+          <div className="study-selection-header">
+            <h2>Study Box {currentBox}</h2>
+            <p>Select a subject to study, or review all cards for a subject in this box.</p>
+             <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button">&larr; Back to Bank</button>
+          </div>
 
-      {/* Always render subject containers */}
-      {renderSubjectContainers()}
-      
-      {/* Study modal */}
-      {showStudyModal && (
-        <div className="study-modal-overlay" onClick={() => setShowStudyModal(false)}>
-          <div className="study-modal" onClick={(e) => e.stopPropagation()}>
-            <button 
-              className="study-modal-close" 
-              onClick={() => setShowStudyModal(false)}
-              aria-label="Close study modal"
-            >
-              ✕
-            </button>
-            {renderCardReview()}
-          </div>
-        </div>
-      )}
-      
-      {/* Review date message / Feedback Message Modal */}
-      {showReviewDateMessage && (
-        <div className="feedback-modal-overlay" onClick={() => { setShowReviewDateMessage(false); setFeedbackMessage(""); }}>
-          <div className="feedback-modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>{feedbackMessage.includes("Error") ? "Error" : "Update"}</h3>
-            <p>
-              {feedbackMessage}
-            </p>
-            {/* Only show next review date if it's part of the message (e.g. locked card) */}
-            {nextReviewDate && !feedbackMessage.includes("Box") && (
-              <p>
-                This card has already been reviewed and is currently locked. It will be available for review on{" "}
-                <strong>{nextReviewDate ? new Date(nextReviewDate).toLocaleDateString() : "a future date"}</strong>.
-              </p>
-            )}
-            <div className="feedback-modal-actions">
-              <button onClick={() => { setShowReviewDateMessage(false); setFeedbackMessage(""); }}>Got it</button>
+          {groupedSubjectsForStudy.length === 0 && (
+            <div className="no-cards-for-study-box">
+              <h3>🎉 All Clear! 🎉</h3>
+              <p>{emptyStateMessages[Math.floor(Math.random() * emptyStateMessages.length)]}</p>
+              <p>There are no cards to review in Box {currentBox} right now.</p>
+              <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button large-empty-button">
+                Go to Card Bank
+              </button>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Humorous Completion Modal */}
-      {showHumorousCompletionModal && (
-        <div className="feedback-modal-overlay" onClick={() => {
-          setShowHumorousCompletionModal(false);
-          setHumorousCompletionMessage("");
-          // Also fully exit study mode
-          setSelectedSubject(null);
-          setSelectedTopic(null);
-          setStudyCompleted(false); 
-          setShowStudyModal(false);
-        }}>
-          <div className="feedback-modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Session Complete!</h3>
-            <p className="humorous-completion-message">{humorousCompletionMessage}</p>
-            <div className="feedback-modal-actions">
-              <button onClick={() => {
-                setShowHumorousCompletionModal(false);
-                setHumorousCompletionMessage("");
-                setSelectedSubject(null);
-                setSelectedTopic(null);
-                setStudyCompleted(false); 
-                setShowStudyModal(false);
-              }}>Return to Box View</button>
-            </div>
+          <div className="study-subject-list">
+            {groupedSubjectsForStudy.map(subject => (
+              <StudySubjectDisplay
+                key={subject.name}
+                subjectName={subject.name}
+                subjectColor={subject.color}
+                cardsDueInSubject={subject.cardsDueInSubject}
+                onReviewAll={() => handleReviewAllSubjectCardsInBox(subject.name)}
+                onOpenTopicsModal={() => handleOpenStudyTopicsModal(subject)}
+              />
+            ))}
           </div>
+          
+          {activeStudySubjectForModal && (
+            <StudyTopicSelectionModal
+              isOpen={isStudyTopicModalOpen}
+              onClose={handleCloseStudyTopicsModal}
+              subjectName={activeStudySubjectForModal.name}
+              subjectColor={activeStudySubjectForModal.color}
+              topicsWithDueCards={activeStudySubjectForModal.topics}
+              onReviewTopic={handleReviewTopicCardsFromModal} // Pass the correct handler
+            />
+          )}
         </div>
-      )}
-      
-      {/* Info modal */}
-      {showInfoModal && isValidCard && currentCard && ReactDOM.createPortal(
-        <div className="info-modal-overlay" onClick={() => setShowInfoModal(false)}>
-          <div className="info-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="info-modal-header">
-              <h3>Additional Information</h3>
-              <button className="close-modal-btn" onClick={() => setShowInfoModal(false)}>✕</button>
-            </div>
-            <div className="info-modal-content">
-              <div dangerouslySetInnerHTML={{ __html: currentCard.additionalInfo || currentCard.detailedAnswer || "No additional information available." }} />
-            </div>
-          </div>
-        </div>,
-        document.body
+      ) : (
+        // Session Summary View
+        <div className="session-summary-view">
+          {/* Implement session summary rendering logic here */}
+        </div>
       )}
     </div>
   );

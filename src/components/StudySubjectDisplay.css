@@ -1,0 +1,88 @@
+.study-subject-display-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.study-subject-display-container:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.study-subject-info {
+  flex-grow: 1;
+  margin-right: 15px;
+  cursor: pointer; /* Indicates the main area is clickable for topics */
+}
+
+.study-subject-name {
+  margin: 0 0 4px 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.study-subject-cards-due {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  padding: 2px 5px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.study-subject-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.study-subject-actions .study-action-button {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: inherit;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.study-subject-actions .study-action-button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.study-subject-actions .study-action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.study-subject-actions .view-topics-button {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+
+@media (max-width: 600px) {
+  .study-subject-display-container {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+  }
+  .study-subject-info {
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .study-subject-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .study-subject-actions .study-action-button {
+    width: 100%;
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+} 

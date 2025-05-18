@@ -1,0 +1,159 @@
+.topic-list-modal-overlay {
+  /* Uses general modal-overlay styles, but we can add specifics if needed */
+  z-index: 1050; /* Ensure it's above other elements, but potentially below a slideshow modal if needed */
+}
+
+.topic-list-modal-content {
+  width: 90%;
+  max-width: 700px;
+  padding: 0; /* Remove padding as header/body will have their own */
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh; /* Limit height */
+}
+
+.topic-list-modal-header {
+  padding: 15px 20px;
+  border-top-left-radius: 12px; /* Match modal-content */
+  border-top-right-radius: 12px; /* Match modal-content */
+  text-align: center;
+}
+
+.topic-list-modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.topic-list-close-button {
+ /* Standard close button, but ensure it's visible over the header */
+  z-index: 10;
+  color: inherit; /* Inherit color from header for better contrast */
+  background-color: rgba(0,0,0,0.1); /* Slight background to stand out */
+}
+.topic-list-close-button:hover {
+  background-color: rgba(0,0,0,0.2);
+}
+
+
+.topic-list-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.no-topics-message {
+  text-align: center;
+  color: #777;
+  padding: 20px;
+  font-style: italic;
+}
+
+.topic-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s ease-in-out;
+}
+
+.topic-list-item:hover {
+  transform: scale(1.015);
+}
+
+.topic-list-item-info {
+  flex-grow: 1;
+  margin-right: 10px;
+}
+
+.topic-list-item-name {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.topic-list-item-meta {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.topic-list-item-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.topic-list-item-actions button {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: inherit;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topic-list-item-actions button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+.topic-list-item-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.topic-list-item-actions button.delete:hover:not(:disabled) {
+  background-color: rgba(255, 82, 82, 0.35);
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .topic-list-modal-content {
+    max-width: 95%;
+    max-height: 90vh;
+  }
+
+  .topic-list-modal-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .topic-list-modal-body {
+    padding: 15px;
+  }
+
+  .topic-list-item {
+    padding: 10px;
+    margin-bottom: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .topic-list-item-info {
+    margin-bottom: 8px;
+    width: 100%;
+  }
+
+  .topic-list-item-name {
+    font-size: 1rem;
+  }
+  .topic-list-item-meta {
+    font-size: 0.7rem;
+  }
+  .topic-list-item-actions {
+    width: 100%;
+    justify-content: flex-end; /* Align to right on mobile */
+  }
+  .topic-list-item-actions button {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+  }
+} 
