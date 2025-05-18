@@ -561,15 +561,26 @@
     overflow: hidden; /* Important: face itself shouldn't scroll, children will */
 }
 
-.card-modal-card-container .flashcard .card-question-area,
-.card-modal-card-container .flashcard .card-options-area,
-.card-modal-card-container .flashcard .card-content-area {
+.card-modal-card-container .flashcard .card-question-area {
+    /* max-height: 30%; */ /* REMOVED - was in base .card-question-area, not here directly */
+    flex-grow: 0.3; /* Allow some growth */
+    flex-shrink: 1; /* Allow shrinking */
+    flex-basis: auto; /* Start with content size */
+    min-height: 4em; /* Ensure a minimum visible area for question */
     overflow-y: auto; /* Allow these internal parts to scroll */
 }
 
 .card-modal-card-container .flashcard .card-options-area {
+    overflow-y: auto; /* Allow these internal parts to scroll */
     flex-grow: 1; /* Give options area priority for space */
+    flex-shrink: 1;
+    flex-basis: auto;
     min-height: 50px; /* Ensure some minimum space for options */
+}
+
+.card-modal-card-container .flashcard .card-content-area {
+    overflow-y: auto; /* Allow these internal parts to scroll */
+    flex-grow: 1; /* For back of card content */
 }
 
 .card-modal-actions { 
@@ -621,26 +632,26 @@
     max-width: 700px; 
   }
   .card-modal-card-container .flashcard {
-    max-width: 650px; /* Card can be wider */
+    max-width: 680px; /* Card can be wider - Increased from 650px */
     /* min-height: 400px; /* Re-evaluate if fixed min-height is good here */
   }
 }
 
 @media (min-width: 992px) and (orientation: landscape) {
   .modal-content { 
-    max-width: 750px; 
+    max-width: 800px; /* Increased */
   }
    .card-modal-card-container .flashcard {
-    max-width: 700px;
+    max-width: 750px; /* Increased from 700px */
   }
 }
 
 @media (min-width: 1200px) and (orientation: landscape) {
   .modal-content { 
-    max-width: 850px; 
+    max-width: 900px; /* Increased */
   }
   .card-modal-card-container .flashcard {
-    max-width: 750px; 
+    max-width: 800px; /* Increased from 750px */
   }
 }
 
@@ -651,10 +662,12 @@
     width: 98%; 
   }
   .card-modal-card-container .flashcard {
-    width: 95%; /* Still slightly less than full container on very narrow */
-    max-height: 80vh; /* Allow card to be very tall, relying on internal scroll */
+    width: 95%; 
+    max-height: 80vh; 
   }
    .card-modal-card-container .flashcard .card-question-area {
-    max-height: 20%; /* Even less for question on tall screens */
+    /* max-height: 20%; */ /* REMOVED */
+    flex-grow: 0.2; /* Less growth on very tall screens */
+    min-height: 3em; /* Adjust min-height if needed for these screens */
   }
 }

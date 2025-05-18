@@ -290,8 +290,6 @@ const FlippableCard = ({
         
         {/* --- Question Area with fixed positioning --- */}
         <div className="card-question-area" style={{
-          maxHeight: isMultipleChoice ? '35%' : '80%',
-          overflow: 'hidden',
           marginBottom: '10px',
           width: '100%',
           textAlign: 'center'
