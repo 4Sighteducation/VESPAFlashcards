@@ -5,7 +5,10 @@
 
 const SIMPLIFIED_TOPIC_EXTRACTION_PROMPT = `CRITICAL INSTRUCTION: YOU MUST RETURN *ONLY* A VALID JSON ARRAY WITH NO EXPLANATORY TEXT, DISCLAIMERS, OR PREAMBLE WHATSOEVER.
 
-You are an exam syllabus expert with extensive knowledge of educational curricula. Your response must ONLY be one of these two formats:
+You are an exam syllabus expert with extensive knowledge of educational curricula.
+You will be provided with raw syllabus data for {examBoard} {examType} {subject}.
+YOUR TASK: Based on this raw syllabus data, analyze, group related items, remove redundancy, and structure it into a clear, concise topic list.
+Your response must ONLY be one of these two formats:
 
 FORMAT 1 (SUCCESS) - Use this in most cases:
 [
@@ -18,23 +21,26 @@ FORMAT 1 (SUCCESS) - Use this in most cases:
   ...more topics...
 ]
 
-FORMAT 2 (ERROR) - Use this ONLY if completely unfamiliar with the subject:
+FORMAT 2 (ERROR) - Use this ONLY if the provided raw syllabus data is nonsensical or completely impossible to process for {examBoard} {examType} {subject}, or if you are explicitly told the data is missing or corrupt:
 [
   {
-    "error": "Could not find current {examBoard} {examType} {subject} specification",
-    "source": "No sufficient knowledge about this specific subject/exam combination",
-    "alternative": "USE AI Fallback Function"
+    "error": "Could not process the provided syllabus data for {examBoard} {examType} {subject}",
+    "source": "Issues with the provided raw data prevented processing.",
+    "alternative": "USE AI Fallback Function" // This suggests a potential fallback if primary processing fails.
   }
 ]
 
-IMPORTANT: Try your best to be highly specific to {examBoard}. You have sufficient knowledge to provide curriculum topics - do NOT claim you need to search websites or access real-time information.
+IMPORTANT: Your primary goal is to accurately process and structure THE PROVIDED RAW SYLLABUS DATA. If the raw data is sparse or unclear, do your best with what's given. Do NOT claim you need to search websites or access real-time information beyond what is provided.
 
-If you're unsure of the exact current specification, providing approximated topics based on your knowledge is MUCH BETTER than returning an error. Return FORMAT 2 only as a last resort for completely unfamiliar subjects.
+RAW SYLLABUS DATA FROM EXAM BOARD ({examBoard} {examType} {subject} for {academicYear}):
+{rawKnackTopicListString}
+
+PROCESSING RULES BASED ON THE ABOVE RAW DATA:
 
 CRITICAL NEW LIMIT - MAXIMUM TOPIC COUNT:
-You must produce a MAXIMUM of 30 topics total, combining main topics and subtopics. Aim for a balanced structure with fewer, more meaningful topics rather than an exhaustive list. For example, you could have 10 main topics with 2-3 subtopics each, or 5-6 main topics with 4-5 subtopics each. The total count of distinct topics should never exceed 30.
+You must produce a MAXIMUM of 30 topics total from the provided raw data, combining main topics and subtopics. Aim for a balanced structure with fewer, more meaningful topics rather than an exhaustive list. For example, you could have 10 main topics with 2-3 subtopics each, or 5-6 main topics with 4-5 subtopics each. The total count of distinct topics should never exceed 30.
 
-EXCLUDING NON-EXAM CONTENT:
+EXCLUDING NON-EXAM CONTENT (Interpret based on provided raw data):
 Exclude any topics primarily focused on:
 1. Coursework components
 2. Investigations/field studies
@@ -219,22 +225,24 @@ FINAL VERIFICATION: Before returning your response, verify that:
 4. Only written exam content is prioritized
 5. For IB subjects, you've considered the specific IB subject group ({ibGroup}) requirements
 
-REMEMBER: You must provide a comprehensive topic list in almost all cases. Returning an error should be extremely rare.`;
+REMEMBER: You must provide a comprehensive topic list based on the provided raw data in almost all cases. Returning an error should be extremely rare.`;
 
 /**
- * A function to generate the specific prompt based on exam parameters
+ * A function to generate the specific prompt based on exam parameters and raw Knack data
  * @param {string} examBoard - The exam board (AQA, Edexcel, OCR, WJEC/Eduqas, SQA)
  * @param {string} examType - The exam type (GCSE, A Level, etc.)
  * @param {string} subject - The subject name
+ * @param {string} rawKnackTopicsString - A string representation of the raw topics from Knack
  * @param {string} ibGroup - The IB subject group (for IB subjects only)
  * @param {string} academicYear - The academic year (e.g., "2024-2025")
  * @returns {string} The formatted prompt
  */
-function generateTopicPrompt(examBoard, examType, subject, ibGroup = "", academicYear = "2024-2025") {
+function generateTopicPrompt(examBoard, examType, subject, rawKnackTopicsString, ibGroup = "", academicYear = "2024-2025") {
   return SIMPLIFIED_TOPIC_EXTRACTION_PROMPT
     .replace(/{examBoard}/g, examBoard)
     .replace(/{examType}/g, examType)
     .replace(/{subject}/g, subject)
+    .replace(/{rawKnackTopicListString}/g, rawKnackTopicsString)
     .replace(/{ibGroup}/g, ibGroup)
     .replace(/{academicYear}/g, academicYear);
 }

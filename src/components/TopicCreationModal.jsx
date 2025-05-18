@@ -6,6 +6,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import TopicHub from "./TopicHub"; // Still needed for the final step
 import { useWebSocket } from "../hooks/useWebSocket";
 import { fetchExamBoards, fetchSubjects, fetchTopics } from "../services/KnackTopicService";
+import { generateTopicPrompt } from "../prompts/topicListPrompt.js"; // Added import
 
 // Constants related to Topic Hub functionality
 const MAX_TOPICS_GENERATED = 25; // Increased limit as discussed
@@ -362,28 +363,77 @@ useEffect(() => {
     setIsLoading(true);
     setError(null);
     setProgress(0);
-    setProgressMessage("Initiating topic generation...");
+    setProgressMessage("Fetching syllabus details and preparing AI request..."); // Updated message
     setGeneratedTopics([]);
     setTopicGenerationComplete(false);
     setPendingOperations(prev => ({ ...prev, generateTopics: true }));
 
     try {
+      // 1. Fetch raw topics from Knack
+      const rawKnackTopics = await fetchTopics(examType, examBoard, subject);
+      dlog(`[TopicCreationModal] Fetched ${rawKnackTopics.length} raw topics from Knack.`);
+
+      // 2. Format raw topics for the prompt
+      // We'll use the 'mainTopic' and 'subtopic' fields from KnackTopicService for clearer structure.
+      let rawKnackTopicsString = "No specific syllabus data found in database for this selection."; // Default if empty
+      if (rawKnackTopics && rawKnackTopics.length > 0) {
+        rawKnackTopicsString = rawKnackTopics.map((t, index) => {
+          const mainInfo = t.mainTopic ? t.mainTopic.trim() : "N/A";
+          const subInfo = t.subtopic ? t.subtopic.trim() : "N/A";
+          
+          // If subInfo is effectively the same as mainInfo or subInfo is not available, just show mainInfo.
+          if (mainInfo === subInfo || (mainInfo !== "N/A" && subInfo === "N/A")) {
+            return `${index + 1}. [Knack Main: ${mainInfo}]`;
+          }
+          // If mainInfo is not available but subInfo is, show subInfo as the primary detail.
+          if (mainInfo === "N/A" && subInfo !== "N/A") {
+            return `${index + 1}. [Knack Detail: ${subInfo}]`; 
+          }
+          // Default case: show both main and sub if they are distinct and available.
+          return `${index + 1}. [Knack Main: ${mainInfo}] [Knack Sub: ${subInfo}]`;
+        }).join('\n');
+      }
+      // Add a console log to check the string being sent, especially for token count estimation
+      dlog("[TopicCreationModal] Raw Knack topics string for prompt:", rawKnackTopicsString);
+      // Consider logging rawKnackTopicsString.length to estimate token impact later
+
+      // 3. Generate the full prompt with raw Knack data embedded
+      // Assuming academicYear isn't crucial for the prompt itself for now, or using a default
+      const currentAcademicYear = "2024-2025"; // Or get this from somewhere if available/needed
+      const fullPrompt = generateTopicPrompt(
+        examType, 
+        examBoard, 
+        subject, 
+        rawKnackTopicsString, 
+        ibGroup, 
+        currentAcademicYear
+      );
+      dlog("[TopicCreationModal] Generated full prompt for LLM."); // Avoid logging fullPrompt if too long / sensitive
+
+      // 4. Send to backend via WebSocket
+      setProgressMessage("Sending request to AI for topic structuring...");
       sendMessage(JSON.stringify({
         action: 'generateTopics',
         data: {
+          // We no longer need to send examType, examBoard, etc., individually to the backend
+          // if the backend only acts as a relay for the fullPrompt to the LLM.
+          // However, the backend might still use them for logging or other purposes.
+          // For now, let's assume the backend primarily needs the fullPrompt.
+          // Decision: Send both for now, backend can choose what to use.
           examType,
           examBoard,
           subject,
-          ibGroup // Include IB group for IB subjects
+          ibGroup,
+          fullPrompt // The critical payload
         }
       }));
     } catch (error) {
-      derr("[TopicCreationModal] Error sending WebSocket message:", error);
-      setError("Failed to start topic generation. Please try again.");
+      derr("[TopicCreationModal] Error during topic generation process:", error);
+      setError("Failed to prepare data or start topic generation. Please try again.");
       setIsLoading(false);
       setPendingOperations(prev => ({ ...prev, generateTopics: false }));
     }
-  }, [formData, isConnected, isLoading, pendingOperations.generateTopics, sendMessage]);
+  }, [formData, isConnected, isLoading, pendingOperations.generateTopics, sendMessage, fetchTopics, generateTopicPrompt]); // Added fetchTopics & generateTopicPrompt to dependencies
 
 // Function to handle the finalization and saving of topics from TopicHub - fixed for multi-subject support
 const handleFinalizeAndSaveTopics = useCallback(async (topicShells) => {

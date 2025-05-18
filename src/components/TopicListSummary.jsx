@@ -48,7 +48,7 @@ const TopicListSummary = ({
     if (topicListToDelete) {
       // Call the actual delete function from props
       // onDeleteTopicList(topicListToDelete);
-      console.log("Deleting topic list:", topicListToDelete);
+      dlog("Deleting topic list:", topicListToDelete);
       setShowDeleteConfirmation(false);
       setTopicListToDelete(null);
     }
@@ -62,7 +62,7 @@ const TopicListSummary = ({
       const date = new Date(dateString);
       return date.toLocaleString();
     } catch (e) {
-      console.error("Error formatting date:", e);
+      derr("Error formatting date:", e);
       return "Unknown";
     }
   };

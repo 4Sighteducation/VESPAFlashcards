@@ -42,7 +42,7 @@ function getKnackHeaders() {
 export async function fetchExamBoards() {
   // Check cache first
   if (cache.examBoards) {
-    console.log("Using cached exam boards");
+    dlog("Using cached exam boards");
     return cache.examBoards;
   }
 
@@ -51,7 +51,7 @@ export async function fetchExamBoards() {
   
   // Store in cache
   cache.examBoards = examBoards;
-  console.log(`Using hard-coded exam boards: ${examBoards.join(', ')}`);
+  dlog(`Using hard-coded exam boards: ${examBoards.join(', ')}`);
   return examBoards;
 }
 
@@ -68,7 +68,7 @@ function normalizeExamType(examType) {
     .replace(/[^a-z0-9]/g, ''); // Remove non-alphanumeric
   
   // Map common variations
-  if (normalized.includes('alevel') || normalized.includes('alevels')) return 'A-Level';
+  if (normalized.includes('alevel') || normalized.includes('alevels')) return 'A-LEVEL';
   if (normalized.includes('gcse') || normalized.includes('gcses')) return 'GCSE';
   
   // Default: return original with capitalization
@@ -90,14 +90,13 @@ export async function fetchSubjects(examType, examBoard) {
   
   // Check cache first
   if (cache.subjects[cacheKey]) {
-    console.log(`Using cached subjects for ${examType} ${examBoard}`);
+    dlog(`Using cached subjects for ${examType} ${examBoard}`);
     return cache.subjects[cacheKey];
   }
 
   try {
-    console.log(`Fetching subjects for ${examType} ${examBoard} from Knack object_109`);
+    dlog(`Fetching all pages of subjects for ${examType} ${examBoard} from Knack object_109`);
     
-    // Format filters for Knack API
     const filters = {
       match: 'and',
       rules: [
@@ -113,31 +112,49 @@ export async function fetchSubjects(examType, examBoard) {
         }
       ]
     };
-    
-    // Use fetch instead of axios for consistency
-    const response = await fetch(`${KNACK_API_URL}/objects/${TOPIC_OBJECT}/records?filters=${encodeURIComponent(JSON.stringify(filters))}&rows_per_page=1000&format=raw`, {
-      method: 'GET',
-      headers: getKnackHeaders()
-    });
 
-    if (!response.ok) {
-      throw new Error(`API call failed: ${response.status}`);
-    }
+    let currentPage = 1;
+    let totalPages = 1; // Initialize to 1, will be updated by the first API response
+    const allRecords = [];
+    const rowsPerPage = 1000; // Knack's typical max, can be adjusted
 
-    const data = await response.json();
+    do {
+      const response = await fetch(`${KNACK_API_URL}/objects/${TOPIC_OBJECT}/records?filters=${encodeURIComponent(JSON.stringify(filters))}&rows_per_page=${rowsPerPage}&page=${currentPage}&format=raw`, {
+        method: 'GET',
+        headers: getKnackHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed on page ${currentPage}: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.records) {
+        allRecords.push(...data.records);
+      }
+      
+      // Update totalPages from the first response, or on subsequent ones if available
+      // Knack typically provides total_pages and current_page in the response.
+      // If not, this logic might need adjustment based on Knack's specific pagination response structure.
+      totalPages = data.total_pages || totalPages; 
+      currentPage = (data.current_page || currentPage) + 1;
+
+    } while (currentPage <= totalPages && (allRecords.length % rowsPerPage === 0 || allRecords.length < (totalPages * rowsPerPage) )); // Continue if current page is less than total pages and we are either getting full pages or haven't reached the expected total
+
+    dlog(`Fetched ${allRecords.length} records in total across ${totalPages} page(s) for subjects.`);
     
-    // Extract unique subjects
-    const subjects = [...new Set(data.records
+    // Extract unique subjects from all fetched records
+    const subjects = [...new Set(allRecords
       .map(record => record[FIELD_MAPPING.subject])
       .filter(subject => subject))]
       .sort(); // Sort alphabetically
     
     // Store in cache
     cache.subjects[cacheKey] = subjects;
-    console.log(`Found ${subjects.length} subjects for ${examType} ${examBoard}`);
+    dlog(`Found ${subjects.length} unique subjects for ${examType} ${examBoard}`);
     return subjects;
   } catch (error) {
-    console.error(`Error fetching subjects for ${examType} ${examBoard}:`, error);
+    derr(`Error fetching subjects for ${examType} ${examBoard}:`, error);
     return []; // Empty array on error
   }
 }
@@ -158,14 +175,13 @@ export async function fetchTopics(examType, examBoard, subject) {
   
   // Check cache first
   if (cache.topics[cacheKey]) {
-    console.log(`Using cached topics for ${subject} (${examBoard} ${examType})`);
+    dlog(`Using cached topics for ${subject} (${examBoard} ${examType})`);
     return cache.topics[cacheKey];
   }
 
   try {
-    console.log(`Fetching topics for ${subject} (${examBoard} ${examType}) from Knack object_109`);
+    dlog(`Fetching all pages of topics for ${subject} (${examBoard} ${examType}) from Knack object_109`);
     
-    // Format filters for Knack API
     const filters = {
       match: 'and',
       rules: [
@@ -187,27 +203,42 @@ export async function fetchTopics(examType, examBoard, subject) {
       ]
     };
     
-    // Use fetch instead of axios for consistency
-    const response = await fetch(`${KNACK_API_URL}/objects/${TOPIC_OBJECT}/records?filters=${encodeURIComponent(JSON.stringify(filters))}&rows_per_page=1000&format=raw`, {
-      method: 'GET',
-      headers: getKnackHeaders()
-    });
+    let currentPage = 1;
+    let totalPages = 1; // Initialize to 1, will be updated by the first API response
+    const allRecords = [];
+    const rowsPerPage = 1000;
 
-    if (!response.ok) {
-      throw new Error(`API call failed: ${response.status}`);
-    }
+    do {
+      const response = await fetch(`${KNACK_API_URL}/objects/${TOPIC_OBJECT}/records?filters=${encodeURIComponent(JSON.stringify(filters))}&rows_per_page=${rowsPerPage}&page=${currentPage}&format=raw`, {
+        method: 'GET',
+        headers: getKnackHeaders()
+      });
 
-    const data = await response.json();
-    
-    // Process and structure the data
-    const structuredTopics = processTopicData(data.records, subject);
+      if (!response.ok) {
+        throw new Error(`API call failed on page ${currentPage} for topics: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.records) {
+        allRecords.push(...data.records);
+      }
+      
+      totalPages = data.total_pages || totalPages;
+      currentPage = (data.current_page || currentPage) + 1;
+
+    } while (currentPage <= totalPages && (allRecords.length % rowsPerPage === 0 || allRecords.length < (totalPages * rowsPerPage) ));
+
+    dlog(`Fetched ${allRecords.length} records in total across ${totalPages} page(s) for topics.`);
+
+    // Process and structure all fetched records
+    const structuredTopics = processTopicData(allRecords, subject);
     
     // Store in cache
     cache.topics[cacheKey] = structuredTopics;
-    console.log(`Processed ${structuredTopics.length} topics for ${subject} (${examBoard} ${examType})`);
+    dlog(`Processed ${structuredTopics.length} topics for ${subject} (${examBoard} ${examType})`);
     return structuredTopics;
   } catch (error) {
-    console.error(`Error fetching topics for ${subject} (${examBoard} ${examType}):`, error);
+    derr(`Error fetching topics for ${subject} (${examBoard} ${examType}):`, error);
     return []; // Empty array on error
   }
 }
@@ -220,11 +251,11 @@ export async function fetchTopics(examType, examBoard, subject) {
  */
 function processTopicData(records, subject) {
   if (!records || records.length === 0) {
-    console.warn("No records to process");
+    dwarn("No records to process");
     return [];
   }
   
-  console.log(`Processing ${records.length} records into structured topics`);
+  dlog(`Processing ${records.length} records into structured topics`);
   
   // Determine the structure of the data
   // Some records may have modules, others might not
@@ -349,7 +380,7 @@ export function clearTopicCache(examType = null, examBoard = null, subject = nul
     // Clear specific topic cache
     const cacheKey = `${normalizeExamType(examType)}-${examBoard}-${subject}`;
     delete cache.topics[cacheKey];
-    console.log(`Cleared topic cache for ${examType} ${examBoard} ${subject}`);
+    dlog(`Cleared topic cache for ${examType} ${examBoard} ${subject}`);
   } else if (examType && examBoard) {
     // Clear subject and topic cache for this exam type and board
     const cacheKey = `${normalizeExamType(examType)}-${examBoard}`;
@@ -361,12 +392,12 @@ export function clearTopicCache(examType = null, examBoard = null, subject = nul
         delete cache.topics[key];
       }
     });
-    console.log(`Cleared subject and topic cache for ${examType} ${examBoard}`);
+    dlog(`Cleared subject and topic cache for ${examType} ${examBoard}`);
   } else {
     // Clear all caches
     cache.examBoards = null;
     cache.subjects = {};
     cache.topics = {};
-    console.log("Cleared all topic caches");
+    dlog("Cleared all topic caches");
   }
 }
