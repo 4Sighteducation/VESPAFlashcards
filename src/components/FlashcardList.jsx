@@ -852,7 +852,7 @@ useEffect(() => {
     let slideshowTitleToUse = "Slideshow";
     if (topic) {
       slideshowCardsToUse = (groupedCards?.[subject]?.[topic] || []).filter(item => item.type !== 'topic');
-      slideshowTitleToUse = `${subject} - ${topic}`;
+      slideshowTitleToUse = subject; // Only use subject for title
     } else {
       const allTopics = Object.keys(groupedCards?.[subject] || {});
       slideshowCardsToUse = allTopics.reduce((all, currentTopic) => {

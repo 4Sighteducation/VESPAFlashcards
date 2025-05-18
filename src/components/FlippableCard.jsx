@@ -268,11 +268,11 @@ const FlippableCard = ({
     
     return (
       <div className="flashcard-face flashcard-front" style={{ color: textColor, backgroundColor: cardColor }}>
-        {card.topic && (
+        {/*card.topic && (
           <div className="card-topic-indicator" style={{ color: textColor }}>
             {card.topic}
           </div>
-        )}
+        )*/}
         
         {/* --- Buttons Area (Delete) --- */}       
         {showDeleteButton && onDeleteRequest && (
@@ -414,11 +414,11 @@ const FlippableCard = ({
 
     return (
       <div className="flashcard-face flashcard-back" style={{ backgroundColor: '#ffffff' }}>
-        {card.topic && (
+        {/*card.topic && (
           <div className="card-topic-indicator back-topic">
             {card.topic}
           </div>
-        )}
+        )*/}
         
         {/* Always show delete button on back side if needed */}
         {showDeleteButton && onDeleteRequest && (
