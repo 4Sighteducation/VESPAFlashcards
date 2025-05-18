@@ -3253,6 +3253,7 @@ useEffect(() => {
             spacedRepetitionData={spacedRepetitionData}
             cardCounts={getCardCounts()} // Add this line to pass the counts
             onOpenVideoModal={openVideoModal} // Pass the function to open video modal
+            onOpenCreateTopicModal={() => setIsTopicCreationModalOpen(true)} // ADD THIS PROP
           />
           
           {/* Temporarily hiding UserProfile */}
@@ -3286,7 +3287,7 @@ useEffect(() => {
                 onSaveTopicShells={handleSaveTopicShellsAndRefresh}
                 userId={auth?.id}
                 recordId={recordId}
-                updateColorMapping={updateColorMapping}
+                updateColorMapping={updateColorMapping} // REVERTING: Should be updateColorMapping
                 existingSubjects={getSubjects().map(subject => subject.name)}
               />
             )}
@@ -3394,6 +3395,7 @@ useEffect(() => {
                       onAddTopicShell={addTopicShell} // <<< PASS THE NEW FUNCTION HERE
                       onDeleteTopicProp={handleDeleteTopicFromApp} // Pass the new handler
                       onUpdateTopicPriorityProp={updateTopicShellPriority} // <<< ADD THIS PROP
+                      onOpenCreateTopicModal={() => setIsTopicCreationModalOpen(true)} // ADD THIS PROP for empty state button
                     />
                   )}
                 </div>
@@ -3411,7 +3413,7 @@ useEffect(() => {
                 currentColor={currentSubjectColor}
                 onColorChange={setCurrentSubjectColor}
                 getColorForSubjectTopic={getColorForSubjectTopic}
-                updateColorMapping={updateColorMapping}
+                updateColorMapping={updateColorMapping} // REVERTING: Should be updateColorMapping
               />
             </div>
           )}

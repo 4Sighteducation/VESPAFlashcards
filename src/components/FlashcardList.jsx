@@ -245,7 +245,8 @@ const FlashcardList = ({
   propagateSaveToBridge,
   handleSaveTopicShells,
   recordId,
-  userId
+  userId,
+  onOpenCreateTopicModal,
 }) => {
   // --- START: HOOK DEFINITIONS ---
 
@@ -258,7 +259,6 @@ const FlashcardList = ({
   const [selectedCardForModal, setSelectedCardForModal] = useState(null);
   const [colorEditorOpen, setColorEditorOpen] = useState(false);
   const [colorEditorState, setColorEditorState] = useState({ subject: null, topic: null, color: '#e6194b' });
-  const [showTopicCreationModal, setShowTopicCreationModal] = useState(false);
   const [slideshowCards, setSlideshowCards] = useState([]);
   const [slideshowTitle, setSlideshowTitle] = useState("");
   const [showSlideshow, setShowSlideshow] = useState(false);
@@ -1347,14 +1347,6 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
 
   return (
     <div className="flashcard-list">
-      <button
-        onClick={() => setShowTopicCreationModal(true)}
-        className="create-topic-list-button button-primary floating-create-button"
-        title="Create New Topic List"
-      >
-        <span className="button-icon">⚡</span> <span>Create Topics</span>
-      </button>
-
       <div className="subject-buttons-grid"> {/* New container for subject buttons */}
         {sortedSubjects.map(subjectDisplayData => {
           // Find the full subject data from groupedCards using the id/title from sortedSubjects
@@ -1418,22 +1410,6 @@ style={{ backgroundColor: topicColor, color: getContrastColor(topicColor) }}
           subjectColor={colorEditorState.color}
           onClose={closeColorEditor}
           onSelectColor={handleColorChange}
-        />
-      )}
-      {showTopicCreationModal && (
-        <TopicCreationModal
-          isOpen={showTopicCreationModal}
-          onClose={() => setShowTopicCreationModal(false)}
-          onSave={(topicShells) => {
-             if (typeof handleSaveTopicShells === 'function') {
-               dlog("[FlashcardList] Calling handleSaveTopicShells from modal save...");
-               handleSaveTopicShells(topicShells, false);
-             } else {
-               derr("handleSaveTopicShells prop is not a function!");
-             }
-            setShowTopicCreationModal(false);
-          }}
-          existingSubjects={getExistingSubjectNames}
         />
       )}
       {showSlideshow && (

@@ -15,7 +15,8 @@ const Header = ({
   onSelectBox = () => {},
   spacedRepetitionData = {},
   cardCounts = { subjects: 0, topics: 0, flashcards: 0 },
-  onOpenVideoModal = () => {}
+  onOpenVideoModal = () => {},
+  onOpenCreateTopicModal = () => {}
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -146,6 +147,18 @@ const Header = ({
           <span className="button-icon">{alternateViewIcon}</span>
           {alternateViewName}
         </button>
+
+        {/* NEW "Create Topics" Button */}
+        {isInCardBank && ( // Only show in Card Bank view for now, can be adjusted
+          <button
+            className="nav-button create-topics-header-button" // New class for styling
+            onClick={() => handleNavClick(onOpenCreateTopicModal)}
+            title="Create New Topics"
+          >
+            <span className="button-icon">⚡</span> {/* Sparkle icon */}
+            Create Topics
+          </button>
+        )}
 
         {/* Video Tutorial Button */}
         <button
