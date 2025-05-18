@@ -208,8 +208,10 @@
     flex-grow: 0; 
     flex-basis: calc(50% - 8px); 
     margin: 0 4px; 
-    font-size: 13px; 
-    padding: 8px 5px; 
+    font-size: 11px; /* FURTHER REDUCED FONT SIZE */
+    padding: 6px 4px; /* FURTHER REDUCED PADDING */
+    line-height: 1.2; /* Adjust line height for smaller font */
+    white-space: nowrap; /* Prevent text wrapping if possible, or adjust text */
   }
 
   .mobile-menu-toggle {
