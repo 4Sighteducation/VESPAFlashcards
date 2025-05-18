@@ -112,13 +112,13 @@ const TopicListModal = ({
       </div>
 
       {showTopicSlideshow && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1070, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <SlideshowModal
-            cards={slideshowData.cards}
-            title={slideshowData.title}
-            onClose={() => setShowTopicSlideshow(false)}
-          />
-        </div>
+        <SlideshowModal
+          cards={slideshowData.cards}
+          title={slideshowData.title}
+          onClose={() => setShowTopicSlideshow(false)}
+          isOpen={true}
+          overlayZIndex={1070}
+        />
       )}
     </>
   );

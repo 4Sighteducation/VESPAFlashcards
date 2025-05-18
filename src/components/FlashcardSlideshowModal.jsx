@@ -9,7 +9,8 @@ const FlashcardSlideshowModal = ({
   onClose,
   onUpdateCard,
   mode = 'bank', // 'bank' or 'review'
-  topicColor
+  topicColor,
+  overlayZIndex
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -88,10 +89,12 @@ const FlashcardSlideshowModal = ({
   // If the modal is not open, render nothing
   if (!isOpen) return null;
   
+  const overlayStyle = overlayZIndex ? { zIndex: overlayZIndex } : {};
+
   // If there are no cards
   if (cards.length === 0) {
     return (
-      <div className="modal-overlay card-modal-overlay" onClick={onClose}>
+      <div className="modal-overlay card-modal-overlay" style={overlayStyle} onClick={onClose}>
         <div className="modal-content card-modal-content" onClick={(e) => e.stopPropagation()}>
           <button className="close-modal-button" onClick={onClose}>×</button>
           <div className="card-modal-card-container">
@@ -115,7 +118,7 @@ const FlashcardSlideshowModal = ({
   const currentCard = cards[currentIndex] || null;
   
   return (
-    <div className="modal-overlay card-modal-overlay" onClick={onClose}>
+    <div className="modal-overlay card-modal-overlay" style={overlayStyle} onClick={onClose}>
       <div className="modal-content card-modal-content" onClick={(e) => e.stopPropagation()}>
         <button className="close-modal-button" onClick={onClose}>×</button>
         
