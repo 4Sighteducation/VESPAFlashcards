@@ -65,6 +65,35 @@ const SpacedRepetition = ({
   const [showSummary, setShowSummary] = useState(false);
   const [isLoadingNextCard, setIsLoadingNextCard] = useState(false);
 
+  // Define shuffleArray EARLIER
+  const shuffleArray = useCallback((array) => {
+    let currentIndex = array.length, randomIndex;
+    const newArray = [...array];
+    while (currentIndex !== 0) {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+      [newArray[currentIndex], newArray[randomIndex]] = [
+        newArray[randomIndex], newArray[currentIndex]];
+    }
+    return newArray;
+  }, []);
+
+  // Define startReviewSession EARLIER, it uses shuffleArray
+  const startReviewSession = useCallback((cardsToReview) => {
+    if (cardsToReview && cardsToReview.length > 0) {
+      dlog("[SpacedRepetition] Starting review session with", cardsToReview.length, "cards.");
+      setShuffledCards(shuffleArray([...cardsToReview])); // shuffleArray is used here
+      setCurrentIndex(0);
+      setSessionStats({ correct: 0, incorrect: 0, reviewedCount: 0 });
+      setShowSummary(false);
+      setStudyCompleted(false);
+      setIsStudyTopicModalOpen(false); 
+      setActiveStudySubjectForModal(null); 
+    } else {
+      dwarn("[SpacedRepetition] Attempted to start review session with no cards.");
+    }
+  }, [shuffleArray, setShuffledCards, setCurrentIndex, setSessionStats, setShowSummary, setStudyCompleted, setIsStudyTopicModalOpen, setActiveStudySubjectForModal]); // Added all state setters used
+
   // Data grouping for study section
   const groupedSubjectsForStudy = useMemo(() => {
     if (!cards || cards.length === 0) {
@@ -730,38 +759,21 @@ const SpacedRepetition = ({
   // Handlers for the new Study Subject/Topic selection flow
   const handleOpenStudyTopicsModal = useCallback((subjectData) => {
     dlog("[SpacedRepetition] Opening study topics modal for:", subjectData.name);
-    setActiveStudySubjectForModal(subjectData); // subjectData comes from groupedSubjectsForStudy
+    setActiveStudySubjectForModal(subjectData); 
     setIsStudyTopicModalOpen(true);
-  }, []);
+  }, [setActiveStudySubjectForModal, setIsStudyTopicModalOpen]); // Added dependencies
 
   const handleCloseStudyTopicsModal = useCallback(() => {
     setIsStudyTopicModalOpen(false);
     setActiveStudySubjectForModal(null);
-  }, []);
-
-  const startReviewSession = useCallback((cardsToReview) => {
-    if (cardsToReview && cardsToReview.length > 0) {
-      dlog("[SpacedRepetition] Starting review session with", cardsToReview.length, "cards.");
-      setShuffledCards(shuffleArray([...cardsToReview]));
-      setCurrentIndex(0);
-      setSessionStats({ correct: 0, incorrect: 0, reviewedCount: 0 });
-      setShowSummary(false);
-      setStudyCompleted(false); // Reset studyCompleted when a new session starts
-      setIsStudyTopicModalOpen(false); 
-      setActiveStudySubjectForModal(null); 
-    } else {
-      dwarn("[SpacedRepetition] Attempted to start review session with no cards.");
-      // Optionally, show a message to the user
-    }
-  }, [shuffleArray]);
+  }, [setIsStudyTopicModalOpen, setActiveStudySubjectForModal]); // Added dependencies
 
   const handleReviewAllSubjectCardsInBox = useCallback((subjectName) => {
     dlog("[SpacedRepetition] Reviewing all cards in box for subject:", subjectName);
     const subjectData = groupedSubjectsForStudy.find(s => s.name === subjectName);
     if (subjectData) {
-      // Filter props.cards to get all cards for this subject that are in the current box
       const cardsForSubjectInBox = cards.filter(card => card.subject === subjectName);
-      startReviewSession(cardsForSubjectInBox);
+      startReviewSession(cardsForSubjectInBox); // Uses startReviewSession
     } else {
       derr("[SpacedRepetition] Subject data not found for:", subjectName);
     }
@@ -769,10 +781,8 @@ const SpacedRepetition = ({
 
   const handleReviewTopicCardsFromModal = useCallback((subjectName, topicData) => {
     dlog("[SpacedRepetition] Reviewing cards from modal for topic:", topicData.name, "in subject:", subjectName);
-    // Filter props.cards for this specific subject and topic that are in the current box
     const cardsForTopicInBox = cards.filter(card => card.subject === subjectName && card.topic === topicData.name);
-    startReviewSession(cardsForTopicInBox);
-    // Modal is closed by its own selection handler
+    startReviewSession(cardsForTopicInBox); // Uses startReviewSession
   }, [cards, startReviewSession]);
 
   // Main return statement
