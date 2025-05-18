@@ -541,15 +541,13 @@
 .card-modal-card-container .flashcard { 
   width: 95%; /* Allow card to be almost full width of its container */
   max-width: 450px; /* But cap it for very wide containers on mobile still */
-  height: auto;    /* Let content define height */
-  /* max-height: 90%; /* Allow card to use most of the container height, leaving some padding */
+  height: 100%;    /* CHANGED from auto: Let card try to fill container height */
   min-height: unset;
   aspect-ratio: unset; 
   margin: 0; /* Centering is handled by parent flex */
   display: flex; 
   flex-direction: column; 
   box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-  /* background-color: pink; */ /* DEBUG Temporary */
   overflow: hidden; /* Ensure card itself handles overflow if its content is too big */
 }
 
@@ -629,29 +627,28 @@
 /* Tablet Landscape and larger desktops */
 @media (min-width: 768px) and (orientation: landscape) {
   .modal-content { /* General modal, slideshow inherits */
-    max-width: 700px; 
+    max-width: 850px; /* INCREASED from 700px */
   }
   .card-modal-card-container .flashcard {
-    max-width: 680px; /* Card can be wider - Increased from 650px */
-    /* min-height: 400px; /* Re-evaluate if fixed min-height is good here */
+    max-width: 800px; /* INCREASED from 680px */
   }
 }
 
 @media (min-width: 992px) and (orientation: landscape) {
   .modal-content { 
-    max-width: 800px; /* Increased */
+    max-width: 1000px; /* INCREASED from 800px */
   }
    .card-modal-card-container .flashcard {
-    max-width: 750px; /* Increased from 700px */
+    max-width: 950px; /* INCREASED from 750px */
   }
 }
 
 @media (min-width: 1200px) and (orientation: landscape) {
   .modal-content { 
-    max-width: 900px; /* Increased */
+    max-width: 1100px; /* INCREASED from 900px */
   }
   .card-modal-card-container .flashcard {
-    max-width: 800px; /* Increased from 750px */
+    max-width: 1050px; /* INCREASED from 800px */
   }
 }
 
@@ -663,11 +660,11 @@
   }
   .card-modal-card-container .flashcard {
     width: 95%; 
-    max-height: 80vh; 
+    height: 100%; /* Ensure it tries to fill container if not already set */
+    max-height: 85vh; /* INCREASED from 80vh, to use more of the modal's height */
   }
    .card-modal-card-container .flashcard .card-question-area {
-    /* max-height: 20%; */ /* REMOVED */
-    flex-grow: 0.2; /* Less growth on very tall screens */
-    min-height: 3em; /* Adjust min-height if needed for these screens */
+    flex-grow: 0.2; 
+    min-height: 3em; 
   }
 }
