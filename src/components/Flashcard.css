@@ -515,38 +515,61 @@
 }
 
 /* Slideshow specific modal adjustments */
-.card-modal-overlay { 
-  /* z-index is set by FlashcardSlideshowModal via inline style */
-}
-
-.card-modal-content { /* Specific to slideshow modal's content box */
-  /* max-width already set by .modal-content, can be overridden by media queries below */
-  /* min-height and max-height already set by .modal-content */
-  /* display: flex; flex-direction: column; -- inherited or set on .modal-content */
+.card-modal-content { 
+  max-width: 500px; 
+  min-height: 75vh; 
+  max-height: 95vh; 
+  padding: 0; 
+  display: flex;
+  flex-direction: column;
+  /* background-color: lightblue; */ /* DEBUG Temporary */
 }
 
 .card-modal-card-container { 
   flex-grow: 1; 
   display: flex;
-  align-items: center; 
-  justify-content: center; 
+  flex-direction: column; /* Ensure it stacks content like the card vertically */
+  align-items: center; /* Center horizontally */
+  justify-content: center; /* Center vertically */
   width: 100%;
-  padding: 5px; 
+  padding: 5px;
   min-height: 0; 
   overflow: hidden; 
+  /* background-color: lightgreen; */ /* DEBUG Temporary */
 }
 
 .card-modal-card-container .flashcard { 
-  width: 100%; /* Make card take full width of its container */
-  max-width: 100%; /* Card's max-width is now governed by its container's max-width */
-  height: 100%; /* Make card take full height of its container */
-  max-height: 100%; /* Card's max-height is now governed by its container's max-height */
-  min-height: unset; /* Rely on container's min-height */
+  width: 95%; /* Allow card to be almost full width of its container */
+  max-width: 450px; /* But cap it for very wide containers on mobile still */
+  height: auto;    /* Let content define height */
+  /* max-height: 90%; /* Allow card to use most of the container height, leaving some padding */
+  min-height: unset;
   aspect-ratio: unset; 
-  margin: 0; /* No margin if it's filling container */
+  margin: 0; /* Centering is handled by parent flex */
   display: flex; 
   flex-direction: column; 
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Softer shadow */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+  /* background-color: pink; */ /* DEBUG Temporary */
+  overflow: hidden; /* Ensure card itself handles overflow if its content is too big */
+}
+
+/* Ensure flashcard-face can expand and its children can scroll if needed */
+.card-modal-card-container .flashcard .flashcard-face {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Important: face itself shouldn't scroll, children will */
+}
+
+.card-modal-card-container .flashcard .card-question-area,
+.card-modal-card-container .flashcard .card-options-area,
+.card-modal-card-container .flashcard .card-content-area {
+    overflow-y: auto; /* Allow these internal parts to scroll */
+}
+
+.card-modal-card-container .flashcard .card-options-area {
+    flex-grow: 1; /* Give options area priority for space */
+    min-height: 50px; /* Ensure some minimum space for options */
 }
 
 .card-modal-actions { 
@@ -593,38 +616,45 @@
 }
 
 /* Tablet Landscape and larger desktops */
-@media (min-width: 992px) and (orientation: landscape) { /* Increased breakpoint for landscape */
-  .modal-content { /* Slideshow modal content box */
-    max-width: 750px; 
-    min-height: 70vh; /* Ensure it's still tall */
+@media (min-width: 768px) and (orientation: landscape) {
+  .modal-content { /* General modal, slideshow inherits */
+    max-width: 700px; 
   }
-  /* .card-modal-card-container .flashcard will take 100% of this new max-width */
+  .card-modal-card-container .flashcard {
+    max-width: 650px; /* Card can be wider */
+    /* min-height: 400px; /* Re-evaluate if fixed min-height is good here */
+  }
 }
 
-/* Very Large Desktop (Optional) */
+@media (min-width: 992px) and (orientation: landscape) {
+  .modal-content { 
+    max-width: 750px; 
+  }
+   .card-modal-card-container .flashcard {
+    max-width: 700px;
+  }
+}
+
 @media (min-width: 1200px) and (orientation: landscape) {
   .modal-content { 
     max-width: 850px; 
+  }
+  .card-modal-card-container .flashcard {
+    max-width: 750px; 
   }
 }
 
 /* Specific media query for very tall/slim screens (like Fold portrait) */
 @media (max-width: 450px) and (min-height: 700px) {
-  .card-modal-content { 
+  .modal-content { 
     min-height: 85vh; 
     width: 98%; 
   }
   .card-modal-card-container .flashcard {
-     min-height: 70vh; /* Allow card to be even taller if content pushes it */
-     /* If card content (question + options) is less than this, it will still be centered. 
-        If more, the card will expand up to its container's limits, and internal areas should scroll. */
+    width: 95%; /* Still slightly less than full container on very narrow */
+    max-height: 80vh; /* Allow card to be very tall, relying on internal scroll */
   }
-  .card-modal-card-container .flashcard .card-question-area {
-    max-height: 25%; /* Even less for question on tall screens to give max to options */
-  }
-  .card-modal-actions .nav-button {
-    font-size: 0.85rem;
-    padding: 8px;
-    min-width: 80px;
+   .card-modal-card-container .flashcard .card-question-area {
+    max-height: 20%; /* Even less for question on tall screens */
   }
 }
