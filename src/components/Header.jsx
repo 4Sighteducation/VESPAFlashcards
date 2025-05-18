@@ -139,16 +139,7 @@ const Header = ({
 
       {/* Navigation items - will be hidden on desktop and shown in menu on mobile */}
       <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
-        {/* Always visible View Toggle Button */}
-        <button
-          className={`nav-button toggle-view-btn`}
-          onClick={() => handleNavClick(alternateViewAction)}
-        >
-          <span className="button-icon">{alternateViewIcon}</span>
-          {alternateViewName}
-        </button>
-
-        {/* NEW "Create Topics" Button */}
+        {/* NEW "Create Topics" Button - MOVED TO THE LEFT */}
         {isInCardBank && ( // Only show in Card Bank view for now, can be adjusted
           <button
             className="nav-button create-topics-header-button" // New class for styling
@@ -159,6 +150,15 @@ const Header = ({
             Create Topics
           </button>
         )}
+
+        {/* Always visible View Toggle Button */}
+        <button
+          className={`nav-button toggle-view-btn`}
+          onClick={() => handleNavClick(alternateViewAction)}
+        >
+          <span className="button-icon">{alternateViewIcon}</span>
+          {alternateViewName}
+        </button>
 
         {/* Video Tutorial Button */}
         <button

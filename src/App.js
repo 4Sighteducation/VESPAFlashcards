@@ -3335,31 +3335,6 @@ useEffect(() => {
               
               <div className="bank-container full-width">
                 <div className="bank-content">
-                  {/* Added header showing total card count */}
-                  <div className="bank-content-header">
-                    <h2>All Flashcards ({getFilteredCards().length})</h2>
-                    {/* Save button is now in the Header, so it can be removed from here if desired */}
-                    {/* <button 
-                      className="save-icon-button" 
-                      onClick={saveData} 
-                      disabled={isSaving}
-                      title="Save All Changes"
-                    >
-                      {isSaving ? '⏳' : '💾'}
-                    </button> */}
-                  </div>
-                  
-                  {/* "Create Topics" Button - REMOVING THIS ADDED BUTTON 
-                  {allCards.length > 0 && ( 
-                    <button 
-                      className="primary-button create-topics-btn" 
-                      onClick={() => setIsTopicCreationModalOpen(true)}
-                    >
-                      <span className="button-icon">➕</span> Create Topics
-                    </button>
-                  )}
-                  */}
-                  
                   {/* Show empty state or card list based on whether there are cards */}                  
                   {allCards.length === 0 ? (
                     <div className="empty-card-bank">

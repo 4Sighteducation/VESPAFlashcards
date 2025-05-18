@@ -271,13 +271,31 @@
 }
 
 .toggle-view-btn {
-  background-color: #079baa;
-  border-bottom: 3px solid #00e5db;
-  font-weight: 600;
+  background-color: #0097e6; /* Vibrant blue */
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-bottom: 3px solid #007ace;
+  padding: 8px 15px; /* Same padding for size */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  /* removed min-width from here */
+}
+
+.toggle-view-btn .button-icon {
+  font-size: 1.1em; /* Consistent icon size */
+  animation: pulseAnimation 1.8s infinite alternate; /* Pulsing animation */
 }
 
 .toggle-view-btn:hover {
-  background-color: #068998;
+  background-color: #00a8ff;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-view-btn:active {
+  transform: translateY(-1px) scale(1.02);
+  background-color: #007ace;
 }
 
 /* Box selector styles in header */
@@ -406,19 +424,20 @@
   font-weight: bold;
   border: none;
   border-bottom: 3px solid #e02d3f;
-  padding: 8px 15px; /* Slightly larger padding */
+  padding: 8px 15px; /* Ensure same padding as toggle-view-btn for size */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Added a bouncy transition */
+  transition: all 0.2s cubic-bezier(0.68, -0.55, 0.27, 1.55); 
+  /* removed min-width from here, will apply to both consistently */
 }
 
 .create-topics-header-button .button-icon {
-  font-size: 1.1em; /* Slightly larger icon */
-  animation: sparkleAnimation 1.5s infinite alternate; /* Sparkle animation */
+  font-size: 1.1em; 
+  animation: sparkleAnimation 1.5s infinite alternate; 
 }
 
 .create-topics-header-button:hover {
   background-color: #ff6b81;
-  transform: translateY(-3px) scale(1.05); /* Bouncier hover effect */
+  transform: translateY(-3px) scale(1.05); 
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -427,9 +446,53 @@
   background-color: #e02d3f;
 }
 
+/* Styles for the 'Study/Card Bank' toggle button */
+.toggle-view-btn {
+  background-color: #0097e6; /* Vibrant blue */
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-bottom: 3px solid #007ace;
+  padding: 8px 15px; /* Same padding for size */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  /* removed min-width from here */
+}
+
+.toggle-view-btn .button-icon {
+  font-size: 1.1em; /* Consistent icon size */
+  animation: pulseAnimation 1.8s infinite alternate; /* Pulsing animation */
+}
+
+.toggle-view-btn:hover {
+  background-color: #00a8ff;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-view-btn:active {
+  transform: translateY(-1px) scale(1.02);
+  background-color: #007ace;
+}
+
+/* Shared styles for flashy header buttons */
+.create-topics-header-button,
+.toggle-view-btn {
+  min-width: 150px; /* Consistent minimum width */
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* Animation for the sparkle icon */
 @keyframes sparkleAnimation {
   0% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.2) rotate(15deg); opacity: 0.7; }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* Animation for the pulse icon on study button */
+@keyframes pulseAnimation {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
 }
