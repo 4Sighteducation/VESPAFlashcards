@@ -59,6 +59,12 @@ const SpacedRepetition = ({
   const [isStudyTopicModalOpen, setIsStudyTopicModalOpen] = useState(false);
   const [activeStudySubjectForModal, setActiveStudySubjectForModal] = useState(null); // { name, color, topicsWithDueCards }
 
+  // New state for shuffled cards and session stats
+  const [shuffledCards, setShuffledCards] = useState([]);
+  const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0, reviewedCount: 0 });
+  const [showSummary, setShowSummary] = useState(false);
+  const [isLoadingNextCard, setIsLoadingNextCard] = useState(false);
+
   // Data grouping for study section
   const groupedSubjectsForStudy = useMemo(() => {
     if (!cards || cards.length === 0) {
@@ -214,15 +220,17 @@ const SpacedRepetition = ({
 
 
   // New useEffect to manage study session state (currentIndex, studyCompleted, flip states)
-  // This reacts to changes in `currentCards` (after filtering) and when the study modal opens/closes.
+  // This reacts to changes in `shuffledCards` (instead of currentCards) when a session starts.
   useEffect(() => {
-    dlog('[SR Effect] Running. showStudyModal:', showStudyModal, 'currentCards.length:', currentCards.length, 'currentIndex:', currentIndex, 'studyCompleted (before):', studyCompleted);
-    if (!showStudyModal) {
-      // Modal closed: Reset session states
+    dlog('[SR Effect] Running. showStudyModal:', showStudyModal, 'shuffledCards.length:', shuffledCards.length, 'currentIndex:', currentIndex, 'studyCompleted (before):', studyCompleted);
+    // If not in study modal (i.e., review session not active via this modal flow), reset session.
+    // The primary condition for an active review session is shuffledCards.length > 0
+    if (shuffledCards.length === 0) { 
       setCurrentIndex(0);
-      setStudyCompleted(false);
-      setShowHumorousCompletionModal(false); // Ensure modal is hidden when study modal closes
+      // setStudyCompleted(false); // Only set studyCompleted to true when a session genuinely ends.
+      // setShowHumorousCompletionModal(false); // This should be handled by session end logic
       resetCardVisualState();
+      // Clear timeouts
       if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
       if (answerFeedbackTimeoutRef.current) clearTimeout(answerFeedbackTimeoutRef.current);
       feedbackTimeoutRef.current = null;
@@ -230,47 +238,16 @@ const SpacedRepetition = ({
       return;
     }
 
-    // Modal is open: Adjust state based on currentCards
-    if (currentCards.length > 0) {
-      const newIndex = Math.min(Math.max(currentIndex, 0), currentCards.length - 1);
-      if (newIndex !== currentIndex) {
-        setCurrentIndex(newIndex);
-      }
-      // If we have cards, and study was marked completed (e.g. by mistake or race condition),
-      // reset studyCompleted to false as we are now in an active session with cards.
-      if (studyCompleted) {
-        dlog('[SR Effect] Has cards, but studyCompleted was true. Resetting studyCompleted to false.');
-        setStudyCompleted(false);
-      }
-      setShowHumorousCompletionModal(false); // If we have cards, ensure humorous modal is not shown
-      dlog('[SR Effect] Has cards. newIndex:', newIndex);
-    } else { // currentCards.length is 0
-      // No cards available for the current filter OR user has finished all cards.
-      // If studyCompleted is true (meaning user went through cards and finished),
-      // OR if it wasn't completed but now there are no cards (e.g. initial empty set for filter).
-      if (studyCompleted || !showHumorousCompletionModal) { // Show if completed OR if not already shown for empty set
-        dlog('[SR Effect] No cards or studyCompleted. Triggering humorous modal. studyCompleted:', studyCompleted);
-        if (!studyCompleted) setStudyCompleted(true); // Ensure it is marked as completed
-        setCurrentIndex(0);
-        const message = getRandomEmptyStateMessage();
-        setHumorousCompletionMessage(message);
-        if (!showHumorousCompletionModal) setShowHumorousCompletionModal(true);
-      } else {
-        dlog('[SR Effect] No cards, but humorous modal already shown or not meeting condition. studyCompleted:', studyCompleted);
-      }
+    // If we have shuffled cards, ensure currentIndex is valid.
+    const newIndex = Math.min(Math.max(currentIndex, 0), shuffledCards.length - 1);
+    if (newIndex !== currentIndex) {
+      setCurrentIndex(newIndex);
     }
 
+    // Reset visual state for the new card if index changed or shuffledCards updated
     resetCardVisualState();
 
-    if (feedbackTimeoutRef.current) {
-      clearTimeout(feedbackTimeoutRef.current);
-      feedbackTimeoutRef.current = null;
-    }
-    if (answerFeedbackTimeoutRef.current) {
-      clearTimeout(answerFeedbackTimeoutRef.current);
-      answerFeedbackTimeoutRef.current = null;
-    }
-  }, [currentCards, showStudyModal, currentIndex, studyCompleted]); // Added studyCompleted to dependencies
+  }, [shuffledCards, currentIndex]); // Depend on shuffledCards and currentIndex
 
   
   // Toggle expansion of a subject
@@ -326,77 +303,72 @@ const SpacedRepetition = ({
   
   // Handle card flip action
   const handleCardFlip = () => {
-    // This function is primarily for non-MCQ cards, or for MCQs if user explicitly flips after answering.
+    const cardToEvaluate = shuffledCards[currentIndex]; // Use shuffledCards
     if (!isFlipped) {
       setIsFlipped(true);
-      // For non-MCQ, flipping reveals the answer. Show response buttons after a brief moment.
-      if (currentCard?.questionType !== 'multiple_choice') {
+      if (cardToEvaluate?.questionType !== 'multiple_choice') {
         setTimeout(() => {
           setShowFlipResponse(true);
           setShowFlipResponseOverlay(true);
-        }, 300); // Delay to allow flip animation
+        }, 300);
       }
     } else {
-      // If card is already flipped (showing answer) and it's not an MCQ,
-      // this means they might be re-clicking to hide the correct/incorrect buttons.
-      // However, the primary action here is to show the response buttons if not already shown.
-      if (currentCard?.questionType !== 'multiple_choice' && !showFlipResponse) {
+      if (cardToEvaluate?.questionType !== 'multiple_choice' && !showFlipResponse) {
         setShowFlipResponse(true);
         setShowFlipResponseOverlay(true);
       }
-      // For MCQs, the FlippableCard handles its own feedback display upon option selection.
-      // The `onAnswer` prop in FlippableCard will trigger handleCorrect/Incorrect.
     }
   };
 
-  // Handle multiple choice selection (via FlippableCard's onAnswer prop)
-  // This function is now called by FlippableCard's onAnswer
-  const handleMcqAnswer = (isCorrect, selectedOptionIndex) => {
-    if (isFlipped) return; // Should not happen if onAnswer is called before manual flip
-
-    // Directly proceed to handleCorrectAnswer or handleIncorrectAnswer
-    // FlippableCard has already provided feedback to the user.
-    setIsFlipped(true); // Ensure card is visually flipped to show "back" if not already.
-
-    // Set timeout to hide feedback after a delay
-    if (feedbackTimeoutRef.current) {
-      clearTimeout(feedbackTimeoutRef.current);
+  // This is the main handler for when FlippableCard reports an answer (for MCQs)
+  // or when manual correct/incorrect buttons are pressed for non-MCQs.
+  const handleAnswer = useCallback((isCorrect, selectedOptionIndexOrNil) => {
+    const cardAnswered = shuffledCards[currentIndex];
+    if (!cardAnswered) {
+      derr("[SpacedRepetition] handleAnswer called but no card at currentIndex.");
+      return;
     }
+
+    dlog(`[SpacedRepetition] handleAnswer: Card ID ${cardAnswered.id}, Correct: ${isCorrect}`);
+    setSessionStats(prev => ({
+      ...prev,
+      reviewedCount: prev.reviewedCount + 1,
+      correct: isCorrect ? prev.correct + 1 : prev.correct,
+      incorrect: !isCorrect ? prev.incorrect + 1 : prev.incorrect,
+    }));
+
+    setIsFlipped(true); // Ensure card is visually flipped
+
+    // Determine next box
+    const nextBox = isCorrect ? Math.min(currentBox + 1, 5) : 1;
+    onMoveCard(cardAnswered.id, nextBox);
+    
+    setFeedbackMessage(`Card moved to Box ${nextBox}.`);
+    setShowReviewDateMessage(true); // Show feedback briefly
+
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
     feedbackTimeoutRef.current = setTimeout(() => {
-      if (isCorrect) {
-        handleCorrectAnswer();
+      setShowReviewDateMessage(false);
+      setFeedbackMessage("");
+      // Proceed to next card or show summary
+      if (currentIndex < shuffledCards.length - 1) {
+        setCurrentIndex(prev => prev + 1);
+        // Visual state reset will be handled by the useEffect watching currentIndex
       } else {
-        handleIncorrectAnswer();
+        dlog("[SpacedRepetition] Last card answered. Showing summary.");
+        setShowSummary(true);
+        // Potentially show humorous completion if all cards in the box are done.
+        // This logic might need refinement based on whether all *reviewable* cards are done.
       }
-      answerFeedbackTimeoutRef.current = null; // Clear ref after execution
-    }, 300); // Small delay for user to see FlippableCard's feedback
-  };
+    }, 1200); // Duration to show feedback before moving
+
+  }, [currentIndex, shuffledCards, currentBox, onMoveCard]);
 
   // Reset selection state when moving to a new card (now mainly for flip state)
   const resetCardVisualState = () => {
     setIsFlipped(false);
     setShowFlipResponse(false);
     setShowFlipResponseOverlay(false);
-  };
-  
-  // Simplified nextCard: only changes index or sets studyCompleted.
-  // The new useEffect will handle resetting flip state.
-  const nextCard = useCallback(() => { // Make it a useCallback
-    if (currentIndex < currentCards.length - 1) {
-      setCurrentIndex(prevIndex => prevIndex + 1); // Use functional update
-    } else {
-      dlog('[SR nextCard] Reached end of cards, setting studyCompleted to true.');
-      setStudyCompleted(true); 
-    }
-    // Flip state reset will be handled by the useEffect watching currentIndex and currentCard
-  }, [currentIndex, currentCards.length]);
-
-  // Simplified prevCard
-  const prevCard = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-      // Flip state reset will be handled by the new useEffect
-    }
   };
   
   // Get contrast color for text
@@ -418,83 +390,6 @@ const SpacedRepetition = ({
     return brightness > 120 ? '#000000' : '#ffffff';
   };
 
-  // Handle correct/incorrect answers
-  // These functions will trigger onMoveCard, which causes `props.cards` to update.
-  // The new useEffect watching `currentCards` will then handle UI updates (advancing card, etc.).
-  const handleCorrectAnswer = () => {
-    if (!isValidCard || !currentCard) {
-      derr("Cannot move card: No valid card found at index", currentIndex);
-      return;
-    }
-    try {
-      const nextBoxNumber = Math.min(currentBox + 1, 5);
-      const cardToMoveId = currentCard.id;
-      const wasLastCard = currentIndex === currentCards.length - 1;
-
-      onMoveCard(cardToMoveId, nextBoxNumber); 
-      
-      setFeedbackMessage(`Card moved to Box ${nextBoxNumber}.`);
-      setShowReviewDateMessage(true);
-
-      if (wasLastCard) {
-        dlog('[SR handleCorrectAnswer] Last card answered correctly. Setting studyCompleted=true, currentIndex=0.');
-        setStudyCompleted(true);
-        setCurrentIndex(0); 
-      }
-
-      feedbackTimeoutRef.current = setTimeout(() => {
-        setShowReviewDateMessage(false);
-        setFeedbackMessage("");
-        feedbackTimeoutRef.current = null; 
-      }, 1500);
-    } catch (error) {
-      derr("Error handling correct answer:", error);
-      setFeedbackMessage("Error moving card. Please try again.");
-      setShowReviewDateMessage(true);
-      setTimeout(() => {
-          setShowReviewDateMessage(false);
-          setFeedbackMessage("");
-      }, 1500);
-    }
-  };
-
-  const handleIncorrectAnswer = () => {
-    if (!isValidCard || !currentCard) {
-      derr("Cannot move card: No valid card found at index", currentIndex);
-      return;
-    }
-    try {
-      const targetBoxNumber = 1;
-      const cardToMoveId = currentCard.id;
-      const wasLastCard = currentIndex === currentCards.length - 1;
-
-      onMoveCard(cardToMoveId, targetBoxNumber);
-      
-      setFeedbackMessage(`Card moved to Box ${targetBoxNumber}.`);
-      setShowReviewDateMessage(true);
-
-      if (wasLastCard) {
-        dlog('[SR handleIncorrectAnswer] Last card answered incorrectly. Setting studyCompleted=true, currentIndex=0.');
-        setStudyCompleted(true);
-        setCurrentIndex(0);
-      }
-
-      feedbackTimeoutRef.current = setTimeout(() => {
-        setShowReviewDateMessage(false);
-        setFeedbackMessage("");
-        feedbackTimeoutRef.current = null; 
-      }, 1500);
-    } catch (error) {
-      derr("Error handling incorrect answer:", error);
-      setFeedbackMessage("Error moving card. Please try again.");
-      setShowReviewDateMessage(true);
-      setTimeout(() => {
-          setShowReviewDateMessage(false);
-          setFeedbackMessage("");
-      }, 1500);
-    }
-  };
-
   // Add function to toggle the info modal
   const toggleInfoModal = (e) => {
     if (e) e.stopPropagation();
@@ -502,14 +397,14 @@ const SpacedRepetition = ({
   };
 
   // Computed property to check if we have a valid card to work with
-  const isValidCard = currentCards && 
-                     currentCards.length > 0 && 
+  const isValidCard = shuffledCards && 
+                     shuffledCards.length > 0 && 
                      currentIndex >= 0 && 
-                     currentIndex < currentCards.length && 
-                     currentCards[currentIndex] !== undefined;
+                     currentIndex < shuffledCards.length && 
+                     shuffledCards[currentIndex] !== undefined;
 
   // Get the current card if it's valid
-  const currentCard = isValidCard ? currentCards[currentIndex] : null;
+  const currentCardToDisplay = isValidCard ? shuffledCards[currentIndex] : null;
 
   // Render subject containers for the current box
   const renderSubjectContainers = () => {
@@ -757,7 +652,7 @@ const SpacedRepetition = ({
             card={currentCardForRender}
             isFlipped={isFlipped}
             onFlip={handleCardFlip}
-            onAnswer={currentCardForRender.questionType === 'multiple_choice' ? handleMcqAnswer : undefined}
+            onAnswer={currentCardForRender.questionType === 'multiple_choice' ? handleAnswer : undefined}
             isInModal={true}
             // Pass lock status and review date for "already studied" cards
             isLocked={!currentCardForRender.isReviewable}
@@ -795,10 +690,10 @@ const SpacedRepetition = ({
                 <div>
                   <p>How did you do? Mark your card as correct or incorrect:</p>
                   <div className="response-buttons">
-                    <button className="incorrect-button" onClick={handleIncorrectAnswer}>
+                    <button className="incorrect-button" onClick={() => handleAnswer(false)}>
                       Incorrect (Box 1)
                     </button>
-                    <button className="correct-button" onClick={handleCorrectAnswer}>
+                    <button className="correct-button" onClick={() => handleAnswer(true)}>
                       Correct (Box {Math.min(currentBox + 1, 5)})
                     </button>
                   </div>
@@ -829,13 +724,14 @@ const SpacedRepetition = ({
       setCurrentIndex(0);
       setSessionStats({ correct: 0, incorrect: 0, reviewedCount: 0 });
       setShowSummary(false);
-      setIsStudyTopicModalOpen(false); // Ensure modal is closed
-      setActiveStudySubjectForModal(null); // Reset active subject for modal
+      setStudyCompleted(false); // Reset studyCompleted when a new session starts
+      setIsStudyTopicModalOpen(false); 
+      setActiveStudySubjectForModal(null); 
     } else {
       dwarn("[SpacedRepetition] Attempted to start review session with no cards.");
       // Optionally, show a message to the user
     }
-  }, [shuffleArray]); // Added shuffleArray dependency
+  }, [shuffleArray]);
 
   const handleReviewAllSubjectCardsInBox = useCallback((subjectName) => {
     dlog("[SpacedRepetition] Reviewing all cards in box for subject:", subjectName);
@@ -860,7 +756,7 @@ const SpacedRepetition = ({
   // Main return statement
   return (
     <div className="spaced-repetition-container">
-      {!showSummary && shuffledCards.length > 0 && currentIndex < shuffledCards.length ? (
+      {!showSummary && shuffledCards.length > 0 && currentIndex < shuffledCards.length && currentCardToDisplay ? (
         // Active Review Session View
         <div className="review-session-active">
           <div className="card-progression-header">
@@ -879,20 +775,31 @@ const SpacedRepetition = ({
               <p>Loading next card...</p>
             </div>
           ) : (
-            shuffledCards[currentIndex] && (
-              <FlippableCard
-                key={shuffledCards[currentIndex].id} // Key for re-mount on card change
-                card={shuffledCards[currentIndex]}
-                onAnswer={handleAnswer}
-                isLocked={shuffledCards[currentIndex].isLocked} // Pass lock status
-                lockedNextReviewDate={shuffledCards[currentIndex].nextReviewDate} // Pass review date for locked cards
-              />
-            )
+            <FlippableCard
+              key={currentCardToDisplay.id} 
+              card={currentCardToDisplay}
+              isFlipped={isFlipped}
+              onFlip={handleCardFlip}
+              onAnswer={handleAnswer}
+              isLocked={!currentCardToDisplay.isReviewable}
+              lockedNextReviewDate={currentCardToDisplay.nextReviewDate}
+            />
           )}
-          
-          {/* Feedback and controls are handled within FlippableCard or by handleAnswer now */}
+          {isFlipped && currentCardToDisplay && currentCardToDisplay.questionType !== 'multiple_choice' && (
+            <div className="flip-response manual-judgment-buttons">
+                <p>How did you do?</p>
+                <div className="response-buttons">
+                  <button className="incorrect-button" onClick={() => handleAnswer(false)}>
+                    Incorrect (Box 1)
+                  </button>
+                  <button className="correct-button" onClick={() => handleAnswer(true)}>
+                    Correct (Box {Math.min(currentBox + 1, 5)})
+                  </button>
+                </div>
+            </div>
+          )}
         </div>
-      ) : !showSummary && shuffledCards.length === 0 ? (
+      ) : !showSummary && groupedSubjectsForStudy.length > 0 ? (
         // Initial View: Select Subject/Topic or No Cards View
         <div className="study-selection-view">
           <div className="study-selection-header">
@@ -932,14 +839,39 @@ const SpacedRepetition = ({
               subjectName={activeStudySubjectForModal.name}
               subjectColor={activeStudySubjectForModal.color}
               topicsWithDueCards={activeStudySubjectForModal.topics}
-              onReviewTopic={handleReviewTopicCardsFromModal} // Pass the correct handler
+              onReviewTopic={handleReviewTopicCardsFromModal}
             />
           )}
         </div>
-      ) : (
+      ) : showSummary ? (
         // Session Summary View
         <div className="session-summary-view">
-          {/* Implement session summary rendering logic here */}
+          <h3>Session Summary (Box {currentBox})</h3>
+          <p>Cards Reviewed: {sessionStats.reviewedCount}</p>
+          <p>Correct: {sessionStats.correct}</p>
+          <p>Incorrect: {sessionStats.incorrect}</p>
+          <button onClick={() => {
+            setShowSummary(false);
+            setShuffledCards([]); // Clear shuffled cards to return to selection view
+            setCurrentIndex(0);
+            // onReturnToBank(); // Optionally return to bank or stay in box view
+          }}>Review More in this Box</button>
+          <button onClick={onReturnToBank} style={{marginLeft: '10px'}}>Back to Card Bank</button>
+        </div>
+      ) : (
+        <div className="study-selection-view">
+          <div className="study-selection-header">
+            <h2>Study Box {currentBox}</h2>
+             <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button">&larr; Back to Bank</button>
+          </div>
+          <div className="no-cards-for-study-box">
+            <h3>🎉 All Clear! 🎉</h3>
+            <p>{getRandomEmptyStateMessage()}</p>
+            <p>There are no cards to review in Box {currentBox} right now.</p>
+            <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button large-empty-button">
+              Go to Card Bank
+            </button>
+          </div>
         </div>
       )}
     </div>
