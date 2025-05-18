@@ -59,7 +59,7 @@ const SpacedRepetition = ({
   const [isStudyTopicModalOpen, setIsStudyTopicModalOpen] = useState(false);
   const [activeStudySubjectForModal, setActiveStudySubjectForModal] = useState(null); // { name, color, topicsWithDueCards }
 
-  // New state for shuffled cards and session stats
+  // State for review session
   const [shuffledCards, setShuffledCards] = useState([]);
   const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0, reviewedCount: 0 });
   const [showSummary, setShowSummary] = useState(false);
@@ -371,6 +371,28 @@ const SpacedRepetition = ({
     setShowFlipResponseOverlay(false);
   };
   
+  // Restore prevCard and nextCard, ensure they use setShuffledCards if modifying the deck directly,
+  // or rely on onMoveCard to trigger re-filtering if that's the flow.
+  // For now, they just navigate the current shuffledCards deck.
+  const nextCard = useCallback(() => {
+    if (currentIndex < shuffledCards.length - 1) {
+      setCurrentIndex(prevIndex => prevIndex + 1);
+    } else {
+      // If it's the last card, and not already in summary view, show summary.
+      if (!showSummary) {
+        dlog('[SR nextCard] Reached end of cards, setting showSummary to true.');
+        setShowSummary(true); 
+        setStudyCompleted(true); // Mark study as completed when summary is shown
+      }
+    }
+  }, [currentIndex, shuffledCards.length, showSummary]);
+
+  const prevCard = useCallback(() => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  }, [currentIndex]);
+
   // Get contrast color for text
   const getContrastColor = (hexColor) => {
     if (!hexColor) return '#000000';
@@ -683,7 +705,7 @@ const SpacedRepetition = ({
           </button>
         </div>
         
-        {showFlipResponse && currentCard?.questionType !== 'multiple_choice' && isValidCard && (
+        {showFlipResponse && currentCardToDisplay?.questionType !== 'multiple_choice' && isValidCard && (
           <>
             <div className={`flip-response-overlay ${showFlipResponseOverlay ? 'active' : ''}`}></div>
             <div className="flip-response">
