@@ -288,18 +288,18 @@
   box-sizing: border-box;
 }
 
-.modal-content { /* Styles the box within the overlay */
+.modal-content { /* General modal styling */
   background-color: white;
-  padding: 20px;
+  padding: 0; /* Remove padding if header/body/actions have their own */
   border-radius: 8px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   position: relative;
-  width: 90%; /* Default width */
-  max-width: 550px; /* Default max-width for slideshow */
-  display: flex; /* For internal layout */
-  flex-direction: column; /* Stack header, content, actions */
-  max-height: 90vh; /* Default max-height */
-  overflow: hidden; /* Main modal content shouldn't scroll; internal parts will */
+  width: 90%; 
+  max-width: 550px; 
+  display: flex; 
+  flex-direction: column; 
+  max-height: 90vh; 
+  overflow: hidden; 
 }
 
 .close-button {
@@ -507,36 +507,42 @@
   margin: 0;
 }
 
-/* Slideshow specific modal adjustments - these classes are on FlashcardSlideshowModal */
-.card-modal-overlay { /* Can be used to override .modal-overlay if needed, or just rely on .modal-overlay */
-  /* If FlashcardSlideshowModal uses this, z-index is set by FlashcardSlideshowModal via inline style */
+/* Slideshow specific modal adjustments */
+.card-modal-overlay { 
+  /* z-index is set by FlashcardSlideshowModal via inline style */
 }
 
 .card-modal-content { /* Specific to slideshow modal's content box */
-  max-width: 500px; /* Override general modal-content if needed */
-  /* Ensure it can take up more vertical space */
-  height: auto; 
-  min-height: 70vh; /* Try a larger min-height for slideshow */
-  max-height: 95vh; /* Allow it to be quite tall */
+  max-width: 500px; 
+  min-height: 75vh; /* Increased min-height for slideshow modal box itself */
+  max-height: 95vh; 
+  /* Ensure it's a flex container to manage its children */
+  display: flex;
+  flex-direction: column; /* Stack card container and actions vertically */
+  padding: 0; /* Remove padding here, apply to children if needed */
 }
 
 .card-modal-card-container { /* Container of the FlippableCard in slideshow */
-  flex-grow: 1; 
+  flex-grow: 1; /* Allow this to take up most of the vertical space */
   display: flex;
   align-items: center; 
   justify-content: center;
   width: 100%;
   padding: 10px 5px; 
-  min-height: 0; /* Allow flex item to shrink properly */
+  min-height: 0; /* Important for flex children */
+  overflow: hidden; /* Prevent card itself from causing overflow if it misbehaves */
 }
 
 .card-modal-card-container .flashcard { /* The FlippableCard inside slideshow */
   width: 95%; 
   max-width: 400px; 
-  height: auto; 
-  min-height: 55vh; /* Adjust min-height for the card itself */
+  height: 100%; /* Attempt to fill the container height */
+  max-height: 70vh; /* But cap its own max height */
+  min-height: unset; /* Remove fixed min-height for the card, let container dictate */
   aspect-ratio: unset; 
   margin: 0 auto; 
+  display: flex; /* Ensure flashcard itself is a flex container */
+  flex-direction: column; /* So its internal content flows correctly */
 }
 
 .card-modal-actions { /* Container for nav buttons and card info */

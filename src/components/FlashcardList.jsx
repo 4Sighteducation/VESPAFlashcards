@@ -302,60 +302,69 @@ const FlashcardList = ({
     const bySubject = {};
     if (!Array.isArray(allCardsData)) return {};
 
+    const cleanSubjectNameForDisplay = (name) => name.replace(/\s*\((A-Level|GCSE|AS-Level|BTEC|IB Diploma|National 5|Higher|Advanced Higher)\)$/i, '').trim();
+
     allCardsData.forEach(item => {
       if (!item || typeof item !== 'object' || !item.id || !item.subject) return;
 
-      const subjectName = item.subject || "General";
+      const originalSubjectName = item.subject || "General";
+      const displaySubjectName = cleanSubjectNameForDisplay(originalSubjectName);
       const topicName = item.topic || "General";
+      
+      dlog(`[regroupCards] Processing item ID: ${item.id}, Original Subject: "${originalSubjectName}", Display Subject: "${displaySubjectName}", Topic: "${topicName}"`);
 
-      // Ensure subject entry exists
-      if (!bySubject[subjectName]) {
-        const subjectColorInfo = currentSubjectColorMapping[subjectName];
-        bySubject[subjectName] = {
-          name: subjectName,
+      if (!bySubject[displaySubjectName]) {
+        const subjectColorInfo = currentSubjectColorMapping[originalSubjectName]; // Still use original for color mapping lookup
+        bySubject[displaySubjectName] = {
+          name: displaySubjectName, // Store the cleaned name for display
+          originalName: originalSubjectName, // Store original for lookups if needed
           color: subjectColorInfo?.base || BRIGHT_COLORS[Object.keys(bySubject).length % BRIGHT_COLORS.length],
-          examBoard: item.examBoard || "General", // Take from first item, or improve later
-          examType: item.examType || "Course",   // Take from first item, or improve later
+          examBoard: item.examBoard || "General",
+          examType: item.examType || "Course",
           totalCardsInSubject: 0,
           topics: {}
         };
       }
+      dlog(`[regroupCards] Subject entry for "${displaySubjectName}":`, JSON.parse(JSON.stringify(bySubject[displaySubjectName])));
 
-      // Ensure topic entry exists within subject
-      if (!bySubject[subjectName].topics[topicName]) {
+      if (!bySubject[displaySubjectName].topics[topicName]) {
         const topicShell = allCardsData.find(shell => 
           shell.type === 'topic' && 
           shell.isShell && 
-          shell.subject === subjectName && 
+          (shell.subject === originalSubjectName || shell.subject === displaySubjectName) && // Check both original and display name
           (shell.topic === topicName || shell.name === topicName)
         );
-        const subjectColorInfo = currentSubjectColorMapping[subjectName];
+        const subjectColorInfo = currentSubjectColorMapping[originalSubjectName]; // Use original for color mapping
         let topicDisplayColor = topicShell?.topicColor || 
                                 topicShell?.cardColor || 
                                 (subjectColorInfo?.topics?.[topicName]) ||
                                 subjectColorInfo?.base ||
-                                bySubject[subjectName].color; // Fallback to subject base
+                                bySubject[displaySubjectName].color;
 
-        bySubject[subjectName].topics[topicName] = {
-          id: topicShell?.id || `temp_topic_${subjectName}_${topicName}`.replace(/\s+/g, '_'),
+        bySubject[displaySubjectName].topics[topicName] = {
+          id: topicShell?.id || `temp_topic_${displaySubjectName}_${topicName}`.replace(/\s+/g, '_'),
           name: topicName,
           color: topicDisplayColor,
-          examBoard: topicShell?.examBoard || bySubject[subjectName].examBoard,
-          examType: topicShell?.examType || bySubject[subjectName].examType,
+          examBoard: topicShell?.examBoard || bySubject[displaySubjectName].examBoard,
+          examType: topicShell?.examType || bySubject[displaySubjectName].examType,
           cardCount: 0,
           cards: []
         };
       }
-
-      // Add card to topic and update counts if it's not a topic shell
+      dlog(`[regroupCards] Topic entry for "${topicName}" under "${displaySubjectName}":`, JSON.parse(JSON.stringify(bySubject[displaySubjectName].topics[topicName])));
+      
+      dlog(`[regroupCards] Checking if item ID ${item.id} (${item.type}, isShell: ${item.isShell}) is a card to be added.`);
       if (item.type !== 'topic' && !item.isShell) {
-        bySubject[subjectName].topics[topicName].cards.push(item);
-        bySubject[subjectName].topics[topicName].cardCount++;
-        bySubject[subjectName].totalCardsInSubject++;
+        bySubject[displaySubjectName].topics[topicName].cards.push(item);
+        bySubject[displaySubjectName].topics[topicName].cardCount++;
+        bySubject[displaySubjectName].totalCardsInSubject++;
+        dlog(`[regroupCards] ADDED card ID ${item.id} to ${displaySubjectName} -> ${topicName}. Current topic card count: ${bySubject[displaySubjectName].topics[topicName].cardCount}`);
+        dlog(`[regroupCards] Total cards for subject ${displaySubjectName}: ${bySubject[displaySubjectName].totalCardsInSubject}`);
       }
     });
+    dlog("[regroupCards] Final grouped structure:", JSON.parse(JSON.stringify(bySubject)));
     return bySubject;
-  }, [BRIGHT_COLORS]); // subjectColorMapping will be passed in useEffect
+  }, [BRIGHT_COLORS]);
 
   const getExistingSubjectNames = useMemo(() => {
     // Depends on groupedCards which is defined above this point in component flow

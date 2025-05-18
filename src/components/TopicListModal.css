@@ -76,22 +76,21 @@
 }
 
 .topic-list-item-name {
-  display: block; /* or -webkit-box for line clamping */
-  font-size: clamp(0.7rem, 2vw, 1.0rem); /* Aggressive: min 0.7rem, ideal 2vw, max 1.0rem */
-  font-weight: 600;
-  /* margin-bottom: 3px; // Removed or reduced */
-  line-height: 1.15; /* Reduced line height */
-  max-height: 2.3em; /* Approximately 2 lines (2 * 1.15em) */
+  display: block;
+  font-size: clamp(0.6rem, 1.8vw, 0.9rem); /* Further reduced: min 0.6rem, ideal 1.8vw, max 0.9rem */
+  font-weight: 500; /* Slightly less bold if it was 600 */
+  line-height: 1.1; /* Further reduced line height */
+  max-height: 2.2em; /* Approximately 2 lines (2 * 1.1em) */
   overflow: hidden;
   text-overflow: ellipsis;
-  /* For 2-line clamp specifically (WebKit browsers) */
-  display: -webkit-box; /* If targeting WebKit for precise 2-line clamp */
+  display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  margin-bottom: 2px; /* Minimal bottom margin */
 }
 
 .topic-list-item-meta {
-  font-size: 0.7rem; /* Slightly smaller meta */
+  font-size: 0.65rem; /* Even smaller meta */
   opacity: 0.9;
 }
 

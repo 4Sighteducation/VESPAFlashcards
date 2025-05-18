@@ -94,6 +94,8 @@ const SpacedRepetition = ({
     }
   }, [shuffleArray, setShuffledCards, setCurrentIndex, setSessionStats, setShowSummary, setStudyCompleted, setIsStudyTopicModalOpen, setActiveStudySubjectForModal]); // Added all state setters used
 
+  const cleanSubjectNameForDisplay = (name) => name.replace(/\s*\((A-Level|GCSE|AS-Level|BTEC|IB Diploma|National 5|Higher|Advanced Higher)\)$/i, '').trim();
+
   // Data grouping for study section
   const groupedSubjectsForStudy = useMemo(() => {
     if (!cards || cards.length === 0) {
@@ -104,45 +106,43 @@ const SpacedRepetition = ({
     const subjectsMap = new Map();
 
     cards.forEach(card => {
-      if (!card || !card.subject) return; // Skip cards without a subject
+      if (!card || !card.subject) return;
 
-      const subjectName = card.subject;
-      const topicName = card.topic || 'General'; // Default topic if undefined
+      const originalSubjectName = card.subject;
+      const displaySubjectName = cleanSubjectNameForDisplay(originalSubjectName);
+      const topicName = card.topic || 'General';
 
-      if (!subjectsMap.has(subjectName)) {
-        subjectsMap.set(subjectName, {
-          name: subjectName,
-          color: card.subjectColor || '#808080', // Fallback color
+      if (!subjectsMap.has(displaySubjectName)) {
+        subjectsMap.set(displaySubjectName, {
+          name: displaySubjectName, // Use cleaned name for display and as key
+          originalName: originalSubjectName, // Keep original for any lookups if needed
+          color: card.subjectColor || '#808080',
           cardsDueInSubject: 0,
           topics: new Map()
         });
       }
 
-      const currentSubject = subjectsMap.get(subjectName);
+      const currentSubject = subjectsMap.get(displaySubjectName);
       currentSubject.cardsDueInSubject++;
 
       if (!currentSubject.topics.has(topicName)) {
         currentSubject.topics.set(topicName, {
-          id: card.topicId || `${subjectName}_${topicName}`.replace(/\s+/g, '_'), // Use topicId or generate one
+          id: card.topicId || `${displaySubjectName}_${topicName}`.replace(/\s+/g, '_'),
           name: topicName,
-          color: card.topicColor || card.cardColor || currentSubject.color, // Topic color, card color, or subject color
+          color: card.topicColor || card.cardColor || currentSubject.color,
           cardsDueInTopicCount: 0,
-          // cards: [] // We don't need to store full cards here, just counts for the modal
         });
       }
       currentSubject.topics.get(topicName).cardsDueInTopicCount++;
-      // currentSubject.topics.get(topicName).cards.push(card); // Storing cards not strictly needed for this structure
     });
 
-    // Convert maps to arrays for rendering
     const result = Array.from(subjectsMap.values()).map(subject => ({
       ...subject,
-      topics: Array.from(subject.topics.values()).sort((a, b) => a.name.localeCompare(b.name)) // Sort topics alphabetically
+      topics: Array.from(subject.topics.values()).sort((a, b) => a.name.localeCompare(b.name))
     }));
     
-    // Sort subjects alphabetically
     result.sort((a,b) => a.name.localeCompare(b.name));
-    dlog("[SpacedRepetition] Grouped subjects for study:", result);
+    dlog("[SpacedRepetition] Grouped subjects for study (cleaned names):", result);
     return result;
   }, [cards]);
 
@@ -768,21 +768,19 @@ const SpacedRepetition = ({
     setActiveStudySubjectForModal(null);
   }, [setIsStudyTopicModalOpen, setActiveStudySubjectForModal]); // Added dependencies
 
-  const handleReviewAllSubjectCardsInBox = useCallback((subjectName) => {
-    dlog("[SpacedRepetition] Reviewing all cards in box for subject:", subjectName);
-    const subjectData = groupedSubjectsForStudy.find(s => s.name === subjectName);
-    if (subjectData) {
-      const cardsForSubjectInBox = cards.filter(card => card.subject === subjectName);
-      startReviewSession(cardsForSubjectInBox); // Uses startReviewSession
-    } else {
-      derr("[SpacedRepetition] Subject data not found for:", subjectName);
-    }
-  }, [cards, groupedSubjectsForStudy, startReviewSession]);
+  const handleReviewAllSubjectCardsInBox = useCallback((subjectDisplayData) => {
+    dlog("[SpacedRepetition] Reviewing all cards in box for subject:", subjectDisplayData.name);
+    const cardsForSubjectInBox = cards.filter(card => card.subject === subjectDisplayData.originalName);
+    startReviewSession(cardsForSubjectInBox);
+  }, [cards, startReviewSession]);
 
-  const handleReviewTopicCardsFromModal = useCallback((subjectName, topicData) => {
-    dlog("[SpacedRepetition] Reviewing cards from modal for topic:", topicData.name, "in subject:", subjectName);
-    const cardsForTopicInBox = cards.filter(card => card.subject === subjectName && card.topic === topicData.name);
-    startReviewSession(cardsForTopicInBox); // Uses startReviewSession
+  const handleReviewTopicCardsFromModal = useCallback((subjectDisplayData, topicData) => {
+    dlog("[SpacedRepetition] Reviewing cards from modal for topic:", topicData.name, "in subject:", subjectDisplayData.name);
+    const cardsForTopicInBox = cards.filter(card => 
+        card.subject === subjectDisplayData.originalName && 
+        card.topic === topicData.name
+    );
+    startReviewSession(cardsForTopicInBox);
   }, [cards, startReviewSession]);
 
   // Main return statement
@@ -858,7 +856,7 @@ const SpacedRepetition = ({
                 subjectName={subject.name}
                 subjectColor={subject.color}
                 cardsDueInSubject={subject.cardsDueInSubject}
-                onReviewAll={() => handleReviewAllSubjectCardsInBox(subject.name)}
+                onReviewAll={() => handleReviewAllSubjectCardsInBox(subject)}
                 onOpenTopicsModal={() => handleOpenStudyTopicsModal(subject)}
               />
             ))}
@@ -871,7 +869,7 @@ const SpacedRepetition = ({
               subjectName={activeStudySubjectForModal.name}
               subjectColor={activeStudySubjectForModal.color}
               topicsWithDueCards={activeStudySubjectForModal.topics}
-              onReviewTopic={handleReviewTopicCardsFromModal}
+              onReviewTopic={(subjectName, topicData) => handleReviewTopicCardsFromModal(activeStudySubjectForModal, topicData)}
             />
           )}
         </div>
