@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getContrastColor } from '../utils/ColorUtils';
-import SlideshowModal from './SlideshowModal'; // Assuming SlideshowModal is in the same directory
+import SlideshowModal from './FlashcardSlideshowModal'; // Assuming SlideshowModal is in the same directory
 import './TopicListModal.css'; // We'll create this CSS file next
 import { dlog } from '../utils/logger';
 
