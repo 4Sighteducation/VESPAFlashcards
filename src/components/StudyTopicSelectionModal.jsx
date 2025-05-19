@@ -39,6 +39,7 @@ const StudyTopicSelectionModal = ({
             const topicDisplayColor = topic.color || headerColor; // Fallback to subject color
             const topicTextColor = getContrastColor(topicDisplayColor);
             const cardsDueCount = topic.cardsDueInTopicCount || 0;
+            const reviewableCount = topic.reviewableCardsInTopic || 0; // Get reviewable count
 
             return (
               <button
@@ -46,9 +47,16 @@ const StudyTopicSelectionModal = ({
                 className="study-topic-item-button"
                 style={{ backgroundColor: topicDisplayColor, color: topicTextColor }}
                 onClick={(e) => handleTopicSelect(topic, e)}
-                disabled={cardsDueCount === 0}
+                disabled={cardsDueCount === 0} /* Should this be reviewableCount === 0 ? */
               >
-                <span className="study-topic-item-name">{topic.name}</span>
+                <span className="study-topic-item-name">
+                  {topic.name}
+                  {reviewableCount > 0 && (
+                    <span className="review-notification-circle topic-notification">
+                      {reviewableCount}
+                    </span>
+                  )}
+                </span>
                 <span className="study-topic-item-cards-due">
                   ({cardsDueCount} card{cardsDueCount !== 1 ? 's' : ''} due)
                 </span>

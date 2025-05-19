@@ -62,6 +62,15 @@ const boxMessages = {
   ]
 };
 
+// Add the new informational statements
+const boxInfoStatements = {
+  1: "This box holds all your new cards and those that you've gotten wrong in other boxes. Select a subject below to start reviewing them. If you answer a card correctly, it will advance to Box 2 and you'll see it again in 2 days. If you answer incorrectly, the card will remain in Box 1 for daily review until you master it.",
+  2: "Box 2 contains cards you've answered correctly from Box 1. These cards are reviewed every 2 days. When you answer a Box 2 card correctly, it advances to Box 3 and will be reviewed every 3 days. If you answer incorrectly, the card moves back to Box 1 for daily review until you're comfortable with it again.",
+  3: "Box 3 holds cards you've mastered from Box 2. These cards are reviewed every 3 days. Answer correctly and your card will advance to Box 4 for weekly review. Answer incorrectly and the card returns to Box 1 for daily practice until you've strengthened that memory again.",
+  4: "Box 4 contains cards you've consistently remembered from Box 3. These are reviewed just once per week. When you answer correctly here, cards advance to Box 5 and only need review every 3 weeks. Any incorrect answers send the card back to Box 1 for more frequent practice.",
+  5: "Congratulations! Box 5 is the retirement home for your most mastered flashcards. These cards have successfully made it through all previous boxes and are only reviewed once every 3 weeks to ensure the knowledge stays with you long-term. If you ever answer incorrectly, the card will return to Box 1 for a refresher course."
+};
+
 const SpacedRepetition = ({
   cards,
   currentBox,
@@ -125,6 +134,10 @@ const SpacedRepetition = ({
   const [currentBoxMessage, setCurrentBoxMessage] = useState("");
   // State for the detailed message when a box is completely empty
   const [emptyBoxDetailMessage, setEmptyBoxDetailMessage] = useState("");
+
+  // State for the new info popup
+  const [showBoxInfoPopup, setShowBoxInfoPopup] = useState(false);
+  const [activeBoxInfoStatement, setActiveBoxInfoStatement] = useState("");
 
   // Define shuffleArray EARLIER
   const shuffleArray = useCallback((array) => {
@@ -242,18 +255,17 @@ const SpacedRepetition = ({
     const messagesForBox = boxMessages[currentBox];
     if (messagesForBox && messagesForBox.length > 0) {
       let randomIndex;
-      // Avoid repeating the last message shown for this box if possible
       if (messagesForBox.length > 1) {
         do {
           randomIndex = Math.floor(Math.random() * messagesForBox.length);
-        } while (randomIndex === lastEmptyMessageIndex);
+        } while (randomIndex === lastEmptyMessageIndex); // Assuming this state is for humorous messages
       } else {
         randomIndex = 0;
       }
       setCurrentBoxMessage(messagesForBox[randomIndex]);
-      setLastEmptyMessageIndex(randomIndex);
+      setLastEmptyMessageIndex(randomIndex); // Update for humorous messages
     } else {
-      setCurrentBoxMessage(""); // Default if no messages for the box
+      setCurrentBoxMessage("");
     }
   }, [currentBox]);
 
@@ -576,9 +588,9 @@ const SpacedRepetition = ({
                               <h3>{topic}</h3>
                             </div>
                             <div className="topic-meta">
-                              {topicCardsFlat.some(card => card.isReviewable === true) && (
+                              {topic.reviewableCardsInTopic > 0 && (
                                 <span className="review-notification-circle topic-notification">
-                                  {topicCardsFlat.filter(card => card.isReviewable === true).length}
+                                  {topic.reviewableCardsInTopic} 
                                 </span>
                               )}
                               <span className="card-count">
@@ -825,6 +837,14 @@ const SpacedRepetition = ({
     startReviewSession(cardsForTopicInBox);
   }, [cards, startReviewSession]);
 
+  // Handler to toggle the box info popup
+  const toggleBoxInfoPopup = () => {
+    if (!showBoxInfoPopup) {
+      setActiveBoxInfoStatement(boxInfoStatements[currentBox] || "Information for this box is currently unavailable.");
+    }
+    setShowBoxInfoPopup(!showBoxInfoPopup);
+  };
+
   // Main return statement
   return (
     <div className="spaced-repetition-container">
@@ -876,7 +896,12 @@ const SpacedRepetition = ({
         <div className={`study-selection-view box-info box-info-${currentBox}`}>
           <div className="study-selection-header">
             {/* <button onClick={onReturnToBank} className="return-to-bank-button top-right-button">&larr; Back to Bank</button> */}
-            <h2>Study Box {currentBox}</h2>
+            <h2>
+              Study Box {currentBox}
+              <button onClick={toggleBoxInfoPopup} className="box-info-button" title="Box Information">
+                ℹ️
+              </button>
+            </h2>
             {currentBoxMessage && <p className="box-humorous-message">{currentBoxMessage}</p>}
             <p>Select a subject to study, or review all cards for a subject in this box.</p>
           </div>
@@ -934,7 +959,12 @@ const SpacedRepetition = ({
         <div className={`study-selection-view box-info box-info-${currentBox}`}>
           <div className="study-selection-header">
             {/* <button onClick={onReturnToBank} className="return-to-bank-button top-right-button">&larr; Back to Bank</button> */}
-            <h2>Study Box {currentBox}</h2>
+            <h2>
+              Study Box {currentBox}
+              <button onClick={toggleBoxInfoPopup} className="box-info-button" title="Box Information">
+                ℹ️
+              </button>
+            </h2>
             {currentBoxMessage && <p className="box-humorous-message">{currentBoxMessage}</p>}
           </div>
           <div className="no-cards-for-study-box">
@@ -944,6 +974,19 @@ const SpacedRepetition = ({
             <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button large-empty-button">
               Go to Card Bank
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Box Info Popup */}
+      {showBoxInfoPopup && (
+        <div className="box-info-popup-overlay" onClick={toggleBoxInfoPopup}>
+          <div className="box-info-popup-content" onClick={(e) => e.stopPropagation()}>
+            <button onClick={toggleBoxInfoPopup} className="box-info-popup-close-button">
+              &times;
+            </button>
+            <h3>Information for Box {currentBox}</h3>
+            <p>{activeBoxInfoStatement}</p>
           </div>
         </div>
       )}

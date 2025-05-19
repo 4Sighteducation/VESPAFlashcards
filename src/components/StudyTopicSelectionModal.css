@@ -83,6 +83,8 @@
 .study-topic-item-name {
   font-size: 1.05rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
 }
 
 .study-topic-item-cards-due {
@@ -111,5 +113,39 @@
   }
   .study-topic-item-name {
     font-size: 1rem;
+  }
+}
+
+/* Copied from SpacedRepetition.css for consistency, can be refactored to a shared file later */
+.review-notification-circle.topic-notification {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; 
+  height: 18px;
+  border-radius: 50%;
+  background-color: #34e795; /* Bright green */
+  color: white;
+  font-size: 0.7rem; 
+  font-weight: bold;
+  margin-left: 8px; /* Space between name and circle */
+  box-shadow: 0 0 4px #34e795, 0 0 6px #34e795;
+  /* Ensure pulse-green animation is defined if not already global or in this file */
+  animation: pulse-green 1.5s infinite alternate; 
+}
+
+/* Add pulse-green animation if not already available globally or imported */
+@keyframes pulse-green {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 3px #34e795;
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 8px #28a745, 0 0 12px #28a745;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 3px #34e795;
   }
 } 
