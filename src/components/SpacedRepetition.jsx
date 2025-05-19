@@ -830,10 +830,27 @@ const SpacedRepetition = ({
 
   const handleReviewTopicCardsFromModal = useCallback((subjectDisplayData, topicData) => {
     dlog("[SpacedRepetition] Reviewing cards from modal for topic:", topicData.name, "in subject:", subjectDisplayData.name);
+    
+    // --- Start Enhanced Logging ---
+    dlog("[DEBUG] Filtering criteria: Subject Original Name:", subjectDisplayData.originalName, "Topic Name:", topicData.name);
+    if (cards && cards.length > 0) {
+      dlog(`[DEBUG] Total cards in current box for filtering: ${cards.length}`);
+      cards.slice(0, 10).forEach((c, index) => dlog(`[DEBUG] Sample card ${index} in box:`, { id: c.id, subject: c.subject, topic: c.topic, question: c.front?.substring(0,20) || c.question?.substring(0,20) }));
+      
+      // Log a few cards that *should* match, if possible to identify them manually
+      const potentiallyMatching = cards.filter(c => c.subject === subjectDisplayData.originalName && c.topic === topicData.name);
+      dlog(`[DEBUG] Pre-filter check: Found ${potentiallyMatching.length} cards that *should* match criteria directly.`);
+
+    } else {
+      dlog("[DEBUG] The 'cards' prop (for the current box) is empty or undefined.");
+    }
+    // --- End Enhanced Logging ---
+    
     const cardsForTopicInBox = cards.filter(card => 
         card.subject === subjectDisplayData.originalName && 
         card.topic === topicData.name
     );
+    dlog("[DEBUG] After filter, cardsForTopicInBox.length:", cardsForTopicInBox.length);
     startReviewSession(cardsForTopicInBox);
   }, [cards, startReviewSession]);
 
