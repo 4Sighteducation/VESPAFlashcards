@@ -847,7 +847,7 @@ const SpacedRepetition = ({
     // --- End Enhanced Logging ---
     
     const cardsForTopicInBox = cards.filter(card => 
-        card.subject === subjectDisplayData.originalName && 
+        cleanSubjectNameForDisplay(card.subject) === subjectDisplayData.name && 
         card.topic === topicData.name
     );
     dlog("[DEBUG] After filter, cardsForTopicInBox.length:", cardsForTopicInBox.length);
