@@ -125,7 +125,6 @@ const SpacedRepetition = ({
   const [currentBoxMessage, setCurrentBoxMessage] = useState("");
   // State for the detailed message when a box is completely empty
   const [emptyBoxDetailMessage, setEmptyBoxDetailMessage] = useState("");
-  const [lastRandomMessageIndices, setLastRandomMessageIndices] = useState({});
 
   // Define shuffleArray EARLIER
   const shuffleArray = useCallback((array) => {
@@ -231,12 +230,12 @@ const SpacedRepetition = ({
       if (messagesForBox.length > 1) {
         do {
           randomIndex = Math.floor(Math.random() * messagesForBox.length);
-        } while (randomIndex === lastRandomMessageIndices[currentBox]);
+        } while (randomIndex === lastEmptyMessageIndex);
       } else {
         randomIndex = 0;
       }
       setCurrentBoxMessage(messagesForBox[randomIndex]);
-      setLastRandomMessageIndices(prev => ({ ...prev, [currentBox]: randomIndex }));
+      setLastEmptyMessageIndex(randomIndex);
     } else {
       setCurrentBoxMessage(""); // Default if no messages for the box
     }
@@ -253,17 +252,17 @@ const SpacedRepetition = ({
         if (messages.length > 1) {
           do {
             randomIndex = Math.floor(Math.random() * messages.length);
-          } while (randomIndex === lastRandomMessageIndices[contextKey]);
+          } while (randomIndex === lastEmptyMessageIndex);
         } else {
           randomIndex = 0;
         }
         setEmptyBoxDetailMessage(messages[randomIndex]);
-        setLastRandomMessageIndices(prev => ({ ...prev, [contextKey]: randomIndex }));
+        setLastEmptyMessageIndex(randomIndex);
       } else {
         setEmptyBoxDetailMessage("This box is currently empty. Great job keeping up!");
       }
     }
-  }, [currentBox, groupedSubjectsForStudy, shuffledCards, lastRandomMessageIndices]); // lastRandomMessageIndices is needed here to prevent re-picking same if other deps change
+  }, [currentBox, groupedSubjectsForStudy, shuffledCards]); // REMOVED lastRandomMessageIndices from dependency array
 
   // New useEffect to manage study session state (currentIndex, studyCompleted, flip states)
   // This reacts to changes in `shuffledCards` (instead of currentCards) when a session starts.
