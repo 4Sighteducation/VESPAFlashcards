@@ -147,7 +147,7 @@ const Header = ({
             onClick={() => handleNavClick(onOpenCreateTopicModal)}
             title="Create New Subjects/Topics"
           >
-            <span className="button-icon">⚡</span> SUBJECTS
+            <span className="button-icon">⚡</span> NEW
           </button>
         )}
         <button
@@ -167,7 +167,7 @@ const Header = ({
             onClick={() => handleNavClick(onOpenCreateTopicModal)}
             title="Create New Subjects/Topics"
           >
-            <span className="button-icon">⚡</span> SUBJECTS
+            <span className="button-icon">⚡</span> NEW
           </button>
         )}
 
