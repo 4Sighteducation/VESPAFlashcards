@@ -211,31 +211,32 @@
     flex-grow: 1; /* Allow buttons to grow and share space */
     flex-shrink: 1; /* Allow buttons to shrink if needed */
     flex-basis: 0;  /* Distribute space based on flex-grow */
-    max-width: 48%; /* Limit max width to slightly less than half, considering the container gap */
+    /* max-width: 48%; /* Removed to let flexbox fully control width based on content and available space */
     
     margin: 0; /* Remove individual margins, container gap handles spacing */
     
-    font-size: 10px; /* Small font size for the text */
-    line-height: 1.3; /* Adjust line height for the small font */
-    padding: 5px 3px; /* top/bottom padding 5px, left/right padding 3px (very tight) */
+    /* Responsive font size: min 8px, ideal based on 2.8vw, max 11px */
+    font-size: clamp(8px, 2.8vw, 11px);
+    line-height: 1.2; /* Slightly adjusted line height for clamped font */
+    padding: 6px 4px; /* Symetrical padding, slightly more top/bottom */
     
     /* Flex properties for icon and text alignment within the button */
     /* display: flex; is already on .nav-button */
     /* align-items: center; is already on .nav-button */
     /* justify-content: center; is already on .nav-button */
-    gap: 3px; /* Small gap between icon and text */
+    gap: 4px; /* Increased gap slightly for icon and text */
     
     overflow: hidden; /* Crucial: hides content that doesn't fit */
     white-space: nowrap; /* Keep text on one line */
     text-overflow: ellipsis; /* Apply ellipsis to overflowing text part of the button */
 
     /* Visuals */
-    border-radius: 3px; /* Keep consistent with previous attempts */
+    border-radius: 4px; /* Slightly larger radius */
     border-bottom-width: 2px;
   }
   /* Reduce icon size specifically for these persistent buttons */
   .header-mobile-persistent-actions .nav-button .button-icon {
-    font-size: 13px; /* Icon size - slightly larger than text for visibility */
+    font-size: clamp(12px, 3.5vw, 15px); /* Responsive icon size */
     line-height: 1; /* To help with vertical alignment */
     flex-shrink: 0; /* Icon should not shrink */
     margin-right: 0; /* Use gap from parent button for spacing */
