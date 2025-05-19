@@ -123,6 +123,8 @@ const SpacedRepetition = ({
 
   // Add state for the current box message
   const [currentBoxMessage, setCurrentBoxMessage] = useState("");
+  // State for the detailed message when a box is completely empty
+  const [emptyBoxDetailMessage, setEmptyBoxDetailMessage] = useState("");
   const [lastRandomMessageIndices, setLastRandomMessageIndices] = useState({});
 
   // Define shuffleArray EARLIER
@@ -220,93 +222,6 @@ const SpacedRepetition = ({
     "Wonder briefly if this is a glitch (it's not, you're just that good)"
   ];
 
-  // Enhanced function to get a random message that avoids repeating the last message
-  const getRandomEmptyStateMessage = () => {
-    if (emptyStateMessages.length <= 1) return emptyStateMessages[0];
-    
-    let randomIndex;
-    do {
-      randomIndex = Math.floor(Math.random() * emptyStateMessages.length);
-    } while (randomIndex === lastEmptyMessageIndex);
-    
-    // Store this index for next time
-    setLastEmptyMessageIndex(randomIndex);
-    return emptyStateMessages[randomIndex];
-  };
-  
-  // Renamed and simplified: This function now only filters cards based on selection.
-  // It does NOT reset currentIndex or other session states directly.
-  const updateCurrentCardsInternal = useCallback((grouped) => {
-    let cardsToStudy = [];
-    
-    if (selectedSubject && selectedTopic) {
-      cardsToStudy = grouped[selectedSubject]?.[selectedTopic] || [];
-    } else if (selectedSubject) {
-      const topicsForSubject = grouped[selectedSubject] || {};
-      cardsToStudy = Object.values(topicsForSubject).flat();
-    } else {
-      // If no subject is selected, we might be in the main box view,
-      // or this function might be called in a context where "all cards" means all in the current box.
-      // For the study modal, a subject/topic will typically be selected.
-      // If we want to study "all cards in the box", this needs specific handling.
-      // For now, assume if a subject/topic isn't selected, we are not in the study modal context
-      // or the cards are already appropriately filtered by the parent `cards` prop.
-      cardsToStudy = Object.values(grouped)
-        .map(topicMap => Object.values(topicMap).flat())
-        .flat();
-    }
-
-    // We no longer filter by reviewability here.
-    // The 'isReviewable' and 'nextReviewDate' properties on each card object
-    // (passed via the `cards` prop, likely from App.js's getCardsForCurrentBox)
-    // will be used by FlippableCard to determine its locked/display state.
-    setCurrentCards(cardsToStudy);
-    // DO NOT reset currentIndex, isFlipped, etc. here. This will be handled by a new useEffect.
-
-  }, [selectedSubject, selectedTopic]); // Removed showStudyModal as it's not directly used for filtering logic here
-
-  // Effect for when the base `cards` prop (from App.js) or selection changes
-  useEffect(() => {
-    if (cards && cards.length > 0) {
-      const grouped = cards.reduce((acc, card) => {
-        const subject = card.subject || "General";
-        const topic = card.topic || "General";
-        if (!acc[subject]) acc[subject] = {};
-        if (!acc[subject][topic]) acc[subject][topic] = [];
-        acc[subject][topic].push(card);
-        return acc;
-      }, {});
-      
-      setGroupedBoxCards(grouped);
-      setBoxSubjects(Object.keys(grouped).sort());
-      
-      const reviewable = { subjects: {}, topics: {} };
-      const todayUTC = new Date(); // Use UTC for reviewability check
-      todayUTC.setUTCHours(0, 0, 0, 0);
-
-      Object.keys(grouped).forEach(subject => {
-        reviewable.subjects[subject] = false;
-        Object.keys(grouped[subject]).forEach(topic => {
-          const topicKey = `${subject}-${topic}`;
-          const cardsInTopic = grouped[subject][topic];
-          const hasReviewableCards = cardsInTopic.some(card => card.isReviewable === true);
-          reviewable.topics[topicKey] = hasReviewableCards;
-          if (hasReviewableCards) reviewable.subjects[subject] = true;
-        });
-      });
-      setReviewableCards(reviewable);
-      
-      // Update the study session cards based on current filters
-      updateCurrentCardsInternal(grouped);
-
-    } else {
-      setGroupedBoxCards({});
-      setBoxSubjects([]);
-      setReviewableCards({ subjects: {}, topics: {} });
-      setCurrentCards([]); // Clear current cards if the box is empty
-    }
-  }, [cards, currentBox, selectedSubject, selectedTopic, spacedRepetitionData, updateCurrentCardsInternal]); // updateCurrentCardsInternal is now a dependency
-
   // New useEffect to pick a random message when currentBox changes
   useEffect(() => {
     const messagesForBox = boxMessages[currentBox];
@@ -326,6 +241,29 @@ const SpacedRepetition = ({
       setCurrentBoxMessage(""); // Default if no messages for the box
     }
   }, [currentBox]);
+
+  // New useEffect to set the detailed empty box message
+  useEffect(() => {
+    // Only update if there are no subjects to display AND no active review session
+    if (groupedSubjectsForStudy.length === 0 && (!shuffledCards || shuffledCards.length === 0)) {
+      const messages = emptyStateMessages; // Use the correct array
+      if (messages && messages.length > 0) {
+        let randomIndex;
+        const contextKey = `emptyBox-${currentBox}`;
+        if (messages.length > 1) {
+          do {
+            randomIndex = Math.floor(Math.random() * messages.length);
+          } while (randomIndex === lastRandomMessageIndices[contextKey]);
+        } else {
+          randomIndex = 0;
+        }
+        setEmptyBoxDetailMessage(messages[randomIndex]);
+        setLastRandomMessageIndices(prev => ({ ...prev, [contextKey]: randomIndex }));
+      } else {
+        setEmptyBoxDetailMessage("This box is currently empty. Great job keeping up!");
+      }
+    }
+  }, [currentBox, groupedSubjectsForStudy, shuffledCards, lastRandomMessageIndices]); // lastRandomMessageIndices is needed here to prevent re-picking same if other deps change
 
   // New useEffect to manage study session state (currentIndex, studyCompleted, flip states)
   // This reacts to changes in `shuffledCards` (instead of currentCards) when a session starts.
@@ -694,7 +632,7 @@ const SpacedRepetition = ({
             There are no cards to review here at the moment, you can go and...
           </p>
           <p className="empty-message">
-            {getRandomEmptyStateMessage()}
+            {emptyBoxDetailMessage}
           </p>
           <p className="pro-tip">
             Pro tip: This empty screen is actually a flashcard testing if you remember what free time feels like. How'd you do?
@@ -927,7 +865,7 @@ const SpacedRepetition = ({
           {groupedSubjectsForStudy.length === 0 ? (
             <div className="no-cards-for-study-box">
               <h3>🎉 All Clear! 🎉</h3>
-              <p>{getRandomEmptyStateMessage()}</p>
+              <p>{emptyBoxDetailMessage}</p>
               <p>There are no cards to review in Box {currentBox} right now.</p>
               <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button large-empty-button">
                 Go to Card Bank
@@ -981,7 +919,7 @@ const SpacedRepetition = ({
           </div>
           <div className="no-cards-for-study-box">
             <h3>🎉 All Clear! 🎉</h3>
-            <p>{getRandomEmptyStateMessage()}</p>
+            <p>{emptyBoxDetailMessage}</p>
             <p>There are no cards to review in Box {currentBox} right now.</p>
             <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button large-empty-button">
               Go to Card Bank
