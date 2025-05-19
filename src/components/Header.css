@@ -237,24 +237,57 @@
 
   /* Consistent icon styling for buttons in this container */
   .header-mobile-persistent-actions .nav-button .button-icon {
-    font-size: clamp(16px, 5vw, 20px); /* Significantly larger and responsive icon */
+    font-size: clamp(16px, 5vw, 18px); /* Adjusted from 20px max */
     line-height: 1; 
-    flex-shrink: 0; /* Icon should not shrink */
-    margin-right: 0; /* Use gap from parent button for spacing */
+    flex-shrink: 0; 
+    margin-right: 0; 
   }
 
-  /* REMOVING the more aggressive styling specifically for the SUBJECTS button for now to test equal sizing */
-  /*
-  .header-mobile-persistent-actions .create-topics-header-button {
-    font-size: clamp(8px, 2.2vw, 10px); 
-    padding: 6px 3px; 
-    gap: 2px; 
+  /* Specific styling for the CARDS button if it needs to be different */
+  .header-mobile-persistent-actions .is-cards-button {
+    /* Add any specific overrides for CARDS button if needed, e.g., font-size */
+    font-size: clamp(10px, 2.6vw, 12px); /* Potentially adjust if "CARDS" is still too wide */
+  }
+  .header-mobile-persistent-actions .is-cards-button .button-icon {
+    font-size: clamp(15px, 4.5vw, 17px); /* Icon size for CARDS button */
   }
 
-  .header-mobile-persistent-actions .create-topics-header-button .button-icon {
-    font-size: clamp(11px, 3vw, 13px); 
+  /* Styling for always-visible study boxes on mobile */
+  .mobile-study-boxes-visible {
+    display: none; /* Hidden by default, shown in mobile media query */
+    width: 100%;
+    order: 3; /* After persistent actions */
+    margin-top: 8px;
+    margin-bottom: 8px;
   }
-  */
+
+  .mobile-study-boxes-visible .header-box-selectors-container {
+    /* Styles for the container of study boxes if different from desktop/menu */
+    margin: 0;
+    padding: 5px 0;
+    background-color: rgba(0,0,0,0.1); /* Slight background to differentiate section */
+    border-radius: 4px;
+  }
+
+  .mobile-study-boxes-visible .box-selectors-label {
+    font-size: 10px; /* Smaller label */
+    margin-bottom: 4px;
+    color: white; /* Ensure visibility on dark header */
+  }
+
+  .mobile-study-boxes-visible .header-box-selectors {
+    gap: 4px; /* Tighter gap between box buttons */
+    justify-content: center; /* Center the box buttons */
+  }
+
+  .mobile-study-boxes-visible .box-selector {
+    padding: 5px 8px; /* Smaller padding */
+    font-size: 12px; /* Smaller font */
+    min-width: 30px; /* Smaller min-width */
+  }
+  .mobile-study-boxes-visible .box-selector .box-count {
+    font-size: 0.7rem; /* Smaller count */
+  }
 
   .mobile-menu-toggle {
     display: block; 
@@ -330,6 +363,22 @@
   /* Hide the old .header-visible-actions if it exists and was not removed from JSX */
   .header-visible-actions {
     display: none !important; /* Ensure it's hidden on mobile */
+  }
+
+  /* Show mobile-specific study boxes and hide the one in the nav menu */
+  .mobile-study-boxes-visible {
+    display: block; /* Show this on mobile */
+  }
+  .header-nav .desktop-study-boxes-menu {
+    display: none; /* Hide this instance when mobile and menu is open */
+  }
+  .header-nav .mobile-study-boxes {
+    display: none; /* Also hide the instance that might be directly in header-nav if not caught by desktop-study-boxes-menu */
+  }
+
+  /* Ensure CARDS button text isn't too large */
+  .header-mobile-persistent-actions .is-cards-button {
+    /* font-size: clamp(9px, 2.5vw, 11px); */ /* Further adjust if needed */
   }
 }
 

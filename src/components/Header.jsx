@@ -54,7 +54,7 @@ const Header = ({
   // Determine what view toggle to show based on current view
   const isInCardBank = currentView === "cardBank";
   const isInSpacedRep = currentView === "spacedRepetition";
-  const alternateViewName = isInCardBank ? "Study" : "Card Bank";
+  const alternateViewName = isInCardBank ? "Study" : "CARDS";
   const alternateViewIcon = isInCardBank ? "🔄" : "📚";
   const alternateViewAction = isInCardBank 
     ? () => onViewChange("spacedRepetition") 
@@ -83,8 +83,8 @@ const Header = ({
   // Render the box selectors for spaced repetition
   const renderBoxSelectors = () => {
     return (
-      <div className="header-box-selectors-container">
-        <div className="box-selectors-label">Study Boxes</div>
+      <div className="header-box-selectors-container mobile-study-boxes">
+        <div className="box-selectors-label">STUDY BOXES</div>
         <div className="header-box-selectors">
           {[1, 2, 3, 4, 5].map((box) => (
             <button
@@ -151,12 +151,19 @@ const Header = ({
           </button>
         )}
         <button
-          className={`nav-button toggle-view-btn mobile-persistent-button`}
+          className={`nav-button toggle-view-btn mobile-persistent-button ${isInSpacedRep ? 'is-cards-button' : ''}`}
           onClick={() => handleNavClick(alternateViewAction)}
         >
           <span className="button-icon">{alternateViewIcon}</span> {alternateViewName}
         </button>
       </div>
+
+      {/* Study Box Selectors - Render directly on mobile if in Spaced Repetition view */}
+      {isInSpacedRep && (
+        <div className="mobile-study-boxes-visible">
+          {renderBoxSelectors()} 
+        </div>
+      )}
 
       {/* Navigation items - for desktop and inside mobile dropdown */}
       <div className={`header-nav ${mobileMenuOpen ? 'open' : ''}`}>
@@ -220,8 +227,9 @@ const Header = ({
           </button>
         )}
 
-        {/* Spaced Repetition Box Selectors - also moved into nav for mobile */}
-        {isInSpacedRep && renderBoxSelectors()}
+        {/* Spaced Repetition Box Selectors - also moved into nav for mobile (but will be hidden by new structure for mobile) */}
+        {/* This instance of renderBoxSelectors is now primarily for desktop or when menu is open on larger screens */}
+        {isInSpacedRep && <div className="desktop-study-boxes-menu">{renderBoxSelectors()}</div>}
       </div>
       
       {/* Wrapper for always-visible actions - THIS WILL BE HIDDEN ON MOBILE and its contents moved to header-nav */}

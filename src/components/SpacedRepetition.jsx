@@ -855,7 +855,7 @@ const SpacedRepetition = ({
         // Initial View: Select Subject/Topic or No Cards View
         <div className={`study-selection-view box-info box-info-${currentBox}`}>
           <div className="study-selection-header">
-            <button onClick={onReturnToBank} className="return-to-bank-button top-right-button">&larr; Back to Bank</button>
+            {/* <button onClick={onReturnToBank} className="return-to-bank-button top-right-button">&larr; Back to Bank</button> */}
             <h2>Study Box {currentBox}</h2>
             {currentBoxMessage && <p className="box-humorous-message">{currentBoxMessage}</p>}
             <p>Select a subject to study, or review all cards for a subject in this box.</p>
@@ -906,13 +906,13 @@ const SpacedRepetition = ({
             setShowSummary(false);
             setShuffledCards([]); // Clear shuffled cards to return to selection view
             setCurrentIndex(0);
-          }}>Review More in this Box</button>
-          <button onClick={onReturnToBank} style={{marginLeft: '10px'}}>Back to Card Bank</button>
+          }}>Return to Box {currentBox}</button>
+          {/* <button onClick={onReturnToBank} style={{marginLeft: '10px'}}>Back to Card Bank</button> */}
         </div>
       ) : (
         <div className={`study-selection-view box-info box-info-${currentBox}`}>
           <div className="study-selection-header">
-            <button onClick={onReturnToBank} className="return-to-bank-button top-right-button">&larr; Back to Bank</button>
+            {/* <button onClick={onReturnToBank} className="return-to-bank-button top-right-button">&larr; Back to Bank</button> */}
             <h2>Study Box {currentBox}</h2>
             {currentBoxMessage && <p className="box-humorous-message">{currentBoxMessage}</p>}
           </div>
