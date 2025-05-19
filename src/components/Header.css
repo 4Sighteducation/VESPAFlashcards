@@ -199,32 +199,46 @@
     display: flex; 
     order: 2; /* Place them after the title/hamburger line */
     width: 100%; 
-    justify-content: space-around; 
-    margin-top: 8px; /* Add margin above these buttons */
+    justify-content: space-around; /* Distributes space around buttons */
+    margin-top: 8px; 
     margin-bottom: 8px; 
+    gap: 2%; /* Gap between the two buttons (e.g., 2% of parent width) */
   }
   .header-mobile-persistent-actions .nav-button {
-    width: auto; 
-    flex-grow: 0; 
-    flex-shrink: 1; 
-    flex-basis: auto; 
-    margin: 0 3px; /* Slightly reduced margin */
-    font-size: 10px; 
-    padding: 4px 6px; /* FURTHER REDUCED PADDING (top/bottom, left/right) */
-    line-height: 1.2; 
-    text-align: center; 
-    max-width: 45%; /* Reduce max-width slightly, allow more gap or less width overall */
-    overflow: hidden; 
-    text-overflow: ellipsis; 
-    white-space: nowrap; 
-    border-radius: 3px; /* Slightly smaller border radius */
-    /* Ensure flashy styles like border-bottom are appropriately sized or adjusted */
-    border-bottom-width: 2px; /* Thinner border for compact look */
+    /* Overriding global min-width from .create-topics-header-button and .toggle-view-btn */
+    min-width: 0; /* Allow button to be smaller than 150px */
+    
+    flex-grow: 1; /* Allow buttons to grow and share space */
+    flex-shrink: 1; /* Allow buttons to shrink if needed */
+    flex-basis: 0;  /* Distribute space based on flex-grow */
+    max-width: 48%; /* Limit max width to slightly less than half, considering the container gap */
+    
+    margin: 0; /* Remove individual margins, container gap handles spacing */
+    
+    font-size: 10px; /* Small font size for the text */
+    line-height: 1.3; /* Adjust line height for the small font */
+    padding: 5px 3px; /* top/bottom padding 5px, left/right padding 3px (very tight) */
+    
+    /* Flex properties for icon and text alignment within the button */
+    /* display: flex; is already on .nav-button */
+    /* align-items: center; is already on .nav-button */
+    /* justify-content: center; is already on .nav-button */
+    gap: 3px; /* Small gap between icon and text */
+    
+    overflow: hidden; /* Crucial: hides content that doesn't fit */
+    white-space: nowrap; /* Keep text on one line */
+    text-overflow: ellipsis; /* Apply ellipsis to overflowing text part of the button */
+
+    /* Visuals */
+    border-radius: 3px; /* Keep consistent with previous attempts */
+    border-bottom-width: 2px;
   }
   /* Reduce icon size specifically for these persistent buttons */
   .header-mobile-persistent-actions .nav-button .button-icon {
-    font-size: 0.9em; 
-    margin-right: 2px; 
+    font-size: 13px; /* Icon size - slightly larger than text for visibility */
+    line-height: 1; /* To help with vertical alignment */
+    flex-shrink: 0; /* Icon should not shrink */
+    margin-right: 0; /* Use gap from parent button for spacing */
   }
 
   .mobile-menu-toggle {
