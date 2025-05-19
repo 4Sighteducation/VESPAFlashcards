@@ -216,30 +216,37 @@
     margin: 0; /* Remove individual margins, container gap handles spacing */
     
     /* Responsive font size: min 8px, ideal based on 2.8vw, max 11px */
-    font-size: clamp(8px, 2.8vw, 11px);
-    line-height: 1.2; /* Slightly adjusted line height for clamped font */
-    padding: 6px 4px; /* Symetrical padding, slightly more top/bottom */
+    font-size: clamp(9px, 2.8vw, 11px); /* Base for STUDY button */
+    line-height: 1.2; 
+    padding: 6px 4px; 
     
-    /* Flex properties for icon and text alignment within the button */
-    /* display: flex; is already on .nav-button */
-    /* align-items: center; is already on .nav-button */
-    /* justify-content: center; is already on .nav-button */
-    gap: 4px; /* Increased gap slightly for icon and text */
+    gap: 4px; 
     
-    overflow: hidden; /* Crucial: hides content that doesn't fit */
-    white-space: nowrap; /* Keep text on one line */
-    text-overflow: ellipsis; /* Apply ellipsis to overflowing text part of the button */
+    overflow: hidden; 
+    white-space: nowrap; 
+    text-overflow: ellipsis; 
 
-    /* Visuals */
-    border-radius: 4px; /* Slightly larger radius */
+    border-radius: 4px; 
     border-bottom-width: 2px;
   }
-  /* Reduce icon size specifically for these persistent buttons */
+
+  /* Icon styling for general nav-buttons in this container */
   .header-mobile-persistent-actions .nav-button .button-icon {
-    font-size: clamp(12px, 3.5vw, 15px); /* Responsive icon size */
-    line-height: 1; /* To help with vertical alignment */
-    flex-shrink: 0; /* Icon should not shrink */
-    margin-right: 0; /* Use gap from parent button for spacing */
+    font-size: clamp(13px, 3.5vw, 15px); /* Base for STUDY icon */
+    line-height: 1; 
+    flex-shrink: 0; 
+    margin-right: 0; 
+  }
+
+  /* More aggressive responsive styling specifically for the SUBJECTS button */
+  .header-mobile-persistent-actions .create-topics-header-button {
+    font-size: clamp(8px, 2.2vw, 10px); /* Smaller text for SUBJECTS */
+    padding: 6px 3px; /* Slightly tighter padding */
+    gap: 2px; /* Smaller gap for SUBJECTS */
+  }
+
+  .header-mobile-persistent-actions .create-topics-header-button .button-icon {
+    font-size: clamp(11px, 3vw, 13px); /* Smaller icon for SUBJECTS */
   }
 
   .mobile-menu-toggle {
