@@ -25,12 +25,14 @@
 }
 
 .box-info::before { /* General icon styling */
-  content: "";
+  content: ""; /* Content will be set by specific box-info-X rule */
   position: absolute;
-  top: 15px;
-  left: 15px;
-  font-size: 1.8em;
-  opacity: 0.7;
+  top: 10px; /* Adjusted position */
+  left: 10px;  /* Adjusted position */
+  font-size: 2em; /* Made icons larger */
+  opacity: 0.6; /* Slightly less opacity */
+  z-index: 0; /* Ensure it's behind text but visible */
+  color: inherit; /* Inherit color from parent, should help with contrast */
 }
 
 /* Color schemes for different boxes - Revamped & More Creative */
@@ -83,7 +85,7 @@
   margin-top: 10px;
   margin-bottom: 10px;
   padding: 12px 18px;
-  background-color: rgba(0, 0, 0, 0.3); /* Dark semi-transparent background */
+  background-color: rgba(255, 255, 255, 0.15); /* Very light, semi-transparent white */
   border-radius: 8px;
   font-size: 1em;
   text-shadow:
@@ -2009,4 +2011,19 @@ body:has(.study-modal-overlay) {
 .close-review-session-button:hover {
   background-color: rgba(0, 0, 0, 0.15);
   color: #000;
+}
+
+/* Style for the relocated Back to Bank button */
+.return-to-bank-button.top-right-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  padding: 6px 10px; /* Make it a bit smaller */
+  font-size: 0.85em;
+  background-color: #6c757d; /* Standard grey */
+  color: white;
+  z-index: 10; /* Ensure it's above other header elements if overlapping */
+}
+.return-to-bank-button.top-right-button:hover {
+  background-color: #5a6268;
 }

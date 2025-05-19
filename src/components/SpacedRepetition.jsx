@@ -914,39 +914,39 @@ const SpacedRepetition = ({
             </div>
           )}
         </div>
-      ) : !showSummary && groupedSubjectsForStudy.length > 0 ? (
+      ) : !showSummary ? (
         // Initial View: Select Subject/Topic or No Cards View
-        <div className="study-selection-view">
+        <div className={`study-selection-view box-info box-info-${currentBox}`}>
           <div className="study-selection-header">
+            <button onClick={onReturnToBank} className="return-to-bank-button top-right-button">&larr; Back to Bank</button>
             <h2>Study Box {currentBox}</h2>
             {currentBoxMessage && <p className="box-humorous-message">{currentBoxMessage}</p>}
             <p>Select a subject to study, or review all cards for a subject in this box.</p>
-             <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button">&larr; Back to Bank</button>
           </div>
 
-          {groupedSubjectsForStudy.length === 0 && (
+          {groupedSubjectsForStudy.length === 0 ? (
             <div className="no-cards-for-study-box">
               <h3>🎉 All Clear! 🎉</h3>
-              <p>{emptyStateMessages[Math.floor(Math.random() * emptyStateMessages.length)]}</p>
+              <p>{getRandomEmptyStateMessage()}</p>
               <p>There are no cards to review in Box {currentBox} right now.</p>
               <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button large-empty-button">
                 Go to Card Bank
               </button>
             </div>
+          ) : (
+            <div className="study-subject-list">
+              {groupedSubjectsForStudy.map(subject => (
+                <StudySubjectDisplay
+                  key={subject.name}
+                  subjectName={subject.name}
+                  subjectColor={subject.color}
+                  cardsDueInSubject={subject.cardsDueInSubject}
+                  onReviewAll={() => handleReviewAllSubjectCardsInBox(subject)}
+                  onOpenTopicsModal={() => handleOpenStudyTopicsModal(subject)}
+                />
+              ))}
+            </div>
           )}
-
-          <div className="study-subject-list">
-            {groupedSubjectsForStudy.map(subject => (
-              <StudySubjectDisplay
-                key={subject.name}
-                subjectName={subject.name}
-                subjectColor={subject.color}
-                cardsDueInSubject={subject.cardsDueInSubject}
-                onReviewAll={() => handleReviewAllSubjectCardsInBox(subject)}
-                onOpenTopicsModal={() => handleOpenStudyTopicsModal(subject)}
-              />
-            ))}
-          </div>
           
           {activeStudySubjectForModal && (
             <StudyTopicSelectionModal
@@ -960,7 +960,6 @@ const SpacedRepetition = ({
           )}
         </div>
       ) : showSummary ? (
-        // Session Summary View
         <div className="session-summary-view">
           <h3>Session Summary (Box {currentBox})</h3>
           <p>Cards Reviewed: {sessionStats.reviewedCount}</p>
@@ -970,16 +969,15 @@ const SpacedRepetition = ({
             setShowSummary(false);
             setShuffledCards([]); // Clear shuffled cards to return to selection view
             setCurrentIndex(0);
-            // onReturnToBank(); // Optionally return to bank or stay in box view
           }}>Review More in this Box</button>
           <button onClick={onReturnToBank} style={{marginLeft: '10px'}}>Back to Card Bank</button>
         </div>
       ) : (
-        <div className="study-selection-view">
+        <div className={`study-selection-view box-info box-info-${currentBox}`}>
           <div className="study-selection-header">
+            <button onClick={onReturnToBank} className="return-to-bank-button top-right-button">&larr; Back to Bank</button>
             <h2>Study Box {currentBox}</h2>
             {currentBoxMessage && <p className="box-humorous-message">{currentBoxMessage}</p>}
-             <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button">&larr; Back to Bank</button>
           </div>
           <div className="no-cards-for-study-box">
             <h3>🎉 All Clear! 🎉</h3>
