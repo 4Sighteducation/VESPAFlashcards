@@ -49,14 +49,14 @@ const StudyTopicSelectionModal = ({
                 onClick={(e) => handleTopicSelect(topic, e)}
                 disabled={cardsDueCount === 0} /* Should this be reviewableCount === 0 ? */
               >
-                <span className="study-topic-item-name">
-                  {topic.name}
+                <div className="study-topic-button-content-wrapper">
+                  <span className="study-topic-item-name-text">{topic.name}</span>
                   {reviewableCount > 0 && (
                     <span className="review-notification-circle topic-notification">
                       {reviewableCount}
                     </span>
                   )}
-                </span>
+                </div>
                 <span className="study-topic-item-cards-due">
                   ({cardsDueCount} card{cardsDueCount !== 1 ? 's' : ''} due)
                 </span>
