@@ -165,6 +165,8 @@ const SpacedRepetition = ({
     dlog("[SpacedRepetition] Grouping cards for study view. Total cards in box:", cards.length);
 
     const subjectsMap = new Map();
+    const todayUTC = new Date(); // For isReviewable check if not pre-calculated
+    todayUTC.setUTCHours(0,0,0,0);
 
     cards.forEach(card => {
       if (!card || !card.subject) return;
@@ -172,19 +174,28 @@ const SpacedRepetition = ({
       const originalSubjectName = card.subject;
       const displaySubjectName = cleanSubjectNameForDisplay(originalSubjectName);
       const topicName = card.topic || 'General';
+      
+      // Determine if the card is reviewable
+      // Prefer card.isReviewable if it exists, otherwise calculate
+      const isCardReviewable = card.isReviewable === true || 
+                               (card.isReviewable !== false && card.nextReviewDate && new Date(card.nextReviewDate) <= todayUTC);
 
       if (!subjectsMap.has(displaySubjectName)) {
         subjectsMap.set(displaySubjectName, {
-          name: displaySubjectName, // Use cleaned name for display and as key
-          originalName: originalSubjectName, // Keep original for any lookups if needed
+          name: displaySubjectName, 
+          originalName: originalSubjectName, 
           color: card.subjectColor || '#808080',
           cardsDueInSubject: 0,
+          reviewableCardsInSubject: 0, // New counter
           topics: new Map()
         });
       }
 
       const currentSubject = subjectsMap.get(displaySubjectName);
       currentSubject.cardsDueInSubject++;
+      if (isCardReviewable) {
+        currentSubject.reviewableCardsInSubject++; // Increment reviewable count for subject
+      }
 
       if (!currentSubject.topics.has(topicName)) {
         currentSubject.topics.set(topicName, {
@@ -192,9 +203,14 @@ const SpacedRepetition = ({
           name: topicName,
           color: card.topicColor || card.cardColor || currentSubject.color,
           cardsDueInTopicCount: 0,
+          reviewableCardsInTopic: 0 // New counter
         });
       }
-      currentSubject.topics.get(topicName).cardsDueInTopicCount++;
+      const currentTopic = currentSubject.topics.get(topicName);
+      currentTopic.cardsDueInTopicCount++;
+      if (isCardReviewable) {
+        currentTopic.reviewableCardsInTopic++; // Increment reviewable count for topic
+      }
     });
 
     const result = Array.from(subjectsMap.values()).map(subject => ({
@@ -560,10 +576,14 @@ const SpacedRepetition = ({
                               <h3>{topic}</h3>
                             </div>
                             <div className="topic-meta">
+                              {topicCardsFlat.some(card => card.isReviewable === true) && (
+                                <span className="review-notification-circle topic-notification">
+                                  {topicCardsFlat.filter(card => card.isReviewable === true).length}
+                                </span>
+                              )}
                               <span className="card-count">
                                 ({topicCardsFlat.length} cards)
                               </span>
-                              {topicCardsFlat.some(card => card.isReviewable === true) && <span className="topic-reviewable-badge">Ready</span>}
                             </div>
                           </div>
                           <button 
@@ -878,6 +898,7 @@ const SpacedRepetition = ({
                   subjectName={subject.name}
                   subjectColor={subject.color}
                   cardsDueInSubject={subject.cardsDueInSubject}
+                  reviewableCardsInSubject={subject.reviewableCardsInSubject}
                   onReviewAll={() => handleReviewAllSubjectCardsInBox(subject)}
                   onOpenTopicsModal={() => handleOpenStudyTopicsModal(subject)}
                 />

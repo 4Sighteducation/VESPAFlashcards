@@ -1544,6 +1544,22 @@
   gap: 10px;
 }
 
+.review-notification-circle.topic-notification {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; /* Slightly smaller for topics */
+  height: 18px;
+  border-radius: 50%;
+  background-color: #34e795; /* Bright green */
+  color: white;
+  font-size: 0.7rem; /* Slightly smaller font */
+  font-weight: bold;
+  /* margin-right: 5px; /* Spaced by gap in .topic-meta */
+  box-shadow: 0 0 4px #34e795, 0 0 6px #34e795;
+  animation: pulse-green 1.5s infinite alternate; /* Reuse animation */
+}
+
 .card-preview {
   width: 100%;
   margin-bottom: 15px;

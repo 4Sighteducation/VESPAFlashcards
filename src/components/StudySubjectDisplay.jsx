@@ -6,6 +6,7 @@ const StudySubjectDisplay = ({
   subjectName,
   subjectColor,
   cardsDueInSubject,
+  reviewableCardsInSubject,
   onReviewAll, // Action to review all cards for this subject in the current box
   onOpenTopicsModal // Action to open the topic selection modal
 }) => {
@@ -21,7 +22,14 @@ const StudySubjectDisplay = ({
   return (
     <div className="study-subject-display-container" style={displayStyle}>
       <div className="study-subject-info" onClick={onOpenTopicsModal}>
-        <h3 className="study-subject-name">{subjectName}</h3>
+        <h3 className="study-subject-name">
+          {subjectName}
+          {reviewableCardsInSubject > 0 && (
+            <span className="review-notification-circle subject-notification">
+              {reviewableCardsInSubject}
+            </span>
+          )}
+        </h3>
         <span className="study-subject-cards-due">
           {cardsDueInSubject} card{cardsDueInSubject !== 1 ? 's' : ''} due
         </span>
