@@ -163,10 +163,10 @@
   display: flex; 
   order: 2; /* Place them after the title/hamburger line */
   width: 100%; 
-  justify-content: space-between; /* Changed from space-around to use explicit widths and let gap be handled by margins or a parent gap if needed */
+  justify-content: space-between; /* This will place space *between* items */
   margin-top: 8px; 
   margin-bottom: 8px; 
-  gap: 2%; /* This gap will act between the two buttons */
+  gap: 2%; /* This gap (2%) means remaining 98% is for the two buttons */
 }
 
 /* header-nav is now the primary container for actions on both desktop and mobile */
@@ -209,38 +209,38 @@
     gap: 2%; /* This gap will act between the two buttons */
   }
   .header-mobile-persistent-actions .nav-button {
-    /* Overriding global min-width from .create-topics-header-button and .toggle-view-btn */
     min-width: 0; 
     box-sizing: border-box; /* Ensure padding/border are included in the width */
     
-    width: 48%; /* Force each button to take up roughly half, accounting for gap */
+    width: 49%; /* Each button takes 49% of the 100% parent width */
     flex-grow: 0; /* Do not allow to grow beyond the explicit width */
-    flex-shrink: 1; /* Allow to shrink if absolutely necessary */
-    flex-basis: auto; /* Base size on width */
+    flex-shrink: 0; /* Do not allow to shrink below the explicit width easily */
+    flex-basis: 49%; /* Explicit basis to match width */
     
     margin: 0; /* Reset individual margins */
     
     /* Consistent responsive font size for text in both buttons */
     font-size: clamp(10px, 2.5vw, 12px); 
     line-height: 1.2; 
-    padding: 8px 5px; /* Increased padding slightly */
+    padding: 7px 4px; /* Adjusted padding: 7px top/bottom, 4px left/right */
     
-    gap: 5px; /* Consistent gap between icon and text */
+    /* display: flex, align-items: center, justify-content: center are inherited */
+    gap: 3px; /* Slightly smaller gap between icon and text due to larger icon */
     
     overflow: hidden; 
     white-space: nowrap; 
     text-overflow: ellipsis; 
 
-    border-radius: 5px; /* Slightly larger radius */
+    border-radius: 5px; 
     border-bottom-width: 2px;
   }
 
   /* Consistent icon styling for buttons in this container */
   .header-mobile-persistent-actions .nav-button .button-icon {
-    font-size: clamp(14px, 4vw, 18px); /* Larger and responsive icon */
+    font-size: clamp(16px, 5vw, 20px); /* Significantly larger and responsive icon */
     line-height: 1; 
-    flex-shrink: 0; 
-    margin-right: 0; 
+    flex-shrink: 0; /* Icon should not shrink */
+    margin-right: 0; /* Use gap from parent button for spacing */
   }
 
   /* REMOVING the more aggressive styling specifically for the SUBJECTS button for now to test equal sizing */
