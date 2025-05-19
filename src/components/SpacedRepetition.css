@@ -22,13 +22,25 @@
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Color schemes for different boxes */
-.box-info-1 { background-color: #e0f7fa; color: #004d40; border-left-color: #00796b; }
-.box-info-2 { background-color: #fffde7; color: #f57f17; border-left-color: #fbc02d; }
-.box-info-3 { background-color: #e8f5e9; color: #1b5e20; border-left-color: #388e3c; }
-.box-info-4 { background-color: #fce4ec; color: #880e4f; border-left-color: #c2185b; }
-.box-info-5 { background-color: #ede7f6; color: #311b92; border-left-color: #512da8; }
+/* Color schemes for different boxes - Revamped */
+.box-info-1 { background-color: #e0f2f7; color: #0d47a1; border-left-color: #1976d2; box-shadow: 0 2px 5px rgba(25, 118, 210, 0.2); }
+.box-info-2 { background-color: #fff9c4; color: #f57f17; border-left-color: #fbc02d; box-shadow: 0 2px 5px rgba(251, 192, 45, 0.2); }
+.box-info-3 { background-color: #e8f5e9; color: #1b5e20; border-left-color: #388e3c; box-shadow: 0 2px 5px rgba(56, 142, 60, 0.2); }
+.box-info-4 { background-color: #fce4ec; color: #880e4f; border-left-color: #c2185b; box-shadow: 0 2px 5px rgba(194, 24, 91, 0.2); }
+.box-info-5 { background-color: #ede7f6; color: #311b92; border-left-color: #512da8; box-shadow: 0 2px 5px rgba(81, 45, 168, 0.2); }
 
+/* Styling for the humorous message */
+.box-humorous-message {
+  font-style: italic;
+  color: #555; /* Or inherit from parent .box-info-X if preferred */
+  margin-top: 8px;
+  margin-bottom: 5px;
+  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  font-size: 0.9em;
+  border: 1px dashed rgba(0,0,0,0.1);
+}
 
 .box-info h2 {
   color: #06206e;
@@ -1912,4 +1924,31 @@ body:has(.study-modal-overlay) {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Styling for the new close button in active review session */
+.close-review-session-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.05); /* Subtle background */
+  color: #333; /* Darker color for visibility */
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 1.5rem; /* Make X larger */
+  line-height: 1; /* Center the X */
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 10; /* Ensure it's above other header content */
+}
+
+.close-review-session-button:hover {
+  background-color: rgba(0, 0, 0, 0.15);
+  color: #000;
 }

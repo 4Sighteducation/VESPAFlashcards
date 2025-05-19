@@ -33,16 +33,16 @@ const StudySubjectDisplay = ({
           className="study-action-button review-all-button"
           disabled={cardsDueInSubject === 0}
         >
-          Review All ({cardsDueInSubject})
+          <span role="img" aria-label="Review">👁️</span> Review All ({cardsDueInSubject})
         </button>
-         <button
+        {/* <button
           title={`View topics for ${subjectName}`}
           onClick={onOpenTopicsModal}
           className="study-action-button view-topics-button"
           disabled={cardsDueInSubject === 0}
         >
           View Topics ➔
-        </button>
+        </button> */}
       </div>
     </div>
   );

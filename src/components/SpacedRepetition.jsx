@@ -6,6 +6,62 @@ import { dlog, dwarn, derr } from '../utils/logger'; // Import the logger
 import StudySubjectDisplay from './StudySubjectDisplay'; // <-- Import
 import StudyTopicSelectionModal from './StudyTopicSelectionModal'; // <-- Import
 
+// Store the humorous messages
+const boxMessages = {
+  1: [
+    "Welcome to the proving grounds! These cards need your daily attention.",
+    "Back to basics! Master these cards and watch them climb the ranks.",
+    "The journey of a thousand miles begins with Box 1!",
+    "These cards are eager to meet you... every single day.",
+    "Fresh recruits reporting for duty! Let's train them well.",
+    "Box 1: Where flashcard careers begin!",
+    "These need a little extra love before they can graduate.",
+    "Daily practice makes perfect! Let's get started."
+  ],
+  2: [
+    "Look who made it to Box 2! See you again in a couple days.",
+    "Moving up in the world! These cards are making progress.",
+    "These cards have been promoted! They only need attention every other day now.",
+    "You're doing great! These cards are starting to stick.",
+    "Box 2: The 'every-other-day' club. Exclusive membership!",
+    "These cards are getting comfortable. Just don't get too comfortable!",
+    "Good job! These cards are on their way up the ladder."
+  ],
+  3: [
+    "Box 3 already? These cards are really coming along!",
+    "These cards only need a check-in every three days. They're growing up so fast!",
+    "Welcome to Box 3: The 'see you in three days' zone.",
+    "Your memory is strengthening! These cards are proof.",
+    "These cards have earned some breathing room. Check back in three days!",
+    "Box 3: Where good flashcards go to become great flashcards.",
+    "These cards are like fine wine - they get better with time!"
+  ],
+  4: [
+    "Box 4! These cards are practically experts now.",
+    "Weekly check-ins only? These cards are nearly mastered!",
+    "Welcome to the VIP section! These cards only need weekly attention.",
+    "Box 4: The penthouse of flashcard achievement!",
+    "Just one weekly visit to keep these cards fresh in your mind.",
+    "These cards have almost graduated! Just checking in weekly now.",
+    "You've practically mastered these! Just a weekly refresher to stay sharp.",
+    "Box 4: The waiting room for retirement. Just one weekly review to go!"
+  ],
+  5: [
+    "Congratulations! These cards have earned their gold watch and pension plan.",
+    "Box 5: The flashcard hall of fame! Only an occasional visit required.",
+    "These cards have graduated with honors! Just checking in every few weeks.",
+    "Welcome to flashcard retirement! These cards are just enjoying the view now.",
+    "Box 5: Where flashcards go to enjoy their golden years.",
+    "Memory mastery achieved! These cards are just here for the occasional reunion.",
+    "You've conquered these cards! They're just hanging out for the occasional refresher.",
+    "These cards are practically part of your permanent memory now!",
+    "Box 5: The exclusive club for your most mastered knowledge.",
+    "Three-week vacations for these cards - they've earned it!",
+    "Knowledge unlocked! These cards are now in long-term storage.",
+    "Mission accomplished! These cards are now just old friends you visit occasionally."
+  ]
+};
+
 const SpacedRepetition = ({
   cards,
   currentBox,
@@ -64,6 +120,10 @@ const SpacedRepetition = ({
   const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0, reviewedCount: 0 });
   const [showSummary, setShowSummary] = useState(false);
   const [isLoadingNextCard, setIsLoadingNextCard] = useState(false);
+
+  // Add state for the current box message
+  const [currentBoxMessage, setCurrentBoxMessage] = useState("");
+  const [lastRandomMessageIndices, setLastRandomMessageIndices] = useState({});
 
   // Define shuffleArray EARLIER
   const shuffleArray = useCallback((array) => {
@@ -247,6 +307,25 @@ const SpacedRepetition = ({
     }
   }, [cards, currentBox, selectedSubject, selectedTopic, spacedRepetitionData, updateCurrentCardsInternal]); // updateCurrentCardsInternal is now a dependency
 
+  // New useEffect to pick a random message when currentBox changes
+  useEffect(() => {
+    const messagesForBox = boxMessages[currentBox];
+    if (messagesForBox && messagesForBox.length > 0) {
+      let randomIndex;
+      // Avoid repeating the last message shown for this box if possible
+      if (messagesForBox.length > 1) {
+        do {
+          randomIndex = Math.floor(Math.random() * messagesForBox.length);
+        } while (randomIndex === lastRandomMessageIndices[currentBox]);
+      } else {
+        randomIndex = 0;
+      }
+      setCurrentBoxMessage(messagesForBox[randomIndex]);
+      setLastRandomMessageIndices(prev => ({ ...prev, [currentBox]: randomIndex }));
+    } else {
+      setCurrentBoxMessage(""); // Default if no messages for the box
+    }
+  }, [currentBox]);
 
   // New useEffect to manage study session state (currentIndex, studyCompleted, flip states)
   // This reacts to changes in `shuffledCards` (instead of currentCards) when a session starts.
@@ -457,6 +536,16 @@ const SpacedRepetition = ({
   // Get the current card if it's valid
   const currentCardToDisplay = isValidCard ? shuffledCards[currentIndex] : null;
 
+  const handleCloseReviewSession = useCallback(() => {
+    dlog("[SpacedRepetition] Closing active review session.");
+    setShuffledCards([]);
+    setCurrentIndex(0);
+    setSessionStats({ correct: 0, incorrect: 0, reviewedCount: 0 });
+    setShowSummary(false);
+    setIsFlipped(false); // Reset flip state
+    // No need to call onReturnToBank as we are returning to the box view, not the main card bank
+  }, []);
+
   // Render subject containers for the current box
   const renderSubjectContainers = () => {
     if (boxSubjects.length === 0) {
@@ -659,12 +748,8 @@ const SpacedRepetition = ({
             This card appears to be missing critical data and cannot be displayed properly.
           </p>
           <div className="card-navigation">
-            {currentIndex > 0 && (
-              <button className="prev-button" onClick={prevCard}>Previous</button>
-            )}
-            {currentIndex < currentCards.length - 1 && (
-              <button className="next-button" onClick={nextCard}>Next</button>
-            )}
+            <button className="prev-button" onClick={prevCard}>Previous</button>
+            <button className="next-button" onClick={nextCard}>Next</button>
           </div>
           <button 
             className="return-button" 
@@ -790,7 +875,7 @@ const SpacedRepetition = ({
         // Active Review Session View
         <div className="review-session-active">
           <div className="card-progression-header">
-            <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button">&larr; Back to Bank</button>
+            <button onClick={handleCloseReviewSession} className="close-review-session-button" title="Close Study Session">&times;</button>
             <div className="card-counter">
               Card {currentIndex + 1} of {shuffledCards.length} (Box {currentBox})
             </div>
@@ -834,6 +919,7 @@ const SpacedRepetition = ({
         <div className="study-selection-view">
           <div className="study-selection-header">
             <h2>Study Box {currentBox}</h2>
+            {currentBoxMessage && <p className="box-humorous-message">{currentBoxMessage}</p>}
             <p>Select a subject to study, or review all cards for a subject in this box.</p>
              <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button">&larr; Back to Bank</button>
           </div>
@@ -892,6 +978,7 @@ const SpacedRepetition = ({
         <div className="study-selection-view">
           <div className="study-selection-header">
             <h2>Study Box {currentBox}</h2>
+            {currentBoxMessage && <p className="box-humorous-message">{currentBoxMessage}</p>}
              <button onClick={onReturnToBank} className="return-to-bank-button spaced-rep-button">&larr; Back to Bank</button>
           </div>
           <div className="no-cards-for-study-box">
