@@ -903,7 +903,7 @@ const SpacedRepetition = ({
               </button>
             </h2>
             {currentBoxMessage && <p className="box-humorous-message">{currentBoxMessage}</p>}
-            <p>Select a subject to study, or review all cards for a subject in this box.</p>
+            {/* <p>Select a subject to study, or review all cards for a subject in this box.</p> */}
           </div>
 
           {groupedSubjectsForStudy.length === 0 ? (
