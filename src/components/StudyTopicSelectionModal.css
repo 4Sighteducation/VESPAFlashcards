@@ -85,13 +85,13 @@
   font-weight: 500;
   display: flex;
   align-items: center;
-  /* pointer-events: none; /* Make this span non-interactive to pass clicks to parent button */
+  pointer-events: none; /* Make this span non-interactive to pass clicks to parent button */
 }
 
 /* Make child spans non-interactive so click always goes to the button */
-.study-topic-item-name > * {
-  pointer-events: none;
-}
+/* .study-topic-item-name > * { */
+  /* pointer-events: none; /* Reverted this from previous attempt */
+/* } */
 
 .study-topic-item-cards-due {
   font-size: 0.8rem;
@@ -137,7 +137,7 @@
   margin-left: 8px; /* Space between name and circle */
   box-shadow: 0 0 4px #34e795, 0 0 6px #34e795;
   animation: pulse-green 1.5s infinite alternate; 
-  pointer-events: none; /* Explicitly make sure this doesn't steal clicks */
+  /* pointer-events: none; /* Reverted this - let it inherit or be covered by parent's pointer-events:none */
 }
 
 /* Add pulse-green animation if not already available globally or imported */
