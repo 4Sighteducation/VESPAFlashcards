@@ -160,9 +160,13 @@
 
 /* New container for always-visible mobile actions */
 .header-mobile-persistent-actions {
-  display: none; /* Hidden by default, shown on mobile */
-  gap: 8px;
-  align-items: center;
+  display: flex; 
+  order: 2; /* Place them after the title/hamburger line */
+  width: 100%; 
+  justify-content: space-between; /* Changed from space-around to use explicit widths and let gap be handled by margins or a parent gap if needed */
+  margin-top: 8px; 
+  margin-bottom: 8px; 
+  gap: 2%; /* This gap will act between the two buttons */
 }
 
 /* header-nav is now the primary container for actions on both desktop and mobile */
@@ -199,55 +203,58 @@
     display: flex; 
     order: 2; /* Place them after the title/hamburger line */
     width: 100%; 
-    justify-content: space-around; /* Distributes space around buttons */
+    justify-content: space-between; /* Changed from space-around to use explicit widths and let gap be handled by margins or a parent gap if needed */
     margin-top: 8px; 
     margin-bottom: 8px; 
-    gap: 2%; /* Gap between the two buttons (e.g., 2% of parent width) */
+    gap: 2%; /* This gap will act between the two buttons */
   }
   .header-mobile-persistent-actions .nav-button {
     /* Overriding global min-width from .create-topics-header-button and .toggle-view-btn */
-    min-width: 0; /* Allow button to be smaller than 150px */
+    min-width: 0; 
+    box-sizing: border-box; /* Ensure padding/border are included in the width */
     
-    flex-grow: 1; /* Allow buttons to grow and share space */
-    flex-shrink: 1; /* Allow buttons to shrink if needed */
-    flex-basis: 0;  /* Distribute space based on flex-grow */
-    /* max-width: 48%; /* Removed to let flexbox fully control width based on content and available space */
+    width: 48%; /* Force each button to take up roughly half, accounting for gap */
+    flex-grow: 0; /* Do not allow to grow beyond the explicit width */
+    flex-shrink: 1; /* Allow to shrink if absolutely necessary */
+    flex-basis: auto; /* Base size on width */
     
-    margin: 0; /* Remove individual margins, container gap handles spacing */
+    margin: 0; /* Reset individual margins */
     
-    /* Responsive font size: min 8px, ideal based on 2.8vw, max 11px */
-    font-size: clamp(9px, 2.8vw, 11px); /* Base for STUDY button */
+    /* Consistent responsive font size for text in both buttons */
+    font-size: clamp(10px, 2.5vw, 12px); 
     line-height: 1.2; 
-    padding: 6px 4px; 
+    padding: 8px 5px; /* Increased padding slightly */
     
-    gap: 4px; 
+    gap: 5px; /* Consistent gap between icon and text */
     
     overflow: hidden; 
     white-space: nowrap; 
     text-overflow: ellipsis; 
 
-    border-radius: 4px; 
+    border-radius: 5px; /* Slightly larger radius */
     border-bottom-width: 2px;
   }
 
-  /* Icon styling for general nav-buttons in this container */
+  /* Consistent icon styling for buttons in this container */
   .header-mobile-persistent-actions .nav-button .button-icon {
-    font-size: clamp(13px, 3.5vw, 15px); /* Base for STUDY icon */
+    font-size: clamp(14px, 4vw, 18px); /* Larger and responsive icon */
     line-height: 1; 
     flex-shrink: 0; 
     margin-right: 0; 
   }
 
-  /* More aggressive responsive styling specifically for the SUBJECTS button */
+  /* REMOVING the more aggressive styling specifically for the SUBJECTS button for now to test equal sizing */
+  /*
   .header-mobile-persistent-actions .create-topics-header-button {
-    font-size: clamp(8px, 2.2vw, 10px); /* Smaller text for SUBJECTS */
-    padding: 6px 3px; /* Slightly tighter padding */
-    gap: 2px; /* Smaller gap for SUBJECTS */
+    font-size: clamp(8px, 2.2vw, 10px); 
+    padding: 6px 3px; 
+    gap: 2px; 
   }
 
   .header-mobile-persistent-actions .create-topics-header-button .button-icon {
-    font-size: clamp(11px, 3vw, 13px); /* Smaller icon for SUBJECTS */
+    font-size: clamp(11px, 3vw, 13px); 
   }
+  */
 
   .mobile-menu-toggle {
     display: block; 
